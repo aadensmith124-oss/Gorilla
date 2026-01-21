@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { crypto } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 
 export async function registerRoutes(
   httpServer: Server,
