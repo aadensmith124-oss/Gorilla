@@ -44,10 +44,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center gap-2 px-2 py-6">
         <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-          <Gamepad2 className="h-5 w-5 text-primary-foreground" />
+          <Store className="h-5 w-5 text-primary-foreground" />
         </div>
         <span className="font-display font-bold text-xl tracking-wider text-primary">
-          NEXUS<span className="text-white">STORE</span>
+          RULF<span className="text-primary/60">.CC</span>
         </span>
       </div>
 
@@ -70,6 +70,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        <Link href="/games">
+          <div
+            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            onClick={() => setIsMobileOpen(false)}
+          >
+            <Gamepad2 className="h-5 w-5 group-hover:text-primary" />
+            <span className="font-medium text-primary font-bold">SPIN THE WHEEL</span>
+          </div>
+        </Link>
       </div>
 
       {user && (
