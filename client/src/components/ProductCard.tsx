@@ -9,15 +9,6 @@ interface ProductWithVariants extends Product {
   variants: (Variant & { stockCount: number })[];
 }
 
-import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import type { Product, Variant } from "@shared/schema";
-import { Package } from "lucide-react";
-
-interface ProductWithVariants extends Product {
-  variants: (Variant & { stockCount: number })[];
-}
-
 export function ProductCard({ product }: { product: ProductWithVariants }) {
   const lowestPrice = Math.min(...product.variants.map(v => v.price));
   const hasStock = product.variants.some(v => v.stockCount > 0);

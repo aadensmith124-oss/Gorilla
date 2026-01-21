@@ -82,10 +82,10 @@ export default function ProductDetailPage() {
 
           <div className="p-6 rounded-xl bg-card border border-border space-y-6 shadow-lg">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Option</label>
+              <label className="text-sm font-medium">Options</label>
               <Select onValueChange={setSelectedVariantId} value={selectedVariantId}>
                 <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Choose a package" />
+                  <SelectValue placeholder="Choose an option" />
                 </SelectTrigger>
                 <SelectContent>
                   {product.variants.map(variant => (
@@ -98,9 +98,6 @@ export default function ProductDetailPage() {
                       <div className="flex items-center justify-between w-full min-w-[200px] gap-4">
                         <span>{variant.name}</span>
                         <div className="flex items-center gap-2">
-                          {variant.stockCount < 5 && variant.stockCount > 0 && (
-                            <span className="text-xs text-orange-400 font-bold">Only {variant.stockCount} left!</span>
-                          )}
                           <span className="font-mono font-bold">${(variant.price / 100).toFixed(2)}</span>
                         </div>
                       </div>
