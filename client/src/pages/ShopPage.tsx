@@ -1,9 +1,10 @@
 import { useProducts } from "@/hooks/use-products";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Headset, Send } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 export default function ShopPage() {
   const { data: products, isLoading } = useProducts();
@@ -19,18 +20,31 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <h1 className="text-3xl font-display font-bold text-foreground">Marketplace</h1>
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col items-center gap-6 pt-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-4xl font-display font-black tracking-tighter text-foreground italic">
+            RULF<span className="text-primary/80 italic">.CC</span>
+          </h1>
+          <Send className="h-6 w-6 text-primary fill-primary" />
+        </div>
+
+        <Button variant="destructive" className="h-12 px-8 font-bold gap-2 rounded-lg text-lg">
+          <Headset className="h-5 w-5" /> Contact Support
+        </Button>
+
+        <div className="relative w-full max-w-xl px-4">
           <Input 
-            placeholder="Search items..." 
-            className="pl-9 bg-card border-border focus-visible:ring-primary"
+            placeholder="Find products..." 
+            className="h-14 bg-card/40 border-none text-lg pl-6 rounded-xl focus-visible:ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        <button className="border border-destructive/40 text-destructive font-black tracking-tighter py-3 px-12 rounded-lg text-xl hover:bg-destructive/10 transition-colors uppercase italic">
+          Purchase a live card
+        </button>
       </div>
 
       {filtered?.length === 0 ? (
@@ -38,12 +52,12 @@ export default function ShopPage() {
           <p>No items found matching your search.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-2">
           {filtered?.map((product, i) => (
             <motion.div
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
             >
               <ProductCard product={product} />

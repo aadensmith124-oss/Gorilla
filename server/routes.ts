@@ -222,8 +222,8 @@ export async function registerRoutes(
       password: adminPass,
       email: "admin@store.com",
       role: "admin",
-      confirmPassword: "admin123" // Only needed for validation schema, not DB
-    });
+      confirmPassword: "admin123"
+    } as any);
 
     const demoPass = await hashPassword("user123");
     await storage.createUser({
@@ -232,7 +232,7 @@ export async function registerRoutes(
       email: "demo@user.com",
       role: "user",
       confirmPassword: "user123"
-    });
+    } as any);
 
     // Seed Product
     const prod = await storage.createProduct({
