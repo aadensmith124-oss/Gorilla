@@ -213,9 +213,17 @@ function SpinGame() {
   const [spinning, setSpinning] = useState(false);
   const [reward, setReward] = useState<number | null>(null);
 
+  const prizes = [
+    { amount: 5, chance: 0.8 },
+    { amount: 10, chance: 0.6 },
+    { amount: 50, chance: 0.5 },
+    { amount: 100, chance: 0.3 },
+    { amount: 500, chance: 0.2 },
+    { amount: 1000, chance: 0.1 },
+  ];
+
   const handleSpin = () => {
     setSpinning(true);
-    // Simulate spin time then call api
     setTimeout(() => {
       spinWheel.mutate(undefined, {
         onSuccess: (data) => {
@@ -230,7 +238,7 @@ function SpinGame() {
   return (
     <Card className="border-accent/20 bg-card/50 backdrop-blur-sm">
       <CardHeader className="text-center border-b border-border bg-secondary/20">
-        <CardTitle>Daily Lucky Wheel</CardTitle>
+        <CardTitle>Daily Wheel</CardTitle>
         <CardDescription>Spin once every 24 hours for free credits.</CardDescription>
       </CardHeader>
       <CardContent className="p-12 flex flex-col items-center gap-8">
@@ -238,12 +246,22 @@ function SpinGame() {
            <motion.div 
              animate={{ rotate: spinning ? 3600 : 0 }} 
              transition={{ duration: 3, ease: "circOut" }}
-             className="w-64 h-64 rounded-full border-8 border-accent bg-secondary/50 flex items-center justify-center relative overflow-hidden"
+             className="w-80 h-80 rounded-full border-8 border-accent bg-secondary/50 flex items-center justify-center relative overflow-hidden shadow-[0_0_30px_rgba(45,212,191,0.2)]"
            >
-             <div className="absolute inset-0 bg-[conic-gradient(var(--tw-gradient-stops))] from-accent/20 via-primary/20 to-accent/20" />
-             <Trophy className="h-24 w-24 text-accent" />
+             <div className="absolute inset-0 bg-[conic-gradient(var(--tw-gradient-stops))] from-accent/10 via-primary/10 to-accent/10" />
+             {prizes.map((p, i) => (
+               <div 
+                 key={i}
+                 className="absolute h-full w-full flex flex-col items-center pt-8 origin-center"
+                 style={{ transform: `rotate(${(i * 360) / prizes.length}deg)` }}
+               >
+                 <span className="font-bold text-xl text-primary">${(p.amount/100).toFixed(2)}</span>
+                 <span className="text-[10px] text-muted-foreground">{(p.chance * 100)}%</span>
+               </div>
+             ))}
+             <Sparkles className="h-12 w-12 text-accent/50 z-0" />
            </motion.div>
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-4xl text-white">▼</div>
+           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-4xl text-accent z-10 drop-shadow-lg">▼</div>
         </div>
 
         {reward !== null && !spinning && (
