@@ -1,0 +1,243 @@
+🏪 DIGITAL ITEMS STORE — FULL SYSTEM TEXT STRUCTURE (UPDATED)
+🔴 GLOBAL ELEMENTS (ALL PAGES)
+🔁 ANNOUNCEMENT BAR (STICKY – NEVER ENDING LOOP)
+📢 Announcement: Special update live now — click here
+Text + link set by admin
+Click redirects to admin-defined URL
+Infinite loop
+☰ HAMBURGER MENU (WITH DROPDOWNS)
+Shop
+Fun ▾ → Gamble (opens Gamble page)
+Profile ▾
+Top-Up
+Orders
+Support
+Cart
+🔐 LOGIN & REGISTER (MANDATORY)
+Upon site visit, user must login or register.
+🔹 REGISTER
+Fields:
+Username
+Email
+Password
+Confirm Password
+[Register] → creates account
+Success → redirects to Home / Shop
+Failure → shows error messages (email taken, weak password, mismatch)
+🔹 LOGIN
+Fields:
+Email / Username
+Password
+[Login] → authenticates user
+Success → redirects to Home / Shop
+Failure → shows error messages (incorrect credentials, account not found)
+🔹 SESSION MANAGEMENT
+Users must stay logged in to view any page
+Option to log out from Profile
+🏠 SHOP / HOME PAGE
+Header: STORE NAME — Digital Items Marketplace
+🔍 Search items…
+🛍 PRODUCT GRID
+2 products per row
+Each product shows:
+Product image
+Starting from $X.XX
+Stock count never shown to users
+📦 PRODUCT DETAIL PAGE
+Product Name
+Product Image
+🔽 Available Options (Dropdown)
+Only options with stock appear
+Example:
+Item Basic — $3
+Item Plaza — $26
+[Add to Cart]
+🛒 CART PAGE
+Your Cart
+Product name
+Selected option
+Price
+[Remove]
+[Checkout]
+💳 CHECKOUT & PAYMENTS
+Payment methods:
+Store balance
+Real money (if enabled)
+Refund Rule:
+ALL refunds return as store credit
+No refunds return to original payment method
+📦 ORDERS (USER)
+My Orders
+Each order shows:
+Order ID (example: ORD-938472)
+Product
+Option
+Status (Pending / Paid)
+Date
+[View Order]
+📄 ORDER DETAIL PAGE
+Order ID: ORD-938472
+Product: Item
+Option: Item Plaza
+Status: Fulfilled
+Delivered Items:
+Item #1 (Original)
+Item #2 (Replacement, if any)
+⚠️ If original was replaced: "This item was replaced"
+[View Replacement Item]
+🎮 GAMBLE PAGE
+Access: From Fun → Gamble
+Layout
+Grid / flex layout: 2 boxes per row
+Each box/card shows:
+Icon: Dice 🎲 / Bomb 💣
+Game Name: Dice / Mines
+Short Description: e.g., “Roll 2 dice vs system” / “Find tiles, avoid bombs”
+[Play] button
+Example Grid
+🎲 Dice	💣 Mines
+Roll 2 dice vs system. Higher total wins.	Avoid bombs in a 5×5 grid. Choose difficulty.
+[Play]	[Play]
+Dice Game (User View)
+User rolls 2 dice vs system
+Dice values: 1–6
+Win/Lose logic hidden from users
+Controls:
+[Set Bet Amount]
+[Start Game]
+[Cashout]
+[Give Up]
+Mines Game (User View)
+5×5 grid (25 tiles)
+Difficulty options:
+Simple → 3 bombs → +10% reward
+Extreme → 6 bombs → +50% reward
+Impossible → 10 bombs → +100% reward
+Controls:
+[Set Bet Amount]
+[Start Game]
+[Cashout]
+[Give Up]
+Note: All odds and mechanics are backend/admin-only.
+🎡 DAILY SPIN
+Once per day
+Animated wheel
+Shows reward amount only
+Possible rewards:
+$0.05
+$0.10
+$0.50
+$1
+$5
+$10
+[Spin]
+👤 PROFILE ▾
+💰 TOP-UP
+Shows store balance
+Buy store credit
+🎟 REDEEM STORE CREDIT CODE
+[Enter redeem code]
+[Redeem]
+Results:
+✅ Success → Balance added
+❌ Invalid / Used → Error message
+Codes:
+One-time use
+Permanently removed after redemption
+📦 ORDERS
+View pending & paid orders
+Re-view delivered items
+🆘 SUPPORT
+Redirects to admin-set support link
+📦 ITEM STOCK SYSTEM (CORE)
+1 Item = 3 non-empty lines with words
+Empty lines ignored
+Incomplete groups ignored
+🔐 STOCK RULES
+Each purchase removes 1 Item permanently
+Items never reused
+Replacements consume additional stock
+Refunds do NOT restore stock
+👁️ VISIBILITY RULES
+Product hidden if all options have 0 items
+Option hidden if stock = 0
+❌ No “Out of Stock” text
+❌ No stock shown to users
+🛠 ADMIN PANEL (FULL CONTROL)
+📊 DASHBOARD
+Total users
+Total sales
+Total store balance
+Total items in stock
+Items sold
+Items remaining
+📦 PRODUCT MANAGEMENT
+Product ID
+Product name
+Image
+Status (Active / Hidden)
+[Add Product]
+[Edit]
+[Disable]
+🔽 OPTION MANAGEMENT
+Option ID
+Option name
+Price
+Item stock count (admin only)
+📥 STOCK MANAGEMENT
+Paste items here (every 3 lines = 1 item)
+Preview → Items detected / Incomplete ignored
+🧾 ORDER MANAGEMENT
+Search by:
+Order ID
+Product ID
+User ID
+Actions:
+Refund (store credit only)
+Replace Item
+🔁 REPLACE ITEM LOGIC
+Replacement comes from same product & option
+Original item invalidated
+Replacement item delivered
+Both items permanently removed from stock
+Order marked “Replaced”
+👥 USER MANAGEMENT
+User ID
+Balance
+Total purchases
+[Add Balance]
+[Remove Balance]
+[Ban]
+🎮 GAME SETTINGS
+Gamble settings (game odds, bet limits, backend-only)
+Daily spin rewards & weights
+📢 ANNOUNCEMENT MANAGEMENT
+Announcement text
+Link URL
+Enable / Disable
+💳 REDEEM CODE SYSTEM (VOUCH REWARDS)
+Generate up to 100 codes at once
+Amount per code
+Copy all generated codes
+Used codes permanently removed
+🤖 TELEGRAM VOUCH FLOW
+User vouches via Telegram bot
+Bot notifies admin
+Admin generates redeem code(s)
+Admin sends code to user
+User redeems in Top-Up
+Store credit added instantly
+⚠️ FINAL SYSTEM RULES (SUMMARY)
+All products sell digital items
+3 lines = 1 item
+Stock is 1-by-1
+Out-of-stock items hidden
+Refunds always return store credit
+Replacements consume stock
+Users can view original + replacement items
+Gambling uses store balance only
+Dice 🎲 and Mines 💣 only visible on Gamble page
+Win logic hidden from users
+Redeem codes are single-use
+Up to 100 codes generated at once
+Mandatory login/register before using site
