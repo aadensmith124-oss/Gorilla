@@ -116,7 +116,7 @@ export default function CartPage() {
               </Link>
             )}
             <p className="text-xs text-center text-muted-foreground">
-              By purchasing you agree to our terms of service. Digital items are non-refundable.
+              Refunds are allowed. Digital items are protected by our policy.
             </p>
           </CardFooter>
         </Card>
