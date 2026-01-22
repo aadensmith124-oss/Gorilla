@@ -9,32 +9,6 @@ import {
   Menu,
   Store,
   Wallet,
-  Sparkles
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useCart } from "@/hooks/use-cart";
-import { useState } from "react";
-
-import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import { 
-  ShoppingCart, 
-  Gamepad2, 
-  User, 
-  Settings, 
-  LogOut, 
-  Menu,
-  Store,
-  Wallet,
   Sparkles,
   ChevronDown,
   History,
@@ -62,42 +36,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full bg-background text-foreground py-8 px-6">
       <div className="flex flex-col gap-6 text-center">
         <Link href="/" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-xl font-medium hover:text-primary transition-colors cursor-pointer">SHOP</span>
+          <span className="text-xl font-medium hover:text-primary transition-colors cursor-pointer uppercase">Shop</span>
         </Link>
 
         <a 
           href="https://t.me/+4LVBYQu4T8UwODkx" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-xl font-medium hover:text-primary transition-colors"
+          className="text-xl font-medium hover:text-primary transition-colors uppercase"
         >
-          VOUCHES
+          Vouches
         </a>
 
         <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group">
-            FUN <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
+          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group uppercase">
+            Fun <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-4 space-y-4">
             <Link href="/games" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Gamble</span>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer">GAMBLE</span>
             </Link>
             <Link href="/games" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase italic">Daily spin</span>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer italic">DAILY SPIN</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
 
         <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group">
-            PROFILE <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
+          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group uppercase">
+            Profile <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-4 space-y-4">
             <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Top-Up</span>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer">TOP-UP</span>
             </Link>
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Orders</span>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer">ORDERS</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
@@ -106,14 +80,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           href="https://t.me/Rulfccbot" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-xl font-medium hover:text-primary transition-colors"
+          className="text-xl font-medium hover:text-primary transition-colors uppercase"
         >
-          SUPPORT
+          Support
         </a>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
-          <div className="flex items-center justify-center gap-2 text-xl font-medium hover:text-primary transition-colors cursor-pointer">
-            CART {cartCount > 0 && <span className="text-sm bg-primary px-2 py-0.5 rounded-full text-white">{cartCount}</span>}
+          <div className="flex items-center justify-center gap-2 text-xl font-medium hover:text-primary transition-colors cursor-pointer uppercase">
+            Cart {cartCount > 0 && <span className="text-sm bg-primary px-2 py-0.5 rounded-full text-white">{cartCount}</span>}
           </div>
         </Link>
 
@@ -126,9 +100,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {user && (
           <button 
             onClick={() => { logout(); setIsMobileOpen(false); }}
-            className="text-xl font-medium text-muted-foreground hover:text-destructive transition-colors mt-4"
+            className="text-xl font-medium text-muted-foreground hover:text-destructive transition-colors mt-4 uppercase"
           >
-            LOGOUT
+            Logout
           </button>
         )}
       </div>

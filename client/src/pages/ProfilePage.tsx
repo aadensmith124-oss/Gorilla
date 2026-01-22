@@ -87,7 +87,7 @@ function RedeemCodeCard() {
         <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary" /> Redeem Code</CardTitle>
         <CardDescription>Have a gift card or promo code? Enter it here.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="flex gap-2">
           <Input 
             placeholder="ENTER-CODE-HERE" 
@@ -99,9 +99,13 @@ function RedeemCodeCard() {
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Redeem"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Funds are added instantly to your balance.
-        </p>
+        
+        <div className="pt-6 border-t border-border">
+          <h3 className="text-sm font-medium mb-4 uppercase tracking-wider text-muted-foreground">Crypto Top-Up</h3>
+          <Button variant="outline" className="w-full h-12 gap-2 border-dashed opacity-70" disabled>
+            <Wallet className="h-4 w-4" /> Pay with Crypto (Coming Soon)
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
