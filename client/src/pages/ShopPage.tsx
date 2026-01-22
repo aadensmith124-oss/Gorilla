@@ -22,14 +22,9 @@ export default function ShopPage() {
   return (
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">
-        <div className="flex items-center gap-3">
-          <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
-            RULF<span className="text-primary italic">.CC</span>
-          </h1>
-          <a href="https://t.me/Rulfccbot" target="_blank" rel="noopener noreferrer">
-            <Send className="h-7 w-7 text-primary fill-primary hover:scale-110 transition-transform cursor-pointer" />
-          </a>
-        </div>
+        <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
+          RULF<span className="text-primary italic">.CC</span>
+        </h1>
 
         <a 
           href="https://t.me/Rulfccbot" 

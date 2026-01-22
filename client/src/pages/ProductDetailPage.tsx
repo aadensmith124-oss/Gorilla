@@ -1,17 +1,24 @@
 import { useProduct } from "@/hooks/use-products";
 import { useRoute, useLocation } from "wouter";
-import { Loader2, ShoppingCart, Minus, Plus, X } from "lucide-react";
+import { Loader2, ShoppingCart, Minus, Plus, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:id");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0");
   const { data: product, isLoading } = useProduct(id);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -19,7 +26,7 @@ export default function ProductDetailPage() {
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white">Product not found</div>;
 
-  const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+  const selectedVariant = product.variants.find(v => v.id.toString() === selectedVariantId);
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
@@ -68,25 +75,23 @@ export default function ProductDetailPage() {
 
           <div className="space-y-3">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
-            <div className="space-y-2">
-              {product.variants.map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => setSelectedVariantId(v.id)}
-                  disabled={v.stockCount === 0}
-                  className={cn(
-                    "w-full flex items-center justify-between p-3 rounded-lg border text-xs font-bold transition-all",
-                    selectedVariantId === v.id 
-                      ? "border-primary bg-primary/5 text-white" 
-                      : "border-white/5 bg-[#1c1f26] text-muted-foreground hover:bg-white/5",
-                    v.stockCount === 0 && "opacity-40 cursor-not-allowed"
-                  )}
-                >
-                  <span className="uppercase tracking-wide">${(v.price / 100).toFixed(2)} - [{v.name}]</span>
-                  {v.stockCount > 0 && <span className="text-[9px] text-green-500/80 uppercase">In Stock</span>}
-                </button>
-              ))}
-            </div>
+            <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
+              <SelectTrigger className="w-full h-12 bg-[#1c1f26] border-white/5 text-white font-bold uppercase tracking-wide">
+                <SelectValue placeholder="SELECT AN OPTION" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1c1f26] border-white/5 text-white">
+                {product.variants.map((v) => (
+                  <SelectItem 
+                    key={v.id} 
+                    value={v.id.toString()}
+                    disabled={v.stockCount === 0}
+                    className="font-bold uppercase tracking-wide hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                  >
+                    ${(v.price / 100).toFixed(2)} - {v.name} {v.stockCount === 0 ? "(OUT OF STOCK)" : `(${v.stockCount} IN STOCK)`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-3">
