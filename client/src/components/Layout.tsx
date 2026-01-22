@@ -24,167 +24,150 @@ import {
 import { useCart } from "@/hooks/use-cart";
 import { useState } from "react";
 
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { 
+  ShoppingCart, 
+  Gamepad2, 
+  User, 
+  Settings, 
+  LogOut, 
+  Menu,
+  Store,
+  Wallet,
+  Sparkles,
+  ChevronDown,
+  History,
+  ExternalLink
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { useCart } from "@/hooks/use-cart";
+import { useState } from "react";
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
-  const { items, total } = useCart();
+  const { items } = useCart();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  const navItems = [
-    { href: "/", label: "Shop", icon: Store },
-    { href: "/games", label: "Games", icon: Gamepad2 },
-  ];
-
-  const adminNav = user?.role === "admin" ? [
-    { href: "/admin", label: "Admin Panel", icon: Settings },
-  ] : [];
-
   const NavContent = () => (
-    <div className="flex flex-col h-full gap-4">
-      <div className="flex items-center gap-2 px-2 py-6">
-        <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-          <Store className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <span className="font-display font-bold text-xl tracking-wider text-primary">
-          RULF<span className="text-primary/60">.CC</span>
-        </span>
-      </div>
+    <div className="flex flex-col h-full bg-background text-foreground py-8 px-6">
+      <div className="flex flex-col gap-6 text-center">
+        <Link href="/" onClick={() => setIsMobileOpen(false)}>
+          <span className="text-xl font-medium hover:text-primary transition-colors cursor-pointer">SHOP</span>
+        </Link>
 
-      <div className="flex-1 space-y-1">
-        {[...navItems, ...adminNav].map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.href} href={item.href}>
-              <div
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group ${
-                  isActive 
-                    ? "bg-primary/20 text-primary border-r-2 border-primary" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-                onClick={() => setIsMobileOpen(false)}
-              >
-                <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : "group-hover:text-primary"}`} />
-                <span className="font-medium">{item.label}</span>
-              </div>
+        <a 
+          href="https://t.me/+4LVBYQu4T8UwODkx" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-xl font-medium hover:text-primary transition-colors"
+        >
+          VOUCHES
+        </a>
+
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group">
+            FUN <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4 space-y-4">
+            <Link href="/games" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Gamble</span>
             </Link>
-          );
-        })}
-        <Link href="/games">
-          <div
-            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            onClick={() => setIsMobileOpen(false)}
-          >
-            <Sparkles className="h-5 w-5 group-hover:text-primary" />
-            <span className="font-medium text-primary font-bold uppercase">Daily Wheel</span>
+            <Link href="/games" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase italic">Daily spin</span>
+            </Link>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-xl font-medium hover:text-primary transition-colors group">
+            PROFILE <ChevronDown className="h-5 w-5 group-data-[state=open]:rotate-180 transition-transform" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4 space-y-4">
+            <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Top-Up</span>
+            </Link>
+            <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-lg text-muted-foreground hover:text-primary cursor-pointer uppercase">Orders</span>
+            </Link>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <a 
+          href="https://t.me/Rulfccbot" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-xl font-medium hover:text-primary transition-colors"
+        >
+          SUPPORT
+        </a>
+
+        <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
+          <div className="flex items-center justify-center gap-2 text-xl font-medium hover:text-primary transition-colors cursor-pointer">
+            CART {cartCount > 0 && <span className="text-sm bg-primary px-2 py-0.5 rounded-full text-white">{cartCount}</span>}
           </div>
         </Link>
+
+        {user?.role === "admin" && (
+          <Link href="/8765" onClick={() => setIsMobileOpen(false)}>
+            <span className="text-xl font-medium text-destructive hover:opacity-80 transition-opacity cursor-pointer">8765</span>
+          </Link>
+        )}
+
+        {user && (
+          <button 
+            onClick={() => { logout(); setIsMobileOpen(false); }}
+            className="text-xl font-medium text-muted-foreground hover:text-destructive transition-colors mt-4"
+          >
+            LOGOUT
+          </button>
+        )}
       </div>
 
-      {user && (
-        <div className="mt-auto p-4 border-t border-border bg-card/30 rounded-t-xl">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium text-muted-foreground uppercase">Balance</span>
-            <span className="font-mono font-bold text-green-400">
-              ${(user.balance / 100).toFixed(2)}
-            </span>
-          </div>
-          <Link href="/profile">
-             <Button variant="outline" className="w-full justify-start gap-2 mb-2" size="sm">
-                <Wallet className="h-4 w-4" /> Top Up
-             </Button>
-          </Link>
-        </div>
-      )}
+      <div className="mt-auto text-center pt-8 border-t border-border">
+        <h1 className="text-3xl font-display font-black tracking-tighter italic">
+          RULF<span className="text-primary italic">.CC</span>
+        </h1>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card/20 backdrop-blur-sm fixed inset-y-0 z-50">
-        <div className="px-4 h-full">
-          <NavContent />
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-        <SheetContent side="left" className="w-64 p-0 border-r border-border bg-background">
-          <div className="px-4 h-full">
-            <NavContent />
+    <div className="min-h-screen bg-background">
+      <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
+        <Link href="/">
+          <div className="flex items-center gap-2 cursor-pointer">
+            <h1 className="text-2xl font-display font-black tracking-tighter italic">
+              RULF<span className="text-primary italic">.CC</span>
+            </h1>
           </div>
-        </SheetContent>
-      </Sheet>
+        </Link>
 
-      {/* Main Content */}
-      <main className="flex-1 md:ml-64 min-h-screen flex flex-col relative z-0">
-        {/* Header */}
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileOpen(true)}>
-              <Menu className="h-5 w-5" />
-            </Button>
-            {/* Announcement ticker could go here */}
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span>System Operational</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative hover:bg-primary/20">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-[10px] font-bold flex items-center justify-center rounded-full text-white ring-2 ring-background">
-                    {cartCount}
-                  </span>
-                )}
+        <div className="flex items-center gap-4">
+          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <Menu className="h-6 w-6" />
               </Button>
-            </Link>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:w-[350px] p-0 border-l border-border bg-background">
+              <NavContent />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </header>
 
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/20">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white font-bold">
-                      {user.username[0].toUpperCase()}
-                    </div>
-                    <span className="hidden sm:inline font-medium">{user.username}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card border-border">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-border" />
-                  <Link href="/profile">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" /> Profile
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/profile?tab=orders">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Store className="mr-2 h-4 w-4" /> Orders
-                    </DropdownMenuItem>
-                  </Link>
-                  <DropdownMenuSeparator className="bg-border" />
-                  <DropdownMenuItem className="cursor-pointer text-red-400 focus:text-red-400" onClick={() => logout()}>
-                    <LogOut className="mr-2 h-4 w-4" /> Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link href="/auth">
-                <Button size="sm" className="bg-primary hover:bg-primary/80 font-semibold">
-                  Login
-                </Button>
-              </Link>
-            )}
-          </div>
-        </header>
-
-        <div className="flex-1 p-4 md:p-8 overflow-x-hidden">
+      <main className="flex-1 min-h-screen relative z-0">
+        <div className="p-4 md:p-8 overflow-x-hidden">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>

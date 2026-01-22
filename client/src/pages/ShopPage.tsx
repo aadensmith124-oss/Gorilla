@@ -29,9 +29,15 @@ export default function ShopPage() {
           <Send className="h-6 w-6 text-primary fill-primary" />
         </div>
 
-        <Button variant="destructive" className="h-12 px-8 font-bold gap-2 rounded-lg text-lg">
-          <Headset className="h-5 w-5" /> Contact Support
-        </Button>
+        <a 
+          href="https://t.me/Rulfccbot" 
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          <Button variant="destructive" className="h-12 px-8 font-bold gap-2 rounded-lg text-lg">
+            <Headset className="h-5 w-5" /> Contact Support
+          </Button>
+        </a>
 
         <div className="relative w-full max-w-xl px-4">
           <Input 
@@ -41,10 +47,6 @@ export default function ShopPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
-        <button className="border border-destructive/40 text-destructive font-black tracking-tighter py-3 px-12 rounded-lg text-xl hover:bg-destructive/10 transition-colors uppercase italic">
-          Purchase a live card
-        </button>
       </div>
 
       {filtered?.length === 0 ? (
