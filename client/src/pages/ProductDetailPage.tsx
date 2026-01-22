@@ -1,32 +1,31 @@
 import { useProduct } from "@/hooks/use-products";
 import { useRoute, useLocation } from "wouter";
-import { Loader2, ArrowLeft, ShoppingCart, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ShoppingCart, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:id");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0");
   const { data: product, isLoading } = useProduct(id);
-  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { toast } = useToast();
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  if (!product) return <div>Product not found</div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!product) return <div className="p-8 text-center text-white">Product not found</div>;
 
-  const selectedVariant = product.variants.find(v => v.id.toString() === selectedVariantId);
-  const hasStock = product.variants.some(v => v.stockCount > 0);
+  const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
 
   const handleAddToCart = () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant) {
+      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
+      return;
+    }
     addItem({
       variantId: selectedVariant.id,
       productId: product.id,
@@ -39,126 +38,99 @@ export default function ProductDetailPage() {
     toast({ title: "Added to cart", description: `${quantity}x ${product.name} (${selectedVariant.name})` });
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <Button variant="ghost" onClick={() => setLocation("/")} className="mb-6 gap-2">
-        <ArrowLeft className="h-4 w-4" /> Back to Shop
-      </Button>
+  const handleBuyNow = () => {
+    handleAddToCart();
+    setLocation("/cart");
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Image Side */}
-        <div className="space-y-4">
-          <div className="aspect-video w-full rounded-2xl overflow-hidden border border-border bg-card/50 relative shadow-2xl">
-            <img 
-              src={product.image} 
-              alt={product.name} 
-              className="w-full h-full object-cover"
-            />
-            {!hasStock && (
-              <div className="absolute inset-0 bg-background/80 flex items-center justify-center backdrop-blur-sm">
-                <span className="text-3xl font-display font-bold text-destructive rotate-[-12deg] border-4 border-destructive px-6 py-2 rounded-xl">
-                  SOLD OUT
-                </span>
-              </div>
-            )}
-          </div>
+  return (
+    <div className="min-h-screen bg-[#090a0c] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-[#16181d] rounded-2xl border border-white/5 overflow-hidden relative shadow-2xl">
+        <div className="p-6 border-b border-white/5 flex justify-between items-start">
+          <h1 className="text-xl font-display font-black tracking-tight text-white uppercase pr-8 leading-tight">
+            {product.name}
+          </h1>
+          <button 
+            onClick={() => setLocation("/")}
+            className="p-1 rounded bg-white/5 text-muted-foreground hover:text-white transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Info Side */}
-        <div className="space-y-8">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Badge variant="outline" className="text-primary border-primary">Digital Item</Badge>
-              {hasStock ? 
-                <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Instant Delivery</Badge> : 
-                <Badge variant="destructive">Out of Stock</Badge>
-              }
+        <div className="p-6 space-y-6">
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">About Product</h3>
+            <div className="text-sm text-[#9ca3af] leading-relaxed whitespace-pre-wrap">
+              {product.description || "No description available."}
             </div>
-            <h1 className="text-4xl font-display font-bold mb-4">{product.name}</h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
           </div>
 
-          <div className="p-6 rounded-xl bg-card border border-border space-y-6 shadow-lg">
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Options</label>
-              <Select onValueChange={setSelectedVariantId} value={selectedVariantId}>
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Choose an option" />
-                </SelectTrigger>
-                <SelectContent>
-                  {product.variants.map(variant => (
-                    <SelectItem 
-                      key={variant.id} 
-                      value={variant.id.toString()}
-                      disabled={variant.stockCount === 0}
-                      className="py-3"
-                    >
-                      <div className="flex items-center justify-between w-full min-w-[200px] gap-4">
-                        <span>{variant.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold">${(variant.price / 100).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {product.variants.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVariantId(v.id)}
+                  disabled={v.stockCount === 0}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3 rounded-lg border text-xs font-bold transition-all",
+                    selectedVariantId === v.id 
+                      ? "border-primary bg-primary/5 text-white" 
+                      : "border-white/5 bg-[#1c1f26] text-muted-foreground hover:bg-white/5",
+                    v.stockCount === 0 && "opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  <span className="uppercase tracking-wide">${(v.price / 100).toFixed(2)} - [{v.name}]</span>
+                  {v.stockCount > 0 && <span className="text-[9px] text-green-500/80 uppercase">In Stock</span>}
+                </button>
+              ))}
             </div>
-
-            {selectedVariant && (
-              <div className="flex items-end justify-between border-t border-border pt-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Quantity</label>
-                  <Input 
-                    type="number" 
-                    min={1} 
-                    max={selectedVariant.stockCount}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.min(parseInt(e.target.value) || 1, selectedVariant.stockCount))}
-                    className="w-24 h-12 text-lg text-center font-mono"
-                  />
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-muted-foreground mb-1">Total Price</div>
-                  <div className="text-3xl font-mono font-bold text-primary">
-                    ${((selectedVariant.price * quantity) / 100).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Button 
-              size="lg" 
-              className="w-full h-14 text-lg font-bold gap-2 shadow-lg shadow-primary/20" 
-              disabled={!selectedVariant}
-              onClick={handleAddToCart}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              Add to Cart
-            </Button>
           </div>
 
-          <div className="flex gap-6 text-sm text-muted-foreground border-t border-border pt-6">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <Check className="h-4 w-4" />
-              </div>
-              Verified Seller
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Quantity</h3>
+            <div className="inline-flex items-center gap-3 p-1.5 bg-[#1c1f26] rounded-xl border border-white/5">
+              <button 
+                onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <span className="w-10 text-center text-sm font-bold text-white font-mono">{quantity}</span>
+              <button 
+                onClick={() => setQuantity(prev => Math.min(selectedVariant?.stockCount || 99, prev + 1))}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
             </div>
-            <div className="flex items-center gap-2">
-               <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <Check className="h-4 w-4" />
-              </div>
-              24/7 Support
-            </div>
-            <div className="flex items-center gap-2">
-               <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <Check className="h-4 w-4" />
-              </div>
-              Secure Payment
-            </div>
+          </div>
+
+          <div className="space-y-3 pt-4">
+            <button 
+              onClick={handleAddToCart}
+              disabled={!selectedVariantId}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-[#ff5f6d] to-[#ffc371] text-white font-black uppercase italic tracking-tighter text-sm shadow-lg shadow-orange-500/20 hover:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+            >
+              Add to Cart
+            </button>
+            
+            <button 
+              onClick={handleBuyNow}
+              disabled={!selectedVariantId}
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors disabled:opacity-50"
+            >
+              Buy Now
+            </button>
+
+            <button 
+              onClick={() => setLocation("/cart")}
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors"
+            >
+              View Cart
+            </button>
           </div>
         </div>
       </div>

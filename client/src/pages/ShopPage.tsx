@@ -20,13 +20,15 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex flex-col items-center gap-6 pt-4">
+    <div className="space-y-12 pb-20 pt-4">
+      <div className="flex flex-col items-center gap-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-4xl font-display font-black tracking-tighter text-foreground italic">
-            RULF<span className="text-primary/80 italic">.CC</span>
+          <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
+            RULF<span className="text-primary italic">.CC</span>
           </h1>
-          <Send className="h-6 w-6 text-primary fill-primary" />
+          <a href="https://t.me/Rulfccbot" target="_blank" rel="noopener noreferrer">
+            <Send className="h-7 w-7 text-primary fill-primary hover:scale-110 transition-transform cursor-pointer" />
+          </a>
         </div>
 
         <a 
@@ -34,15 +36,15 @@ export default function ShopPage() {
           target="_blank" 
           rel="noopener noreferrer"
         >
-          <Button variant="destructive" className="h-12 px-8 font-bold gap-2 rounded-lg text-lg">
-            <Headset className="h-5 w-5" /> Contact Support
+          <Button variant="destructive" size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-[#e11d48] hover:bg-[#be123c] transition-colors uppercase tracking-tight shadow-xl shadow-red-500/20">
+            <Headset className="h-4 w-4" /> Contact Support
           </Button>
         </a>
 
-        <div className="relative w-full max-w-xl px-4">
+        <div className="relative w-full max-w-lg px-4">
           <Input 
             placeholder="Find products..." 
-            className="h-14 bg-card/40 border-none text-lg pl-6 rounded-xl focus-visible:ring-primary/20"
+            className="h-12 bg-white/5 border-white/5 text-white placeholder:text-white/20 pl-6 rounded-xl focus-visible:ring-primary/20 text-sm font-medium"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -51,7 +53,7 @@ export default function ShopPage() {
 
       {filtered?.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
-          <p>No items found matching your search.</p>
+          <p className="text-sm font-bold uppercase tracking-widest opacity-50">No products found</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-2">

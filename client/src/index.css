@@ -5,77 +5,42 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Gaming Theme - Deep Space / Cyberpunk */
-  --background: 240 25% 10%;
-  --foreground: 240 10% 90%;
-
-  --card: 240 25% 13%;
-  --card-foreground: 240 10% 90%;
-
-  --popover: 240 25% 13%;
-  --popover-foreground: 240 10% 90%;
-
-  --primary: 270 70% 75%;
-  --primary-foreground: 270 10% 20%;
-
-  --secondary: 270 30% 90%;
-  --secondary-foreground: 270 10% 20%;
-
-  --muted: 270 30% 90%;
-  --muted-foreground: 270 10% 40%;
-
-  --accent: 270 50% 85%;
-  --accent-foreground: 270 10% 20%;
-
-  --destructive: 0 85% 60%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 270 20% 85%;
-  --input: 270 20% 85%;
-  --ring: 270 70% 75%;
-
-  --radius: 0.5rem;
-
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 7%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 7%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 270 70% 65%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 15%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 270 70% 65%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5% 15%;
+  --input: 240 5% 15%;
+  --ring: 270 70% 65%;
+  --radius: 0.75rem;
   --font-display: 'Orbitron', sans-serif;
   --font-body: 'Rajdhani', sans-serif;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body);
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    @apply tracking-wide uppercase;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; font-family: var(--font-body); }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); @apply tracking-tighter uppercase; }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-secondary/50;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-primary/50 rounded-full hover:bg-primary transition-colors;
+@layer components {
+  .btn-pro { @apply h-9 px-4 text-xs font-black uppercase italic tracking-tighter transition-all hover:scale-[0.98] active:scale-[0.95]; }
 }
 
-/* Glassmorphism utilities */
-.glass {
-  @apply bg-card/60 backdrop-blur-md border border-white/10;
-}
-
-.neon-border {
-  box-shadow: 0 0 5px theme('colors.primary.DEFAULT'),
-              0 0 10px theme('colors.primary.DEFAULT');
-}
-
-.neon-text {
-  text-shadow: 0 0 5px theme('colors.primary.DEFAULT');
-}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors; }
+.glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl; }
+.pro-card { @apply bg-[#16181d] border border-white/5 rounded-2xl shadow-2xl; }
