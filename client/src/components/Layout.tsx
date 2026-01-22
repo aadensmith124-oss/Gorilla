@@ -111,7 +111,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="mt-auto pt-8 border-t border-white/5">
         <div className="flex items-center gap-2 px-2 py-1 rounded bg-white/5 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_theme('colors.green.500')]" />
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Online</span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Best Logs 🪵</span>
         </div>
       </div>
     </div>

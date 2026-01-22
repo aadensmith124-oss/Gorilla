@@ -39,8 +39,8 @@ export default function AuthPage() {
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground mb-4 shadow-lg shadow-primary/25">
             <Gamepad2 className="h-10 w-10" />
           </div>
-          <h1 className="text-4xl font-display font-bold tracking-tight">Nexus Store</h1>
-          <p className="text-muted-foreground">Enter the marketplace</p>
+          <h1 className="text-4xl font-display font-bold tracking-tight text-white italic uppercase">RULF<span className="text-primary italic">.CC</span></h1>
+          <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Sign in to access the marketplace</p>
         </div>
 
         <Card className="border-border bg-card/60 backdrop-blur-xl shadow-2xl">
