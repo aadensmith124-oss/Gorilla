@@ -76,7 +76,7 @@ export const insertStockItemSchema = createInsertSchema(stockItems).omit({
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status", { enum: ["pending", "paid", "replaced"] }).default("pending").notNull(),
+  status: text("status", { enum: ["pending", "paid", "refunded", "replaced"] }).default("pending").notNull(),
   total: integer("total").notNull(), // in cents
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -11,23 +11,30 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUserBalance(userId: number, amountCents: number): Promise<User>; // amountCents can be negative
+  updateUserBalance(userId: number, amountCents: number): Promise<User>;
   updateLastDailySpin(userId: number): Promise<void>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: number, data: Partial<User>): Promise<User>;
 
   // Products & Variants
   getProducts(): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]>;
+  getAllProducts(): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]>;
   getProduct(id: number): Promise<(Product & { variants: (Variant & { stockCount: number })[] }) | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, data: Partial<Product>): Promise<Product>;
   createVariant(variant: InsertVariant): Promise<Variant>;
   
   // Stock
-  addStockItems(variantId: number, content: string): Promise<number>; // Returns count added
+  addStockItems(variantId: number, content: string): Promise<number>;
   reserveStockItem(variantId: number): Promise<StockItem | undefined>;
   
   // Orders
   createOrder(userId: number, items: { variantId: number; quantity: number }[]): Promise<Order>;
   getOrders(userId: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] })[]>;
   getOrder(id: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] }) | undefined>;
+  getAllOrders(): Promise<any[]>;
+  refundOrder(orderId: number): Promise<Order>;
+  replaceOrderItem(orderId: number): Promise<Order>;
   
   // Wallet
   createTransaction(userId: number, amount: number, type: string, description: string): Promise<Transaction>;
@@ -35,12 +42,15 @@ export interface IStorage {
   getRedeemCode(code: string): Promise<RedeemCode | undefined>;
   markRedeemCodeUsed(id: number, userId: number): Promise<void>;
   createRedeemCode(code: string, amount: number): Promise<RedeemCode>;
+  getAllRedeemCodes(): Promise<RedeemCode[]>;
   
   // Admin
-  getDashboardStats(): Promise<{ totalUsers: number; totalSales: number; storeBalance: number; itemsInStock: number; itemsSold: number }>;
+  getDashboardStats(): Promise<{ totalUsers: number; totalSales: number; storeBalance: number; itemsInStock: number; itemsSold: number; totalOrders: number; pendingOrders: number; totalRevenue: number }>;
+  getAdminLogs(): Promise<any[]>;
   
   // Announcements
   getAnnouncements(): Promise<Announcement[]>;
+  getAllAnnouncements(): Promise<Announcement[]>;
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
 }
 
@@ -73,10 +83,27 @@ export class DatabaseStorage implements IStorage {
     await db.update(users).set({ lastDailySpin: new Date() }).where(eq(users.id, userId));
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: number, data: Partial<User>): Promise<User> {
+    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return user;
+  }
+
   async getProducts(): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]> {
     const allProducts = await db.select().from(products).where(eq(products.active, true));
+    return this.enrichProductsWithVariants(allProducts);
+  }
+
+  async getAllProducts(): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]> {
+    const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+    return this.enrichProductsWithVariants(allProducts);
+  }
+
+  private async enrichProductsWithVariants(allProducts: Product[]): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]> {
     const result = [];
-    
     for (const prod of allProducts) {
       const prodVariants = await db.select().from(variants).where(eq(variants.productId, prod.id));
       const variantsWithStock = [];
@@ -115,6 +142,11 @@ export class DatabaseStorage implements IStorage {
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const [prod] = await db.insert(products).values(insertProduct).returning();
+    return prod;
+  }
+
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
+    const [prod] = await db.update(products).set(data).where(eq(products.id, id)).returning();
     return prod;
   }
 
@@ -255,6 +287,46 @@ export class DatabaseStorage implements IStorage {
     return { ...order, items: itemsWithDetails };
   }
 
+  async getAllOrders(): Promise<any[]> {
+    const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
+    const result = [];
+    for (const o of allOrders) {
+      const [user] = await db.select().from(users).where(eq(users.id, o.userId));
+      const items = await db.select().from(orderItems).where(eq(orderItems.orderId, o.id));
+      result.push({ ...o, user, items });
+    }
+    return result;
+  }
+
+  async refundOrder(orderId: number): Promise<Order> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order || order.status === 'refunded') throw new Error("Invalid order or already refunded");
+    
+    await this.updateUserBalance(order.userId, order.total);
+    await this.createTransaction(order.userId, order.total, "refund", `Refund for order #${orderId}`);
+    
+    const [updated] = await db.update(orders).set({ status: 'refunded' as const }).where(eq(orders.id, orderId)).returning();
+    return updated;
+  }
+
+  async replaceOrderItem(orderId: number): Promise<Order> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order || order.status !== 'paid') throw new Error("Invalid order");
+    
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    if (items.length === 0) throw new Error("No items to replace");
+    
+    const firstItem = items[0];
+    const newStock = await this.reserveStockItem(firstItem.variantId);
+    if (!newStock) throw new Error("No stock available for replacement");
+    
+    await db.update(orderItems).set({ stockItemId: newStock.id }).where(eq(orderItems.id, firstItem.id));
+    await db.update(stockItems).set({ orderId, replacementForId: firstItem.stockItemId }).where(eq(stockItems.id, newStock.id));
+    
+    const [updated] = await db.update(orders).set({ status: 'replaced' as const }).where(eq(orders.id, orderId)).returning();
+    return updated;
+  }
+
   async createTransaction(userId: number, amount: number, type: string, description: string): Promise<Transaction> {
     const [tx] = await db.insert(transactions).values({
       userId,
@@ -283,24 +355,41 @@ export class DatabaseStorage implements IStorage {
     return rc;
   }
 
+  async getAllRedeemCodes(): Promise<RedeemCode[]> {
+    return db.select().from(redeemCodes).orderBy(desc(redeemCodes.createdAt));
+  }
+
   async getDashboardStats() {
     const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
     const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders);
     const [balanceSum] = await db.select({ sum: sql<number>`sum(${users.balance})` }).from(users);
     const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, false));
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
+    const [ordersCount] = await db.select({ count: sql<number>`count(*)` }).from(orders);
+    const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'pending'));
 
     return {
       totalUsers: Number(usersCount.count),
       totalSales: Number(salesSum.sum || 0),
+      totalRevenue: Number(salesSum.sum || 0),
       storeBalance: Number(balanceSum.sum || 0),
       itemsInStock: Number(stockCount.count),
-      itemsSold: Number(soldCount.count)
+      itemsSold: Number(soldCount.count),
+      totalOrders: Number(ordersCount.count),
+      pendingOrders: Number(pendingCount.count)
     };
+  }
+
+  async getAdminLogs(): Promise<any[]> {
+    return [];
   }
 
   async getAnnouncements(): Promise<Announcement[]> {
     return db.select().from(announcements).where(eq(announcements.active, true)).orderBy(desc(announcements.createdAt));
+  }
+
+  async getAllAnnouncements(): Promise<Announcement[]> {
+    return db.select().from(announcements).orderBy(desc(announcements.createdAt));
   }
 
   async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {

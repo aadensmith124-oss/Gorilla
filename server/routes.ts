@@ -202,13 +202,119 @@ export async function registerRoutes(
     const codes = [];
     
     for (let i = 0; i < count; i++) {
-      // Generate realistic looking code: VOUCH-XXXX-XXXX
       const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
       const codeStr = `VOUCH-${randomStr}`;
       await storage.createRedeemCode(codeStr, amount);
       codes.push(codeStr);
     }
     res.json({ codes });
+  });
+
+  // Admin Products (all products including hidden)
+  app.get("/api/admin/products", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const products = await storage.getAllProducts();
+    res.json(products);
+  });
+
+  app.patch("/api/admin/products/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const product = await storage.updateProduct(Number(req.params.id), req.body);
+    res.json(product);
+  });
+
+  // Admin Orders
+  app.get("/api/admin/orders", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const orders = await storage.getAllOrders();
+    res.json(orders);
+  });
+
+  app.post("/api/admin/orders/:id/refund", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const order = await storage.refundOrder(Number(req.params.id));
+    res.json(order);
+  });
+
+  app.post("/api/admin/orders/:id/replace", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.replaceOrderItem(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // Admin Users
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await storage.updateUser(Number(req.params.id), req.body);
+    res.json(user);
+  });
+
+  app.post("/api/admin/users/:id/balance", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await storage.updateUserBalance(Number(req.params.id), req.body.amount);
+    await storage.createTransaction(Number(req.params.id), req.body.amount, "admin_adjustment", "Admin balance adjustment");
+    res.json(user);
+  });
+
+  // Admin Codes (list)
+  app.get("/api/admin/codes", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const codes = await storage.getAllRedeemCodes();
+    res.json(codes);
+  });
+
+  // Admin Announcements
+  app.get("/api/admin/announcements", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const announcements = await storage.getAllAnnouncements();
+    res.json(announcements);
+  });
+
+  app.post("/api/admin/announcements", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const announcement = await storage.createAnnouncement(req.body);
+    res.status(201).json(announcement);
+  });
+
+  // Admin Logs
+  app.get("/api/admin/logs", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const logs = await storage.getAdminLogs();
+    res.json(logs);
   });
 
   // Seed Data (if empty)
