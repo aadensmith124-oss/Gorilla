@@ -1,0 +1,200 @@
+🛠 ADMIN PANEL — FULL TEXT STRUCTURE (NO LOGIN)
+🔓 ADMIN ACCESS
+Admin panel opens directly
+No login page
+Access controlled externally (private URL / server-side)
+📊 ADMIN DASHBOARD
+Overview Cards
+Total Users
+Total Orders
+Total Sales
+Total Store Balance
+Total Items in Stock
+Items Sold Today
+Active Products
+Pending Orders
+Quick Actions
+[ Add Product ]
+[ Add Stock ]
+[ Generate Redeem Codes ]
+[ View Orders ]
+[ Edit Announcement ]
+☰ ADMIN SIDEBAR MENU
+Dashboard
+Products
+Options
+Stock
+Orders
+Users
+Redeem Codes
+Announcements
+Games
+Support Settings
+Admin Logs
+📦 PRODUCTS MANAGEMENT
+Products List
+Each product row shows:
+Product ID
+Product Name
+Total Options
+Total Items in Stock
+Status (Active / Hidden)
+[ Add Product ]
+[ Edit ]
+[ Disable / Enable ]
+➕ ADD / EDIT PRODUCT
+Fields
+Product Name
+Product Image
+Description (optional)
+Visibility (Active / Hidden)
+[ Save Product ]
+🔽 OPTIONS MANAGEMENT
+Options List
+Option ID
+Product Name
+Option Name
+Price
+Items in Stock (Admin Only)
+📌 Option visibility is automatic
+📌 No manual “out of stock” toggle
+➕ ADD / EDIT OPTION
+Fields
+Option Name
+Price
+Linked Product
+[ Save Option ]
+📥 STOCK MANAGEMENT
+Add Items to Option
+Select Product
+Select Option
+Stock Input Box
+Paste items here
+(Every 3 non-empty lines = 1 item)
+Stock Preview (Admin Only)
+Items detected: X
+Incomplete lines ignored: Y
+[ Save Stock ]
+Stock Overview
+Product
+Option
+Items Remaining
+Items Sold
+🧾 ORDERS MANAGEMENT
+Orders List
+Order ID
+User
+Product
+Option
+Status (Pending / Paid / Refunded / Replaced)
+Date
+Search Orders By
+Order ID
+Product ID
+User ID
+Order Detail (Admin View)
+Order ID: ORD-XXXXX
+User: Username
+Product: Item
+Option: Item Plaza
+Status: Paid
+Admin Actions
+[ Refund (Store Credit Only) ]
+[ Replace Item ]
+🔁 REPLACE ITEM FLOW
+Replacement pulled from same product & option
+Original item marked as replaced
+Replacement item delivered to user
+Both items permanently removed from stock
+Order flagged as “Replaced”
+💸 REFUND FLOW
+Refund returns store credit only
+Stock is NOT restored
+Order marked as “Refunded”
+👥 USERS MANAGEMENT
+Users List
+User ID
+Username
+Store Balance
+Total Purchases
+Dice Lose Chance %
+User Actions
+[ Add Balance ]
+[ Remove Balance ]
+[ View Orders ]
+[ Ban / Unban ]
+Edit Balance
+Amount
+Reason (optional)
+[ Save ]
+🎟 REDEEM CODES MANAGEMENT
+Redeem Codes Dashboard
+Total Codes Created
+Available Codes
+Used Codes
+Total Credit Issued
+➕ GENERATE REDEEM CODES (BULK)
+Fields
+Amount per code
+Quantity (1–100)
+Note (optional)
+[ Generate Codes ]
+Generated Codes Output
+VOUCH-A92FQ
+VOUCH-91KDL
+VOUCH-Q2Z8A
+...
+[ 📋 Copy All Codes ]
+Codes Lists
+Available Codes
+Code
+Amount
+Created Date
+Note
+Used Codes
+Code
+Amount
+Redeemed By
+Redeemed Date
+📌 Used codes are locked permanently
+📢 ANNOUNCEMENTS MANAGEMENT
+Announcement Editor
+Announcement Text
+Redirect Link
+Enable / Disable
+[ Save Announcement ]
+🎮 GAME SETTINGS
+Dice Game
+Default Lose Chance (%)
+% Reduction Per Purchase
+Minimum Lose Chance Cap
+Mines Game
+Bomb Count (Simple / Extreme / Impossible)
+Multiplier Values
+Daily Spin
+Reward Amounts
+Hidden Weight Values
+[ Save Game Settings ]
+🆘 SUPPORT SETTINGS
+Support Redirect URL
+Button Label (optional)
+[ Save ]
+🧾 ADMIN LOGS (AUDIT)
+Activity Log
+Action Type
+Target (Order ID / User ID / Code)
+Date & Time
+📌 Logs are permanent
+📌 Cannot be deleted
+⚠️ FINAL ADMIN RULES
+No admin login screen
+Admin access assumed secure
+All items are digital
+3 lines = 1 item
+Stock is 1-by-1
+Out-of-stock items auto-hide
+Refunds return store credit only
+Replacements consume stock
+Redeem codes are single-use
+Up to 100 codes per batch
+All admin actions logged
