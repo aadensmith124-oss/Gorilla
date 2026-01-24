@@ -2,13 +2,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProducts } from "@/hooks/use-products";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, Terminal } from "lucide-react";
+import { Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, Terminal, ShieldX } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const [, setLocation] = useLocation();
+
+  const isAdmin = user?.role === 'admin';
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: [api.admin.dashboard.path],
@@ -16,10 +21,35 @@ export default function AdminPage() {
       const res = await fetch(api.admin.dashboard.path);
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
-    }
+    },
+    enabled: isAdmin
   });
 
-  if (authLoading || statsLoading) {
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, setLocation]);
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#090a0c]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-[#090a0c] gap-4">
+        <ShieldX className="h-16 w-16 text-destructive" />
+        <h1 className="text-xl font-bold text-white">Access Denied</h1>
+        <p className="text-muted-foreground">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
+
+  if (statsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#090a0c]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -90,9 +90,14 @@ export function setupAuth(app: Express) {
       }
 
       const hashedPassword = await hashPassword(req.body.password);
+      
+      const adminEmails = ["lifeanime886@gmail.com"];
+      const isAdminEmail = adminEmails.includes(req.body.email?.toLowerCase());
+      
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
+        role: isAdminEmail ? "admin" : "user",
       });
 
       req.login(user, (err) => {
