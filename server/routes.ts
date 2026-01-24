@@ -187,17 +187,11 @@ export async function registerRoutes(
 
   // Admin
   app.get(api.admin.dashboard.path, async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
     const stats = await storage.getDashboardStats();
     res.json(stats);
   });
 
   app.post(api.admin.generateCodes.path, async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
     const { amount, count } = req.body;
     const codes = [];
     

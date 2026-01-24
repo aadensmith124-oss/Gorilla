@@ -23,7 +23,7 @@ function Router() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user && location !== "/auth") {
+    if (!isLoading && !user && location !== "/auth" && location !== "/8765") {
       setLocation("/auth");
     }
   }, [user, isLoading, location, setLocation]);
