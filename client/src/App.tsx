@@ -41,7 +41,9 @@ function Router() {
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/games" component={GamesPage} />
-        <Route path="/8765" component={AdminPage} />
+        <Route path="/8765">
+          {() => <AdminPage />}
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </Layout>

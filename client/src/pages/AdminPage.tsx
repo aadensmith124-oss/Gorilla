@@ -16,22 +16,13 @@ export default function AdminPage() {
       const res = await fetch(api.admin.dashboard.path);
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
-    },
-    enabled: !!user && user.role === 'admin'
+    }
   });
 
-  if (authLoading || (user?.role === 'admin' && statsLoading)) {
+  if (authLoading || statsLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#090a0c]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="p-8 text-center bg-[#090a0c] text-white min-h-screen pt-20 font-black italic uppercase tracking-tighter">
-        Access Denied
       </div>
     );
   }

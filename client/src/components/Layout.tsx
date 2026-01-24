@@ -28,11 +28,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <h1 className="text-xl font-display font-black tracking-tighter italic">
           RULF<span className="text-primary italic">.CC</span>
         </h1>
-        <SheetClose asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white">
-            <X className="h-5 w-5" />
-          </Button>
-        </SheetClose>
       </div>
 
       <div className="flex flex-col gap-4 text-left">
@@ -92,11 +87,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
 
-        {user?.role === "admin" && (
-          <Link href="/8765" onClick={() => setIsMobileOpen(false)}>
-            <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider">8765</span>
-          </Link>
-        )}
+        <Link href="/8765" onClick={() => setIsMobileOpen(false)}>
+          <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider">8765</span>
+        </Link>
 
         {user && (
           <button 
