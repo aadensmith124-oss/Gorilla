@@ -22,10 +22,16 @@ export interface IStorage {
   getProduct(id: number): Promise<(Product & { variants: (Variant & { stockCount: number })[] }) | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, data: Partial<Product>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
   createVariant(variant: InsertVariant): Promise<Variant>;
+  updateVariant(id: number, data: Partial<Variant>): Promise<Variant>;
+  deleteVariant(id: number): Promise<void>;
   
   // Stock
   addStockItems(variantId: number, content: string): Promise<number>;
+  addSingleStockItem(variantId: number, content: string): Promise<StockItem>;
+  getStockItems(variantId: number): Promise<StockItem[]>;
+  deleteStockItem(id: number): Promise<void>;
   reserveStockItem(variantId: number): Promise<StockItem | undefined>;
   
   // Orders
@@ -159,6 +165,25 @@ export class DatabaseStorage implements IStorage {
     return variant;
   }
 
+  async updateVariant(id: number, data: Partial<Variant>): Promise<Variant> {
+    const [variant] = await db.update(variants).set(data).where(eq(variants.id, id)).returning();
+    return variant;
+  }
+
+  async deleteVariant(id: number): Promise<void> {
+    await db.delete(stockItems).where(eq(stockItems.variantId, id));
+    await db.delete(variants).where(eq(variants.id, id));
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    const prodVariants = await db.select().from(variants).where(eq(variants.productId, id));
+    for (const v of prodVariants) {
+      await db.delete(stockItems).where(eq(stockItems.variantId, v.id));
+    }
+    await db.delete(variants).where(eq(variants.productId, id));
+    await db.delete(products).where(eq(products.id, id));
+  }
+
   async addStockItems(variantId: number, content: string): Promise<number> {
     // 1 Item = 3 non-empty lines
     const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -181,6 +206,23 @@ export class DatabaseStorage implements IStorage {
     );
 
     return items.length;
+  }
+
+  async addSingleStockItem(variantId: number, content: string): Promise<StockItem> {
+    const [item] = await db.insert(stockItems).values({
+      variantId,
+      content,
+      isSold: false
+    }).returning();
+    return item;
+  }
+
+  async getStockItems(variantId: number): Promise<StockItem[]> {
+    return db.select().from(stockItems).where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false))).orderBy(desc(stockItems.createdAt));
+  }
+
+  async deleteStockItem(id: number): Promise<void> {
+    await db.delete(stockItems).where(eq(stockItems.id, id));
   }
 
   async reserveStockItem(variantId: number): Promise<StockItem | undefined> {

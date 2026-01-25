@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGames } from "@/hooks/use-games";
 import { useAuth } from "@/hooks/use-auth";
-import { Dice5, Bomb, Loader2, Sparkles, Trophy } from "lucide-react";
+import { Dice5, Bomb, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -18,21 +18,18 @@ export default function GamesPage() {
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="text-center space-y-4 mb-12">
         <h1 className="text-4xl md:text-6xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary animate-pulse">
-          ARCADE ZONE
+          GAMBLE
         </h1>
         <p className="text-lg text-muted-foreground">Test your luck and win credits.</p>
       </div>
 
       <Tabs defaultValue="dice" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-secondary/30 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/30 p-1 rounded-xl">
           <TabsTrigger value="dice" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-white">
             <Dice5 className="mr-2 h-5 w-5" /> Dice Roll
           </TabsTrigger>
           <TabsTrigger value="mines" className="text-lg py-3 data-[state=active]:bg-destructive data-[state=active]:text-white">
             <Bomb className="mr-2 h-5 w-5" /> Mines
-          </TabsTrigger>
-          <TabsTrigger value="spin" className="text-lg py-3 data-[state=active]:bg-accent data-[state=active]:text-black">
-            <Sparkles className="mr-2 h-5 w-5" /> Daily Spin
           </TabsTrigger>
         </TabsList>
 
@@ -41,9 +38,6 @@ export default function GamesPage() {
         </TabsContent>
         <TabsContent value="mines" className="mt-0">
           <MinesGame />
-        </TabsContent>
-        <TabsContent value="spin" className="mt-0">
-          <SpinGame />
         </TabsContent>
       </Tabs>
     </div>
@@ -208,77 +202,3 @@ function MinesGame() {
   );
 }
 
-function SpinGame() {
-  const { spinWheel } = useGames();
-  const [spinning, setSpinning] = useState(false);
-  const [reward, setReward] = useState<number | null>(null);
-
-  const prizes = [
-    { amount: 5, chance: 0.8 },
-    { amount: 10, chance: 0.6 },
-    { amount: 50, chance: 0.5 },
-    { amount: 100, chance: 0.3 },
-    { amount: 500, chance: 0.2 },
-    { amount: 1000, chance: 0.1 },
-  ];
-
-  const handleSpin = () => {
-    setSpinning(true);
-    setTimeout(() => {
-      spinWheel.mutate(undefined, {
-        onSuccess: (data) => {
-          setReward(data.reward);
-          setSpinning(false);
-        },
-        onError: () => setSpinning(false)
-      });
-    }, 2000);
-  };
-
-  return (
-    <Card className="border-accent/20 bg-card/50 backdrop-blur-sm">
-      <CardHeader className="text-center border-b border-border bg-secondary/20">
-        <CardTitle>Daily Wheel</CardTitle>
-        <CardDescription>Spin once every 24 hours for free credits.</CardDescription>
-      </CardHeader>
-      <CardContent className="p-12 flex flex-col items-center gap-8">
-        <div className="relative">
-           <motion.div 
-             animate={{ rotate: spinning ? 3600 : 0 }} 
-             transition={{ duration: 3, ease: "circOut" }}
-             className="w-80 h-80 rounded-full border-8 border-accent bg-secondary/50 flex items-center justify-center relative overflow-hidden shadow-[0_0_30px_rgba(45,212,191,0.2)]"
-           >
-             <div className="absolute inset-0 bg-[conic-gradient(var(--tw-gradient-stops))] from-accent/10 via-primary/10 to-accent/10" />
-             {prizes.map((p, i) => (
-               <div 
-                 key={i}
-                 className="absolute h-full w-full flex flex-col items-center pt-8 origin-center"
-                 style={{ transform: `rotate(${(i * 360) / prizes.length}deg)` }}
-               >
-                 <span className="font-bold text-xl text-primary">${(p.amount/100).toFixed(2)}</span>
-                 <span className="text-[10px] text-muted-foreground">{(p.chance * 100)}%</span>
-               </div>
-             ))}
-             <Sparkles className="h-12 w-12 text-accent/50 z-0" />
-           </motion.div>
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-4xl text-accent z-10 drop-shadow-lg">▼</div>
-        </div>
-
-        {reward !== null && !spinning && (
-          <div className="text-3xl font-bold text-accent animate-bounce">
-            You won ${(reward/100).toFixed(2)}!
-          </div>
-        )}
-
-        <Button 
-          size="lg" 
-          className="w-48 h-16 text-xl font-bold bg-accent hover:bg-accent/80 text-black shadow-[0_0_20px_rgba(45,212,191,0.5)]" 
-          onClick={handleSpin}
-          disabled={spinning || spinWheel.isPending}
-        >
-          {spinning ? "SPINNING..." : "SPIN NOW"}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}

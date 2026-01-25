@@ -82,7 +82,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-2">
           <Terminal className="h-5 w-5 text-primary" />
           <span className="text-lg font-display font-black tracking-tighter italic uppercase">
-            ADMIN <span className="text-primary">8765</span>
+            ADMIN <span className="text-primary">Panel</span>
           </span>
         </div>
       </div>
@@ -383,7 +383,9 @@ function ProductsSection() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <img src={p.image} className="h-10 w-10 rounded bg-[#0f1115] object-contain p-1 flex-shrink-0" />
+                  <div className="h-10 w-10 rounded bg-[#0f1115] overflow-hidden flex-shrink-0">
+                      <img src={p.image} className="h-full w-full object-cover" />
+                    </div>
                   <div className="min-w-0">
                     <p className="font-bold truncate">{p.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -418,6 +420,20 @@ function ProductsSection() {
 function ProductEditDialog({ product, onClose }: { product: any; onClose: () => void }) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("options");
+  const [editingVariant, setEditingVariant] = useState<any>(null);
+  const [selectedVariantForStock, setSelectedVariantForStock] = useState<number | null>(null);
+  const [newStockContent, setNewStockContent] = useState("");
+
+  const { data: stockItems, refetch: refetchStock } = useQuery({
+    queryKey: ["/api/admin/stock", selectedVariantForStock],
+    queryFn: async () => {
+      if (!selectedVariantForStock) return [];
+      const res = await fetch(`/api/admin/stock/${selectedVariantForStock}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedVariantForStock,
+  });
 
   const optionSchema = z.object({
     name: z.string().min(1, "Required"),
@@ -429,19 +445,17 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
     defaultValues: { name: "", price: "" },
   });
 
-  const stockSchema = z.object({
-    variantId: z.string().min(1, "Required"),
-    rawContent: z.string().min(1, "Required"),
+  const deleteProductMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/admin/products/${product.id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Product deleted" });
+      onClose();
+    }
   });
-
-  const stockForm = useForm<z.infer<typeof stockSchema>>({
-    resolver: zodResolver(stockSchema),
-    defaultValues: { variantId: "", rawContent: "" },
-  });
-
-  const rawContent = stockForm.watch("rawContent");
-  const lines = rawContent.split('\n').filter(l => l.trim().length > 0);
-  const itemsDetected = Math.floor(lines.length / 3);
 
   const createOptionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof optionSchema>) => {
@@ -459,18 +473,54 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
     }
   });
 
+  const updateVariantMutation = useMutation({
+    mutationFn: async ({ id, name, price }: { id: number; name: string; price: number }) => {
+      await apiRequest("PATCH", `/api/admin/variants/${id}`, { name, price });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      setEditingVariant(null);
+      toast({ title: "Option updated" });
+    }
+  });
+
+  const deleteVariantMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/variants/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Option deleted" });
+    }
+  });
+
   const addStockMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof stockSchema>) => {
-      await apiRequest("POST", api.stock.add.path, {
-        variantId: parseInt(data.variantId),
-        rawContent: data.rawContent,
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/stock", {
+        variantId: selectedVariantForStock,
+        content: newStockContent,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      stockForm.reset({ variantId: stockForm.getValues("variantId"), rawContent: "" });
-      toast({ title: `Added ${itemsDetected} items` });
+      refetchStock();
+      setNewStockContent("");
+      toast({ title: "Stock item added" });
+    }
+  });
+
+  const deleteStockMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/stock/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      refetchStock();
+      toast({ title: "Stock item removed" });
     }
   });
 
@@ -479,7 +529,9 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
       <DialogContent className="max-w-lg bg-[#16181d] border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <img src={product.image} className="h-8 w-8 rounded bg-[#0f1115] object-contain p-1" />
+            <div className="h-10 w-10 rounded bg-[#0f1115] overflow-hidden flex-shrink-0">
+              <img src={product.image} className="h-full w-full object-cover" />
+            </div>
             {product.name}
           </DialogTitle>
         </DialogHeader>
@@ -487,19 +539,54 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="options">Options</TabsTrigger>
-            <TabsTrigger value="stock">Add Stock</TabsTrigger>
+            <TabsTrigger value="stock">Stock</TabsTrigger>
           </TabsList>
 
           <TabsContent value="options" className="space-y-4 mt-4">
             {product.variants?.length > 0 && (
               <div className="space-y-2">
                 {product.variants.map((v: any) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-[#1c1f26]">
-                    <div>
-                      <p className="font-medium">{v.name}</p>
-                      <p className="text-xs text-muted-foreground">{v.stockCount} in stock</p>
-                    </div>
-                    <Badge variant="outline" className="text-green-500">${(v.price / 100).toFixed(2)}</Badge>
+                  <div key={v.id} className="p-3 rounded-lg bg-[#1c1f26]">
+                    {editingVariant?.id === v.id ? (
+                      <div className="space-y-3">
+                        <Input 
+                          value={editingVariant.name} 
+                          onChange={(e) => setEditingVariant({ ...editingVariant, name: e.target.value })}
+                          placeholder="Name"
+                        />
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          value={(editingVariant.price / 100).toFixed(2)} 
+                          onChange={(e) => setEditingVariant({ ...editingVariant, price: Math.round(parseFloat(e.target.value) * 100) })}
+                          placeholder="Price"
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => updateVariantMutation.mutate(editingVariant)} disabled={updateVariantMutation.isPending}>
+                            {updateVariantMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingVariant(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{v.name}</p>
+                          <p className="text-xs text-muted-foreground">{v.stockCount} in stock</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-green-500">${(v.price / 100).toFixed(2)}</Badge>
+                          <Button size="icon" variant="ghost" onClick={() => setEditingVariant({ ...v })} data-testid={`btn-edit-variant-${v.id}`}>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteVariantMutation.mutate(v.id)} data-testid={`btn-delete-variant-${v.id}`}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -530,51 +617,61 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                 </Button>
               </form>
             </Form>
+
+            <Button variant="destructive" className="w-full" onClick={() => deleteProductMutation.mutate()} disabled={deleteProductMutation.isPending} data-testid="btn-delete-product">
+              {deleteProductMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Product
+            </Button>
           </TabsContent>
 
           <TabsContent value="stock" className="space-y-4 mt-4">
-            <Form {...stockForm}>
-              <form onSubmit={stockForm.handleSubmit((d) => addStockMutation.mutate(d))} className="space-y-4">
-                <FormField control={stockForm.control} name="variantId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Option</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-stock-option">
-                          <SelectValue placeholder="Choose option" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {product.variants?.map((v: any) => (
-                          <SelectItem key={v.id} value={v.id.toString()}>{v.name} ({v.stockCount} in stock)</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+            <div className="space-y-3">
+              <Select onValueChange={(v) => setSelectedVariantForStock(parseInt(v))} value={selectedVariantForStock?.toString() || ""}>
+                <SelectTrigger data-testid="select-stock-variant">
+                  <SelectValue placeholder="Select option" />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.variants?.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id.toString()}>{v.name} ({v.stockCount})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                <FormField control={stockForm.control} name="rawContent" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stock Items</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={6} placeholder="Paste items here&#10;(Every 3 non-empty lines = 1 item)" className="font-mono text-sm" data-testid="textarea-stock-content" />
-                    </FormControl>
-                    <FormDescription>Every 3 non-empty lines = 1 item</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+              {selectedVariantForStock && (
+                <>
+                  <div className="p-4 rounded-lg bg-[#1c1f26] space-y-3">
+                    <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Add Stock Item</p>
+                    <Textarea 
+                      value={newStockContent} 
+                      onChange={(e) => setNewStockContent(e.target.value)}
+                      placeholder="Enter stock content (email, password, etc)"
+                      rows={3}
+                      className="font-mono text-sm"
+                      data-testid="textarea-new-stock"
+                    />
+                    <Button onClick={() => addStockMutation.mutate()} disabled={addStockMutation.isPending || !newStockContent.trim()} className="w-full" data-testid="btn-add-stock">
+                      {addStockMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Plus className="mr-2 h-4 w-4" /> Add Item
+                    </Button>
+                  </div>
 
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-[#1c1f26] text-sm">
-                  <span>Items detected: <strong className="text-primary">{itemsDetected}</strong></span>
-                </div>
-
-                <Button type="submit" disabled={addStockMutation.isPending || itemsDetected === 0} className="w-full" data-testid="btn-save-stock">
-                  {addStockMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Add Stock
-                </Button>
-              </form>
-            </Form>
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Stock ({stockItems?.length || 0})</p>
+                    {stockItems?.map((item: any) => (
+                      <div key={item.id} className="flex items-start justify-between p-3 rounded-lg bg-[#1c1f26] gap-2">
+                        <pre className="text-xs font-mono whitespace-pre-wrap break-all flex-1">{item.content}</pre>
+                        <Button size="icon" variant="ghost" onClick={() => deleteStockMutation.mutate(item.id)} data-testid={`btn-delete-stock-${item.id}`}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    {(!stockItems || stockItems.length === 0) && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No stock items</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

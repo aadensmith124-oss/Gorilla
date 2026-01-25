@@ -227,6 +227,54 @@ export async function registerRoutes(
     res.json(product);
   });
 
+  app.delete("/api/admin/products/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteProduct(Number(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/variants/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const variant = await storage.updateVariant(Number(req.params.id), req.body);
+    res.json(variant);
+  });
+
+  app.delete("/api/admin/variants/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteVariant(Number(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.post("/api/admin/stock", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const item = await storage.addSingleStockItem(req.body.variantId, req.body.content);
+    res.status(201).json(item);
+  });
+
+  app.get("/api/admin/stock/:variantId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const items = await storage.getStockItems(Number(req.params.variantId));
+    res.json(items);
+  });
+
+  app.delete("/api/admin/stock/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteStockItem(Number(req.params.id));
+    res.json({ success: true });
+  });
+
   // Admin Orders
   app.get("/api/admin/orders", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {

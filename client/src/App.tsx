@@ -15,6 +15,7 @@ import CartPage from "@/pages/CartPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import GamesPage from "@/pages/GamesPage";
+import DailySpinPage from "@/pages/DailySpinPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
 
@@ -23,7 +24,7 @@ function Router() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user && location !== "/auth" && location !== "/8765") {
+    if (!isLoading && !user && location !== "/auth" && location !== "/admin") {
       setLocation("/auth");
     }
   }, [user, isLoading, location, setLocation]);
@@ -41,7 +42,8 @@ function Router() {
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/games" component={GamesPage} />
-        <Route path="/8765">
+        <Route path="/daily-spin" component={DailySpinPage} />
+        <Route path="/admin">
           {() => <AdminPage />}
         </Route>
         <Route component={NotFound} />
