@@ -30,17 +30,28 @@ export const insertUserSchema = createInsertSchema(users).omit({
   path: ["confirmPassword"],
 });
 
+// === UPLOADED IMAGES ===
+export const uploadedImages = pgTable("uploaded_images", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: text("data").notNull(), // base64 encoded
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // === PRODUCTS ===
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  description: text("description").notNull(),
-  image: text("image").notNull(), // URL or path
+  description: text("description").default("").notNull(),
+  image: text("image").notNull(), // URL or path to uploaded image
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true }).extend({
+  description: z.string().optional().default(""),
+});
 
 // === VARIANTS (OPTIONS) ===
 export const variants = pgTable("variants", {
@@ -182,6 +193,7 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Announcement = typeof announcements.$inferSelect;
+export type UploadedImage = typeof uploadedImages.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProduct = z.infer<typeof insertProductSchema>;

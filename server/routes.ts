@@ -317,6 +317,30 @@ export async function registerRoutes(
     res.json(logs);
   });
 
+  // Image Upload (Admin only)
+  app.post("/api/upload", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { filename, mimeType, data } = req.body;
+    if (!filename || !mimeType || !data) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    const image = await storage.uploadImage(filename, mimeType, data);
+    res.status(201).json({ id: image.id, url: `/api/images/${image.id}` });
+  });
+
+  // Serve uploaded images
+  app.get("/api/images/:id", async (req, res) => {
+    const image = await storage.getImage(Number(req.params.id));
+    if (!image) return res.status(404).json({ message: "Image not found" });
+    
+    const buffer = Buffer.from(image.data, 'base64');
+    res.setHeader('Content-Type', image.mimeType);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  });
+
   // Seed Data (if empty)
   const users = await storage.getDashboardStats();
   if (users.totalUsers === 0) {

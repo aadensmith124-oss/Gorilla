@@ -1,8 +1,8 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
-  type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement
+  type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage
 } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
@@ -52,6 +52,10 @@ export interface IStorage {
   getAnnouncements(): Promise<Announcement[]>;
   getAllAnnouncements(): Promise<Announcement[]>;
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  
+  // Images
+  uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage>;
+  getImage(id: number): Promise<UploadedImage | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -395,6 +399,16 @@ export class DatabaseStorage implements IStorage {
   async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
     const [ann] = await db.insert(announcements).values(announcement).returning();
     return ann;
+  }
+
+  async uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage> {
+    const [img] = await db.insert(uploadedImages).values({ filename, mimeType, data }).returning();
+    return img;
+  }
+
+  async getImage(id: number): Promise<UploadedImage | undefined> {
+    const [img] = await db.select().from(uploadedImages).where(eq(uploadedImages.id, id));
+    return img;
   }
 }
 

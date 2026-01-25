@@ -18,12 +18,12 @@ import {
   Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, Terminal, ShieldX,
   LayoutDashboard, Box, Receipt, UserCog, Ticket, Megaphone, 
   Gamepad2, HeadphonesIcon, ScrollText, ChevronRight, Copy, Ban, CreditCard,
-  RefreshCw, Eye, EyeOff, Search, Check, Menu, X, Edit2
+  RefreshCw, Eye, EyeOff, Search, Check, Menu, X, Edit2, Upload, ImageIcon
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -219,6 +219,9 @@ function ProductsSection() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
@@ -242,6 +245,33 @@ function ProductsSection() {
     defaultValues: { name: "", image: "", description: "", active: true },
   });
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = (event.target?.result as string).split(',')[1];
+        const res = await apiRequest("POST", "/api/upload", {
+          filename: file.name,
+          mimeType: file.type,
+          data: base64,
+        });
+        const data = await res.json();
+        form.setValue("image", data.url);
+        setImagePreview(data.url);
+        toast({ title: "Image uploaded" });
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast({ title: "Upload failed", variant: "destructive" });
+      setIsUploading(false);
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productSchema>) => {
       await apiRequest("POST", api.products.create.path, data);
@@ -251,7 +281,11 @@ function ProductsSection() {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       form.reset();
       setShowForm(false);
+      setImagePreview("");
       toast({ title: "Product created" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to create product", description: err.message, variant: "destructive" });
     }
   });
 
@@ -273,22 +307,53 @@ function ProductsSection() {
           <CardContent className="p-4 md:p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Name</FormLabel>
-                      <FormControl><Input {...field} placeholder="Netflix Premium" data-testid="input-product-name" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="image" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Image URL</FormLabel>
-                      <FormControl><Input {...field} placeholder="https://..." data-testid="input-product-image" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Name</FormLabel>
+                    <FormControl><Input {...field} placeholder="Netflix Premium" data-testid="input-product-name" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                
+                <FormField control={form.control} name="image" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Image</FormLabel>
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        data-testid="input-product-image-file"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className="flex-1 gap-2"
+                          data-testid="btn-upload-image"
+                        >
+                          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {isUploading ? "Uploading..." : "Upload from Gallery"}
+                        </Button>
+                      </div>
+                      {(imagePreview || field.value) && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c1f26]">
+                          <img src={imagePreview || field.value} className="h-12 w-12 rounded object-contain bg-[#0f1115] p-1" />
+                          <span className="text-sm text-muted-foreground truncate flex-1">{field.value}</span>
+                          <Check className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">Or enter URL directly:</div>
+                      <Input {...field} placeholder="https://..." data-testid="input-product-image-url" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description (optional)</FormLabel>
