@@ -82,7 +82,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-2">
           <Terminal className="h-5 w-5 text-primary" />
           <span className="text-lg font-display font-black tracking-tighter italic uppercase">
-            ADMIN <span className="text-primary">Panel</span>
+            8765 <span className="text-primary">Admin</span>
           </span>
         </div>
       </div>

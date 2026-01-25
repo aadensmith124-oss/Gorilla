@@ -52,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/games" onClick={() => setIsMobileOpen(false)}>
               <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold">GAMBLE</span>
             </Link>
-            <Link href="/games" onClick={() => setIsMobileOpen(false)}>
+            <Link href="/daily-spin" onClick={() => setIsMobileOpen(false)}>
               <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest italic font-bold">DAILY SPIN</span>
             </Link>
           </CollapsibleContent>
@@ -87,7 +87,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
 
-        <Link href="/8765" onClick={() => setIsMobileOpen(false)}>
+        <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
           <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider">8765</span>
         </Link>
 
