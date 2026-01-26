@@ -87,9 +87,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
 
-        <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider">8765</span>
-        </Link>
+        {user?.role === 'admin' && (
+          <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
+            <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider uppercase">Admin</span>
+          </Link>
+        )}
 
         {user && (
           <button 
