@@ -39,11 +39,6 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
           )}
         </div>
         
-        <div className="p-3 bg-gradient-to-t from-black/20 to-transparent">
-          <h3 className="font-bold text-[11px] leading-tight line-clamp-1 text-white/90 uppercase tracking-wide">
-            {product.name}
-          </h3>
-        </div>
       </div>
     </Link>
   );
