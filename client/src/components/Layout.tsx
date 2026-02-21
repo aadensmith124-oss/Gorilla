@@ -64,10 +64,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 pt-3 space-y-3">
             <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold">TOP-UP</span>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">PROFILE</span>
             </Link>
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold">ORDERS</span>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
