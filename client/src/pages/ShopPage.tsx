@@ -27,12 +27,12 @@ export default function ShopPage() {
         </h1>
 
         <a 
-          href="https://t.me/+102unKH8n9EyYTlh" 
+          href="https://t.me/rulfvouches" 
           target="_blank" 
           rel="noopener noreferrer"
         >
           <Button variant="destructive" size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-[#e11d48] hover:bg-[#be123c] transition-colors uppercase tracking-tight shadow-xl shadow-red-500/20">
-            <Headset className="h-4 w-4" /> Contact Support
+            <Headset className="h-4 w-4" /> Vouch
           </Button>
         </a>
 

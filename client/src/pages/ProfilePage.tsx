@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Package, Wallet, CreditCard, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { SiBitcoin } from "react-icons/si";
@@ -16,6 +16,21 @@ import { useToast } from "@/hooks/use-toast";
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
   const [location] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const orderId = searchParams.get("order");
+  const { data: orders } = useOrders();
+  
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+
+  useEffect(() => {
+    if (orderId && orders) {
+      const order = orders.find((o: any) => o.id.toString() === orderId);
+      if (order) {
+        setSelectedOrder(order);
+      }
+    }
+  }, [orderId, orders]);
+
   const defaultTab = location.includes("orders") ? "orders" : location.includes("topup") ? "balance" : "dashboard";
 
   if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -194,6 +209,7 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
 
 function OrdersTab() {
   const { data: orders, isLoading, refetch } = useOrders();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
   
@@ -228,7 +244,7 @@ function OrdersTab() {
                 </thead>
                 <tbody>
                   {orders.map((order, index) => (
-                    <tr key={order.id} className="border-b border-white/5 last:border-0">
+                    <tr key={order.id} className="border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedOrder(order)}>
                       <td className="p-4">{index + 1}</td>
                       <td className="p-4 text-destructive">Order</td>
                       <td className="p-4">
@@ -244,11 +260,9 @@ function OrdersTab() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <Link href={`/order/${order.id}`}>
-                          <Button size="icon" variant="ghost" className="text-amber-500" data-testid={`button-view-order-${order.id}`}>
-                            <Package className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <Button size="icon" variant="ghost" className="text-amber-500" data-testid={`button-view-order-${order.id}`}>
+                          <Package className="h-4 w-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -263,7 +277,124 @@ function OrdersTab() {
           </CardContent>
         </Card>
       )}
+
+      {selectedOrder && (
+        <OrderDetailsSheet 
+          order={selectedOrder} 
+          open={!!selectedOrder} 
+          onOpenChange={(open) => !open && setSelectedOrder(null)} 
+        />
+      )}
     </div>
+  );
+}
+
+function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [activeTab, setActiveTab] = useState("info");
+  const { toast } = useToast();
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!" });
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
+        <div className="p-6 space-y-6 h-full flex flex-col">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
+            <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
+              <TabsTrigger 
+                value="info" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
+              >
+                Info
+              </TabsTrigger>
+              <TabsTrigger 
+                value="products" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
+              >
+                Products
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="pt-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">ID</p>
+                <p className="text-xs font-mono break-all">{order.id}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Creation date</p>
+                <p className="text-xs">{new Date(order.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Reason</p>
+                <p className="text-xs">cart</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Expected amount</p>
+                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Paid amount</p>
+                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
+                <p className="text-xs text-green-500 font-bold">{order.status === 'paid' ? 'fulfilled' : order.status}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Logs</p>
+                <p className="text-xs text-muted-foreground italic">no log</p>
+              </div>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10 mt-4">
+                Order Url
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              {order.items?.map((item: any, idx: number) => (
+                <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
+                    <p className="text-xs font-bold">{item.variant?.product?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Option</p>
+                    <p className="text-xs font-bold">{item.variant?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
+                    <p className="text-xs font-bold">1</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Unit price</p>
+                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Total</p>
+                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
+                  </div>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
+                    onClick={() => item.stockItem && copyToClipboard(item.stockItem.content)}
+                  >
+                    View stock
+                  </Button>
+                </div>
+              ))}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 

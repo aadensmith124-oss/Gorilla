@@ -73,12 +73,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Collapsible>
 
         <a 
-          href="https://t.me/+102unKH8n9EyYTlh" 
+          href="https://t.me/rulfvouches" 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"
         >
-          Support
+          Vouch
         </a>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>

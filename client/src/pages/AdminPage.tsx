@@ -35,7 +35,6 @@ const adminSections = [
   { id: "codes", label: "Redeem Codes", icon: Ticket },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "games", label: "Games", icon: Gamepad2 },
-  { id: "support", label: "Support", icon: HeadphonesIcon },
   { id: "logs", label: "Logs", icon: ScrollText },
 ];
 
@@ -146,7 +145,6 @@ export default function AdminPage() {
           {activeSection === "codes" && <CodesSection />}
           {activeSection === "announcements" && <AnnouncementsSection />}
           {activeSection === "games" && <GamesSection />}
-          {activeSection === "support" && <SupportSection />}
           {activeSection === "logs" && <LogsSection />}
         </main>
       </div>
@@ -680,7 +678,8 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
 }
 
 function OrdersSection() {
-  const [search, setSearch] = useState("");
+  const [orderIdSearch, setOrderIdSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { data: orders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
     queryFn: async () => {
@@ -689,77 +688,198 @@ function OrdersSection() {
       return res.json();
     }
   });
-  const { toast } = useToast();
 
-  const refundMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      toast({ title: "Order refunded (store credit)" });
-    }
+  const filteredOrders = orders?.filter((o: any) => {
+    const matchesId = orderIdSearch ? o.id.toString().toLowerCase().includes(orderIdSearch.toLowerCase()) : true;
+    const matchesStatus = statusFilter === "all" ? true : o.status === statusFilter;
+    return matchesId && matchesStatus;
   });
 
-  const replaceMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      await apiRequest("POST", `/api/admin/orders/${orderId}/replace`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      toast({ title: "Item replaced" });
-    }
-  });
-
-  const filtered = orders?.filter((o: any) => 
-    o.id.toString().includes(search) || 
-    o.user?.username?.toLowerCase().includes(search.toLowerCase())
-  ) || [];
-
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Orders</h1>
-      
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" data-testid="input-search-orders" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-primary">Orders</h1>
       </div>
 
-      <div className="space-y-3">
-        {filtered.map((o: any) => (
-          <Card key={o.id} className="bg-[#16181d] border-white/5" data-testid={`card-order-${o.id}`}>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <p className="font-mono font-bold">ORD-{o.id.toString().padStart(5, '0')}</p>
-                  <p className="text-sm text-muted-foreground">{o.user?.username || 'Unknown'} • {new Date(o.createdAt).toLocaleDateString()}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-500 font-bold">${(o.total / 100).toFixed(2)}</span>
-                  <Badge variant={o.status === 'paid' ? 'default' : o.status === 'refunded' ? 'secondary' : 'outline'}>
-                    {o.status}
-                  </Badge>
-                  {o.status === 'paid' && (
-                    <>
-                      <Button size="sm" variant="ghost" onClick={() => refundMutation.mutate(o.id)} disabled={refundMutation.isPending} data-testid={`btn-refund-${o.id}`}>
-                        <DollarSign className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => replaceMutation.mutate(o.id)} disabled={replaceMutation.isPending} data-testid={`btn-replace-${o.id}`}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+             <span className="text-blue-500 font-bold text-sm uppercase italic">{filteredOrders?.length || 0} Orders Found</span>
+          </div>
+          <div className="relative group">
+            <Input 
+              placeholder="order-id1,order-id2,order-id3,..." 
+              value={orderIdSearch}
+              onChange={(e) => setOrderIdSearch(e.target.value)}
+              className="bg-[#16181d] border-white/5 pr-20 uppercase font-mono text-xs"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">Order ID</div>
+          </div>
+          <div className="relative">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-[#16181d] border-white/5 text-xs font-bold uppercase">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#16181d] border-white/10 text-white">
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="paid">Fulfilled</SelectItem>
+                <SelectItem value="refunded">Refunded</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="absolute right-10 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">Status</div>
+          </div>
+        </div>
+
+        <Card className="bg-[#16181d] border-white/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[10px] md:text-xs uppercase font-bold tracking-tight">
+              <thead>
+                <tr className="border-b border-white/5 text-muted-foreground">
+                  <th className="p-3 text-left">Paid</th>
+                  <th className="p-3 text-left">Expected</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Date</th>
+                  <th className="p-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders?.map((o: any) => (
+                  <tr key={o.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                    <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
+                    <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
+                    <td className="p-3">
+                      <span className={o.status === 'paid' ? 'text-green-500' : 'text-orange-500'}>
+                        {o.status === 'paid' ? 'Fulfilled' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {new Date(o.createdAt).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right">
+                      <AdminOrderDetailsSheet order={o} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </div>
+  );
+}
+
+function AdminOrderDetailsSheet({ order }: { order: any }) {
+  const [activeTab, setActiveTab] = useState("info");
+  const { toast } = useToast();
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!" });
+  };
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary">
+          <Eye className="h-3 w-3" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
+        <div className="p-6 space-y-6 h-full flex flex-col">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
+            <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
+              <TabsTrigger 
+                value="info" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
+              >
+                Info
+              </TabsTrigger>
+              <TabsTrigger 
+                value="products" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
+              >
+                Products
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="pt-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">ID</p>
+                <p className="text-xs font-mono break-all">{order.id}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Creation date</p>
+                <p className="text-xs">{new Date(order.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Reason</p>
+                <p className="text-xs">cart</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Expected amount</p>
+                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Paid amount</p>
+                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
+                <p className="text-xs text-green-500 font-bold">{order.status === 'paid' ? 'fulfilled' : order.status}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Logs</p>
+                <p className="text-xs text-muted-foreground italic">no log</p>
+              </div>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10 mt-4">
+                Order Url
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              {order.items?.map((item: any, idx: number) => (
+                <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
+                    <p className="text-xs font-bold">{item.variant?.product?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Option</p>
+                    <p className="text-xs font-bold">{item.variant?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
+                    <p className="text-xs font-bold">1</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Unit price</p>
+                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Total</p>
+                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
+                  </div>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
+                    onClick={() => item.stockItem && copyToClipboard(item.stockItem.content)}
+                  >
+                    View stock
+                  </Button>
+                </div>
+              ))}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
