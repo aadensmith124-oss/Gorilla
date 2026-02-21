@@ -31,7 +31,7 @@ export default function ProfilePage() {
     }
   }, [orderId, orders]);
 
-  const defaultTab = location.includes("orders") ? "orders" : location.includes("topup") ? "balance" : "dashboard";
+  const defaultTab = location.includes("orders") ? "orders" : "dashboard";
 
   if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -50,9 +50,6 @@ export default function ProfilePage() {
           <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium text-destructive">
             Orders
           </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium text-destructive">
-            Balance
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="pt-6">
@@ -61,10 +58,6 @@ export default function ProfilePage() {
 
         <TabsContent value="orders" className="pt-6">
           <OrdersTab />
-        </TabsContent>
-
-        <TabsContent value="balance" className="pt-6">
-          <BalanceTab user={user} />
         </TabsContent>
       </Tabs>
     </div>
@@ -117,14 +110,6 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
             <Link2 className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Referer:</span>
             <span>N/A</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Balance:</span>
-            <span className="text-green-500">${(user.balance / 100).toFixed(2)}</span>
-            <Link href="/profile?tab=topup">
-              <span className="text-destructive cursor-pointer">Topup!</span>
-            </Link>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />

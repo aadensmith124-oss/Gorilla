@@ -193,10 +193,12 @@ function StatCard({ title, value, icon: Icon, color = "primary" }: { title: stri
     purple: "text-purple-500",
   };
   return (
-    <Card className="bg-[#16181d] border-white/5">
+    <Card className="bg-[#16181d] border-white/5 shadow-lg shadow-black/20">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 p-3 md:p-4">
         <CardTitle className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
-        <Icon className={`h-3 w-3 md:h-4 md:w-4 ${colorClasses[color]}`} />
+        <div className={`p-1.5 rounded-md bg-white/5 ${colorClasses[color]}`}>
+          <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+        </div>
       </CardHeader>
       <CardContent className="p-3 md:p-4 pt-0">
         <div className={`text-lg md:text-2xl font-black italic tracking-tighter ${colorClasses[color]}`}>{value}</div>
@@ -894,8 +896,6 @@ function UsersSection() {
     }
   });
   const { toast } = useToast();
-  const [editingUser, setEditingUser] = useState<number | null>(null);
-  const [balanceAmount, setBalanceAmount] = useState("");
 
   const banMutation = useMutation({
     mutationFn: async ({ userId, banned }: { userId: number; banned: boolean }) => {
@@ -903,24 +903,13 @@ function UsersSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    }
-  });
-
-  const balanceMutation = useMutation({
-    mutationFn: async ({ userId, amount }: { userId: number; amount: number }) => {
-      await apiRequest("POST", `/api/admin/users/${userId}/balance`, { amount });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      setEditingUser(null);
-      setBalanceAmount("");
-      toast({ title: "Balance updated" });
+      toast({ title: "User status updated" });
     }
   });
 
   const filtered = users?.filter((u: any) => 
     u.username.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.email && u.email.toLowerCase().includes(search.toLowerCase()))
   ) || [];
 
   if (isLoading) {
@@ -929,42 +918,36 @@ function UsersSection() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
+      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-primary">Users</h1>
       
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" data-testid="input-search-users" />
+        <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-[#16181d] border-white/5" />
       </div>
 
       <div className="space-y-3">
         {filtered.map((u: any) => (
-          <Card key={u.id} className="bg-[#16181d] border-white/5" data-testid={`card-user-${u.id}`}>
+          <Card key={u.id} className="bg-[#16181d] border-white/5">
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold">{u.username}</p>
-                  <p className="text-sm text-muted-foreground">{u.email}</p>
+                <div className="min-w-0">
+                  <p className="font-bold truncate text-white">{u.username}</p>
+                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Joined: {new Date(u.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {editingUser === u.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input type="number" value={balanceAmount} onChange={(e) => setBalanceAmount(e.target.value)} className="w-20 h-8" placeholder="+/-" data-testid={`input-balance-${u.id}`} />
-                      <Button size="icon" className="h-8 w-8" onClick={() => balanceMutation.mutate({ userId: u.id, amount: Math.round(parseFloat(balanceAmount) * 100) })} data-testid={`btn-save-balance-${u.id}`}>
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-green-500 font-bold">${(u.balance / 100).toFixed(2)}</span>
-                  )}
-                  <Badge variant="outline">{u.role}</Badge>
-                  <Badge variant={u.isBanned ? "destructive" : "default"}>
+                  <Badge variant="outline" className="text-[10px] font-bold uppercase">{u.role}</Badge>
+                  <Badge variant={u.isBanned ? "destructive" : "default"} className="text-[10px] font-bold uppercase">
                     {u.isBanned ? "Banned" : "Active"}
                   </Badge>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingUser(editingUser === u.id ? null : u.id)} data-testid={`btn-edit-balance-${u.id}`}>
-                    <CreditCard className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => banMutation.mutate({ userId: u.id, banned: !u.isBanned })} data-testid={`btn-ban-${u.id}`}>
-                    <Ban className="h-4 w-4" />
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="h-8 gap-2 font-bold uppercase italic text-[10px]"
+                    onClick={() => banMutation.mutate({ userId: u.id, banned: !u.isBanned })}
+                  >
+                    <Ban className="h-3.5 w-3.5" />
+                    {u.isBanned ? "Unban" : "Ban"}
                   </Button>
                 </div>
               </div>

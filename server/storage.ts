@@ -264,20 +264,6 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Check Balance
-    const user = await this.getUser(userId);
-    if (!user || user.balance < total) {
-      // Rollback stock reservations (naive implementation, manual rollback)
-      for (const res of reservedStockItems) {
-        await db.update(stockItems).set({ isSold: false }).where(eq(stockItems.id, res.stockItemId));
-      }
-      throw new Error("Insufficient balance");
-    }
-
-    // Deduct Balance
-    await this.updateUserBalance(userId, -total);
-    await this.createTransaction(userId, -total, "purchase", "Order payment");
-
     // Create Order
     const [order] = await db.insert(orders).values({
       userId,
@@ -348,9 +334,6 @@ export class DatabaseStorage implements IStorage {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order || order.status === 'refunded') throw new Error("Invalid order or already refunded");
     
-    await this.updateUserBalance(order.userId, order.total);
-    await this.createTransaction(order.userId, order.total, "refund", `Refund for order #${orderId}`);
-    
     const [updated] = await db.update(orders).set({ status: 'refunded' as const }).where(eq(orders.id, orderId)).returning();
     return updated;
   }
@@ -407,7 +390,7 @@ export class DatabaseStorage implements IStorage {
 
   async getDashboardStats() {
     const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders);
+    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders).where(eq(orders.status, 'paid'));
     const [balanceSum] = await db.select({ sum: sql<number>`sum(${users.balance})` }).from(users);
     const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, false));
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
