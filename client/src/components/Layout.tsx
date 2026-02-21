@@ -73,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Collapsible>
 
         <a 
-          href="https://t.me/Rulfccbot" 
+          href="https://t.me/+102unKH8n9EyYTlh" 
           target="_blank" 
           rel="noopener noreferrer"
           className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"

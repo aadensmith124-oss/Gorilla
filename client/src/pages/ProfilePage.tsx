@@ -118,9 +118,6 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
           </div>
           
           <div className="flex items-center gap-3 pt-4">
-            <Button variant="default" className="bg-destructive hover:bg-destructive/90" data-testid="button-contact-support">
-              <Mail className="h-4 w-4 mr-2" /> Contact Support
-            </Button>
             <Button variant="outline" className="border-destructive/30 text-destructive" onClick={logout} data-testid="button-logout">
               <LogOut className="h-4 w-4 mr-2" /> Logout
             </Button>
@@ -202,12 +199,6 @@ function OrdersTab() {
   
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="default" className="bg-destructive hover:bg-destructive/90" data-testid="button-contact-support-orders">
-          <Mail className="h-4 w-4 mr-2" /> Contact Support
-        </Button>
-      </div>
-      
       {!orders || orders.length === 0 ? (
         <div className="text-center py-20 opacity-50">
           <Package className="h-12 w-12 mx-auto mb-4" />
@@ -305,13 +296,10 @@ function BalanceTab({ user }: { user: any }) {
     <div className="space-y-6">
       <Card className="bg-[#16181d] border-white/5">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <span className="text-destructive font-medium">Current Balance</span>
             <span className="text-green-500 font-bold text-xl">${(user.balance / 100).toFixed(2)}</span>
           </div>
-          <Button variant="default" className="bg-destructive hover:bg-destructive/90" data-testid="button-contact-support-balance">
-            <Mail className="h-4 w-4 mr-2" /> Contact Support
-          </Button>
         </CardContent>
       </Card>
 
@@ -349,33 +337,7 @@ function BalanceTab({ user }: { user: any }) {
               data-testid="button-processor-crypto"
             >
               <SiBitcoin className="h-5 w-5 text-amber-500" />
-              <span className="font-medium">Crypto</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedProcessor("chime")}
-              className={`w-full flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                selectedProcessor === "chime" 
-                  ? "border-green-500 bg-green-500/10" 
-                  : "border-white/10 bg-white/5 hover:border-white/20"
-              }`}
-              data-testid="button-processor-chime"
-            >
-              <div className="h-5 w-5 rounded bg-green-500 flex items-center justify-center text-white font-bold text-xs">C</div>
-              <span className="font-medium">Chime</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedProcessor("venmo")}
-              className={`w-full flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                selectedProcessor === "venmo" 
-                  ? "border-blue-500 bg-blue-500/10" 
-                  : "border-white/10 bg-white/5 hover:border-white/20"
-              }`}
-              data-testid="button-processor-venmo"
-            >
-              <div className="h-5 w-5 rounded bg-blue-500 flex items-center justify-center text-white font-bold text-xs">V</div>
-              <span className="font-medium">Venmo</span>
+              <span className="font-medium">Crypto (NowPayments)</span>
             </button>
           </div>
 

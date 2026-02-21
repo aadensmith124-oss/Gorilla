@@ -27,7 +27,7 @@ export default function ShopPage() {
         </h1>
 
         <a 
-          href="https://t.me/Rulfccbot" 
+          href="https://t.me/+102unKH8n9EyYTlh" 
           target="_blank" 
           rel="noopener noreferrer"
         >
@@ -51,7 +51,7 @@ export default function ShopPage() {
           <p className="text-sm font-bold uppercase tracking-widest opacity-50">No products found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-2">
           {filtered?.map((product, i) => (
             <motion.div
               key={product.id}
