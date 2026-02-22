@@ -423,6 +423,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
   const [editingVariant, setEditingVariant] = useState<any>(null);
   const [selectedVariantForStock, setSelectedVariantForStock] = useState<number | null>(null);
   const [newStockContent, setNewStockContent] = useState("");
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
 
   const { data: stockItems, refetch: refetchStock } = useQuery({
     queryKey: ["/api/admin/stock", selectedVariantForStock],
@@ -498,17 +499,27 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
 
   const addStockMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/admin/stock", {
-        variantId: selectedVariantForStock,
-        content: newStockContent,
-      });
+      if (isBulkAdding) {
+        const lines = newStockContent.split('\n').filter(line => line.trim() !== '');
+        for (const line of lines) {
+          await apiRequest("POST", "/api/admin/stock", {
+            variantId: selectedVariantForStock,
+            content: line.trim(),
+          });
+        }
+      } else {
+        await apiRequest("POST", "/api/admin/stock", {
+          variantId: selectedVariantForStock,
+          content: newStockContent,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       refetchStock();
       setNewStockContent("");
-      toast({ title: "Stock item added" });
+      toast({ title: isBulkAdding ? "Bulk stock items added" : "Stock item added" });
     }
   });
 
@@ -642,17 +653,20 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   </SelectContent>
                 </Select>
 
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="bg-white/10 text-white">Add Stock</Button>
-                  <Button variant="ghost" className="text-muted-foreground">Edit Stock</Button>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">Add Stock</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Bulk Mode</span>
+                    <Switch checked={isBulkAdding} onCheckedChange={setIsBulkAdding} size="sm" />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Textarea 
-                    placeholder="Enter stock here... (One item per line)" 
+                    placeholder={isBulkAdding ? "Enter one item per line..." : "Enter item content..."}
                     value={newStockContent}
                     onChange={(e) => setNewStockContent(e.target.value)}
-                    rows={6}
+                    rows={isBulkAdding ? 6 : 3}
                     className="bg-[#0f1115] border-white/5 font-mono text-xs"
                   />
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
@@ -665,7 +679,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   disabled={addStockMutation.isPending || !newStockContent.trim() || !selectedVariantForStock}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase italic tracking-tighter"
                 >
-                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Add Stock"}
+                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isBulkAdding ? "Bulk Add Items" : "Add Stock")}
                 </Button>
               </div>
             </div>

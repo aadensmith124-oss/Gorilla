@@ -456,18 +456,59 @@ function BalanceTab({ user }: { user: any }) {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Select a payment processor.</p>
             
-            <button
-              onClick={() => setSelectedProcessor("crypto")}
-              className={`w-full flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                selectedProcessor === "crypto" 
-                  ? "border-amber-500 bg-amber-500/10" 
-                  : "border-white/10 bg-white/5 hover:border-white/20"
-              }`}
-              data-testid="button-processor-crypto"
-            >
-              <SiBitcoin className="h-5 w-5 text-amber-500" />
-              <span className="font-medium">Crypto (NowPayments)</span>
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                onClick={() => setSelectedProcessor("crypto")}
+                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
+                  selectedProcessor === "crypto" 
+                    ? "border-amber-500 bg-amber-500/10" 
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+                data-testid="button-processor-crypto"
+              >
+                <SiBitcoin className="h-5 w-5 text-amber-500" />
+                <span className="font-medium">Crypto (NowPayments)</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedProcessor("credit_card")}
+                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
+                  selectedProcessor === "credit_card" 
+                    ? "border-blue-500 bg-blue-500/10" 
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+                data-testid="button-processor-card"
+              >
+                <CreditCard className="h-5 w-5 text-blue-500" />
+                <span className="font-medium">Credit/Debit Card</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedProcessor("bank_transfer")}
+                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
+                  selectedProcessor === "bank_transfer" 
+                    ? "border-green-500 bg-green-500/10" 
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+                data-testid="button-processor-bank"
+              >
+                <Wallet className="h-5 w-5 text-green-500" />
+                <span className="font-medium">Bank Transfer</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedProcessor("gift_card")}
+                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
+                  selectedProcessor === "gift_card" 
+                    ? "border-purple-500 bg-purple-500/10" 
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+                data-testid="button-processor-gift"
+              >
+                <Gift className="h-5 w-5 text-purple-500" />
+                <span className="font-medium">Gift Card</span>
+              </button>
+            </div>
           </div>
 
           <Button 
