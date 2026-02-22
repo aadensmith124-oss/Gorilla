@@ -697,41 +697,23 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                 <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase font-bold text-muted-foreground">All</Button>
               </div>
             </div>
-          </TabsContent>
 
+            <div className="space-y-4">
               {selectedVariantForStock && (
-                <>
-                  <div className="p-4 rounded-lg bg-[#1c1f26] space-y-3">
-                    <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Add Stock Item</p>
-                    <Textarea 
-                      value={newStockContent} 
-                      onChange={(e) => setNewStockContent(e.target.value)}
-                      placeholder="Enter stock content (email, password, etc)"
-                      rows={3}
-                      className="font-mono text-sm"
-                      data-testid="textarea-new-stock"
-                    />
-                    <Button onClick={() => addStockMutation.mutate()} disabled={addStockMutation.isPending || !newStockContent.trim()} className="w-full" data-testid="btn-add-stock">
-                      {addStockMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      <Plus className="mr-2 h-4 w-4" /> Add Item
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Stock ({stockItems?.length || 0})</p>
-                    {stockItems?.map((item: any) => (
-                      <div key={item.id} className="flex items-start justify-between p-3 rounded-lg bg-[#1c1f26] gap-2">
-                        <pre className="text-xs font-mono whitespace-pre-wrap break-all flex-1">{item.content}</pre>
-                        <Button size="icon" variant="ghost" onClick={() => deleteStockMutation.mutate(item.id)} data-testid={`btn-delete-stock-${item.id}`}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                    {(!stockItems || stockItems.length === 0) && (
-                      <p className="text-sm text-muted-foreground text-center py-4">No stock items</p>
-                    )}
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Stock ({stockItems?.length || 0})</p>
+                  {stockItems?.map((item: any) => (
+                    <div key={item.id} className="flex items-start justify-between p-3 rounded-lg bg-[#1c1f26] gap-2">
+                      <pre className="text-xs font-mono whitespace-pre-wrap break-all flex-1">{item.content}</pre>
+                      <Button size="icon" variant="ghost" onClick={() => deleteStockMutation.mutate(item.id)} data-testid={`btn-delete-stock-${item.id}`}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!stockItems || stockItems.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No stock items</p>
+                  )}
+                </div>
               )}
             </div>
           </TabsContent>
