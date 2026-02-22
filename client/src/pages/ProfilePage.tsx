@@ -6,12 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Package, Wallet, CreditCard, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Loader2, Package, Wallet, CreditCard, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { SiBitcoin } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();

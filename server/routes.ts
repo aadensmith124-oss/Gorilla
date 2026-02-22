@@ -84,7 +84,7 @@ export async function registerRoutes(
     const amountCents = Math.round(parseFloat(amount) * 100);
     
     const updatedUser = await storage.updateUserBalance((req.user as any).id, amountCents);
-    await storage.createTransaction((req.user as any).id, amountCents, "manual_deposit", `Purchased balance via ${method}`, method);
+    await storage.createTransaction((req.user as any).id, amountCents, "manual_deposit", `Purchased balance via ${method}`);
 
     res.json({ newBalance: updatedUser.balance, amountAdded: amountCents });
   });

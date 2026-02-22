@@ -657,7 +657,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   <div className="text-sm font-medium">Add Stock</div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Bulk Mode</span>
-                    <Switch checked={isBulkAdding} onCheckedChange={setIsBulkAdding} size="sm" />
+                    <Switch checked={isBulkAdding} onCheckedChange={setIsBulkAdding} />
                   </div>
                 </div>
 
