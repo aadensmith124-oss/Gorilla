@@ -41,7 +41,7 @@ export default function CartPage() {
       createOrder(
         items.map(i => ({ variantId: i.variantId, quantity: i.quantity })),
         {
-          onSuccess: () => setLocation("/profile?tab=orders")
+          onSuccess: (order) => setLocation(`/profile?order=${order.orderId}`)
         }
       );
     }

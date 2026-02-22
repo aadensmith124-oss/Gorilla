@@ -625,17 +625,65 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
           </TabsContent>
 
           <TabsContent value="stock" className="space-y-4 mt-4">
-            <div className="space-y-3">
-              <Select onValueChange={(v) => setSelectedVariantForStock(parseInt(v))} value={selectedVariantForStock?.toString() || ""}>
-                <SelectTrigger data-testid="select-stock-variant">
-                  <SelectValue placeholder="Select option" />
-                </SelectTrigger>
-                <SelectContent>
-                  {product.variants?.map((v: any) => (
-                    <SelectItem key={v.id} value={v.id.toString()}>{v.name} ({v.stockCount})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="p-4 bg-[#1c1f26] rounded-lg space-y-4 border border-white/5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Manage Stock</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <Select onValueChange={(v) => setSelectedVariantForStock(parseInt(v))} value={selectedVariantForStock?.toString() || ""}>
+                  <SelectTrigger data-testid="select-stock-variant" className="bg-[#0f1115] border-white/5">
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1c1f26] border-white/10 text-white">
+                    {product.variants?.map((v: any) => (
+                      <SelectItem key={v.id} value={v.id.toString()}>{v.name} ({v.stockCount})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex gap-2">
+                  <Button variant="secondary" className="bg-white/10 text-white">Add Stock</Button>
+                  <Button variant="ghost" className="text-muted-foreground">Edit Stock</Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Textarea 
+                    placeholder="Enter stock here... (One item per line)" 
+                    value={newStockContent}
+                    onChange={(e) => setNewStockContent(e.target.value)}
+                    rows={6}
+                    className="bg-[#0f1115] border-white/5 font-mono text-xs"
+                  />
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>Stock in database: {stockItems?.length || 0}</span>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => addStockMutation.mutate()} 
+                  disabled={addStockMutation.isPending || !newStockContent.trim() || !selectedVariantForStock}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase italic tracking-tighter"
+                >
+                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Add Stock"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 border-purple-500/30 text-purple-400">Copy all as text</Button>
+              <Button variant="outline" size="sm" className="flex-1 border-purple-500/30 text-purple-400">Export to CSV</Button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</p>
+              <div className="flex gap-2 p-1 bg-white/5 rounded-lg w-fit">
+                <Button size="sm" variant="secondary" className="h-7 text-[10px] uppercase font-bold">Available</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase font-bold text-muted-foreground">Sold</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase font-bold text-muted-foreground">All</Button>
+              </div>
+            </div>
+          </TabsContent>
 
               {selectedVariantForStock && (
                 <>

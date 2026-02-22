@@ -78,6 +78,17 @@ export async function registerRoutes(
   });
 
   // Wallet & Redeem
+  app.post("/api/wallet/purchase", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const { amount, method } = req.body;
+    const amountCents = Math.round(parseFloat(amount) * 100);
+    
+    const updatedUser = await storage.updateUserBalance((req.user as any).id, amountCents);
+    await storage.createTransaction((req.user as any).id, amountCents, "manual_deposit", `Purchased balance via ${method}`, method);
+
+    res.json({ newBalance: updatedUser.balance, amountAdded: amountCents });
+  });
+
   app.post(api.wallet.redeem.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const code = await storage.getRedeemCode(req.body.code);

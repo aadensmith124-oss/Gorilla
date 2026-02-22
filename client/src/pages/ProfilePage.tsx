@@ -24,7 +24,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (orderId && orders) {
-      const order = orders.find((o: any) => o.id.toString() === orderId);
+      const order = orders.find((o: any) => o.orderId === orderId || o.id.toString() === orderId);
       if (order) {
         setSelectedOrder(order);
       }
@@ -232,14 +232,14 @@ function OrdersTab() {
                     <tr key={order.id} className="border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedOrder(order)}>
                       <td className="p-4">{index + 1}</td>
                       <td className="p-4 text-destructive">Order</td>
-                      <td className="p-4">
-                        {order.items.map((item: any) => item.variant.name).join(", ")}
+                      <td className="p-4 truncate max-w-[200px]">
+                        {order.items.map((item: any) => item.variant?.name).join(", ")}
                       </td>
                       <td className="p-4 text-green-500">${(order.total / 100).toFixed(2)}</td>
                       <td className="p-4">
-                        <span className={`flex items-center gap-2 ${order.status === 'paid' ? 'text-green-500' : 'text-amber-500'}`}>
-                          <span className={`w-2 h-2 rounded-full ${order.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                          {order.status === 'paid' ? 'Completed' : 'Pending'}
+                        <span className={`flex items-center gap-2 ${order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' : 'text-amber-500'}`}>
+                          <span className={`w-2 h-2 rounded-full ${order.status === 'fulfilled' || order.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                          {order.status === 'fulfilled' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : 'Unpaid'}
                           <br />
                           <span className="text-xs text-muted-foreground">on {new Date(order.createdAt).toLocaleDateString()}</span>
                         </span>
@@ -313,7 +313,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
             <TabsContent value="info" className="pt-6 space-y-4">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">ID</p>
-                <p className="text-xs font-mono break-all">{order.id}</p>
+                <p className="text-xs font-mono break-all">{order.orderId}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Creation date</p>
@@ -391,12 +391,25 @@ function BalanceTab({ user }: { user: any }) {
   const [giftCardCode, setGiftCardCode] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const purchaseMutation = useMutation({
+    mutationFn: async (data: { amount: string, method: string }) => {
+      const res = await apiRequest("POST", "/api/wallet/purchase", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Balance Added", description: `Added $${(data.amountAdded / 100).toFixed(2)} to your balance.` });
+      setAmount("");
+      setSelectedProcessor(null);
+    }
+  });
+
   const handleCharge = () => {
     if (!amount || !selectedProcessor) {
       toast({ title: "Error", description: "Please enter amount and select a payment processor", variant: "destructive" });
       return;
     }
-    toast({ title: "Payment Initiated", description: `Processing ${selectedProcessor} payment for $${amount}` });
+    purchaseMutation.mutate({ amount, method: selectedProcessor });
   };
 
   const handleRedeem = () => {

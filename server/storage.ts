@@ -185,16 +185,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addStockItems(variantId: number, content: string): Promise<number> {
-    // 1 Item = 3 non-empty lines
-    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const items: string[] = [];
-    
-    for (let i = 0; i < lines.length; i += 3) {
-      if (i + 2 < lines.length) {
-        items.push([lines[i], lines[i+1], lines[i+2]].join('\n'));
-      }
-    }
-
+    const items = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (items.length === 0) return 0;
 
     await db.insert(stockItems).values(
@@ -204,7 +195,6 @@ export class DatabaseStorage implements IStorage {
         isSold: false
       }))
     );
-
     return items.length;
   }
 
@@ -264,11 +254,14 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Create Order
+    // Create Order with unique public ID
+    const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
       userId,
+      orderId: publicOrderId,
       total,
-      status: "paid"
+      paidAmount: total,
+      status: "fulfilled"
     }).returning();
 
     // Create Order Items and Link Stock
@@ -277,7 +270,8 @@ export class DatabaseStorage implements IStorage {
         orderId: order.id,
         variantId: res.variantId,
         stockItemId: res.stockItemId,
-        price: res.price
+        price: res.price,
+        quantity: 1
       });
       
       // Update stock item with order ID
@@ -390,12 +384,12 @@ export class DatabaseStorage implements IStorage {
 
   async getDashboardStats() {
     const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders).where(eq(orders.status, 'paid'));
+    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.paidAmount})` }).from(orders).where(eq(orders.status, 'fulfilled'));
     const [balanceSum] = await db.select({ sum: sql<number>`sum(${users.balance})` }).from(users);
     const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, false));
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
     const [ordersCount] = await db.select({ count: sql<number>`count(*)` }).from(orders);
-    const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'pending'));
+    const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'unpaid'));
 
     return {
       totalUsers: Number(usersCount.count),

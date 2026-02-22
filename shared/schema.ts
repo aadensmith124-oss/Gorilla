@@ -86,9 +86,11 @@ export const insertStockItemSchema = createInsertSchema(stockItems).omit({
 // === ORDERS ===
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
+  orderId: text("order_id").notNull().unique(), // Public-facing UUID or similar
   userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status", { enum: ["pending", "paid", "refunded", "replaced"] }).default("pending").notNull(),
+  status: text("status", { enum: ["pending", "paid", "refunded", "replaced", "fulfilled", "unpaid"] }).default("pending").notNull(),
   total: integer("total").notNull(), // in cents
+  paidAmount: integer("paid_amount").default(0).notNull(), // for partial/full payment tracking
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -99,6 +101,7 @@ export const orderItems = pgTable("order_items", {
   variantId: integer("variant_id").notNull().references(() => variants.id),
   stockItemId: integer("stock_item_id").references(() => stockItems.id), // The specific item delivered
   price: integer("price").notNull(), // Price at purchase
+  quantity: integer("quantity").default(1).notNull(),
 });
 
 // === TRANSACTIONS ===
@@ -106,8 +109,9 @@ export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   amount: integer("amount").notNull(), // + for deposit/win, - for purchase/loss
-  type: text("type").notNull(), // deposit, purchase, refund, win, loss, daily_spin
+  type: text("type").notNull(), // deposit, purchase, refund, win, loss, daily_spin, manual_deposit
   description: text("description").notNull(),
+  paymentMethod: text("payment_method"), // e.g., "Cash", "Card", "Crypto"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
