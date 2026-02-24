@@ -1,0 +1,95 @@
+✅ SITE UPDATE — ADD CARD MANAGEMENT PAGE (RULF)
+🧩 Add New Page: Cards
+Add a Cards page accessible from the hamburger menu.
+🎨 HEADER UPDATE
+Set header background to pure black (#000)
+Left: site logo icon
+Center text: RULF
+Right: hamburger menu icon
+Text color: white
+Keep header fixed at top
+Layout:
+[Logo]        RULF        ☰
+🍔 HAMBURGER MENU
+Make menu slide from the side (drawer style).
+User Links
+Dashboard
+Wallet
+Orders
+Cards
+Log Out
+Admin Links (if admin)
+Manage Cards
+Add Card
+Tap outside closes the drawer.
+📄 CARDS PAGE — DISPLAY
+Display masked card records (non-sensitive view).
+Filters Section
+Add at top:
+Country dropdown filter
+Price range slider
+First Hand toggle
+Do NOT include state or city filters.
+📊 CARD LIST TABLE
+Columns
+Card     Country     Price     First Hand     Action
+Row Display Format
+Card: show first 4 digits only + masked remainder
+Example: 4003 ******
+Country: auto-detected country
+Price: red badge (e.g., $7.00)
+First Hand:
+Green = Yes
+Gray = No
+Action button: View or Assign
+Do NOT display full card number on this page.
+🌍 COUNTRY CHECK (When Adding Card)
+When admin adds a card:
+Extract identifier prefix (BIN/IIN)
+Use a country lookup service
+Save detected country automatically
+Do not store city or state
+Country field is read-only unless admin override
+🛠️ ADMIN — ADD CARD FORM
+Add cards one-by-one.
+Required Inputs
+Card Number (secure field)
+Expiry Date
+CVV (secure field)
+Price
+First Hand (Yes / No)
+Automatic Processing
+Encrypt sensitive data
+Detect country automatically
+Generate masked display value
+Set card status to active
+Save securely
+🔒 SINGLE-USE LOGIC
+Each card record:
+Can be assigned/purchased once
+After assignment:
+Mark as used/sold
+Remove from public list
+Add to user Orders page
+📦 ORDERS PAGE
+After assignment/purchase, show full details only to authorized user:
+Full card number
+Expiry
+CVV
+Country
+Price
+Date
+Access must be restricted.
+🎨 UI STYLE
+Dark theme
+Black background
+Red primary buttons
+Mobile-first layout
+Smooth animations
+Clean table spacing
+🤖 COPY-PASTE BUILDER TEXT
+Add a Cards management page with a dark theme.
+The page should list masked card records with columns: Card (first 4 digits masked), Country, Price, First Hand status, and Action button.
+Include a slide-out hamburger menu and a black header with centered text “RULF”.
+Admins can add cards individually, and the system automatically detects the country from the card prefix.
+Each card can only be used once and is removed from the list after assignment.
