@@ -35,6 +35,7 @@ const adminSections = [
   { id: "codes", label: "Redeem Codes", icon: Ticket },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "games", label: "Games", icon: Gamepad2 },
+  { id: "cards", label: "Manage Cards", icon: CreditCard },
   { id: "logs", label: "Logs", icon: ScrollText },
 ];
 
@@ -145,6 +146,7 @@ export default function AdminPage() {
           {activeSection === "codes" && <CodesSection />}
           {activeSection === "announcements" && <AnnouncementsSection />}
           {activeSection === "games" && <GamesSection />}
+          {activeSection === "cards" && <AdminCardsSection />}
           {activeSection === "logs" && <LogsSection />}
         </main>
       </div>
@@ -180,6 +182,147 @@ function DashboardSection() {
         <StatCard title="Items Sold" value={stats?.itemsSold || 0} icon={Package} color="purple" />
         <StatCard title="Active Products" value={products?.length || 0} icon={Box} />
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
+      </div>
+    </div>
+  );
+}
+
+function AdminCardsSection() {
+  const { toast } = useToast();
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  const { data: cards, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/cards/all"], // Admin view might need all cards including sold
+    queryFn: async () => {
+      const res = await fetch("/api/cards"); // For now just reuse public one or add admin route
+      return res.json();
+    }
+  });
+
+  const cardSchema = z.object({
+    cardNumber: z.string().min(16, "Invalid card number"),
+    expiry: z.string().min(5, "MM/YY format"),
+    cvv: z.string().min(3, "Invalid CVV"),
+    price: z.string().min(1, "Required"),
+    isFirstHand: z.boolean().default(false),
+  });
+
+  const form = useForm<z.infer<typeof cardSchema>>({
+    resolver: zodResolver(cardSchema),
+    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", isFirstHand: false },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof cardSchema>) => {
+      // BIN lookup simulation
+      const bin = data.cardNumber.substring(0, 6);
+      const country = bin.startsWith("4") ? "USA" : "UK"; // Basic mock
+      const maskedCard = `${data.cardNumber.substring(0, 4)} ******`;
+      
+      await apiRequest("POST", "/api/cards", {
+        ...data,
+        country,
+        maskedCard,
+        price: Math.round(parseFloat(data.price) * 100),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards/all"] });
+      form.reset();
+      setShowAddForm(false);
+      toast({ title: "Card added successfully" });
+    }
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Card Management</h1>
+        <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2">
+          <Plus className="h-4 w-4" /> Add Card
+        </Button>
+      </div>
+
+      {showAddForm && (
+        <Card className="bg-[#16181d] border-white/5">
+          <CardContent className="p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((d) => addMutation.mutate(d))} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField control={form.control} name="cardNumber" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Card Number</FormLabel>
+                      <FormControl><Input {...field} placeholder="4003..." /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="expiry" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expiry (MM/YY)</FormLabel>
+                      <FormControl><Input {...field} placeholder="12/26" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="cvv" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CVV</FormLabel>
+                      <FormControl><Input {...field} placeholder="123" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price ($)</FormLabel>
+                      <FormControl><Input {...field} type="number" step="0.01" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="isFirstHand" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-3 rounded-md bg-black/20 border border-white/5 mt-8">
+                      <FormLabel className="!mt-0">First Hand</FormLabel>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+                <Button type="submit" className="w-full" disabled={addMutation.isPending}>
+                  {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Card
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="bg-[#16181d] border border-white/5 rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-white/5">
+              <TableHead>Card</TableHead>
+              <TableHead>Country</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {cards?.map((card) => (
+              <TableRow key={card.id} className="border-white/5">
+                <TableCell className="font-mono">{card.maskedCard}</TableCell>
+                <TableCell>{card.country}</TableCell>
+                <TableCell>${(card.price / 100).toFixed(2)}</TableCell>
+                <TableCell>
+                  <Badge variant={card.isSold ? "secondary" : "default"}>
+                    {card.isSold ? "Sold" : "Active"}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
