@@ -23,37 +23,77 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   const NavContent = () => (
-    <div className="flex flex-col h-full bg-black text-[#e1e1e1] py-8 px-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-xl font-display font-black tracking-tighter italic">
-          RULF
+          RULF<span className="text-primary italic">.CC</span>
         </h1>
       </div>
 
       <div className="flex flex-col gap-4 text-left">
-        <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Dashboard</span>
+        <Link href="/" onClick={() => setIsMobileOpen(false)}>
+          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Shop</span>
         </Link>
 
-        <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Wallet</span>
-        </Link>
+        <a 
+          href="https://t.me/+4LVBYQu4T8UwODkx" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"
+        >
+          Vouches
+        </a>
 
-        <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Orders</span>
-        </Link>
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
+            Fun <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-4 pt-3 space-y-3">
+            <Link href="/games" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold">GAMBLE</span>
+            </Link>
+            <Link href="/daily-spin" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest italic font-bold">DAILY SPIN</span>
+            </Link>
+          </CollapsibleContent>
+        </Collapsible>
 
-        <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
+            Profile <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-4 pt-3 space-y-3">
+            <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">PROFILE</span>
+            </Link>
+            <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
+            </Link>
+            <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">CARDS</span>
+            </Link>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <a 
+          href="https://t.me/rulfvouches" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"
+        >
+          Vouch
+        </a>
+
+        <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
+          <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
+            Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{cartCount}</span>}
+          </div>
         </Link>
 
         {user?.role === 'admin' && (
-          <>
-            <div className="h-px bg-white/10 my-2" />
-            <Link href="/admin?tab=cards" onClick={() => setIsMobileOpen(false)}>
-              <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider uppercase">Manage Cards</span>
-            </Link>
-          </>
+          <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
+            <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider uppercase">Admin</span>
+          </Link>
         )}
 
         {user && (
@@ -61,7 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => { logout(); setIsMobileOpen(false); }}
             className="text-sm font-bold text-muted-foreground hover:text-destructive transition-colors mt-4 uppercase text-left tracking-wider"
           >
-            Log Out
+            Logout
           </button>
         )}
       </div>
@@ -76,12 +116,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-black">
-      <header className="h-14 border-b border-white/5 bg-black sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
+    <div className="min-h-screen bg-[#090a0c]">
+      <header className="h-14 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
             <h1 className="text-lg font-display font-black tracking-tighter italic text-white">
-              RULF
+              RULF<span className="text-primary italic">.CC</span>
             </h1>
           </div>
         </Link>

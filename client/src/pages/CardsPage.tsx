@@ -75,9 +75,9 @@ export default function CardsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">Cards</h1>
-        <p className="text-muted-foreground italic">Fresh HQ <span className="text-primary">Spammed CC</span></p>
+      <div className="flex flex-col gap-2 items-center text-center">
+        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">RULF</h1>
+        <p className="text-muted-foreground italic">Fresh HQ <span className="text-primary">HIGH QUALITY CCS</span></p>
       </div>
 
       <Card className="bg-[#0f1115] border-white/5">
