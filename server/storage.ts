@@ -1,3 +1,4 @@
+import { db } from "./db";
 import { 
   users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
@@ -44,10 +45,10 @@ export interface IStorage {
   
   // Wallet
   createTransaction(userId: number, amount: number, type: string, description: string): Promise<Transaction>;
+  createTransactionWithMethod(userId: number, amount: number, type: string, description: string, paymentMethod: string): Promise<Transaction>;
   getTransactions(userId: number): Promise<Transaction[]>;
   getRedeemCode(code: string): Promise<RedeemCode | undefined>;
   markRedeemCodeUsed(id: number, userId: number): Promise<void>;
-  createTransactionWithMethod(userId: number, amount: number, type: string, description: string, paymentMethod: string): Promise<Transaction>;
   createRedeemCode(code: string, amount: number): Promise<RedeemCode>;
   getAllRedeemCodes(): Promise<RedeemCode[]>;
   
@@ -225,8 +226,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async reserveStockItem(variantId: number): Promise<StockItem | undefined> {
-    // Find first unsold item
-    // In a real high-concurrency app, this needs a transaction/lock
     const [item] = await db
       .select()
       .from(stockItems)
@@ -245,11 +244,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrder(userId: number, items: { variantId: number; quantity: number }[]): Promise<Order> {
-    // Calculate total
     let total = 0;
     const reservedStockItems: { variantId: number, stockItemId: number, price: number }[] = [];
 
-    // Validations and Reservations
     for (const item of items) {
       const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
       if (!variant) throw new Error("Variant not found");
@@ -263,7 +260,6 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Create Order with unique public ID
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
       userId,
@@ -273,7 +269,6 @@ export class DatabaseStorage implements IStorage {
       status: "fulfilled"
     }).returning();
 
-    // Create Order Items and Link Stock
     for (const res of reservedStockItems) {
       await db.insert(orderItems).values({
         orderId: order.id,
@@ -283,7 +278,6 @@ export class DatabaseStorage implements IStorage {
         quantity: 1
       });
       
-      // Update stock item with order ID
       await db.update(stockItems).set({ orderId: order.id }).where(eq(stockItems.id, res.stockItemId));
     }
 

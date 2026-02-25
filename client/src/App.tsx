@@ -13,6 +13,7 @@ import ShopPage from "@/pages/ShopPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
 import ProfilePage from "@/pages/ProfilePage";
+import CardsPage from "@/pages/CardsPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import GamesPage from "@/pages/GamesPage";
 import DailySpinPage from "@/pages/DailySpinPage";
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/product/:id" component={ProductDetailPage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/cards" component={CardsPage} />
         <Route path="/games" component={GamesPage} />
         <Route path="/daily-spin" component={DailySpinPage} />
         <Route path="/admin">
