@@ -1,8 +1,8 @@
-import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
-  type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage
+  type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
+  type Card, type InsertCard
 } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
@@ -47,6 +47,7 @@ export interface IStorage {
   getTransactions(userId: number): Promise<Transaction[]>;
   getRedeemCode(code: string): Promise<RedeemCode | undefined>;
   markRedeemCodeUsed(id: number, userId: number): Promise<void>;
+  createTransactionWithMethod(userId: number, amount: number, type: string, description: string, paymentMethod: string): Promise<Transaction>;
   createRedeemCode(code: string, amount: number): Promise<RedeemCode>;
   getAllRedeemCodes(): Promise<RedeemCode[]>;
   
@@ -62,6 +63,14 @@ export interface IStorage {
   // Images
   uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage>;
   getImage(id: number): Promise<UploadedImage | undefined>;
+
+  // Cards
+  getCards(): Promise<Card[]>;
+  getCard(id: number): Promise<Card | undefined>;
+  createCard(card: InsertCard): Promise<Card>;
+  updateCard(id: number, data: Partial<Card>): Promise<Card>;
+  purchaseCard(cardId: number, userId: number): Promise<Card>;
+  getUserCards(userId: number): Promise<Card[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -360,6 +369,17 @@ export class DatabaseStorage implements IStorage {
     return tx;
   }
 
+  async createTransactionWithMethod(userId: number, amount: number, type: string, description: string, paymentMethod: string): Promise<Transaction> {
+    const [tx] = await db.insert(transactions).values({
+      userId,
+      amount,
+      type,
+      description,
+      paymentMethod
+    }).returning();
+    return tx;
+  }
+
   async getTransactions(userId: number): Promise<Transaction[]> {
     return db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
   }
@@ -428,6 +448,37 @@ export class DatabaseStorage implements IStorage {
   async getImage(id: number): Promise<UploadedImage | undefined> {
     const [img] = await db.select().from(uploadedImages).where(eq(uploadedImages.id, id));
     return img;
+  }
+
+  async getCards(): Promise<Card[]> {
+    return db.select().from(cards).where(eq(cards.isSold, false)).orderBy(desc(cards.createdAt));
+  }
+
+  async getCard(id: number): Promise<Card | undefined> {
+    const [card] = await db.select().from(cards).where(eq(cards.id, id));
+    return card;
+  }
+
+  async createCard(insertCard: InsertCard): Promise<Card> {
+    const [card] = await db.insert(cards).values(insertCard).returning();
+    return card;
+  }
+
+  async updateCard(id: number, data: Partial<Card>): Promise<Card> {
+    const [card] = await db.update(cards).set(data).where(eq(cards.id, id)).returning();
+    return card;
+  }
+
+  async purchaseCard(cardId: number, userId: number): Promise<Card> {
+    const [card] = await db.select().from(cards).where(and(eq(cards.id, cardId), eq(cards.isSold, false)));
+    if (!card) throw new Error("Card not found or already sold");
+    
+    const [updated] = await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cardId)).returning();
+    return updated;
+  }
+
+  async getUserCards(userId: number): Promise<Card[]> {
+    return db.select().from(cards).where(eq(cards.userId, userId)).orderBy(desc(cards.createdAt));
   }
 }
 

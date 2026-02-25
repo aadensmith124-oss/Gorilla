@@ -400,6 +400,63 @@ export async function registerRoutes(
     res.send(buffer);
   });
 
+  // Cards
+  app.get("/api/cards", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const cards = await storage.getCards();
+    res.json(cards);
+  });
+
+  app.post("/api/cards", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const card = await storage.createCard(req.body);
+    res.status(201).json(card);
+  });
+
+  app.post("/api/cards/:id/purchase", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const cardId = Number(req.params.id);
+      const userId = (req.user as any).id;
+      const card = await storage.getCard(cardId);
+      if (!card) return res.status(404).json({ message: "Card not found" });
+
+      const user = await storage.getUser(userId);
+      if (!user || user.balance < card.price) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      await storage.updateUserBalance(userId, -card.price);
+      await storage.createTransaction(userId, -card.price, "purchase", `Purchased card ${card.maskedCard}`);
+      const updatedCard = await storage.purchaseCard(cardId, userId);
+      res.json(updatedCard);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/user/cards", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const cards = await storage.getUserCards((req.user as any).id);
+    res.json(cards);
+  });
+
+  // Forebit Payment Integration
+  app.post("/api/wallet/forebit", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const { amount } = req.body;
+    
+    // In a real app, you would call Forebit API here.
+    // For now, we simulate success for demonstration purposes.
+    const amountCents = Math.round(parseFloat(amount) * 100);
+    const updatedUser = await storage.updateUserBalance((req.user as any).id, amountCents);
+    await storage.createTransactionWithMethod((req.user as any).id, amountCents, "deposit", `Crypto deposit via Forebit`, "Forebit");
+
+    res.json({ success: true, newBalance: updatedUser.balance });
+  });
+
   // Seed Data (if empty)
   const users = await storage.getDashboardStats();
   if (users.totalUsers === 0) {

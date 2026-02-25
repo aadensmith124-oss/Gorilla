@@ -173,9 +173,9 @@ export const cardsRelations = relations(cards, ({ one }) => ({
   }),
 }));
 
-// === TYPES ===
-export type Card = typeof cards.$inferSelect;
-export type InsertCard = z.infer<typeof insertCardSchema>;
+export const productsRelations = relations(products, ({ many }) => ({
+  variants: many(variants),
+}));
 
 export const variantsRelations = relations(variants, ({ one, many }) => ({
   product: one(products, {
@@ -227,6 +227,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Announcement = typeof announcements.$inferSelect;
 export type UploadedImage = typeof uploadedImages.$inferSelect;
+export type Card = typeof cards.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -234,3 +235,4 @@ export type InsertVariant = z.infer<typeof insertVariantSchema>;
 export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
 export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+export type InsertCard = z.infer<typeof insertCardSchema>;
