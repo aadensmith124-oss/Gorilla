@@ -16,6 +16,8 @@ import ProfilePage from "@/pages/ProfilePage";
 import CardsPage from "@/pages/CardsPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import GamesPage from "@/pages/GamesPage";
+import DiceGamePage from "@/pages/DiceGamePage";
+import MinesGamePage from "@/pages/MinesGamePage";
 import DailySpinPage from "@/pages/DailySpinPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
@@ -44,6 +46,8 @@ function Router() {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/cards" component={CardsPage} />
         <Route path="/games" component={GamesPage} />
+        <Route path="/games/dice" component={DiceGamePage} />
+        <Route path="/games/mines" component={MinesGamePage} />
         <Route path="/daily-spin" component={DailySpinPage} />
         <Route path="/admin">
           {() => <AdminPage />}

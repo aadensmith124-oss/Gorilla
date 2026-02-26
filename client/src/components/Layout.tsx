@@ -35,6 +35,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Shop</span>
         </Link>
 
+        <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
+          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
+        </Link>
+
         <a 
           href="https://t.me/+4LVBYQu4T8UwODkx" 
           target="_blank" 
@@ -69,15 +73,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
               <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
             </Link>
-            <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">CARDS</span>
-            </Link>
           </CollapsibleContent>
         </Collapsible>
-
-        <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
-        </Link>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
           <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">

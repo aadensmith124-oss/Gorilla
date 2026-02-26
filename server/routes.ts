@@ -443,6 +443,14 @@ export async function registerRoutes(
     res.json(cards);
   });
 
+  app.delete("/api/admin/cards/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteCard(Number(req.params.id));
+    res.json({ success: true });
+  });
+
   // Forebit Payment Integration
   app.post("/api/wallet/forebit", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

@@ -245,41 +245,52 @@ function AdminCardsSection() {
     }
   });
 
+  const removeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/cards/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      toast({ title: "Card removed successfully" });
+    }
+  });
+
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Card Management</h1>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2">
+        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-white">Card Management</h1>
+        <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2 bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase">
           <Plus className="h-4 w-4" /> Add Card
         </Button>
       </div>
 
       {showAddForm && (
-        <Card className="bg-[#16181d] border-white/5">
+        <Card className="bg-[#0f1115] border-white/5">
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((d) => addMutation.mutate(d))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField control={form.control} name="cardNumber" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Card Number</FormLabel>
-                      <FormControl><Input {...field} placeholder="4003..." /></FormControl>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Card Number</FormLabel>
+                      <FormControl><Input {...field} placeholder="4003..." className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="expiry" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Expiry (MM/YY)</FormLabel>
-                      <FormControl><Input {...field} placeholder="12/26" /></FormControl>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expiry (MM/YY)</FormLabel>
+                      <FormControl><Input {...field} placeholder="12/26" className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="cvv" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CVV</FormLabel>
-                      <FormControl><Input {...field} placeholder="123" /></FormControl>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CVV</FormLabel>
+                      <FormControl><Input {...field} placeholder="123" className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -287,19 +298,19 @@ function AdminCardsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="price" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price ($)</FormLabel>
-                      <FormControl><Input {...field} type="number" step="0.01" /></FormControl>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price ($)</FormLabel>
+                      <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="isFirstHand" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-3 rounded-md bg-black/20 border border-white/5 mt-8">
-                      <FormLabel className="!mt-0">First Hand</FormLabel>
+                    <FormItem className="flex items-center justify-between p-3 rounded-md bg-black/30 border border-white/5 mt-8">
+                      <FormLabel className="!mt-0 text-xs font-bold uppercase tracking-widest text-white">First Hand</FormLabel>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                   )} />
                 </div>
-                <Button type="submit" className="w-full" disabled={addMutation.isPending}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Card
                 </Button>
@@ -309,26 +320,50 @@ function AdminCardsSection() {
         </Card>
       )}
 
-      <div className="bg-[#16181d] border border-white/5 rounded-lg overflow-hidden">
+      <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-white/5">
             <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead>Card</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
+              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {cards?.map((card) => (
-              <TableRow key={card.id} className="border-white/5">
-                <TableCell className="font-mono">{card.maskedCard}</TableCell>
-                <TableCell>{card.country}</TableCell>
-                <TableCell>${(card.price / 100).toFixed(2)}</TableCell>
+              <TableRow key={card.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                <TableCell className="font-mono text-white">{card.maskedCard}</TableCell>
                 <TableCell>
-                  <Badge variant={card.isSold ? "secondary" : "default"}>
+                  <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
+                    {card.country}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className="bg-primary text-white font-bold italic text-[10px]">
+                    ${(card.price / 100).toFixed(2)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={card.isSold ? "secondary" : "default"} className={card.isSold ? "bg-white/5 text-muted-foreground border-none" : "bg-green-500/20 text-green-500 border-green-500/20"}>
                     {card.isSold ? "Sold" : "Active"}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      if (confirm("Are you sure you want to remove this card?")) {
+                        removeMutation.mutate(card.id);
+                      }
+                    }}
+                    disabled={removeMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

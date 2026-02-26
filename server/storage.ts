@@ -72,6 +72,7 @@ export interface IStorage {
   updateCard(id: number, data: Partial<Card>): Promise<Card>;
   purchaseCard(cardId: number, userId: number): Promise<Card>;
   getUserCards(userId: number): Promise<Card[]>;
+  deleteCard(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -484,6 +485,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserCards(userId: number): Promise<Card[]> {
     return db.select().from(cards).where(eq(cards.userId, userId)).orderBy(desc(cards.createdAt));
+  }
+
+  async deleteCard(id: number): Promise<void> {
+    await db.delete(cards).where(eq(cards.id, id));
   }
 }
 

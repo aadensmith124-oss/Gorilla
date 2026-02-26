@@ -11,35 +11,67 @@ import { cn } from "@/lib/utils";
 
 export default function GamesPage() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   
   if (!user) return <div className="p-8 text-center">Please login to play.</div>;
+
+  const games = [
+    {
+      id: "dice",
+      name: "DICE",
+      description: "Double or nothing. Roll higher than 7 to win 2x your bet.",
+      icon: Dice5,
+      color: "from-primary/20 to-primary/5",
+      iconColor: "text-primary"
+    },
+    {
+      id: "mines",
+      name: "MINES",
+      description: "Cross the minefield without exploding. Higher difficulty = higher multiplier.",
+      icon: Bomb,
+      color: "from-destructive/20 to-destructive/5",
+      iconColor: "text-destructive"
+    }
+  ];
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="text-center space-y-4 mb-12">
-        <h1 className="text-4xl md:text-6xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary animate-pulse">
+        <h1 className="text-4xl md:text-6xl font-display font-black tracking-tighter italic uppercase text-white">
           GAMBLE
         </h1>
-        <p className="text-lg text-muted-foreground">Test your luck and win credits.</p>
+        <p className="text-muted-foreground italic uppercase tracking-widest text-sm font-bold">Test your luck and win credits</p>
       </div>
 
-      <Tabs defaultValue="dice" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/30 p-1 rounded-xl">
-          <TabsTrigger value="dice" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-white">
-            <Dice5 className="mr-2 h-5 w-5" /> Dice Roll
-          </TabsTrigger>
-          <TabsTrigger value="mines" className="text-lg py-3 data-[state=active]:bg-destructive data-[state=active]:text-white">
-            <Bomb className="mr-2 h-5 w-5" /> Mines
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dice" className="mt-0">
-          <DiceGame />
-        </TabsContent>
-        <TabsContent value="mines" className="mt-0">
-          <MinesGame />
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {games.map((game) => (
+          <Card 
+            key={game.id} 
+            className={cn(
+              "bg-[#0f1115] border-white/5 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden",
+              "before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-0 group-hover:before:opacity-100 before:transition-opacity",
+              game.id === 'dice' ? "before:from-primary/10 before:to-transparent" : "before:from-destructive/10 before:to-transparent"
+            )}
+            onClick={() => setLocation(`/games/${game.id}`)}
+          >
+            <CardContent className="p-8 flex flex-col items-center text-center relative z-10">
+              <div className={cn("p-4 rounded-2xl bg-black/40 mb-6 group-hover:scale-110 transition-transform", game.iconColor)}>
+                <game.icon className="h-12 w-12" />
+              </div>
+              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-2 group-hover:text-primary transition-colors">
+                {game.name}
+              </h2>
+              <p className="text-muted-foreground text-sm italic max-w-[250px]">
+                {game.description}
+              </p>
+              
+              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-white text-white font-bold italic tracking-tighter uppercase border border-white/5">
+                Play Now
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
