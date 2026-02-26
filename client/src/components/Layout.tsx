@@ -75,14 +75,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </CollapsibleContent>
         </Collapsible>
 
-        <a 
-          href="https://t.me/rulfvouches" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"
-        >
-          Vouch
-        </a>
+        <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
+          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
+        </Link>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
           <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">

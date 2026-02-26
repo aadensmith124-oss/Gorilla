@@ -192,10 +192,11 @@ function AdminCardsSection() {
   const [showAddForm, setShowAddForm] = useState(false);
   
   const { data: cards, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/cards/all"], // Admin view might need all cards including sold
+    queryKey: ["/api/cards/all"],
     queryFn: async () => {
-      const res = await fetch("/api/cards"); // For now just reuse public one or add admin route
-      return res.json();
+      const res = await fetch("/api/cards");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
@@ -216,18 +217,25 @@ function AdminCardsSection() {
     mutationFn: async (data: z.infer<typeof cardSchema>) => {
       // BIN lookup simulation
       const bin = data.cardNumber.substring(0, 6);
-      const country = bin.startsWith("4") ? "USA" : "UK"; // Basic mock
+      let country = "USA";
+      if (bin.startsWith("4")) country = "USA";
+      else if (bin.startsWith("5")) country = "UK";
+      else if (bin.startsWith("3")) country = "Canada";
+      else country = "International";
+
       const maskedCard = `${data.cardNumber.substring(0, 4)} ******`;
       
-      await apiRequest("POST", "/api/cards", {
+      const res = await apiRequest("POST", "/api/cards", {
         ...data,
         country,
         maskedCard,
         price: Math.round(parseFloat(data.price) * 100),
       });
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cards/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       form.reset();
       setShowAddForm(false);
       toast({ title: "Card added successfully" });
