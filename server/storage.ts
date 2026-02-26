@@ -468,6 +468,17 @@ export class DatabaseStorage implements IStorage {
     if (!card) throw new Error("Card not found or already sold");
     
     const [updated] = await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cardId)).returning();
+
+    // Create a matching order so it shows in "Orders"
+    const publicOrderId = Math.random().toString(36).substring(2, 15);
+    const [order] = await db.insert(orders).values({
+      userId,
+      orderId: `CARD-${publicOrderId}`,
+      total: card.price,
+      paidAmount: card.price,
+      status: "fulfilled"
+    }).returning();
+
     return updated;
   }
 

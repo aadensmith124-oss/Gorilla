@@ -20,6 +20,9 @@ import {
   Gamepad2, HeadphonesIcon, ScrollText, ChevronRight, Copy, Ban, CreditCard,
   RefreshCw, Eye, EyeOff, Search, Check, Menu, X, Edit2, Upload, ImageIcon
 } from "lucide-react";
+import { 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+} from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useLocation } from "wouter";
