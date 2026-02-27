@@ -22,6 +22,8 @@ import DailySpinPage from "@/pages/DailySpinPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
 
+import SupportPage from "@/pages/SupportPage";
+
 function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
@@ -49,6 +51,7 @@ function Router() {
         <Route path="/games/dice" component={DiceGamePage} />
         <Route path="/games/mines" component={MinesGamePage} />
         <Route path="/daily-spin" component={DailySpinPage} />
+        <Route path="/support" component={SupportPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

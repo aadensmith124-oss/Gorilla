@@ -143,7 +143,10 @@ export async function registerRoutes(
 
     res.json({
       won,
-      roll: userRoll, // We also could send system roll if UI supports it, but simple UI just shows user result usually
+      roll: userRoll,
+      systemRoll: systemRoll,
+      userTotal,
+      systemTotal,
       payout,
       newBalance: updatedUser?.balance || 0,
     });
@@ -328,7 +331,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const user = await storage.updateUser(Number(req.params.id), req.body);
+    const { isBanned, role, email } = req.body;
+    const user = await storage.updateUser(Number(req.params.id), { isBanned, role, email });
     res.json(user);
   });
 
@@ -449,6 +453,56 @@ export async function registerRoutes(
     }
     await storage.deleteCard(Number(req.params.id));
     res.json({ success: true });
+  });
+
+  // Support
+  app.post("/api/support", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const ticket = await storage.createSupportTicket({ ...req.body, userId: (req.user as any).id });
+    res.status(201).json(ticket);
+  });
+
+  app.get("/api/support", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const tickets = await storage.getSupportTickets((req.user as any).id);
+    res.json(tickets);
+  });
+
+  app.get("/api/admin/support", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const tickets = await storage.getSupportTickets();
+    res.json(tickets);
+  });
+
+  app.patch("/api/admin/support/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { action, message } = req.body;
+    const ticket = await storage.getSupportTicket(Number(req.params.id));
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    if (action === "refund") {
+      const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
+      if (order.length > 0) {
+        await storage.refundOrder(order[0].id);
+        await storage.updateUserBalance(ticket.userId, order[0].total);
+        await storage.createTransaction(ticket.userId, order[0].total, "refund", `Refund for order ${ticket.orderId} via support`);
+      }
+    } else if (action === "replace") {
+      const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
+      if (order.length > 0) {
+        await storage.replaceOrderItem(order[0].id);
+      }
+    }
+
+    const updated = await storage.updateSupportTicket(Number(req.params.id), { 
+      status: "closed",
+      adminMessage: message || ticket.adminMessage
+    });
+    res.json(updated);
   });
 
   // Forebit Payment Integration

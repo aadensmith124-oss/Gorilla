@@ -19,6 +19,29 @@ export default function ShopPage() {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
+  if (user?.isBanned) {
+    return (
+      <div className="space-y-8 py-12">
+        <div className="bg-destructive/10 border border-destructive/20 p-8 rounded-2xl text-center space-y-4 max-w-2xl mx-auto shadow-2xl shadow-destructive/5">
+          <div className="bg-destructive/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2">
+            <ShieldX className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-2xl font-display font-black text-destructive uppercase tracking-tighter italic">Account Restricted</h2>
+          <p className="text-muted-foreground leading-relaxed">
+            Your account has been banned by an administrator. You may still browse our product catalog, but purchasing and other features are disabled. 
+            <br /><br />
+            If you believe this is an error, please contact support.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-2 opacity-60 grayscale-[0.5]">
+          {filtered?.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">

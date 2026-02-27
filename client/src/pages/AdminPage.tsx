@@ -39,6 +39,7 @@ const adminSections = [
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "games", label: "Games", icon: Gamepad2 },
   { id: "cards", label: "Manage Cards", icon: CreditCard },
+  { id: "support", label: "Support", icon: HeadphonesIcon },
   { id: "logs", label: "Logs", icon: ScrollText },
 ];
 
@@ -150,6 +151,7 @@ export default function AdminPage() {
           {activeSection === "announcements" && <AnnouncementsSection />}
           {activeSection === "games" && <GamesSection />}
           {activeSection === "cards" && <AdminCardsSection />}
+          {activeSection === "support" && <AdminSupportSection />}
           {activeSection === "logs" && <LogsSection />}
         </main>
       </div>
@@ -374,6 +376,135 @@ function AdminCardsSection() {
   );
 }
 
+function AdminSupportSection() {
+  const [filter, setFilter] = useState<"open" | "closed">("open");
+  const { toast } = useToast();
+  const { data: tickets, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/support"],
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: async ({ id, action, message }: { id: number, action: string, message?: string }) => {
+      await apiRequest("PATCH", `/api/admin/support/${id}`, { action, message });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support"] });
+      toast({ title: "Action completed" });
+    }
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  const filteredTickets = tickets?.filter(t => t.status === filter) || [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Support Tickets</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant={filter === "open" ? "default" : "outline"} 
+            onClick={() => setFilter("open")}
+            className="uppercase text-[10px] font-black tracking-widest"
+          >
+            Open
+          </Button>
+          <Button 
+            variant={filter === "closed" ? "default" : "outline"} 
+            onClick={() => setFilter("closed")}
+            className="uppercase text-[10px] font-black tracking-widest"
+          >
+            Closed
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        {filteredTickets.map((ticket) => (
+          <Card key={ticket.id} className="bg-[#0f1115] border-white/5">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-white/5">
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-bold uppercase italic tracking-tighter">
+                  {ticket.subject} - User ID: {ticket.userId}
+                </CardTitle>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order ID: {ticket.orderId}</p>
+              </div>
+              <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className="uppercase">
+                {ticket.status}
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Description</p>
+                    <p className="text-sm leading-relaxed">{ticket.description}</p>
+                  </div>
+                  {ticket.imageUrl && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary">Proof</p>
+                      <img src={ticket.imageUrl} className="max-w-xs rounded-lg border border-white/10" />
+                    </div>
+                  )}
+                </div>
+                {ticket.status === 'open' && (
+                  <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Take Action</p>
+                    <Textarea 
+                      placeholder="Admin message (optional)..." 
+                      id={`msg-${ticket.id}`}
+                      className="bg-black/50 border-white/10 min-h-[100px]"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button 
+                        onClick={() => actionMutation.mutate({ 
+                          id: ticket.id, 
+                          action: 'refund', 
+                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
+                        })}
+                        className="bg-red-500 hover:bg-red-600 text-white font-black uppercase italic tracking-tighter text-xs"
+                      >
+                        Refund
+                      </Button>
+                      <Button 
+                        onClick={() => actionMutation.mutate({ 
+                          id: ticket.id, 
+                          action: 'replace', 
+                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
+                        })}
+                        className="bg-blue-500 hover:bg-blue-600 text-white font-black uppercase italic tracking-tighter text-xs"
+                      >
+                        Replace
+                      </Button>
+                      <Button 
+                        onClick={() => actionMutation.mutate({ 
+                          id: ticket.id, 
+                          action: 'close', 
+                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
+                        })}
+                        variant="outline"
+                        className="font-black uppercase italic tracking-tighter text-xs"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {ticket.status === 'closed' && ticket.adminMessage && (
+                  <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-green-500">Resolution Message</p>
+                    <p className="text-sm italic mt-2 text-muted-foreground">"{ticket.adminMessage}"</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ title, value, icon: Icon, color = "primary" }: { title: string; value: string | number; icon: any; color?: string }) {
   const colorClasses: Record<string, string> = {
     primary: "text-primary",
@@ -411,6 +542,34 @@ function ProductsSection() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Product deleted" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to delete product", description: err.message, variant: "destructive" });
+    }
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Product deleted" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to delete product", description: err.message, variant: "destructive" });
+    }
+  });
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
@@ -586,6 +745,11 @@ function ProductsSection() {
                   <Badge variant={p.active ? "default" : "secondary"} className="hidden sm:flex">
                     {p.active ? "Active" : "Hidden"}
                   </Badge>
+                  <Button size="icon" variant="ghost" onClick={() => {
+                    if (confirm("Are you sure?")) deleteProductMutation.mutate(p.id);
+                  }} className="text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   <Button size="icon" variant="ghost" onClick={() => setEditingProduct(p)} data-testid={`btn-edit-${p.id}`}>
                     <Edit2 className="h-4 w-4" />
                   </Button>
@@ -1118,21 +1282,15 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
   );
 }
 
-function UsersSection() {
-  const [search, setSearch] = useState("");
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    }
   });
+
   const { toast } = useToast();
 
   const banMutation = useMutation({
-    mutationFn: async ({ userId, banned }: { userId: number; banned: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/users/${userId}`, { isBanned: banned });
+    mutationFn: async ({ id, isBanned }: { id: number; isBanned: boolean }) => {
+      await apiRequest("PATCH", `/api/admin/users/${id}`, { isBanned });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -1140,53 +1298,74 @@ function UsersSection() {
     }
   });
 
-  const filtered = users?.filter((u: any) => 
-    u.username.toLowerCase().includes(search.toLowerCase()) ||
-    (u.email && u.email.toLowerCase().includes(search.toLowerCase()))
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredUsers = users?.filter(u => 
+    u.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.id.toString() === searchTerm
   ) || [];
 
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-primary">Users</h1>
-      
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-[#16181d] border-white/5" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">User Management</h1>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search username or ID..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-[#0f1115] border-white/5"
+          />
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {filtered.map((u: any) => (
-          <Card key={u.id} className="bg-[#16181d] border-white/5">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-bold truncate text-white">{u.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Joined: {new Date(u.createdAt).toLocaleDateString()}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-[10px] font-bold uppercase">{u.role}</Badge>
-                  <Badge variant={u.isBanned ? "destructive" : "default"} className="text-[10px] font-bold uppercase">
+      <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader className="bg-white/5">
+            <TableRow className="hover:bg-transparent border-white/5">
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">ID</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">User</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Balance</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
+              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredUsers.map((u) => (
+              <TableRow key={u.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                <TableCell className="font-mono text-xs text-muted-foreground">{u.id}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm">{u.username}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{u.role}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-green-500 font-bold">${(u.balance / 100).toFixed(2)}</span>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={u.isBanned ? "destructive" : "outline"} className="uppercase text-[10px]">
                     {u.isBanned ? "Banned" : "Active"}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right">
                   <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    className="h-8 gap-2 font-bold uppercase italic text-[10px]"
-                    onClick={() => banMutation.mutate({ userId: u.id, banned: !u.isBanned })}
+                    variant="ghost" 
+                    size="sm"
+                    className={u.isBanned ? "text-green-500 hover:text-green-600 hover:bg-green-500/10" : "text-destructive hover:text-destructive hover:bg-destructive/10"}
+                    onClick={() => banMutation.mutate({ id: u.id, isBanned: !u.isBanned })}
+                    disabled={banMutation.isPending}
                   >
-                    <Ban className="h-3.5 w-3.5" />
+                    {u.isBanned ? <Check className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
                     {u.isBanned ? "Unban" : "Ban"}
                   </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

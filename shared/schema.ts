@@ -165,7 +165,34 @@ export const insertCardSchema = createInsertSchema(cards).omit({
   createdAt: true 
 });
 
+// === SUPPORT TICKETS ===
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  orderId: text("order_id").notNull(),
+  subject: text("subject").notNull(), // Refund, Replace, Question, etc.
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(),
+  status: text("status", { enum: ["open", "closed"] }).default("open").notNull(),
+  adminMessage: text("admin_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ 
+  id: true, 
+  status: true, 
+  adminMessage: true,
+  createdAt: true 
+});
+
 // === RELATIONS ===
+export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+  }),
+}));
+
 export const cardsRelations = relations(cards, ({ one }) => ({
   user: one(users, {
     fields: [cards.userId],

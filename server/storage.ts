@@ -65,6 +65,12 @@ export interface IStorage {
   uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage>;
   getImage(id: number): Promise<UploadedImage | undefined>;
 
+  // Support
+  createSupportTicket(ticket: any): Promise<any>;
+  getSupportTickets(userId?: number): Promise<any[]>;
+  getSupportTicket(id: number): Promise<any>;
+  updateSupportTicket(id: number, data: any): Promise<any>;
+
   // Cards
   getCards(): Promise<Card[]>;
   getCard(id: number): Promise<Card | undefined>;
@@ -443,6 +449,27 @@ export class DatabaseStorage implements IStorage {
   async getImage(id: number): Promise<UploadedImage | undefined> {
     const [img] = await db.select().from(uploadedImages).where(eq(uploadedImages.id, id));
     return img;
+  }
+
+  async createSupportTicket(ticket: any): Promise<any> {
+    const [t] = await db.insert(supportTickets).values(ticket).returning();
+    return t;
+  }
+
+  async getSupportTickets(userId?: number): Promise<any[]> {
+    const q = db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+    if (userId) return q.where(eq(supportTickets.userId, userId));
+    return q;
+  }
+
+  async getSupportTicket(id: number): Promise<any> {
+    const [t] = await db.select().from(supportTickets).where(eq(supportTickets.id, id));
+    return t;
+  }
+
+  async updateSupportTicket(id: number, data: any): Promise<any> {
+    const [t] = await db.update(supportTickets).set(data).where(eq(supportTickets.id, id)).returning();
+    return t;
   }
 
   async getCards(): Promise<Card[]> {
