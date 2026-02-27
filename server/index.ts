@@ -85,6 +85,25 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
+  // Balance Decay (0.7% per hour)
+  setInterval(async () => {
+    try {
+      const users = await storage.getAllUsers();
+      for (const user of users) {
+        if (user.balance > 0) {
+          const decay = Math.floor(user.balance * 0.007);
+          if (decay > 0) {
+            await storage.updateUserBalance(user.id, -decay);
+            await storage.createTransaction(user.id, -decay, "fee", "Hourly balance decay (0.7%)");
+            log(`Decayed ${decay} cents from user ${user.username}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error in balance decay job:", err);
+    }
+  }, 60 * 60 * 1000); // Every hour
+
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
