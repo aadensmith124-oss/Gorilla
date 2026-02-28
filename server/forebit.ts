@@ -16,6 +16,7 @@ interface ForebitPaymentResponse {
   status?: string;
   amount?: number;
   currency?: string;
+  [key: string]: any;
 }
 
 function getBusinessId(): string {
@@ -63,7 +64,22 @@ export async function createForebitPayment(params: CreatePaymentParams): Promise
     throw new Error(`Forebit API error: ${response.status} - ${errorText}`);
   }
 
-  return response.json();
+  const rawData = await response.json();
+  console.log("Forebit API raw response:", JSON.stringify(rawData, null, 2));
+
+  const paymentId = rawData.id || rawData.paymentId || rawData.payment_id || rawData.data?.id || rawData.data?.paymentId;
+  const checkoutUrl = rawData.url || rawData.checkoutUrl || rawData.checkout_url || rawData.paymentUrl || rawData.data?.url || rawData.data?.checkoutUrl;
+
+  if (!paymentId) {
+    console.error("Forebit API: Could not find payment ID in response:", rawData);
+    throw new Error("Forebit API returned no payment ID");
+  }
+
+  return {
+    ...rawData,
+    id: paymentId,
+    url: checkoutUrl || "",
+  };
 }
 
 export async function getForebitPayment(paymentId: string): Promise<ForebitPaymentResponse> {

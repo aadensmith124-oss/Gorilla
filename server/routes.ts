@@ -561,7 +561,10 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("Forebit payment creation failed:", error);
-      res.status(500).json({ message: error.message || "Failed to create payment" });
+      const userMessage = error.message?.includes("Forebit API")
+        ? "Payment service error. Please try again later."
+        : "Failed to create payment. Please try again.";
+      res.status(500).json({ message: userMessage });
     }
   });
 
