@@ -38,11 +38,11 @@ Preferred communication style: Simple, everyday language.
 - **Storage Pattern**: `IStorage` interface in `server/storage.ts` abstracts database operations
 
 ### Data Models
-- **Users**: Authentication, balance (in cents), roles (user/admin), ban status
+- **Users**: Authentication, balance (in cents), protectedBalance (non-decayable from purchases/deposits), roles (user/admin), ban status
 - **Products & Variants**: Products have multiple variants with different prices
 - **Stock Items**: Individual digital items tied to variants, marked as sold when purchased
 - **Orders & Order Items**: Track purchases with labeled item types (`itemType`: "product" or "card"). Product items link to variants/stock, card items link to cards table. Mixed orders (products + cards) are combined into a single order.
-- **Cards**: Credit cards with masked numbers, country, price, first-hand status, extras (additional digital items). Country dropdown on cards page is derived from existing card data. Purchased cards are marked as sold and linked to user.
+- **Cards**: Credit cards with masked numbers, country (auto-detected via BIN), price, first-hand status. Country dropdown on cards page is derived from existing card data. Purchased cards are marked as sold and linked to user.
 - **Transactions**: Wallet history (top-ups, purchases, game wins/losses)
 - **Redeem Codes**: One-time codes for adding balance
 - **Announcements**: Admin-configurable site-wide messages

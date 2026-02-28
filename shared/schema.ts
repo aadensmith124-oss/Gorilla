@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   balance: integer("balance").default(0).notNull(), // stored in cents
+  protectedBalance: integer("protected_balance").default(0).notNull(), // non-decayable (from purchases/deposits)
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   lastDailySpin: timestamp("last_daily_spin"),
@@ -19,6 +20,7 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   balance: true, 
+  protectedBalance: true,
   role: true, 
   isBanned: true, 
   lastDailySpin: true,

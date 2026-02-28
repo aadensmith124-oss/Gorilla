@@ -96,6 +96,7 @@ export async function registerRoutes(
     const amountCents = Math.round(parseFloat(amount) * 100);
     
     const updatedUser = await storage.updateUserBalance((req.user as any).id, amountCents);
+    await storage.updateProtectedBalance((req.user as any).id, amountCents);
     await storage.createTransaction((req.user as any).id, amountCents, "manual_deposit", `Purchased balance via ${method}`);
 
     res.json({ newBalance: updatedUser.balance, amountAdded: amountCents });
@@ -361,6 +362,9 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const user = await storage.updateUserBalance(Number(req.params.id), req.body.amount);
+    if (req.body.amount > 0) {
+      await storage.updateProtectedBalance(Number(req.params.id), req.body.amount);
+    }
     await storage.createTransaction(Number(req.params.id), req.body.amount, "admin_adjustment", "Admin balance adjustment");
     res.json(user);
   });
@@ -709,6 +713,7 @@ export async function registerRoutes(
   async function processForebitCompletion(payment: typeof cryptoPayments.$inferSelect) {
     if (payment.purpose === "deposit") {
       await storage.updateUserBalance(payment.userId, payment.amount);
+      await storage.updateProtectedBalance(payment.userId, payment.amount);
       await storage.createTransactionWithMethod(
         payment.userId,
         payment.amount,

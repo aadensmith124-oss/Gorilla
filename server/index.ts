@@ -85,16 +85,21 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // Balance Decay (0.7% per hour)
+  // Balance Decay (0.7% per hour) — only on unprotected balance (gambling wins, daily spin, redeemed codes)
   const runDecay = async () => {
     try {
       const allUsers = await storage.getAllUsers();
       for (const user of allUsers) {
-        if (user.balance > 0) {
-          const decay = Math.max(1, Math.floor(user.balance * 0.007));
+        const clampedProtected = Math.min(user.protectedBalance, user.balance);
+        if (clampedProtected !== user.protectedBalance) {
+          await storage.setProtectedBalance(user.id, Math.max(0, clampedProtected));
+        }
+        const decayableBalance = Math.max(0, user.balance - clampedProtected);
+        if (decayableBalance > 0) {
+          const decay = Math.max(1, Math.floor(decayableBalance * 0.007));
           await storage.updateUserBalance(user.id, -decay);
           await storage.createTransaction(user.id, -decay, "fee", "Hourly balance decay (0.7%)");
-          log(`Decayed ${decay} cents from user ${user.username} (balance: ${user.balance})`);
+          log(`Decayed ${decay} cents from user ${user.username} (decayable: ${decayableBalance}, total: ${user.balance})`);
         }
       }
     } catch (err) {

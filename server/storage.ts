@@ -13,6 +13,8 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: number, amountCents: number): Promise<User>;
+  updateProtectedBalance(userId: number, amountCents: number): Promise<User>;
+  setProtectedBalance(userId: number, value: number): Promise<User>;
   updateLastDailySpin(userId: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: number, data: Partial<User>): Promise<User>;
@@ -102,6 +104,24 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ balance: sql`${users.balance} + ${amountCents}` })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateProtectedBalance(userId: number, amountCents: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ protectedBalance: sql`GREATEST(0, ${users.protectedBalance} + ${amountCents})` })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async setProtectedBalance(userId: number, value: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ protectedBalance: Math.max(0, value) })
       .where(eq(users.id, userId))
       .returning();
     return user;
