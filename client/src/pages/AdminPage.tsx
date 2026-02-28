@@ -1041,18 +1041,18 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   </SelectContent>
                 </Select>
 
-                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(one item per line)</span></div>
+                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(end each item with a period .)</span></div>
 
                 <div className="space-y-2">
                   <Textarea 
-                    placeholder={"Paste stock items here, one per line...\nemail:pass\nemail2:pass2"}
+                    placeholder={"user@email.com:password123.user2@email.com:pass456.another account info here."}
                     value={newStockContent}
                     onChange={(e) => setNewStockContent(e.target.value)}
                     rows={8}
                     className="bg-[#0f1115] border-white/5 font-mono text-xs"
                   />
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>Lines to add: {newStockContent.split('\n').filter(l => l.trim()).length}</span>
+                    <span>Items to add: {newStockContent.split('.').map(s => s.trim()).filter(s => s.length > 0).length}</span>
                     <span>Stock in database: {stockItems?.length || 0}</span>
                   </div>
                 </div>
@@ -1062,7 +1062,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   disabled={addStockMutation.isPending || !newStockContent.trim() || !selectedVariantForStock}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase italic tracking-tighter"
                 >
-                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : `Add ${newStockContent.split('\n').filter(l => l.trim()).length} Items`}
+                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : `Add ${newStockContent.split('.').map(s => s.trim()).filter(s => s.length > 0).length} Items`}
                 </Button>
               </div>
             </div>
