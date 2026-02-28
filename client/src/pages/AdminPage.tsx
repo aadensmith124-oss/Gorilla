@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, Terminal, ShieldX,
-  LayoutDashboard, Box, Receipt, UserCog, Ticket, Megaphone, 
+  LayoutDashboard, Box, Receipt, UserCog, Ticket, Megaphone, Database,
   Gamepad2, HeadphonesIcon, ScrollText, ChevronRight, Copy, Ban, CreditCard,
   RefreshCw, Eye, EyeOff, Search, Check, Menu, X, Edit2, Upload, ImageIcon
 } from "lucide-react";
