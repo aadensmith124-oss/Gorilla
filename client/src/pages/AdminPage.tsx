@@ -587,17 +587,28 @@ function ProductsSection() {
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-        const res = await apiRequest("POST", "/api/upload", {
-          filename: file.name,
-          mimeType: file.type,
-          data: base64,
-        });
-        const data = await res.json();
-        form.setValue("image", data.url);
-        setImagePreview(data.url);
-        toast({ title: "Image uploaded" });
-        setIsUploading(false);
+        try {
+          const base64 = (event.target?.result as string).split(',')[1];
+          const res = await apiRequest("POST", "/api/upload", {
+            filename: file.name,
+            mimeType: file.type,
+            data: base64,
+          });
+          const data = await res.json();
+          form.setValue("image", data.url);
+          setImagePreview(data.url);
+          toast({ title: "Image uploaded" });
+        } catch (uploadErr: any) {
+          toast({ 
+            title: "Upload failed", 
+            description: uploadErr.message.includes("too large") 
+              ? "Image is too large. Please use a smaller file." 
+              : uploadErr.message, 
+            variant: "destructive" 
+          });
+        } finally {
+          setIsUploading(false);
+        }
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -606,22 +617,35 @@ function ProductsSection() {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof productSchema>) => {
-      await apiRequest("POST", api.products.create.path, data);
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof productSchema> & { id: number }) => {
+      await apiRequest("PATCH", `/api/admin/products/${data.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      setEditingProduct(null);
       form.reset();
-      setShowForm(false);
       setImagePreview("");
-      toast({ title: "Product created" });
+      toast({ title: "Product updated" });
     },
     onError: (err: any) => {
-      toast({ title: "Failed to create product", description: err.message, variant: "destructive" });
+      toast({ title: "Failed to update product", description: err.message, variant: "destructive" });
     }
   });
+
+  const handleEdit = (product: any) => {
+    setEditingProduct(product);
+    form.reset({
+      name: product.name,
+      image: product.image,
+      description: product.description || "",
+      active: product.active,
+    });
+    setImagePreview(product.image);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (isLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
@@ -640,7 +664,7 @@ function ProductsSection() {
         <Card className="bg-[#16181d] border-white/5">
           <CardContent className="p-4 md:p-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
+              <form onSubmit={form.handleSubmit((d) => editingProduct ? updateProductMutation.mutate({ ...d, id: editingProduct.id }) : createMutation.mutate(d))} className="space-y-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
@@ -701,10 +725,20 @@ function ProductsSection() {
                     <FormLabel className="!mt-0">Active</FormLabel>
                   </FormItem>
                 )} />
-                <Button type="submit" disabled={createMutation.isPending} className="w-full" data-testid="btn-save-product">
-                  {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Product
+                <Button type="submit" disabled={createMutation.isPending || updateProductMutation.isPending} className="w-full" data-testid="btn-save-product">
+                  {(createMutation.isPending || updateProductMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingProduct ? "Update Product" : "Save Product"}
                 </Button>
+                {editingProduct && (
+                  <Button type="button" variant="ghost" onClick={() => {
+                    setEditingProduct(null);
+                    setShowForm(false);
+                    form.reset();
+                    setImagePreview("");
+                  }} className="w-full mt-2">
+                    Cancel Edit
+                  </Button>
+                )}
               </form>
             </Form>
           </CardContent>
@@ -736,7 +770,7 @@ function ProductsSection() {
                   }} className="text-destructive hover:bg-destructive/10">
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingProduct(p)} data-testid={`btn-edit-${p.id}`}>
+                  <Button size="icon" variant="ghost" onClick={() => handleEdit(p)} data-testid={`btn-edit-${p.id}`}>
                     <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="ghost" onClick={() => toggleMutation.mutate({ id: p.id, active: !p.active })} data-testid={`btn-toggle-${p.id}`}>
