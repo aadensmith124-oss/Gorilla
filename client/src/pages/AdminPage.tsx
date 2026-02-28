@@ -1151,9 +1151,15 @@ function OrdersSection() {
   });
 
   const filteredOrders = orders?.filter((o: any) => {
-    const matchesId = orderIdSearch ? o.id.toString().toLowerCase().includes(orderIdSearch.toLowerCase()) : true;
+    if (orderIdSearch) {
+      const search = orderIdSearch.toLowerCase();
+      const matchesOrderId = (o.orderId || '').toLowerCase().includes(search);
+      const matchesDbId = o.id.toString().includes(search);
+      const matchesUser = (o.user?.username || '').toLowerCase().includes(search);
+      if (!matchesOrderId && !matchesDbId && !matchesUser) return false;
+    }
     const matchesStatus = statusFilter === "all" ? true : o.status === statusFilter;
-    return matchesId && matchesStatus;
+    return matchesStatus;
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
@@ -1171,7 +1177,7 @@ function OrdersSection() {
           </div>
           <div className="relative group">
             <Input 
-              placeholder="order-id1,order-id2,order-id3,..." 
+              placeholder="Search by order ID, username..." 
               value={orderIdSearch}
               onChange={(e) => setOrderIdSearch(e.target.value)}
               className="bg-[#16181d] border-white/5 pr-20 uppercase font-mono text-xs"
@@ -1186,7 +1192,7 @@ function OrdersSection() {
               <SelectContent className="bg-[#16181d] border-white/10 text-white">
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Fulfilled</SelectItem>
+                <SelectItem value="fulfilled">Fulfilled</SelectItem>
                 <SelectItem value="refunded">Refunded</SelectItem>
               </SelectContent>
             </Select>

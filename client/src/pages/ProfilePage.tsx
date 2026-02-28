@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, X } from "lucide-react";
+import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -329,12 +329,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
           <div className="p-6 space-y-6 h-full flex flex-col">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
-              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white bg-white/10 rounded-full h-8 w-8">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
 
             <div className="flex-1 flex flex-col gap-4">
               <div
@@ -362,12 +357,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
         <div className="p-6 space-y-6 h-full flex flex-col">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white bg-white/10 rounded-full h-8 w-8">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
             <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
