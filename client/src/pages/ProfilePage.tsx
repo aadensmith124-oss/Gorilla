@@ -19,7 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const orderId = searchParams.get("order");
   const { data: orders } = useOrders();
@@ -35,7 +35,8 @@ export default function ProfilePage() {
     }
   }, [orderId, orders]);
 
-  const defaultTab = location.includes("orders") ? "orders" : "dashboard";
+  const tabParam = searchParams.get("tab");
+  const defaultTab = tabParam === "orders" ? "orders" : tabParam === "balance" ? "balance" : "dashboard";
 
   if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -46,13 +47,16 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={defaultTab} onValueChange={(val) => setLocation(val === "dashboard" ? "/profile" : `/profile?tab=${val}`)} className="w-full">
         <TabsList className="w-full justify-start border-b border-white/5 bg-transparent p-0 h-auto rounded-none gap-6">
           <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Dashboard
           </TabsTrigger>
           <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium text-destructive">
             Orders
+          </TabsTrigger>
+          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+            Balance
           </TabsTrigger>
         </TabsList>
 
@@ -62,6 +66,10 @@ export default function ProfilePage() {
 
         <TabsContent value="orders" className="pt-6">
           <OrdersTab />
+        </TabsContent>
+
+        <TabsContent value="balance" className="pt-6">
+          <BalanceTab user={user} />
         </TabsContent>
       </Tabs>
     </div>

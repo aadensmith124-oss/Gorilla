@@ -73,6 +73,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
               <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
             </Link>
+            <Link href="/profile?tab=balance" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">BALANCE</span>
+            </Link>
           </CollapsibleContent>
         </Collapsible>
 
