@@ -1,12 +1,14 @@
 import { useProducts } from "@/hooks/use-products";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Headset, Send } from "lucide-react";
+import { Search, Loader2, Headset, Send, ShieldX } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ShopPage() {
+  const { user } = useAuth();
   const { data: products, isLoading } = useProducts();
   const [search, setSearch] = useState("");
 
