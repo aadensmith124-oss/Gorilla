@@ -1199,8 +1199,9 @@ function OrdersSection() {
             <table className="w-full text-[10px] md:text-xs uppercase font-bold tracking-tight">
               <thead>
                 <tr className="border-b border-white/5 text-muted-foreground">
-                  <th className="p-3 text-left">Paid</th>
-                  <th className="p-3 text-left">Expected</th>
+                  <th className="p-3 text-left">User</th>
+                  <th className="p-3 text-left">Amount</th>
+                  <th className="p-3 text-left">Items</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Date</th>
                   <th className="p-3 text-right">Action</th>
@@ -1209,15 +1210,21 @@ function OrdersSection() {
               <tbody>
                 {filteredOrders?.map((o: any) => (
                   <tr key={o.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                    <td className="p-3 text-white">
+                      <div className="flex flex-col">
+                        <span className="font-bold">{o.user?.username || 'Unknown'}</span>
+                        <span className="text-[9px] text-muted-foreground">ID: {o.user?.id || o.userId}</span>
+                      </div>
+                    </td>
                     <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
-                    <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
+                    <td className="p-3 text-muted-foreground">{o.items?.length || 0}</td>
                     <td className="p-3">
-                      <span className={o.status === 'paid' ? 'text-green-500' : 'text-orange-500'}>
+                      <span className={o.status === 'fulfilled' || o.status === 'paid' ? 'text-green-500' : o.status === 'refunded' ? 'text-red-500' : 'text-orange-500'}>
                         {o.status === 'paid' ? 'Fulfilled' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
                       </span>
                     </td>
                     <td className="p-3 text-muted-foreground">
-                      {new Date(o.createdAt).toLocaleString()}
+                      {new Date(o.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-3 text-right">
                       <AdminOrderDetailsSheet order={o} />
@@ -1235,12 +1242,38 @@ function OrdersSection() {
 
 function AdminOrderDetailsSheet({ order }: { order: any }) {
   const [activeTab, setActiveTab] = useState("info");
+  const [viewingStockIdx, setViewingStockIdx] = useState<number | null>(null);
   const { toast } = useToast();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!" });
   };
+
+  const viewingItem = viewingStockIdx !== null ? order.items?.[viewingStockIdx] : null;
+
+  const stockView = viewingItem ? (() => {
+    const content = viewingItem.itemType === 'card' && viewingItem.card
+      ? `${viewingItem.card.cardNumber} | ${viewingItem.card.expiry} | ${viewingItem.card.cvv}`
+      : viewingItem.stockItem?.content || '';
+    return (
+      <div className="flex-1 flex flex-col gap-4">
+        <div
+          className="bg-amber-100 text-black rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
+          onClick={() => copyToClipboard(content)}
+          data-testid="admin-stock-content-box"
+        >
+          {content}
+        </div>
+        <Button
+          className="w-full bg-amber-200 hover:bg-amber-300 text-black font-bold text-sm h-12 rounded-lg"
+          onClick={() => setViewingStockIdx(null)}
+        >
+          Back
+        </Button>
+      </div>
+    );
+  })() : null;
 
   return (
     <Sheet>
@@ -1255,6 +1288,7 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
             <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
           </div>
 
+          {stockView || (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
             <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
               <TabsTrigger 
@@ -1273,16 +1307,26 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
 
             <TabsContent value="info" className="pt-6 space-y-4">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">ID</p>
-                <p className="text-xs font-mono break-all">{order.id}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Order ID</p>
+                <p className="text-xs font-mono break-all">{order.orderId || order.id}</p>
               </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">User</p>
+                <p className="text-xs font-bold">{order.user?.username || 'Unknown'} <span className="text-muted-foreground font-normal">(ID: {order.user?.id || order.userId})</span></p>
+              </div>
+              {order.user?.email && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Email</p>
+                  <p className="text-xs">{order.user.email}</p>
+                </div>
+              )}
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Creation date</p>
                 <p className="text-xs">{new Date(order.createdAt).toLocaleString()}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Reason</p>
-                <p className="text-xs">cart</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Items</p>
+                <p className="text-xs">{order.items?.length || 0} item(s)</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Expected amount</p>
@@ -1294,50 +1338,63 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
-                <p className="text-xs text-green-500 font-bold">{order.status === 'paid' ? 'fulfilled' : order.status}</p>
+                <p className={`text-xs font-bold ${order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' : order.status === 'refunded' ? 'text-red-500' : 'text-amber-500'}`}>
+                  {order.status === 'paid' ? 'fulfilled' : order.status}
+                </p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Logs</p>
-                <p className="text-xs text-muted-foreground italic">no log</p>
-              </div>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10 mt-4">
-                Order Url
-              </Button>
             </TabsContent>
 
             <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
               {order.items?.map((item: any, idx: number) => (
                 <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
-                    <p className="text-xs font-bold">{item.variant?.product?.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={item.itemType === 'card' ? 'border-yellow-500/30 text-yellow-500 text-[9px]' : 'border-primary/30 text-primary text-[9px]'}>
+                      {item.itemType === 'card' ? '💳 Credit Card' : '📦 Product'}
+                    </Badge>
                   </div>
+
+                  {item.itemType === 'card' ? (
+                    <>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Card</p>
+                        <p className="text-xs font-bold font-mono">{item.card?.maskedCard || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Country</p>
+                        <p className="text-xs font-bold">{item.card?.country || 'N/A'}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
+                        <p className="text-xs font-bold">{item.variant?.name || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
+                        <p className="text-xs font-bold">{item.quantity}</p>
+                      </div>
+                    </>
+                  )}
+
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Option</p>
-                    <p className="text-xs font-bold">{item.variant?.name}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
-                    <p className="text-xs font-bold">1</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Unit price</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Price</p>
                     <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Total</p>
-                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
-                  </div>
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-                    onClick={() => item.stockItem && copyToClipboard(item.stockItem.content)}
-                  >
-                    View stock
-                  </Button>
+
+                  {(item.stockItem || (item.itemType === 'card' && item.card)) && (
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
+                      onClick={() => setViewingStockIdx(idx)}
+                    >
+                      View stock
+                    </Button>
+                  )}
                 </div>
               ))}
             </TabsContent>
           </Tabs>
+          )}
         </div>
       </SheetContent>
     </Sheet>

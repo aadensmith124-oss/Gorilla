@@ -310,6 +310,7 @@ function OrdersTab() {
 
 function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [activeTab, setActiveTab] = useState("info");
+  const [viewingStockIdx, setViewingStockIdx] = useState<number | null>(null);
   const { toast } = useToast();
 
   const copyToClipboard = (text: string) => {
@@ -317,14 +318,54 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
     toast({ title: "Copied!" });
   };
 
+  const viewingItem = viewingStockIdx !== null ? order.items?.[viewingStockIdx] : null;
+
+  if (viewingItem) {
+    const content = viewingItem.itemType === 'card' && viewingItem.card
+      ? `${viewingItem.card.cardNumber} | ${viewingItem.card.expiry} | ${viewingItem.card.cvv}`
+      : viewingItem.stockItem?.content || '';
+
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
+          <div className="p-6 space-y-6 h-full flex flex-col">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
+              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white bg-white/10 rounded-full h-8 w-8">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-4">
+              <div
+                className="bg-amber-100 text-black rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
+                onClick={() => copyToClipboard(content)}
+                data-testid="stock-content-box"
+              >
+                {content}
+              </div>
+              <Button
+                className="w-full bg-amber-200 hover:bg-amber-300 text-black font-bold text-sm h-12 rounded-lg"
+                onClick={() => setViewingStockIdx(null)}
+                data-testid="button-stock-back"
+              >
+                Back
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
         <div className="p-6 space-y-6 h-full flex flex-col">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white">
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white bg-white/10 rounded-full h-8 w-8">
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
@@ -369,13 +410,6 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
                 <p className="text-xs text-green-500 font-bold">{order.status === 'paid' ? 'fulfilled' : order.status}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Logs</p>
-                <p className="text-xs text-muted-foreground italic">no log</p>
-              </div>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10 mt-4">
-                Order Url
-              </Button>
             </TabsContent>
 
             <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
@@ -424,21 +458,15 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     <p className="text-xs font-bold">${((item.price * item.quantity) / 100).toFixed(2)}</p>
                   </div>
 
-                  {item.itemType === 'card' && item.card ? (
-                    <Button 
-                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-                      onClick={() => copyToClipboard(`${item.card.cardNumber} | ${item.card.expiry} | ${item.card.cvv}`)}
-                    >
-                      Copy Card Details
-                    </Button>
-                  ) : item.stockItem ? (
+                  {(item.stockItem || (item.itemType === 'card' && item.card)) && (
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-                      onClick={() => copyToClipboard(item.stockItem.content)}
+                      onClick={() => setViewingStockIdx(idx)}
+                      data-testid={`button-view-stock-${idx}`}
                     >
                       View stock
                     </Button>
-                  ) : null}
+                  )}
                 </div>
               ))}
             </TabsContent>
