@@ -6,7 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { cryptoPayments } from "@shared/schema";
+import { cryptoPayments, orders } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -508,18 +508,20 @@ export async function registerRoutes(
     const ticket = await storage.getSupportTicket(Number(req.params.id));
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-    if (action === "refund") {
-      const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
-      if (order.length > 0) {
-        await storage.refundOrder(order[0].id);
-        await storage.updateUserBalance(ticket.userId, order[0].total);
-        await storage.createTransaction(ticket.userId, order[0].total, "refund", `Refund for order ${ticket.orderId} via support`);
+    try {
+      if (action === "refund") {
+        const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
+        if (order.length > 0) {
+          await storage.refundOrder(order[0].id);
+        }
+      } else if (action === "replace") {
+        const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
+        if (order.length > 0) {
+          await storage.replaceOrderItem(order[0].id);
+        }
       }
-    } else if (action === "replace") {
-      const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
-      if (order.length > 0) {
-        await storage.replaceOrderItem(order[0].id);
-      }
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message });
     }
 
     const updated = await storage.updateSupportTicket(Number(req.params.id), { 

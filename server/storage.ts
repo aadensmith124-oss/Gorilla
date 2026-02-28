@@ -376,6 +376,19 @@ export class DatabaseStorage implements IStorage {
   async refundOrder(orderId: number): Promise<Order> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order || order.status === 'refunded') throw new Error("Invalid order or already refunded");
+
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    for (const item of items) {
+      if (item.itemType === 'product' && item.stockItemId) {
+        await db.update(stockItems).set({ isSold: false, orderId: null }).where(eq(stockItems.id, item.stockItemId));
+      }
+      if (item.itemType === 'card' && item.cardId) {
+        await db.update(cards).set({ isSold: false, userId: null }).where(eq(cards.id, item.cardId));
+      }
+    }
+
+    await this.updateUserBalance(order.userId, order.total);
+    await this.createTransaction(order.userId, order.total, "refund", `Refund for order #${order.orderId}`);
     
     const [updated] = await db.update(orders).set({ status: 'refunded' as const }).where(eq(orders.id, orderId)).returning();
     return updated;
@@ -383,17 +396,20 @@ export class DatabaseStorage implements IStorage {
 
   async replaceOrderItem(orderId: number): Promise<Order> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-    if (!order || order.status !== 'paid') throw new Error("Invalid order");
-    
+    if (!order) throw new Error("Order not found");
+
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-    if (items.length === 0) throw new Error("No items to replace");
+    const productItems = items.filter(i => i.itemType === 'product' && i.variantId);
+    if (productItems.length === 0) throw new Error("No product items to replace");
     
-    const firstItem = items[0];
-    const newStock = await this.reserveStockItem(firstItem.variantId);
-    if (!newStock) throw new Error("No stock available for replacement");
-    
-    await db.update(orderItems).set({ stockItemId: newStock.id }).where(eq(orderItems.id, firstItem.id));
-    await db.update(stockItems).set({ orderId, replacementForId: firstItem.stockItemId }).where(eq(stockItems.id, newStock.id));
+    for (const item of productItems) {
+      if (!item.variantId) continue;
+      const newStock = await this.reserveStockItem(item.variantId);
+      if (!newStock) throw new Error("No stock available for replacement");
+      
+      await db.update(orderItems).set({ stockItemId: newStock.id }).where(eq(orderItems.id, item.id));
+      await db.update(stockItems).set({ orderId, replacementForId: item.stockItemId }).where(eq(stockItems.id, newStock.id));
+    }
     
     const [updated] = await db.update(orders).set({ status: 'replaced' as const }).where(eq(orders.id, orderId)).returning();
     return updated;
