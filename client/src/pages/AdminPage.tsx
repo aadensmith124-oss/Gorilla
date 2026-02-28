@@ -1003,15 +1003,18 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                             <div className="w-24 text-right">
                               <p className="text-xs font-bold text-blue-400">{v.stockCount} in stock</p>
                             </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1">
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/10" onClick={() => {
                                 setSelectedVariantForStock(v.id);
                                 setActiveTab("stock");
-                              }}>
+                              }} data-testid={`btn-stock-${v.id}`}>
                                 <Database className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-red-500/10" onClick={() => setEditingVariant({ ...v })}>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-white/60 hover:bg-white/10" onClick={() => setEditingVariant({ ...v })} data-testid={`btn-edit-variant-${v.id}`}>
                                 <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-red-500/10" onClick={() => { if (confirm(`Delete option "${v.name}"?`)) deleteVariantMutation.mutate(v.id); }} data-testid={`btn-delete-variant-${v.id}`}>
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
