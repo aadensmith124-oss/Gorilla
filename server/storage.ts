@@ -380,10 +380,12 @@ export class DatabaseStorage implements IStorage {
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
     for (const item of items) {
       if (item.itemType === 'product' && item.stockItemId) {
-        await db.update(stockItems).set({ isSold: false, orderId: null }).where(eq(stockItems.id, item.stockItemId));
+        await db.update(orderItems).set({ stockItemId: null }).where(eq(orderItems.id, item.id));
+        await db.delete(stockItems).where(eq(stockItems.id, item.stockItemId));
       }
       if (item.itemType === 'card' && item.cardId) {
-        await db.update(cards).set({ isSold: false, userId: null }).where(eq(cards.id, item.cardId));
+        await db.update(orderItems).set({ cardId: null }).where(eq(orderItems.id, item.id));
+        await db.delete(cards).where(eq(cards.id, item.cardId));
       }
     }
 
