@@ -7,15 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, Package, Wallet, CreditCard, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, X } from "lucide-react";
+import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { SiBitcoin } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { CryptoPaymentModal } from "@/components/CryptoPaymentModal";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
@@ -446,35 +445,9 @@ function BalanceTab({ user }: { user: any }) {
   const { redeemCode } = useWallet();
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
-  const [selectedProcessor, setSelectedProcessor] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showCryptoModal, setShowCryptoModal] = useState(false);
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (data: { amount: string, method: string }) => {
-      const res = await apiRequest("POST", "/api/wallet/purchase", data);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Balance Added", description: `Added $${(data.amountAdded / 100).toFixed(2)} to your balance.` });
-      setAmount("");
-      setSelectedProcessor(null);
-    }
-  });
-
-  const handleCharge = () => {
-    if (!amount || !selectedProcessor) {
-      toast({ title: "Error", description: "Please enter amount and select a payment processor", variant: "destructive" });
-      return;
-    }
-    if (selectedProcessor === "crypto") {
-      setShowCryptoModal(true);
-      return;
-    }
-    purchaseMutation.mutate({ amount, method: selectedProcessor });
-  };
 
   const handleRedeem = () => {
     if (!giftCardCode.trim()) return;
@@ -517,70 +490,19 @@ function BalanceTab({ user }: { user: any }) {
             />
           </div>
 
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Select a payment processor.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={() => setSelectedProcessor("crypto")}
-                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                  selectedProcessor === "crypto" 
-                    ? "border-amber-500 bg-amber-500/10" 
-                    : "border-white/10 bg-white/5 hover:border-white/20"
-                }`}
-                data-testid="button-processor-crypto"
-              >
-                <SiBitcoin className="h-5 w-5 text-amber-500" />
-                <span className="font-medium">Crypto (Forebit)</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedProcessor("credit_card")}
-                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                  selectedProcessor === "credit_card" 
-                    ? "border-blue-500 bg-blue-500/10" 
-                    : "border-white/10 bg-white/5 hover:border-white/20"
-                }`}
-                data-testid="button-processor-card"
-              >
-                <CreditCard className="h-5 w-5 text-blue-500" />
-                <span className="font-medium">Credit/Debit Card</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedProcessor("bank_transfer")}
-                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                  selectedProcessor === "bank_transfer" 
-                    ? "border-green-500 bg-green-500/10" 
-                    : "border-white/10 bg-white/5 hover:border-white/20"
-                }`}
-                data-testid="button-processor-bank"
-              >
-                <Wallet className="h-5 w-5 text-green-500" />
-                <span className="font-medium">Bank Transfer</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedProcessor("gift_card")}
-                className={`flex items-center justify-center gap-3 p-4 rounded-lg border transition-all ${
-                  selectedProcessor === "gift_card" 
-                    ? "border-purple-500 bg-purple-500/10" 
-                    : "border-white/10 bg-white/5 hover:border-white/20"
-                }`}
-                data-testid="button-processor-gift"
-              >
-                <Gift className="h-5 w-5 text-purple-500" />
-                <span className="font-medium">Gift Card</span>
-              </button>
-            </div>
-          </div>
-
           <Button 
-            className="w-full h-12 bg-destructive hover:bg-destructive/90 text-white font-bold"
-            onClick={handleCharge}
+            className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+            onClick={() => {
+              if (!amount || parseFloat(amount) < 0.50) {
+                toast({ title: "Error", description: "Minimum top-up is $0.50", variant: "destructive" });
+                return;
+              }
+              setShowCryptoModal(true);
+            }}
             data-testid="button-charge"
           >
-            Charge
+            <SiBitcoin className="h-4 w-4 mr-2" />
+            Top Up with Crypto
           </Button>
         </CardContent>
       </Card>
@@ -620,7 +542,6 @@ function BalanceTab({ user }: { user: any }) {
         onSuccess={() => {
           setShowCryptoModal(false);
           setAmount("");
-          setSelectedProcessor(null);
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         }}
       />
