@@ -557,20 +557,6 @@ function ProductsSection() {
     }
   });
 
-  const deleteProductMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/products/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      toast({ title: "Product deleted" });
-    },
-    onError: (err: any) => {
-      toast({ title: "Failed to delete product", description: err.message, variant: "destructive" });
-    }
-  });
-
   const toggleMutation = useMutation({
     mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
       await apiRequest("PATCH", `/api/admin/products/${id}`, { active });
@@ -1282,6 +1268,7 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
   );
 }
 
+function UsersSection() {
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
   });
