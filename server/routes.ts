@@ -424,39 +424,6 @@ export async function registerRoutes(
     res.send(buffer);
   });
 
-  // Countries
-  app.get("/api/countries", async (req, res) => {
-    const list = await storage.getCountries();
-    res.json(list);
-  });
-
-  app.post("/api/countries", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const { name } = req.body;
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return res.status(400).json({ message: "Country name is required" });
-    }
-    try {
-      const country = await storage.createCountry(name.trim());
-      res.status(201).json(country);
-    } catch (e: any) {
-      if (e.message?.includes("unique")) {
-        return res.status(409).json({ message: "Country already exists" });
-      }
-      throw e;
-    }
-  });
-
-  app.delete("/api/countries/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    await storage.deleteCountry(Number(req.params.id));
-    res.json({ success: true });
-  });
-
   // Cards
   app.get("/api/cards", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

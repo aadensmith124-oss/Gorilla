@@ -31,10 +31,6 @@ export default function CardsPage() {
     queryKey: ["/api/cards"],
   });
 
-  const { data: countryList } = useQuery<any[]>({
-    queryKey: ["/api/countries"],
-  });
-
   const handleAddToCart = (card: CardType) => {
     const alreadyInCart = cartItems.some(i => i.cardId === card.id);
     if (alreadyInCart) {
@@ -65,9 +61,10 @@ export default function CardsPage() {
   }, [cards, countryFilter, priceRange, firstHandOnly]);
 
   const countries = useMemo(() => {
-    if (!countryList) return [];
-    return countryList.map((c: any) => c.name).sort();
-  }, [countryList]);
+    if (!cards) return [];
+    const set = new Set(cards.map(c => c.country));
+    return Array.from(set).sort();
+  }, [cards]);
 
   if (isLoading) {
     return (

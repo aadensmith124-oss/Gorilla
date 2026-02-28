@@ -195,8 +195,6 @@ function DashboardSection() {
 function AdminCardsSection() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCountryName, setNewCountryName] = useState("");
-  
   const { data: cards, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cards/all"],
     queryFn: async () => {
@@ -204,10 +202,6 @@ function AdminCardsSection() {
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     }
-  });
-
-  const { data: countryList } = useQuery<any[]>({
-    queryKey: ["/api/countries"],
   });
 
   const cardSchema = z.object({
@@ -250,31 +244,6 @@ function AdminCardsSection() {
     }
   });
 
-  const addCountryMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await apiRequest("POST", "/api/countries", { name });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/countries"] });
-      setNewCountryName("");
-      toast({ title: "Country added" });
-    },
-    onError: (e: any) => {
-      toast({ title: "Error", description: e.message || "Country already exists", variant: "destructive" });
-    }
-  });
-
-  const deleteCountryMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/countries/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/countries"] });
-      toast({ title: "Country removed" });
-    }
-  });
-
   const removeMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/admin/cards/${id}`);
@@ -299,39 +268,7 @@ function AdminCardsSection() {
 
       {showAddForm && (
         <Card className="bg-[#0f1115] border-white/5">
-          <CardContent className="p-6 space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Manage Countries</h3>
-              <div className="flex flex-wrap gap-2">
-                {countryList?.map((c: any) => (
-                  <Badge key={c.id} variant="outline" className="bg-white/5 border-white/10 text-white text-xs gap-1.5 pr-1">
-                    {c.name}
-                    <button onClick={() => deleteCountryMutation.mutate(c.id)} className="ml-1 hover:text-red-400 transition-colors" data-testid={`btn-delete-country-${c.id}`}>
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={newCountryName}
-                  onChange={(e) => setNewCountryName(e.target.value)}
-                  placeholder="New country name..."
-                  className="bg-black/50 border-white/10 text-sm flex-1"
-                  data-testid="input-new-country"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => newCountryName.trim() && addCountryMutation.mutate(newCountryName.trim())}
-                  disabled={!newCountryName.trim() || addCountryMutation.isPending}
-                  className="bg-primary hover:bg-primary/90 text-white font-bold uppercase text-xs"
-                  data-testid="btn-add-country"
-                >
-                  <Plus className="h-3 w-3 mr-1" /> Add
-                </Button>
-              </div>
-            </div>
-
+          <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((d) => addMutation.mutate(d))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -361,18 +298,7 @@ function AdminCardsSection() {
                   <FormField control={form.control} name="country" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Country</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="bg-black/50 border-white/10">
-                            <SelectValue placeholder="Select country" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-[#0f1115] border-white/10">
-                          {countryList?.map((c: any) => (
-                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl><Input {...field} placeholder="United States" className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

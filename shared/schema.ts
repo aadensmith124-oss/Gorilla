@@ -146,15 +146,6 @@ export const announcements = pgTable("announcements", {
 
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
 
-// === COUNTRIES (admin-managed list) ===
-export const countries = pgTable("countries", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertCountrySchema = createInsertSchema(countries).omit({ id: true, createdAt: true });
-
 // === CARDS ===
 export const cards = pgTable("cards", {
   id: serial("id").primaryKey(),
@@ -296,6 +287,4 @@ export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
 export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type InsertCard = z.infer<typeof insertCardSchema>;
-export type Country = typeof countries.$inferSelect;
-export type InsertCountry = z.infer<typeof insertCountrySchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
