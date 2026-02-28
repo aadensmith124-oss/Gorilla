@@ -579,40 +579,58 @@ function ProductsSection() {
     defaultValues: { name: "", image: "", description: "", active: true },
   });
 
+  const resizeImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("Canvas not supported"));
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl.split(",")[1]);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const base64 = (event.target?.result as string).split(',')[1];
-          const res = await apiRequest("POST", "/api/upload", {
-            filename: file.name,
-            mimeType: file.type,
-            data: base64,
-          });
-          const data = await res.json();
-          form.setValue("image", data.url);
-          setImagePreview(data.url);
-          toast({ title: "Image uploaded" });
-        } catch (uploadErr: any) {
-          toast({ 
-            title: "Upload failed", 
-            description: uploadErr.message.includes("too large") 
-              ? "Image is too large. Please use a smaller file." 
-              : uploadErr.message, 
-            variant: "destructive" 
-          });
-        } finally {
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      toast({ title: "Upload failed", variant: "destructive" });
+      const base64 = await resizeImage(file);
+      const res = await apiRequest("POST", "/api/upload", {
+        filename: file.name.replace(/\.[^.]+$/, ".jpg"),
+        mimeType: "image/jpeg",
+        data: base64,
+      });
+      const data = await res.json();
+      form.setValue("image", data.url);
+      setImagePreview(data.url);
+      toast({ title: "Image uploaded" });
+    } catch (uploadErr: any) {
+      toast({ 
+        title: "Upload failed", 
+        description: uploadErr.message, 
+        variant: "destructive" 
+      });
+    } finally {
       setIsUploading(false);
     }
   };
@@ -936,7 +954,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
 
           <TabsContent value="options" className="space-y-4 mt-4">
                   <div className="space-y-1">
-                    {product.variants.map((v: any) => (
+                    {(product.variants || []).map((v: any) => (
                       <div key={v.id} className="p-3 bg-[#0d0f12] border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
                         {editingVariant?.id === v.id ? (
                           <div className="space-y-3 p-2">

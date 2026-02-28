@@ -32,14 +32,8 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
     onSuccess: (data) => {
       if (data.checkoutUrl) {
         setCheckoutUrl(data.checkoutUrl);
-        window.open(data.checkoutUrl, "_blank");
-        toast({
-          title: "Payment Created",
-          description: purpose === "order" 
-            ? "Complete payment in the new tab. You will receive your item automatically."
-            : "Complete payment in the new tab. Your balance will be credited automatically.",
-        });
         if (onSuccess) onSuccess();
+        window.location.href = data.checkoutUrl;
       }
     },
     onError: (error: any) => {
