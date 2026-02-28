@@ -86,23 +86,22 @@ app.use((req, res, next) => {
   }
 
   // Balance Decay (0.7% per hour)
-  setInterval(async () => {
+  const runDecay = async () => {
     try {
-      const users = await storage.getAllUsers();
-      for (const user of users) {
+      const allUsers = await storage.getAllUsers();
+      for (const user of allUsers) {
         if (user.balance > 0) {
-          const decay = Math.floor(user.balance * 0.007);
-          if (decay > 0) {
-            await storage.updateUserBalance(user.id, -decay);
-            await storage.createTransaction(user.id, -decay, "fee", "Hourly balance decay (0.7%)");
-            log(`Decayed ${decay} cents from user ${user.username}`);
-          }
+          const decay = Math.max(1, Math.floor(user.balance * 0.007));
+          await storage.updateUserBalance(user.id, -decay);
+          await storage.createTransaction(user.id, -decay, "fee", "Hourly balance decay (0.7%)");
+          log(`Decayed ${decay} cents from user ${user.username} (balance: ${user.balance})`);
         }
       }
     } catch (err) {
       console.error("Error in balance decay job:", err);
     }
-  }, 60 * 60 * 1000); // Every hour
+  };
+  setInterval(runDecay, 60 * 60 * 1000);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
