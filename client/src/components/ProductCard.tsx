@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import type { Product, Variant } from "@shared/schema";
-import { Package } from "lucide-react";
 
 interface ProductWithVariants extends Product {
   variants: (Variant & { stockCount: number })[];
@@ -18,7 +17,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
             <img 
               src={product.image} 
               alt={product.name}
-              className="w-full h-full object-contain p-2 transform group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600/30 to-purple-900/30">
@@ -37,9 +36,6 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
               <span className="font-black text-[#e11d48] rotate-[-15deg] border-2 border-[#e11d48] px-2 py-0.5 text-[10px] uppercase tracking-tighter italic">OUT OF STOCK</span>
             </div>
           )}
-        </div>
-        <div className="p-3">
-          <p className="text-sm font-bold text-white truncate" data-testid={`text-product-name-${product.id}`}>{product.name}</p>
         </div>
       </div>
     </Link>
