@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Dice5, Bomb, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 export default function GamesPage() {
   const { user } = useAuth();

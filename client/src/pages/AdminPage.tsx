@@ -893,54 +893,61 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
           </TabsList>
 
           <TabsContent value="options" className="space-y-4 mt-4">
-            {product.variants?.length > 0 && (
-              <div className="space-y-2">
-                {product.variants.map((v: any) => (
-                  <div key={v.id} className="p-3 rounded-lg bg-[#1c1f26]">
-                    {editingVariant?.id === v.id ? (
-                      <div className="space-y-3">
-                        <Input 
-                          value={editingVariant.name} 
-                          onChange={(e) => setEditingVariant({ ...editingVariant, name: e.target.value })}
-                          placeholder="Name"
-                        />
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          value={(editingVariant.price / 100).toFixed(2)} 
-                          onChange={(e) => setEditingVariant({ ...editingVariant, price: Math.round(parseFloat(e.target.value) * 100) })}
-                          placeholder="Price"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => updateVariantMutation.mutate(editingVariant)} disabled={updateVariantMutation.isPending}>
-                            {updateVariantMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingVariant(null)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  <div className="space-y-1">
+                    {product.variants.map((v: any) => (
+                      <div key={v.id} className="p-3 bg-[#0d0f12] border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
+                        {editingVariant?.id === v.id ? (
+                          <div className="space-y-3 p-2">
+                            <Input 
+                              value={editingVariant.name} 
+                              onChange={(e) => setEditingVariant({ ...editingVariant, name: e.target.value })}
+                              placeholder="Name"
+                              className="h-8 text-xs bg-black/40 border-white/10"
+                            />
+                            <Input 
+                              type="number" 
+                              step="0.01"
+                              value={(editingVariant.price / 100).toFixed(2)} 
+                              onChange={(e) => setEditingVariant({ ...editingVariant, price: Math.round(parseFloat(e.target.value) * 100) })}
+                              placeholder="Price"
+                              className="h-8 text-xs bg-black/40 border-white/10"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="h-7 text-[10px]" onClick={() => updateVariantMutation.mutate(editingVariant)} disabled={updateVariantMutation.isPending}>
+                                {updateVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setEditingVariant(null)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{v.name}</p>
+                            </div>
+                            <div className="w-20 text-right">
+                              <p className="text-xs font-bold text-green-500">${(v.price / 100).toFixed(2)}</p>
+                            </div>
+                            <div className="w-24 text-right">
+                              <p className="text-xs font-bold text-blue-400">{v.stockCount} in stock</p>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/10" onClick={() => {
+                                setSelectedVariantForStock(v.id);
+                                setActiveTab("stock");
+                              }}>
+                                <Database className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-red-500/10" onClick={() => setEditingVariant({ ...v })}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{v.name}</p>
-                          <p className="text-xs text-muted-foreground">{v.stockCount} in stock</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-green-500">${(v.price / 100).toFixed(2)}</Badge>
-                          <Button size="icon" variant="ghost" onClick={() => setEditingVariant({ ...v })} data-testid={`btn-edit-variant-${v.id}`}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteVariantMutation.mutate(v.id)} data-testid={`btn-delete-variant-${v.id}`}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
 
             <Form {...optionForm}>
               <form onSubmit={optionForm.handleSubmit((d) => createOptionMutation.mutate(d))} className="space-y-4 p-4 rounded-lg bg-[#1c1f26]">

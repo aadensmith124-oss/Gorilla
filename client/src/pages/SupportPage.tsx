@@ -140,9 +140,15 @@ export default function SupportPage() {
                     <FormItem>
                       <FormLabel className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">Proof Image</FormLabel>
                       <div className="flex flex-col gap-4">
-                        <div className="flex gap-4">
-                          <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-black/50 border-white/10 flex-1" />
-                          {isUploading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                        <div className="flex gap-4 items-center">
+                          <div className="relative group flex-1">
+                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-black/50 border-white/10 opacity-0 absolute inset-0 cursor-pointer z-10" />
+                            <div className="flex items-center gap-3 px-4 h-10 rounded-md bg-black/40 border border-white/10 text-xs text-muted-foreground">
+                              <Upload className="h-4 w-4" />
+                              <span>{field.value ? field.value.split('/').pop() : "Choose File"}</span>
+                            </div>
+                          </div>
+                          {isUploading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
                         </div>
                         {field.value && (
                           <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10">
