@@ -435,8 +435,31 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const cardNumber = req.body.cardNumber || "";
+    let country = req.body.country || "";
+
+    if (!country && cardNumber.length >= 6) {
+      const bin = cardNumber.substring(0, 6);
+      try {
+        const binRes = await fetch(`https://lookup.binlist.net/${bin}`, {
+          headers: { "Accept-Version": "3" }
+        });
+        if (binRes.ok) {
+          const binData = await binRes.json();
+          country = binData.country?.name || "Unknown";
+        } else {
+          country = "Unknown";
+        }
+      } catch {
+        country = "Unknown";
+      }
+    }
+
+    if (!country) country = "Unknown";
+
     const cardData = {
       ...req.body,
+      country,
       extras: req.body.extras || "",
     };
     const card = await storage.createCard(cardData);

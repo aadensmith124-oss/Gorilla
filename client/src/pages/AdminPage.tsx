@@ -205,18 +205,17 @@ function AdminCardsSection() {
   });
 
   const cardSchema = z.object({
-    cardNumber: z.string().min(16, "Invalid card number"),
+    cardNumber: z.string().min(13, "Invalid card number"),
     expiry: z.string().min(5, "MM/YY format"),
     cvv: z.string().min(3, "Invalid CVV"),
     price: z.string().min(1, "Required"),
-    country: z.string().min(1, "Select a country"),
     extras: z.string().optional().default(""),
     isFirstHand: z.boolean().default(false),
   });
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
-    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", country: "", extras: "", isFirstHand: false },
+    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", extras: "", isFirstHand: false },
   });
 
   const addMutation = useMutation({
@@ -227,7 +226,6 @@ function AdminCardsSection() {
         cardNumber: data.cardNumber,
         expiry: data.expiry,
         cvv: data.cvv,
-        country: data.country,
         extras: data.extras || "",
         maskedCard,
         price: Math.round(parseFloat(data.price) * 100),
@@ -294,14 +292,7 @@ function AdminCardsSection() {
                     </FormItem>
                   )} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField control={form.control} name="country" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Country</FormLabel>
-                      <FormControl><Input {...field} placeholder="United States" className="bg-black/50 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="price" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price ($)</FormLabel>

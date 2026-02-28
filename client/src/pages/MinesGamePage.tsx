@@ -80,8 +80,13 @@ export default function MinesGamePage() {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold italic">$</span>
                   <Input 
                     type="number" 
+                    min="1"
+                    step="1"
                     value={bet/100} 
-                    onChange={(e) => setBet(Math.max(1, parseFloat(e.target.value) * 100))} 
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) setBet(Math.max(100, Math.round(val * 100)));
+                    }} 
                     className="pl-8 text-center font-mono text-xl bg-black/40 border-white/10 h-14"
                   />
                 </div>
