@@ -1259,14 +1259,14 @@ function AdminOrderDetailsSheet({ order }: { order: any }) {
     return (
       <div className="flex-1 flex flex-col gap-4">
         <div
-          className="bg-amber-100 text-black rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
+          className="bg-black border border-white/10 text-white rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
           onClick={() => copyToClipboard(content)}
           data-testid="admin-stock-content-box"
         >
           {content}
         </div>
         <Button
-          className="w-full bg-amber-200 hover:bg-amber-300 text-black font-bold text-sm h-12 rounded-lg"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
           onClick={() => setViewingStockIdx(null)}
         >
           Back
