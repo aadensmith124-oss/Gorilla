@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { SiBitcoin } from "react-icons/si";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -35,7 +35,9 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         window.open(data.checkoutUrl, "_blank");
         toast({
           title: "Payment Created",
-          description: "A payment window has been opened. Complete payment there and your balance will be credited automatically.",
+          description: purpose === "order" 
+            ? "A payment window has been opened. Complete payment there and you will receive your item automatically."
+            : "A payment window has been opened. Complete payment there and your balance will be credited automatically.",
         });
         if (onSuccess) onSuccess();
       }
@@ -62,22 +64,13 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md bg-[#1a1a1a] border-white/10">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-white">Crypto Payment</DialogTitle>
-          <div className="flex items-center gap-2">
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center justify-between">
+            <span>Crypto Payment</span>
             <span className="bg-amber-500 text-black font-bold px-3 py-1 rounded text-sm">
               ${(total / 100).toFixed(2)}
             </span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleClose}
-              className="h-6 w-6"
-              data-testid="button-close-crypto-modal"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
@@ -97,7 +90,9 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
 
               <p className="text-sm text-muted-foreground">
                 You'll be redirected to Forebit's secure checkout to complete your payment. 
-                Your balance will be credited automatically once the payment is confirmed.
+                {purpose === "order" 
+                  ? "You will receive your item automatically once the payment is confirmed."
+                  : "Your balance will be credited automatically once the payment is confirmed."}
               </p>
 
               <Button
@@ -124,7 +119,9 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
                 </div>
                 <p className="font-medium text-white">Payment Window Opened</p>
                 <p className="text-sm text-muted-foreground">
-                  Complete your payment in the new tab. Your balance will be credited once confirmed.
+                  {purpose === "order"
+                    ? "Complete your payment in the new tab. You will receive your item once confirmed."
+                    : "Complete your payment in the new tab. Your balance will be credited once confirmed."}
                 </p>
               </div>
 
