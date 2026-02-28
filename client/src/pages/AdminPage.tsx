@@ -209,13 +209,12 @@ function AdminCardsSection() {
     expiry: z.string().min(5, "MM/YY format"),
     cvv: z.string().min(3, "Invalid CVV"),
     price: z.string().min(1, "Required"),
-    extras: z.string().optional().default(""),
     isFirstHand: z.boolean().default(false),
   });
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
-    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", extras: "", isFirstHand: false },
+    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", isFirstHand: false },
   });
 
   const addMutation = useMutation({
@@ -226,7 +225,6 @@ function AdminCardsSection() {
         cardNumber: data.cardNumber,
         expiry: data.expiry,
         cvv: data.cvv,
-        extras: data.extras || "",
         maskedCard,
         price: Math.round(parseFloat(data.price) * 100),
         isFirstHand: data.isFirstHand,
@@ -307,15 +305,6 @@ function AdminCardsSection() {
                     </FormItem>
                   )} />
                 </div>
-                <FormField control={form.control} name="extras" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Extra Digital Items</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={3} placeholder="e.g. SSN, DOB, email access, cookies, etc." className="bg-black/50 border-white/10 text-sm" data-testid="input-card-extras" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
                 <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Card
@@ -333,7 +322,6 @@ function AdminCardsSection() {
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Extras</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
               <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
             </TableRow>
@@ -351,15 +339,6 @@ function AdminCardsSection() {
                   <Badge className="bg-primary text-white font-bold italic text-[10px]">
                     ${(card.price / 100).toFixed(2)}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {card.extras ? (
-                    <span className="text-xs text-green-400 font-mono truncate max-w-[120px] block" title={card.extras}>
-                      {card.extras.length > 20 ? card.extras.substring(0, 20) + "..." : card.extras}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={card.isSold ? "secondary" : "default"} className={card.isSold ? "bg-white/5 text-muted-foreground border-none" : "bg-green-500/20 text-green-500 border-green-500/20"}>

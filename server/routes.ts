@@ -460,7 +460,6 @@ export async function registerRoutes(
     const cardData = {
       ...req.body,
       country,
-      extras: req.body.extras || "",
     };
     const card = await storage.createCard(cardData);
     res.status(201).json(card);
