@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, ExternalLink } from "lucide-react";
-import { SiBitcoin } from "react-icons/si";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +18,7 @@ interface CryptoPaymentModalProps {
 export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "deposit", orderId, onSuccess }: CryptoPaymentModalProps) {
   const { toast } = useToast();
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [triggered, setTriggered] = useState(false);
 
   const createPaymentMutation = useMutation({
     mutationFn: async () => {
@@ -36,8 +36,8 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         toast({
           title: "Payment Created",
           description: purpose === "order" 
-            ? "A payment window has been opened. Complete payment there and you will receive your item automatically."
-            : "A payment window has been opened. Complete payment there and your balance will be credited automatically.",
+            ? "Complete payment in the new tab. You will receive your item automatically."
+            : "Complete payment in the new tab. Your balance will be credited automatically.",
         });
         if (onSuccess) onSuccess();
       }
@@ -51,13 +51,20 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
     },
   });
 
-  const handleCreatePayment = () => {
-    setCheckoutUrl(null);
-    createPaymentMutation.mutate();
-  };
+  useEffect(() => {
+    if (open && !triggered && total > 0) {
+      setTriggered(true);
+      createPaymentMutation.mutate();
+    }
+    if (!open) {
+      setTriggered(false);
+      setCheckoutUrl(null);
+    }
+  }, [open]);
 
   const handleClose = () => {
     setCheckoutUrl(null);
+    setTriggered(false);
     onOpenChange(false);
   };
 
@@ -74,44 +81,15 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          {!checkoutUrl ? (
-            <>
-              <div className="flex items-center gap-4 p-4 rounded-lg border border-white/10 bg-white/5">
-                <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <SiBitcoin className="h-6 w-6 text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-medium text-white">Pay with Cryptocurrency</p>
-                  <p className="text-sm text-muted-foreground">
-                    Bitcoin, Litecoin, Ethereum, USDT & more
-                  </p>
-                </div>
-              </div>
-
+          {createPaymentMutation.isPending ? (
+            <div className="text-center space-y-3 py-4">
+              <Loader2 className="h-10 w-10 animate-spin text-amber-500 mx-auto" />
+              <p className="font-medium text-white">Creating Payment...</p>
               <p className="text-sm text-muted-foreground">
-                You'll be redirected to Forebit's secure checkout to complete your payment. 
-                {purpose === "order" 
-                  ? "You will receive your item automatically once the payment is confirmed."
-                  : "Your balance will be credited automatically once the payment is confirmed."}
+                Opening checkout page in a new tab...
               </p>
-
-              <Button
-                onClick={handleCreatePayment}
-                disabled={createPaymentMutation.isPending}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold"
-                data-testid="button-pay-crypto"
-              >
-                {createPaymentMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating Payment...
-                  </>
-                ) : (
-                  `Pay $${(total / 100).toFixed(2)} with Crypto`
-                )}
-              </Button>
-            </>
-          ) : (
+            </div>
+          ) : checkoutUrl ? (
             <>
               <div className="text-center space-y-3">
                 <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
@@ -143,6 +121,23 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
               >
                 Close
               </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground text-center">
+                {createPaymentMutation.isError 
+                  ? "Payment creation failed. Try again." 
+                  : "Preparing payment..."}
+              </p>
+              {createPaymentMutation.isError && (
+                <Button
+                  onClick={() => createPaymentMutation.mutate()}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                  data-testid="button-retry-crypto"
+                >
+                  Retry Payment
+                </Button>
+              )}
             </>
           )}
         </div>

@@ -617,6 +617,23 @@ function ProductsSection() {
     }
   };
 
+  const createMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof productSchema>) => {
+      await apiRequest("POST", "/api/admin/products", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      form.reset();
+      setImagePreview("");
+      setShowForm(false);
+      toast({ title: "Product created" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to create product", description: err.message, variant: "destructive" });
+    }
+  });
+
   const updateProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productSchema> & { id: number }) => {
       await apiRequest("PATCH", `/api/admin/products/${data.id}`, data);
@@ -796,7 +813,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
   const [editingVariant, setEditingVariant] = useState<any>(null);
   const [selectedVariantForStock, setSelectedVariantForStock] = useState<number | null>(null);
   const [newStockContent, setNewStockContent] = useState("");
-  const [isBulkAdding, setIsBulkAdding] = useState(false);
+  
 
   const { data: stockItems, refetch: refetchStock } = useQuery({
     queryKey: ["/api/admin/stock", selectedVariantForStock],
@@ -872,27 +889,18 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
 
   const addStockMutation = useMutation({
     mutationFn: async () => {
-      if (isBulkAdding) {
-        const lines = newStockContent.split('\n').filter(line => line.trim() !== '');
-        for (const line of lines) {
-          await apiRequest("POST", "/api/admin/stock", {
-            variantId: selectedVariantForStock,
-            content: line.trim(),
-          });
-        }
-      } else {
-        await apiRequest("POST", "/api/admin/stock", {
-          variantId: selectedVariantForStock,
-          content: newStockContent,
-        });
-      }
+      const res = await apiRequest("POST", "/api/admin/stock/bulk", {
+        variantId: selectedVariantForStock,
+        rawContent: newStockContent,
+      });
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       refetchStock();
       setNewStockContent("");
-      toast({ title: isBulkAdding ? "Bulk stock items added" : "Stock item added" });
+      toast({ title: `${data.addedCount || 0} stock items added` });
     }
   });
 
@@ -1033,23 +1041,18 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   </SelectContent>
                 </Select>
 
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium">Add Stock</div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Bulk Mode</span>
-                    <Switch checked={isBulkAdding} onCheckedChange={setIsBulkAdding} />
-                  </div>
-                </div>
+                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(one item per line)</span></div>
 
                 <div className="space-y-2">
                   <Textarea 
-                    placeholder={isBulkAdding ? "Enter one item per line..." : "Enter item content..."}
+                    placeholder={"Paste stock items here, one per line...\nemail:pass\nemail2:pass2"}
                     value={newStockContent}
                     onChange={(e) => setNewStockContent(e.target.value)}
-                    rows={isBulkAdding ? 6 : 3}
+                    rows={8}
                     className="bg-[#0f1115] border-white/5 font-mono text-xs"
                   />
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>Lines to add: {newStockContent.split('\n').filter(l => l.trim()).length}</span>
                     <span>Stock in database: {stockItems?.length || 0}</span>
                   </div>
                 </div>
@@ -1059,7 +1062,7 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   disabled={addStockMutation.isPending || !newStockContent.trim() || !selectedVariantForStock}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase italic tracking-tighter"
                 >
-                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isBulkAdding ? "Bulk Add Items" : "Add Stock")}
+                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : `Add ${newStockContent.split('\n').filter(l => l.trim()).length} Items`}
                 </Button>
               </div>
             </div>

@@ -280,6 +280,14 @@ export async function registerRoutes(
     res.status(201).json(item);
   });
 
+  app.post("/api/admin/stock/bulk", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const count = await storage.addStockItems(req.body.variantId, req.body.rawContent);
+    res.json({ addedCount: count });
+  });
+
   app.get("/api/admin/stock/:variantId", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
