@@ -67,8 +67,9 @@ export async function createForebitPayment(params: CreatePaymentParams): Promise
   const rawData = await response.json();
   console.log("Forebit API raw response:", JSON.stringify(rawData, null, 2));
 
-  const paymentId = rawData.id || rawData.paymentId || rawData.payment_id || rawData.data?.id || rawData.data?.paymentId;
-  const checkoutUrl = rawData.url || rawData.checkoutUrl || rawData.checkout_url || rawData.paymentUrl || rawData.data?.url || rawData.data?.checkoutUrl;
+  const nested = rawData.data || rawData.result || rawData.payment || {};
+  const paymentId = rawData.id || rawData.paymentId || rawData.payment_id || nested.id || nested.paymentId || nested.payment_id;
+  const checkoutUrl = rawData.url || rawData.checkoutUrl || rawData.checkout_url || rawData.paymentUrl || rawData.redirect_url || nested.url || nested.checkoutUrl || nested.checkout_url || nested.redirect_url;
 
   if (!paymentId) {
     console.error("Forebit API: Could not find payment ID in response:", rawData);

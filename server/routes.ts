@@ -62,7 +62,12 @@ export async function registerRoutes(
   app.post(api.orders.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     try {
-      const order = await storage.createOrder((req.user as any).id, req.body.items);
+      const userId = (req.user as any).id;
+      const { items, cardIds } = req.body;
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const cardIdList: number[] = cardIds || [];
+
+      const order = await storage.createOrder(userId, productItems, cardIdList);
       res.status(201).json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -551,6 +556,16 @@ export async function registerRoutes(
         },
       });
 
+      if (!forebitPayment.id) {
+        console.error("Forebit: payment created but missing ID", forebitPayment);
+        return res.status(502).json({ message: "Payment provider returned an invalid response. Please try again." });
+      }
+
+      if (!forebitPayment.url) {
+        console.error("Forebit: payment created but missing checkout URL", forebitPayment);
+        return res.status(502).json({ message: "Payment provider did not return a checkout link. Please try again." });
+      }
+
       await db.insert(cryptoPayments).values({
         userId,
         forebitPaymentId: forebitPayment.id,
@@ -569,10 +584,7 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("Forebit payment creation failed:", error);
-      const userMessage = error.message?.includes("Forebit API")
-        ? "Payment service error. Please try again later."
-        : "Failed to create payment. Please try again.";
-      res.status(500).json({ message: userMessage });
+      res.status(500).json({ message: "Failed to create payment. Please try again later." });
     }
   });
 

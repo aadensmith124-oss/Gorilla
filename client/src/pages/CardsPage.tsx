@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card as CardType } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Card, CardContent, CardHeader, CardTitle, CardDescription 
+  Card, CardContent 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { Loader2, ShoppingCart } from "lucide-react";
 export default function CardsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addItem, items: cartItems } = useCart();
   const [countryFilter, setCountryFilter] = useState("all");
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [firstHandOnly, setFirstHandOnly] = useState(false);
@@ -30,24 +31,24 @@ export default function CardsPage() {
     queryKey: ["/api/cards"],
   });
 
-  const purchaseMutation = useMutation({
-    mutationFn: async (cardId: number) => {
-      const res = await apiRequest("POST", `/api/cards/${cardId}/purchase`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Purchase successful", description: "Card has been added to your collection." });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Purchase failed", 
-        description: error.message || "Failed to purchase card.",
-        variant: "destructive"
-      });
+  const handleAddToCart = (card: CardType) => {
+    const alreadyInCart = cartItems.some(i => i.cardId === card.id);
+    if (alreadyInCart) {
+      toast({ title: "Already in cart", description: "This card is already in your cart.", variant: "destructive" });
+      return;
     }
-  });
+    addItem({
+      variantId: -card.id,
+      productId: 0,
+      productName: "Credit Card",
+      variantName: card.maskedCard,
+      price: card.price,
+      quantity: 1,
+      image: "",
+      cardId: card.id,
+    });
+    toast({ title: "Added to cart", description: `${card.maskedCard} added to cart.` });
+  };
 
   const filteredCards = useMemo(() => {
     if (!cards) return [];
@@ -77,7 +78,7 @@ export default function CardsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 items-center text-center">
         <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">RULF</h1>
-        <p className="text-muted-foreground italic">Fresh HQ <span className="text-primary">HIGH QUALITY CCS</span></p>
+        <p className="text-muted-foreground italic">Fresh <span className="text-primary">HIGH QUALITY CCS</span></p>
       </div>
 
       <Card className="bg-[#0f1115] border-white/5">
@@ -149,36 +150,42 @@ export default function CardsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCards.map((card) => (
-                <TableRow key={card.id} className="hover:bg-white/5 border-white/5 transition-colors">
-                  <TableCell className="font-mono text-sm text-white">{card.maskedCard}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
-                      {card.country}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-primary text-white font-bold italic text-[10px]">
-                      ${(card.price / 100).toFixed(2)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={card.isFirstHand ? "default" : "secondary"} className={card.isFirstHand ? "bg-green-500/20 text-green-500 border-green-500/20" : "bg-white/5 text-muted-foreground border-none"}>
-                      {card.isFirstHand ? "Yes" : "No"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      size="sm" 
-                      className="bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase"
-                      onClick={() => purchaseMutation.mutate(card.id)}
-                      disabled={purchaseMutation.isPending || (user && user.balance < card.price)}
-                    >
-                      {purchaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Purchase"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredCards.map((card) => {
+                const inCart = cartItems.some(i => i.cardId === card.id);
+                return (
+                  <TableRow key={card.id} className="hover:bg-white/5 border-white/5 transition-colors">
+                    <TableCell className="font-mono text-sm text-white">{card.maskedCard}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
+                        {card.country}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-primary text-white font-bold italic text-[10px]">
+                        ${(card.price / 100).toFixed(2)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={card.isFirstHand ? "default" : "secondary"} className={card.isFirstHand ? "bg-green-500/20 text-green-500 border-green-500/20" : "bg-white/5 text-muted-foreground border-none"}>
+                        {card.isFirstHand ? "Yes" : "No"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        size="sm" 
+                        className={inCart ? "bg-green-600 hover:bg-green-700 text-white font-bold italic tracking-tighter uppercase" : "bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase"}
+                        onClick={() => handleAddToCart(card)}
+                        disabled={inCart}
+                        data-testid={`btn-add-card-${card.id}`}
+                      >
+                        {inCart ? "In Cart" : (
+                          <><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Add to Cart</>
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

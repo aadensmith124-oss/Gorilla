@@ -35,11 +35,11 @@ export function useCreateOrder() {
   const { clearCart } = useCart();
 
   return useMutation({
-    mutationFn: async (items: { variantId: number; quantity: number }[]) => {
+    mutationFn: async (items: { variantId: number; quantity: number; cardId?: number }[]) => {
       const res = await fetch(api.orders.create.path, {
         method: api.orders.create.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, cardIds: items.filter(i => i.cardId).map(i => i.cardId) }),
       });
 
       if (!res.ok) {

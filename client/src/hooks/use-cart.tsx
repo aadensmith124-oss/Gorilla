@@ -9,12 +9,14 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string;
+  cardId?: number;
 }
 
 interface CartStore {
   items: CartItem[];
   addItem: (item: CartItem) => void;
   removeItem: (variantId: number) => void;
+  removeCard: (cardId: number) => void;
   updateQuantity: (variantId: number, quantity: number) => void;
   clearCart: () => void;
   total: () => number;
@@ -25,11 +27,16 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       addItem: (newItem) => set((state) => {
-        const existing = state.items.find((i) => i.variantId === newItem.variantId);
+        if (newItem.cardId) {
+          const alreadyInCart = state.items.some((i) => i.cardId === newItem.cardId);
+          if (alreadyInCart) return state;
+          return { items: [...state.items, newItem] };
+        }
+        const existing = state.items.find((i) => i.variantId === newItem.variantId && !i.cardId);
         if (existing) {
           return {
             items: state.items.map((i) =>
-              i.variantId === newItem.variantId
+              i.variantId === newItem.variantId && !i.cardId
                 ? { ...i, quantity: i.quantity + newItem.quantity }
                 : i
             ),
@@ -38,11 +45,14 @@ export const useCart = create<CartStore>()(
         return { items: [...state.items, newItem] };
       }),
       removeItem: (variantId) => set((state) => ({
-        items: state.items.filter((i) => i.variantId !== variantId),
+        items: state.items.filter((i) => i.variantId !== variantId || i.cardId),
+      })),
+      removeCard: (cardId: number) => set((state) => ({
+        items: state.items.filter((i) => i.cardId !== cardId),
       })),
       updateQuantity: (variantId, quantity) => set((state) => ({
         items: state.items.map((i) =>
-          i.variantId === variantId ? { ...i, quantity } : i
+          i.variantId === variantId && !i.cardId ? { ...i, quantity } : i
         ),
       })),
       clearCart: () => set({ items: [] }),

@@ -17,7 +17,7 @@ type PaymentProcessor = "crypto" | "balance";
 const CRYPTO_FEE_PERCENT = 10;
 
 export default function CartPage() {
-  const { items, removeItem, total, clearCart } = useCart();
+  const { items, removeItem, removeCard, total, clearCart } = useCart();
   const { user } = useAuth();
   const { mutate: createOrder, isPending } = useCreateOrder();
   const [, setLocation] = useLocation();
@@ -39,7 +39,7 @@ export default function CartPage() {
       setShowCryptoModal(true);
     } else {
       createOrder(
-        items.map(i => ({ variantId: i.variantId, quantity: i.quantity })),
+        items.map(i => ({ variantId: i.variantId, quantity: i.quantity, cardId: i.cardId })),
         {
           onSuccess: (order) => setLocation(`/profile?order=${order.orderId}`)
         }
@@ -89,21 +89,35 @@ export default function CartPage() {
         </div>
         
         {items.map((item) => (
-          <Card key={item.variantId} className="flex flex-col sm:flex-row items-center p-4 gap-4" data-testid={`card-cart-item-${item.variantId}`}>
-            <img src={item.image} alt={item.productName} className="h-16 w-16 rounded-md object-cover bg-secondary" />
+          <Card key={item.cardId ? `card-${item.cardId}` : `v-${item.variantId}`} className="flex flex-col sm:flex-row items-center p-4 gap-4" data-testid={`card-cart-item-${item.cardId || item.variantId}`}>
+            {item.cardId ? (
+              <div className="h-16 w-16 rounded-md bg-gradient-to-br from-yellow-500/20 to-orange-600/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl">💳</span>
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-md bg-secondary overflow-hidden flex-shrink-0">
+                {item.image ? (
+                  <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-purple-600/30 to-purple-900/30 flex items-center justify-center">
+                    <span className="text-xl font-black text-white/80">{item.productName?.charAt(0)}</span>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex-1 text-center sm:text-left">
               <h3 className="font-bold">{item.productName}</h3>
-              <p className="text-sm text-muted-foreground">[Card Linked]</p>
-              <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+              <p className="text-sm text-muted-foreground">{item.variantName}</p>
+              {!item.cardId && <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>}
             </div>
             <div className="text-right flex items-center gap-3">
               <div className="font-mono font-bold text-green-500">${((item.price * item.quantity) / 100).toFixed(2)}</div>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => removeItem(item.variantId)} 
+                onClick={() => item.cardId ? removeCard(item.cardId) : removeItem(item.variantId)} 
                 className="text-destructive border-destructive/30"
-                data-testid={`button-remove-item-${item.variantId}`}
+                data-testid={`button-remove-item-${item.cardId || item.variantId}`}
               >
                 Remove
               </Button>

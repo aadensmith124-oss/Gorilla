@@ -36,7 +36,7 @@ export interface IStorage {
   reserveStockItem(variantId: number): Promise<StockItem | undefined>;
   
   // Orders
-  createOrder(userId: number, items: { variantId: number; quantity: number }[]): Promise<Order>;
+  createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds?: number[]): Promise<Order>;
   getOrders(userId: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] })[]>;
   getOrder(id: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] }) | undefined>;
   getAllOrders(): Promise<any[]>;
@@ -250,9 +250,10 @@ export class DatabaseStorage implements IStorage {
     return undefined;
   }
 
-  async createOrder(userId: number, items: { variantId: number; quantity: number }[]): Promise<Order> {
+  async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
     let total = 0;
     const reservedStockItems: { variantId: number, stockItemId: number, price: number }[] = [];
+    const cardPurchases: { cardId: number, price: number }[] = [];
 
     for (const item of items) {
       const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
@@ -266,6 +267,20 @@ export class DatabaseStorage implements IStorage {
         reservedStockItems.push({ variantId: item.variantId, stockItemId: stockItem.id, price: variant.price });
       }
     }
+
+    for (const cardId of cardIds) {
+      const [card] = await db.select().from(cards).where(eq(cards.id, cardId));
+      if (!card) throw new Error("Card not found");
+      if (card.isSold) throw new Error("Card already sold");
+      total += card.price;
+      cardPurchases.push({ cardId: card.id, price: card.price });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user || user.balance < total) throw new Error("Insufficient balance");
+
+    await this.updateUserBalance(userId, -total);
+    await this.createTransaction(userId, -total, "purchase", `Order purchase`);
 
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
@@ -286,6 +301,10 @@ export class DatabaseStorage implements IStorage {
       });
       
       await db.update(stockItems).set({ orderId: order.id }).where(eq(stockItems.id, res.stockItemId));
+    }
+
+    for (const cp of cardPurchases) {
+      await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cp.cardId));
     }
 
     return order;
