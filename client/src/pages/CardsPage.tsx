@@ -31,6 +31,10 @@ export default function CardsPage() {
     queryKey: ["/api/cards"],
   });
 
+  const { data: countryList } = useQuery<any[]>({
+    queryKey: ["/api/countries"],
+  });
+
   const handleAddToCart = (card: CardType) => {
     const alreadyInCart = cartItems.some(i => i.cardId === card.id);
     if (alreadyInCart) {
@@ -61,10 +65,9 @@ export default function CardsPage() {
   }, [cards, countryFilter, priceRange, firstHandOnly]);
 
   const countries = useMemo(() => {
-    if (!cards) return [];
-    const set = new Set(cards.map(c => c.country));
-    return Array.from(set).sort();
-  }, [cards]);
+    if (!countryList) return [];
+    return countryList.map((c: any) => c.name).sort();
+  }, [countryList]);
 
   if (isLoading) {
     return (
@@ -138,6 +141,7 @@ export default function CardsPage() {
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Extras</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">First Hand</TableHead>
               <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
             </TableRow>
@@ -145,7 +149,7 @@ export default function CardsPage() {
           <TableBody>
             {filteredCards.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
                   No cards found matching your criteria.
                 </TableCell>
               </TableRow>
@@ -164,6 +168,15 @@ export default function CardsPage() {
                       <Badge className="bg-primary text-white font-bold italic text-[10px]">
                         ${(card.price / 100).toFixed(2)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(card as any).extras ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20 text-[10px] font-bold">
+                          +EXTRAS
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={card.isFirstHand ? "default" : "secondary"} className={card.isFirstHand ? "bg-green-500/20 text-green-500 border-green-500/20" : "bg-white/5 text-muted-foreground border-none"}>

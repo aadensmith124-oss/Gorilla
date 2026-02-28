@@ -146,18 +146,28 @@ export const announcements = pgTable("announcements", {
 
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
 
+// === COUNTRIES (admin-managed list) ===
+export const countries = pgTable("countries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCountrySchema = createInsertSchema(countries).omit({ id: true, createdAt: true });
+
 // === CARDS ===
 export const cards = pgTable("cards", {
   id: serial("id").primaryKey(),
-  cardNumber: text("card_number").notNull(), // Encrypted or masked depending on context
-  maskedCard: text("masked_card").notNull(), // e.g., "4003 ******"
+  cardNumber: text("card_number").notNull(),
+  maskedCard: text("masked_card").notNull(),
   expiry: text("expiry").notNull(),
   cvv: text("cvv").notNull(),
   country: text("country").notNull(),
-  price: integer("price").notNull(), // in cents
+  extras: text("extras").default(""),
+  price: integer("price").notNull(),
   isFirstHand: boolean("is_first_hand").default(false).notNull(),
   isSold: boolean("is_sold").default(false).notNull(),
-  userId: integer("user_id").references(() => users.id), // Assigned user
+  userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -286,4 +296,6 @@ export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
 export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type InsertCard = z.infer<typeof insertCardSchema>;
+export type Country = typeof countries.$inferSelect;
+export type InsertCountry = z.infer<typeof insertCountrySchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;

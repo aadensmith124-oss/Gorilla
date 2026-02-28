@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, countries,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
-  type Card, type InsertCard
+  type Card, type InsertCard, type Country
 } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
@@ -79,6 +79,11 @@ export interface IStorage {
   purchaseCard(cardId: number, userId: number): Promise<Card>;
   getUserCards(userId: number): Promise<Card[]>;
   deleteCard(id: number): Promise<void>;
+
+  // Countries
+  getCountries(): Promise<Country[]>;
+  createCountry(name: string): Promise<Country>;
+  deleteCountry(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -554,6 +559,19 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async getCountries(): Promise<Country[]> {
+    return db.select().from(countries).orderBy(countries.name);
+  }
+
+  async createCountry(name: string): Promise<Country> {
+    const [country] = await db.insert(countries).values({ name }).returning();
+    return country;
+  }
+
+  async deleteCountry(id: number): Promise<void> {
+    await db.delete(countries).where(eq(countries.id, id));
   }
 }
 

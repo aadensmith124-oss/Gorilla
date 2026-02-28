@@ -42,7 +42,8 @@ Preferred communication style: Simple, everyday language.
 - **Products & Variants**: Products have multiple variants with different prices
 - **Stock Items**: Individual digital items tied to variants, marked as sold when purchased
 - **Orders & Order Items**: Track purchases with labeled item types (`itemType`: "product" or "card"). Product items link to variants/stock, card items link to cards table. Mixed orders (products + cards) are combined into a single order.
-- **Cards**: Credit cards with masked numbers, country, price, first-hand status. Purchased cards are marked as sold and linked to user.
+- **Cards**: Credit cards with masked numbers, country, price, first-hand status, extras (additional digital items). Purchased cards are marked as sold and linked to user.
+- **Countries**: Admin-managed list of countries for card country selection.
 - **Transactions**: Wallet history (top-ups, purchases, game wins/losses)
 - **Redeem Codes**: One-time codes for adding balance
 - **Announcements**: Admin-configurable site-wide messages

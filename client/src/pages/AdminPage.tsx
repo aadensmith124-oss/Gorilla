@@ -195,6 +195,7 @@ function DashboardSection() {
 function AdminCardsSection() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [newCountryName, setNewCountryName] = useState("");
   
   const { data: cards, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cards/all"],
@@ -205,36 +206,38 @@ function AdminCardsSection() {
     }
   });
 
+  const { data: countryList } = useQuery<any[]>({
+    queryKey: ["/api/countries"],
+  });
+
   const cardSchema = z.object({
     cardNumber: z.string().min(16, "Invalid card number"),
     expiry: z.string().min(5, "MM/YY format"),
     cvv: z.string().min(3, "Invalid CVV"),
     price: z.string().min(1, "Required"),
+    country: z.string().min(1, "Select a country"),
+    extras: z.string().optional().default(""),
     isFirstHand: z.boolean().default(false),
   });
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
-    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", isFirstHand: false },
+    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", country: "", extras: "", isFirstHand: false },
   });
 
   const addMutation = useMutation({
     mutationFn: async (data: z.infer<typeof cardSchema>) => {
-      // BIN lookup simulation
-      const bin = data.cardNumber.substring(0, 6);
-      let country = "USA";
-      if (bin.startsWith("4")) country = "USA";
-      else if (bin.startsWith("5")) country = "UK";
-      else if (bin.startsWith("3")) country = "Canada";
-      else country = "International";
-
       const maskedCard = `${data.cardNumber.substring(0, 4)} ******`;
       
       const res = await apiRequest("POST", "/api/cards", {
-        ...data,
-        country,
+        cardNumber: data.cardNumber,
+        expiry: data.expiry,
+        cvv: data.cvv,
+        country: data.country,
+        extras: data.extras || "",
         maskedCard,
         price: Math.round(parseFloat(data.price) * 100),
+        isFirstHand: data.isFirstHand,
       });
       return res.json();
     },
@@ -244,6 +247,31 @@ function AdminCardsSection() {
       form.reset();
       setShowAddForm(false);
       toast({ title: "Card added successfully" });
+    }
+  });
+
+  const addCountryMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiRequest("POST", "/api/countries", { name });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/countries"] });
+      setNewCountryName("");
+      toast({ title: "Country added" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message || "Country already exists", variant: "destructive" });
+    }
+  });
+
+  const deleteCountryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/countries/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/countries"] });
+      toast({ title: "Country removed" });
     }
   });
 
@@ -271,7 +299,39 @@ function AdminCardsSection() {
 
       {showAddForm && (
         <Card className="bg-[#0f1115] border-white/5">
-          <CardContent className="p-6">
+          <CardContent className="p-6 space-y-6">
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Manage Countries</h3>
+              <div className="flex flex-wrap gap-2">
+                {countryList?.map((c: any) => (
+                  <Badge key={c.id} variant="outline" className="bg-white/5 border-white/10 text-white text-xs gap-1.5 pr-1">
+                    {c.name}
+                    <button onClick={() => deleteCountryMutation.mutate(c.id)} className="ml-1 hover:text-red-400 transition-colors" data-testid={`btn-delete-country-${c.id}`}>
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newCountryName}
+                  onChange={(e) => setNewCountryName(e.target.value)}
+                  placeholder="New country name..."
+                  className="bg-black/50 border-white/10 text-sm flex-1"
+                  data-testid="input-new-country"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => newCountryName.trim() && addCountryMutation.mutate(newCountryName.trim())}
+                  disabled={!newCountryName.trim() || addCountryMutation.isPending}
+                  className="bg-primary hover:bg-primary/90 text-white font-bold uppercase text-xs"
+                  data-testid="btn-add-country"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add
+                </Button>
+              </div>
+            </div>
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit((d) => addMutation.mutate(d))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -297,7 +357,25 @@ function AdminCardsSection() {
                     </FormItem>
                   )} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField control={form.control} name="country" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Country</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="bg-black/50 border-white/10">
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-[#0f1115] border-white/10">
+                          {countryList?.map((c: any) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <FormField control={form.control} name="price" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price ($)</FormLabel>
@@ -312,6 +390,15 @@ function AdminCardsSection() {
                     </FormItem>
                   )} />
                 </div>
+                <FormField control={form.control} name="extras" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Extra Digital Items</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={3} placeholder="e.g. SSN, DOB, email access, cookies, etc." className="bg-black/50 border-white/10 text-sm" data-testid="input-card-extras" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Card
@@ -329,6 +416,7 @@ function AdminCardsSection() {
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Extras</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
               <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
             </TableRow>
@@ -346,6 +434,15 @@ function AdminCardsSection() {
                   <Badge className="bg-primary text-white font-bold italic text-[10px]">
                     ${(card.price / 100).toFixed(2)}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {card.extras ? (
+                    <span className="text-xs text-green-400 font-mono truncate max-w-[120px] block" title={card.extras}>
+                      {card.extras.length > 20 ? card.extras.substring(0, 20) + "..." : card.extras}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={card.isSold ? "secondary" : "default"} className={card.isSold ? "bg-white/5 text-muted-foreground border-none" : "bg-green-500/20 text-green-500 border-green-500/20"}>
