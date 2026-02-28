@@ -99,9 +99,11 @@ export const orders = pgTable("orders", {
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").notNull().references(() => orders.id),
-  variantId: integer("variant_id").notNull().references(() => variants.id),
-  stockItemId: integer("stock_item_id").references(() => stockItems.id), // The specific item delivered
-  price: integer("price").notNull(), // Price at purchase
+  variantId: integer("variant_id"),
+  stockItemId: integer("stock_item_id").references(() => stockItems.id),
+  cardId: integer("card_id").references(() => cards.id),
+  itemType: text("item_type").default("product").notNull(),
+  price: integer("price").notNull(),
   quantity: integer("quantity").default(1).notNull(),
 });
 
@@ -240,6 +242,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   stockItem: one(stockItems, {
     fields: [orderItems.stockItemId],
     references: [stockItems.id],
+  }),
+  card: one(cards, {
+    fields: [orderItems.cardId],
+    references: [cards.id],
   }),
 }));
 

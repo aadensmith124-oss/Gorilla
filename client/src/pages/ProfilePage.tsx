@@ -232,12 +232,26 @@ function OrdersTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order, index) => (
+                  {orders.map((order, index) => {
+                    const productItems = order.items.filter((i: any) => i.itemType !== 'card');
+                    const cardItems = order.items.filter((i: any) => i.itemType === 'card');
+                    const titleParts: string[] = [];
+                    if (productItems.length > 0) titleParts.push(productItems.map((i: any) => i.variant?.name || 'Product').join(', '));
+                    if (cardItems.length > 0) titleParts.push(`${cardItems.length} Card${cardItems.length > 1 ? 's' : ''}`);
+                    const hasCards = cardItems.length > 0;
+                    const hasProducts = productItems.length > 0;
+                    const typeLabel = hasCards && hasProducts ? 'Mixed' : hasCards ? 'Cards' : 'Order';
+
+                    return (
                     <tr key={order.id} className="border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedOrder(order)}>
                       <td className="p-4">{index + 1}</td>
-                      <td className="p-4 text-destructive">Order</td>
+                      <td className="p-4">
+                        <Badge variant="outline" className={hasCards && !hasProducts ? 'border-yellow-500/30 text-yellow-500' : hasCards && hasProducts ? 'border-purple-500/30 text-purple-400' : 'border-destructive/30 text-destructive'}>
+                          {typeLabel}
+                        </Badge>
+                      </td>
                       <td className="p-4 truncate max-w-[200px]">
-                        {order.items.map((item: any) => item.variant?.name).join(", ")}
+                        {titleParts.join(' + ')}
                       </td>
                       <td className="p-4 text-green-500">${(order.total / 100).toFixed(2)}</td>
                       <td className="p-4">
@@ -254,7 +268,8 @@ function OrdersTab() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -351,32 +366,64 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
             <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
               {order.items?.map((item: any, idx: number) => (
                 <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
-                    <p className="text-xs font-bold">{item.variant?.product?.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={item.itemType === 'card' ? 'border-yellow-500/30 text-yellow-500 text-[9px]' : 'border-primary/30 text-primary text-[9px]'}>
+                      {item.itemType === 'card' ? '💳 Credit Card' : '📦 Product'}
+                    </Badge>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Option</p>
-                    <p className="text-xs font-bold">{item.variant?.name}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
-                    <p className="text-xs font-bold">1</p>
-                  </div>
+
+                  {item.itemType === 'card' ? (
+                    <>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Card</p>
+                        <p className="text-xs font-bold font-mono">{item.card?.maskedCard || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Country</p>
+                        <p className="text-xs font-bold">{item.card?.country || 'N/A'}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
+                        <p className="text-xs font-bold">{item.variant?.product?.name || item.variant?.name || 'N/A'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Option</p>
+                        <p className="text-xs font-bold">{item.variant?.name}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
+                        <p className="text-xs font-bold">{item.quantity}</p>
+                      </div>
+                    </>
+                  )}
+
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Unit price</p>
                     <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Total</p>
-                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
+                    <p className="text-xs font-bold">${((item.price * item.quantity) / 100).toFixed(2)}</p>
                   </div>
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-                    onClick={() => item.stockItem && copyToClipboard(item.stockItem.content)}
-                  >
-                    View stock
-                  </Button>
+
+                  {item.itemType === 'card' && item.card ? (
+                    <Button 
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
+                      onClick={() => copyToClipboard(`${item.card.cardNumber} | ${item.card.expiry} | ${item.card.cvv}`)}
+                    >
+                      Copy Card Details
+                    </Button>
+                  ) : item.stockItem ? (
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
+                      onClick={() => copyToClipboard(item.stockItem.content)}
+                    >
+                      View stock
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </TabsContent>

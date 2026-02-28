@@ -296,6 +296,8 @@ export class DatabaseStorage implements IStorage {
         orderId: order.id,
         variantId: res.variantId,
         stockItemId: res.stockItemId,
+        cardId: null,
+        itemType: "product",
         price: res.price,
         quantity: 1
       });
@@ -304,6 +306,14 @@ export class DatabaseStorage implements IStorage {
     }
 
     for (const cp of cardPurchases) {
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        variantId: null,
+        cardId: cp.cardId,
+        itemType: "card",
+        price: cp.price,
+        quantity: 1
+      });
       await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cp.cardId));
     }
 
@@ -315,28 +325,30 @@ export class DatabaseStorage implements IStorage {
     
     const result = [];
     for (const o of userOrders) {
-      const items = await db.select().from(orderItems).where(eq(orderItems.orderId, o.id));
+      const oItems = await db.select().from(orderItems).where(eq(orderItems.orderId, o.id));
       const itemsWithDetails = [];
-      for (const i of items) {
+      for (const i of oItems) {
         const [stockItem] = i.stockItemId ? await db.select().from(stockItems).where(eq(stockItems.id, i.stockItemId)) : [undefined];
-        const [variant] = await db.select().from(variants).where(eq(variants.id, i.variantId));
-        itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null });
+        const [variant] = i.variantId ? await db.select().from(variants).where(eq(variants.id, i.variantId)) : [undefined];
+        const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
+        itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
       }
       result.push({ ...o, items: itemsWithDetails });
     }
     return result;
   }
 
-  async getOrder(id: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] }) | undefined> {
+  async getOrder(id: number) {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     if (!order) return undefined;
 
-    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+    const oItems = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
     const itemsWithDetails = [];
-    for (const i of items) {
+    for (const i of oItems) {
       const [stockItem] = i.stockItemId ? await db.select().from(stockItems).where(eq(stockItems.id, i.stockItemId)) : [undefined];
-      const [variant] = await db.select().from(variants).where(eq(variants.id, i.variantId));
-      itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null });
+      const [variant] = i.variantId ? await db.select().from(variants).where(eq(variants.id, i.variantId)) : [undefined];
+      const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
+      itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
     }
     
     return { ...order, items: itemsWithDetails };
