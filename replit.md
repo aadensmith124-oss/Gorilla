@@ -58,8 +58,18 @@ Preferred communication style: Simple, everyday language.
 - **Session Store**: PostgreSQL table for Express sessions (auto-created)
 
 ### Third-Party Services
-- None currently integrated, but the build script includes allowlisted packages for:
-  - Stripe (payment processing - not yet implemented)
+- **Forebit** (Crypto Payment Processing):
+  - API Base: `https://prod-payments-api.forebit.io`
+  - Auth: Bearer token via `FOREBIT_ACCESS_KEY`
+  - Business ID: `FOREBIT_ACCOUNT_ID`
+  - Endpoints:
+    - `POST /v1/businesses/{businessId}/payments` - Create payment
+    - `GET /v1/businesses/{businessId}/payments/{paymentId}` - Check status
+  - Server module: `server/forebit.ts`
+  - Webhook: `POST /api/webhooks/forebit`
+  - Payment tracking table: `crypto_payments`
+  - Flow: Create payment → redirect to Forebit checkout → webhook confirms → balance credited
+- The build script includes allowlisted packages for:
   - OpenAI / Google Generative AI (AI features - not yet implemented)
   - Nodemailer (email - not yet implemented)
 

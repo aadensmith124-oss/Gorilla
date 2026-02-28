@@ -1,0 +1,90 @@
+const FOREBIT_API_BASE = "https://prod-payments-api.forebit.io";
+
+interface CreatePaymentParams {
+  amount: number;
+  currency?: string;
+  name?: string;
+  description?: string;
+  redirectUrl?: string;
+  notifyUrl?: string;
+  metadata?: Record<string, string>;
+}
+
+interface ForebitPaymentResponse {
+  id: string;
+  url: string;
+  status?: string;
+  amount?: number;
+  currency?: string;
+}
+
+function getBusinessId(): string {
+  const id = process.env.FOREBIT_ACCOUNT_ID;
+  if (!id) throw new Error("FOREBIT_ACCOUNT_ID is not configured");
+  return id;
+}
+
+function getApiKey(): string {
+  const key = process.env.FOREBIT_ACCESS_KEY;
+  if (!key) throw new Error("FOREBIT_ACCESS_KEY is not configured");
+  return key;
+}
+
+export async function createForebitPayment(params: CreatePaymentParams): Promise<ForebitPaymentResponse> {
+  const businessId = getBusinessId();
+  const apiKey = getApiKey();
+
+  const body: Record<string, any> = {
+    currency: params.currency || "USD",
+    amount: params.amount,
+  };
+
+  if (params.name) body.name = params.name;
+  if (params.description) body.description = params.description;
+  if (params.redirectUrl) body.redirectUrl = params.redirectUrl;
+  if (params.notifyUrl) body.notifyUrl = params.notifyUrl;
+  if (params.metadata) body.metadata = params.metadata;
+
+  const response = await fetch(
+    `${FOREBIT_API_BASE}/v1/businesses/${businessId}/payments`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Forebit API error:", response.status, errorText);
+    throw new Error(`Forebit API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function getForebitPayment(paymentId: string): Promise<ForebitPaymentResponse> {
+  const businessId = getBusinessId();
+  const apiKey = getApiKey();
+
+  const response = await fetch(
+    `${FOREBIT_API_BASE}/v1/businesses/${businessId}/payments/${paymentId}`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Forebit API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}

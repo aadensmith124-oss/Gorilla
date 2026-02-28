@@ -243,6 +243,22 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 }));
 
 
+// === CRYPTO PAYMENTS ===
+export const cryptoPayments = pgTable("crypto_payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  forebitPaymentId: text("forebit_payment_id").notNull().unique(),
+  amount: integer("amount").notNull(),
+  currency: text("currency").default("USD").notNull(),
+  status: text("status", { enum: ["pending", "completed", "failed", "expired", "underpaid"] }).default("pending").notNull(),
+  purpose: text("purpose", { enum: ["deposit", "order"] }).default("deposit").notNull(),
+  orderId: integer("order_id").references(() => orders.id),
+  checkoutUrl: text("checkout_url"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // === TYPES ===
 export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;
@@ -263,3 +279,4 @@ export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
 export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type InsertCard = z.infer<typeof insertCardSchema>;
+export type CryptoPayment = typeof cryptoPayments.$inferSelect;

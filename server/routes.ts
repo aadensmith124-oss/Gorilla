@@ -5,6 +5,10 @@ import { setupAuth } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { createForebitPayment, getForebitPayment } from "./forebit";
+import { cryptoPayments } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -508,19 +512,181 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  // Forebit Payment Integration
-  app.post("/api/wallet/forebit", async (req, res) => {
+  app.post("/api/payments/forebit/create", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const { amount } = req.body;
     
-    // In a real app, you would call Forebit API here.
-    // For now, we simulate success for demonstration purposes.
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    const updatedUser = await storage.updateUserBalance((req.user as any).id, amountCents);
-    await storage.createTransactionWithMethod((req.user as any).id, amountCents, "deposit", `Crypto deposit via Forebit`, "Forebit");
+    try {
+      const { amount, purpose, orderId } = req.body;
+      const amountUsd = parseFloat(amount);
+      
+      if (!amountUsd || amountUsd < 0.50) {
+        return res.status(400).json({ message: "Minimum payment is $0.50" });
+      }
 
-    res.json({ success: true, newBalance: updatedUser.balance });
+      const userId = (req.user as any).id;
+      const protocol = req.headers["x-forwarded-proto"] || "https";
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+
+      const forebitPayment = await createForebitPayment({
+        amount: amountUsd,
+        currency: "USD",
+        name: purpose === "order" ? `Order Payment` : `Balance Deposit`,
+        description: `User ${userId} - ${purpose === "order" ? "order" : "deposit"}`,
+        redirectUrl: `${baseUrl}/profile?tab=balance&payment=success`,
+        notifyUrl: `${baseUrl}/api/webhooks/forebit`,
+        metadata: {
+          userId: String(userId),
+          purpose: purpose || "deposit",
+          orderId: orderId ? String(orderId) : "",
+          amountCents: String(Math.round(amountUsd * 100)),
+        },
+      });
+
+      await db.insert(cryptoPayments).values({
+        userId,
+        forebitPaymentId: forebitPayment.id,
+        amount: Math.round(amountUsd * 100),
+        currency: "USD",
+        status: "pending",
+        purpose: purpose || "deposit",
+        orderId: orderId ? Number(orderId) : null,
+        checkoutUrl: forebitPayment.url,
+        metadata: JSON.stringify({ forebitResponse: forebitPayment }),
+      });
+
+      res.json({
+        paymentId: forebitPayment.id,
+        checkoutUrl: forebitPayment.url,
+      });
+    } catch (error: any) {
+      console.error("Forebit payment creation failed:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment" });
+    }
   });
+
+  app.get("/api/payments/forebit/:paymentId/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { paymentId } = req.params;
+      const userId = (req.user as any).id;
+
+      const [localPayment] = await db
+        .select()
+        .from(cryptoPayments)
+        .where(eq(cryptoPayments.forebitPaymentId, paymentId))
+        .limit(1);
+
+      if (!localPayment || localPayment.userId !== userId) {
+        return res.status(404).json({ message: "Payment not found" });
+      }
+
+      if (localPayment.status === "completed") {
+        return res.json({ status: "completed", amount: localPayment.amount });
+      }
+
+      try {
+        const forebitStatus = await getForebitPayment(paymentId);
+        const newStatus = mapForebitStatus(forebitStatus.status || "");
+
+        if (newStatus !== localPayment.status) {
+          await db
+            .update(cryptoPayments)
+            .set({ status: newStatus, updatedAt: new Date() })
+            .where(eq(cryptoPayments.id, localPayment.id));
+
+          if (newStatus === "completed" && localPayment.status !== "completed") {
+            await processForebitCompletion(localPayment);
+          }
+        }
+
+        res.json({ status: newStatus, amount: localPayment.amount });
+      } catch {
+        res.json({ status: localPayment.status, amount: localPayment.amount });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/webhooks/forebit", async (req, res) => {
+    try {
+      const { id, status } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ message: "Missing payment ID" });
+      }
+
+      const [payment] = await db
+        .select()
+        .from(cryptoPayments)
+        .where(eq(cryptoPayments.forebitPaymentId, id))
+        .limit(1);
+
+      if (!payment) {
+        console.warn("Forebit webhook: payment not found:", id);
+        return res.status(200).json({ received: true });
+      }
+
+      if (payment.status === "completed") {
+        return res.status(200).json({ received: true, alreadyProcessed: true });
+      }
+
+      const newStatus = mapForebitStatus(status);
+      await db
+        .update(cryptoPayments)
+        .set({ status: newStatus, updatedAt: new Date() })
+        .where(eq(cryptoPayments.id, payment.id));
+
+      if (newStatus === "completed") {
+        const verified = await verifyForebitPayment(payment.forebitPaymentId);
+        if (verified) {
+          await processForebitCompletion(payment);
+        } else {
+          console.warn("Forebit webhook: payment verification failed for:", id);
+        }
+      }
+
+      res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error("Forebit webhook error:", error);
+      res.status(200).json({ received: true });
+    }
+  });
+
+  async function processForebitCompletion(payment: typeof cryptoPayments.$inferSelect) {
+    if (payment.purpose === "deposit") {
+      await storage.updateUserBalance(payment.userId, payment.amount);
+      await storage.createTransactionWithMethod(
+        payment.userId,
+        payment.amount,
+        "deposit",
+        `Crypto deposit via Forebit ($${(payment.amount / 100).toFixed(2)})`,
+        "Forebit"
+      );
+    }
+  }
+
+  function mapForebitStatus(forebitStatus: string): "pending" | "completed" | "failed" | "expired" | "underpaid" {
+    switch (forebitStatus?.toUpperCase()) {
+      case "COMPLETED": return "completed";
+      case "FAILED": case "CANCELLED": return "failed";
+      case "EXPIRED": return "expired";
+      case "UNDERPAID": return "underpaid";
+      default: return "pending";
+    }
+  }
+
+  async function verifyForebitPayment(paymentId: string): Promise<boolean> {
+    try {
+      const payment = await getForebitPayment(paymentId);
+      return payment.status?.toUpperCase() === "COMPLETED";
+    } catch (error) {
+      console.error("Failed to verify Forebit payment:", error);
+      return false;
+    }
+  }
 
   // Seed Data (if empty)
   const users = await storage.getDashboardStats();

@@ -47,12 +47,8 @@ export default function CartPage() {
     }
   };
 
-  const handleCryptoConfirm = (cryptoId: string) => {
+  const handleCryptoSuccess = () => {
     setShowCryptoModal(false);
-    toast({
-      title: "Crypto Payment Initiated",
-      description: `Processing payment with ${cryptoId.toUpperCase()}. You will receive payment instructions shortly.`,
-    });
   };
 
   const handleApplyCoupon = () => {
@@ -238,7 +234,8 @@ export default function CartPage() {
         open={showCryptoModal}
         onOpenChange={setShowCryptoModal}
         total={totalWithFee}
-        onConfirm={handleCryptoConfirm}
+        purpose="deposit"
+        onSuccess={handleCryptoSuccess}
       />
     </div>
   );

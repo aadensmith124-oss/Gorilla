@@ -13,6 +13,7 @@ import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { SiBitcoin } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { CryptoPaymentModal } from "@/components/CryptoPaymentModal";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -393,6 +394,7 @@ function BalanceTab({ user }: { user: any }) {
   const [selectedProcessor, setSelectedProcessor] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
 
   const purchaseMutation = useMutation({
     mutationFn: async (data: { amount: string, method: string }) => {
@@ -410,6 +412,10 @@ function BalanceTab({ user }: { user: any }) {
   const handleCharge = () => {
     if (!amount || !selectedProcessor) {
       toast({ title: "Error", description: "Please enter amount and select a payment processor", variant: "destructive" });
+      return;
+    }
+    if (selectedProcessor === "crypto") {
+      setShowCryptoModal(true);
       return;
     }
     purchaseMutation.mutate({ amount, method: selectedProcessor });
@@ -470,7 +476,7 @@ function BalanceTab({ user }: { user: any }) {
                 data-testid="button-processor-crypto"
               >
                 <SiBitcoin className="h-5 w-5 text-amber-500" />
-                <span className="font-medium">Crypto (NowPayments)</span>
+                <span className="font-medium">Crypto (Forebit)</span>
               </button>
 
               <button
@@ -550,6 +556,19 @@ function BalanceTab({ user }: { user: any }) {
           </Button>
         </CardContent>
       </Card>
+
+      <CryptoPaymentModal
+        open={showCryptoModal}
+        onOpenChange={setShowCryptoModal}
+        total={Math.round(parseFloat(amount || "0") * 100)}
+        purpose="deposit"
+        onSuccess={() => {
+          setShowCryptoModal(false);
+          setAmount("");
+          setSelectedProcessor(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        }}
+      />
     </div>
   );
 }
