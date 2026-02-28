@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { Loader2, Gamepad2 } from "lucide-react";
 
 // Separate login schema not in DB schema
@@ -22,8 +22,7 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
 
   if (user) {
-    setLocation("/");
-    return null;
+    return <Redirect to="/" />;
   }
 
   return (

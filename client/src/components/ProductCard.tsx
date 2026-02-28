@@ -12,7 +12,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
   return (
     <Link href={`/product/${product.id}`}>
       <div className="group relative cursor-pointer overflow-hidden rounded-xl bg-[#16181d] border border-white/5 transition-all hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5">
-        <div className="aspect-square w-full relative overflow-hidden bg-[#0f1115]">
+        <div className="w-full relative overflow-hidden bg-[#0f1115]" style={{ aspectRatio: '946 / 2048' }}>
           {product.image ? (
             <img 
               src={product.image} 
