@@ -21,8 +21,8 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
               className="w-full h-full object-contain p-2 transform group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
-              <Package className="h-12 w-12" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600/30 to-purple-900/30">
+              <span className="text-5xl font-black text-white/80 italic tracking-tighter">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}
           
@@ -38,7 +38,9 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
             </div>
           )}
         </div>
-        
+        <div className="p-3">
+          <p className="text-sm font-bold text-white truncate" data-testid={`text-product-name-${product.id}`}>{product.name}</p>
+        </div>
       </div>
     </Link>
   );

@@ -569,7 +569,7 @@ function ProductsSection() {
 
   const productSchema = z.object({
     name: z.string().min(1, "Required"),
-    image: z.string().min(1, "Required"),
+    image: z.string().optional().default(""),
     description: z.string().optional(),
     active: z.boolean().default(true),
   });
@@ -637,7 +637,7 @@ function ProductsSection() {
 
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productSchema>) => {
-      await apiRequest("POST", "/api/admin/products", data);
+      await apiRequest("POST", "/api/products", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
@@ -703,54 +703,57 @@ function ProductsSection() {
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
-                    <FormControl><Input {...field} placeholder="Netflix Premium" data-testid="input-product-name" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                
-                <FormField control={form.control} name="image" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Image</FormLabel>
-                    <div className="space-y-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        data-testid="input-product-image-file"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploading}
-                          className="flex-1 gap-2"
-                          data-testid="btn-upload-image"
-                        >
-                          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          {isUploading ? "Uploading..." : "Upload from Gallery"}
-                        </Button>
-                      </div>
-                      {(imagePreview || field.value) && (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c1f26]">
-                          <img src={imagePreview || field.value} className="h-12 w-12 rounded object-contain bg-[#0f1115] p-1" />
-                          <span className="text-sm text-muted-foreground truncate flex-1">{field.value}</span>
-                          <Check className="h-4 w-4 text-green-500" />
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">Or enter URL directly:</div>
-                      <Input {...field} placeholder="https://..." data-testid="input-product-image-url" />
-                    </div>
+                    <FormControl><Input {...field} placeholder="Netflix Premium" data-testid="input-product-name" className="bg-[#0d0f12] border-white/10" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
+                {form.watch("name") && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0d0f12] border border-white/5">
+                    <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+                      {(imagePreview || form.watch("image")) ? (
+                        <img src={imagePreview || form.watch("image")} className="h-full w-full rounded object-cover" />
+                      ) : (
+                        form.watch("name").charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <span className="font-bold text-white truncate">{form.watch("name")}</span>
+                  </div>
+                )}
+
+                <div>
+                  <FormLabel className="text-xs text-muted-foreground">Image (optional)</FormLabel>
+                  <div className="flex gap-2 mt-1.5">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      data-testid="input-product-image-file"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="gap-2 text-xs"
+                      data-testid="btn-upload-image"
+                    >
+                      {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      {isUploading ? "Uploading..." : "Upload Image"}
+                    </Button>
+                    <FormField control={form.control} name="image" render={({ field }) => (
+                      <Input {...field} placeholder="or paste URL..." className="flex-1 h-8 text-xs bg-[#0d0f12] border-white/10" data-testid="input-product-image-url" />
+                    )} />
+                  </div>
+                </div>
+
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description (optional)</FormLabel>
-                    <FormControl><Textarea {...field} rows={3} data-testid="input-product-description" /></FormControl>
+                    <FormControl><Textarea {...field} rows={2} placeholder="Brief product description..." className="bg-[#0d0f12] border-white/10" data-testid="input-product-description" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -786,8 +789,12 @@ function ProductsSection() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded bg-[#0f1115] overflow-hidden flex-shrink-0">
-                      <img src={p.image} className="h-full w-full object-cover" />
+                  <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {p.image ? (
+                        <img src={p.image} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-white font-black text-lg">{p.name?.charAt(0)?.toUpperCase()}</span>
+                      )}
                     </div>
                   <div className="min-w-0">
                     <p className="font-bold truncate">{p.name}</p>
@@ -939,8 +946,12 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
       <DialogContent className="max-w-lg bg-[#16181d] border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded bg-[#0f1115] overflow-hidden flex-shrink-0">
-              <img src={product.image} className="h-full w-full object-cover" />
+            <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
+              {product.image ? (
+                <img src={product.image} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-white font-black text-lg">{product.name?.charAt(0)?.toUpperCase()}</span>
+              )}
             </div>
             {product.name}
           </DialogTitle>

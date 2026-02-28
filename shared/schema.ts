@@ -44,13 +44,14 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").default("").notNull(),
-  image: text("image").notNull(), // URL or path to uploaded image
+  image: text("image").default(""),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true }).extend({
   description: z.string().optional().default(""),
+  image: z.string().optional().default(""),
 });
 
 // === VARIANTS (OPTIONS) ===
