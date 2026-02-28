@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { SiBitcoin } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
@@ -18,24 +18,32 @@ import { queryClient } from "@/lib/queryClient";
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
-  const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const orderId = searchParams.get("order");
+  const tabParam = searchParams.get("tab");
   const { data: orders } = useOrders();
   
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam === "orders") return "orders";
+    if (tabParam === "balance") return "balance";
+    return "dashboard";
+  });
+
+  useEffect(() => {
+    if (tabParam === "orders") setActiveTab("orders");
+    else if (tabParam === "balance") setActiveTab("balance");
+  }, [tabParam]);
 
   useEffect(() => {
     if (orderId && orders) {
       const order = orders.find((o: any) => o.orderId === orderId || o.id.toString() === orderId);
       if (order) {
         setSelectedOrder(order);
+        setActiveTab("orders");
       }
     }
   }, [orderId, orders]);
-
-  const tabParam = searchParams.get("tab");
-  const defaultTab = tabParam === "orders" ? "orders" : tabParam === "balance" ? "balance" : "dashboard";
 
   if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -46,7 +54,7 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
 
-      <Tabs value={defaultTab} onValueChange={(val) => setLocation(val === "dashboard" ? "/profile" : `/profile?tab=${val}`)} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full justify-start border-b border-white/5 bg-transparent p-0 h-auto rounded-none gap-6">
           <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Dashboard
