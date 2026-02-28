@@ -1070,18 +1070,18 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
                   </SelectContent>
                 </Select>
 
-                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(end each item with a period .)</span></div>
+                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(end each item with a quote mark ")</span></div>
 
                 <div className="space-y-2">
                   <Textarea 
-                    placeholder={"user@email.com:password123.user2@email.com:pass456.another account info here."}
+                    placeholder={'user@email.com:password123"user2@email.com:pass456"another account info here"'}
                     value={newStockContent}
                     onChange={(e) => setNewStockContent(e.target.value)}
                     rows={8}
                     className="bg-[#0f1115] border-white/5 font-mono text-xs"
                   />
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>Items to add: {newStockContent.split('.').map(s => s.trim()).filter(s => s.length > 0).length}</span>
+                    <span>Items to add: {newStockContent.split('"').map(s => s.trim()).filter(s => s.length > 0).length}</span>
                     <span>Stock in database: {stockItems?.length || 0}</span>
                   </div>
                 </div>
