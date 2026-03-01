@@ -388,10 +388,21 @@ export class DatabaseStorage implements IStorage {
         const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
         itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
       }
-      const [purchaseTx] = await db.select().from(transactions)
-        .where(sql`${transactions.userId} = ${o.userId} AND ${transactions.type} = 'purchase' AND ${transactions.description} LIKE '%Order purchase%' AND ${transactions.createdAt} >= ${o.createdAt} - interval '5 seconds' AND ${transactions.createdAt} <= ${o.createdAt} + interval '5 seconds'`)
-        .limit(1);
-      const paymentMethod = purchaseTx?.paymentMethod || "Balance";
+      let paymentMethod = "Balance";
+      try {
+        const purchaseTxs = await db.select().from(transactions)
+          .where(and(
+            eq(transactions.userId, o.userId),
+            eq(transactions.type, "purchase")
+          ))
+          .orderBy(desc(transactions.createdAt));
+        const purchaseTx = purchaseTxs.find(tx => {
+          const txTime = new Date(tx.createdAt).getTime();
+          const orderTime = new Date(o.createdAt).getTime();
+          return Math.abs(txTime - orderTime) < 10000;
+        });
+        if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
+      } catch (e) {}
       result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email }, items: itemsWithDetails, paymentMethod });
     }
     return result;
