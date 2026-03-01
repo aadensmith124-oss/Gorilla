@@ -3,11 +3,6 @@ const FOREBIT_API_BASE = "https://prod-payments-api.forebit.io";
 interface CreatePaymentParams {
   amount: number;
   currency?: string;
-  name?: string;
-  description?: string;
-  redirectUrl?: string;
-  notifyUrl?: string;
-  metadata?: Record<string, string>;
 }
 
 interface ForebitPaymentResponse {
@@ -39,12 +34,6 @@ export async function createForebitPayment(params: CreatePaymentParams): Promise
     currency: params.currency || "USD",
     amount: params.amount,
   };
-
-  if (params.name) body.name = params.name;
-  if (params.description) body.description = params.description;
-  if (params.redirectUrl) body.redirectUrl = params.redirectUrl;
-  if (params.notifyUrl) body.notifyUrl = params.notifyUrl;
-  if (params.metadata) body.metadata = params.metadata;
 
   const response = await fetch(
     `${FOREBIT_API_BASE}/v1/businesses/${businessId}/payments`,

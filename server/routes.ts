@@ -557,23 +557,10 @@ export async function registerRoutes(
       }
 
       const userId = (req.user as any).id;
-      const protocol = req.headers["x-forwarded-proto"] || "https";
-      const host = req.headers["x-forwarded-host"] || req.headers.host;
-      const baseUrl = `${protocol}://${host}`;
 
       const forebitPayment = await createForebitPayment({
         amount: amountUsd,
         currency: "USD",
-        name: purpose === "order" ? `Order Payment` : `Balance Deposit`,
-        description: `User ${userId} - ${purpose === "order" ? "order" : "deposit"}`,
-        redirectUrl: `${baseUrl}/profile?tab=balance&payment=success`,
-        notifyUrl: `${baseUrl}/api/webhooks/forebit`,
-        metadata: {
-          userId: String(userId),
-          purpose: purpose || "deposit",
-          orderId: orderId ? String(orderId) : "",
-          amountCents: String(Math.round(amountUsd * 100)),
-        },
       });
 
       if (!forebitPayment.id) {

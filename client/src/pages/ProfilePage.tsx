@@ -30,10 +30,47 @@ export default function ProfilePage() {
     return "dashboard";
   });
 
+  const paymentParam = searchParams.get("payment");
+  const { toast } = useToast();
+
   useEffect(() => {
     if (tabParam === "orders") setActiveTab("orders");
     else if (tabParam === "balance") setActiveTab("balance");
   }, [tabParam]);
+
+  useEffect(() => {
+    if (paymentParam === "success") {
+      const lastPaymentId = sessionStorage.getItem("lastForebitPaymentId");
+      if (lastPaymentId) {
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const res = await fetch(`/api/payments/forebit/${lastPaymentId}/status`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.status === "completed") {
+                clearInterval(pollInterval);
+                sessionStorage.removeItem("lastForebitPaymentId");
+                queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+                toast({ title: "Payment completed!", description: `$${(data.amount / 100).toFixed(2)} has been added to your balance.` });
+              } else if (data.status === "failed" || data.status === "expired") {
+                clearInterval(pollInterval);
+                sessionStorage.removeItem("lastForebitPaymentId");
+                toast({ title: "Payment " + data.status, variant: "destructive" });
+              }
+            }
+          } catch {}
+          if (attempts >= 30) {
+            clearInterval(pollInterval);
+            sessionStorage.removeItem("lastForebitPaymentId");
+          }
+        }, 5000);
+        return () => clearInterval(pollInterval);
+      }
+    }
+  }, [paymentParam]);
 
   useEffect(() => {
     if (orderId && orders) {
