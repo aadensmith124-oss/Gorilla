@@ -831,7 +831,24 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
   const [editingVariant, setEditingVariant] = useState<any>(null);
   const [selectedVariantForStock, setSelectedVariantForStock] = useState<number | null>(null);
   const [newStockContent, setNewStockContent] = useState("");
-  
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionValue, setDescriptionValue] = useState(product.description || "");
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: async (description: string) => {
+      await apiRequest("PATCH", `/api/admin/products/${product.id}`, { description });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      setEditingDescription(false);
+      toast({ title: "Description updated" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update description", variant: "destructive" });
+    }
+  });
+
 
   const { data: stockItems, refetch: refetchStock } = useQuery({
     queryKey: ["/api/admin/stock", selectedVariantForStock],
@@ -949,6 +966,40 @@ function ProductEditDialog({ product, onClose }: { product: any; onClose: () => 
             {product.name}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="mt-2 p-3 bg-[#0d0f12] rounded-lg border border-white/5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</span>
+            {!editingDescription && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-primary hover:text-primary/80" onClick={() => setEditingDescription(true)} data-testid="btn-edit-description">
+                <Edit2 className="h-3 w-3 mr-1" />Edit
+              </Button>
+            )}
+          </div>
+          {editingDescription ? (
+            <div className="space-y-2">
+              <Textarea
+                value={descriptionValue}
+                onChange={(e) => setDescriptionValue(e.target.value)}
+                rows={3}
+                placeholder="Product description..."
+                className="bg-black/50 border-white/10 text-sm"
+                data-testid="input-edit-description"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" className="h-7 text-[10px]" onClick={() => updateDescriptionMutation.mutate(descriptionValue)} disabled={updateDescriptionMutation.isPending} data-testid="btn-save-description">
+                  {updateDescriptionMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => { setEditingDescription(false); setDescriptionValue(product.description || ""); }} data-testid="btn-cancel-description">
+                  <X className="h-3 w-3 mr-1" />Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-white/70">{product.description || <span className="italic text-muted-foreground">No description</span>}</p>
+          )}
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="w-full grid grid-cols-2">
