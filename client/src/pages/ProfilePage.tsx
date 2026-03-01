@@ -41,6 +41,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (paymentParam === "success") {
       const lastPaymentId = sessionStorage.getItem("lastForebitPaymentId");
+      const lastPurpose = sessionStorage.getItem("lastForebitPurpose") || "deposit";
       if (lastPaymentId) {
         let attempts = 0;
         const pollInterval = setInterval(async () => {
@@ -52,12 +53,17 @@ export default function ProfilePage() {
               if (data.status === "completed") {
                 clearInterval(pollInterval);
                 sessionStorage.removeItem("lastForebitPaymentId");
+                sessionStorage.removeItem("lastForebitPurpose");
                 queryClient.invalidateQueries({ queryKey: ["/api/user"] });
                 queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-                toast({ title: "Payment completed!", description: `$${(data.amount / 100).toFixed(2)} has been added to your balance.` });
+                const desc = lastPurpose === "order"
+                  ? "Your item is ready! Check your orders."
+                  : `$${(data.amount / 100).toFixed(2)} has been added to your balance.`;
+                toast({ title: "Payment completed!", description: desc });
               } else if (data.status === "failed" || data.status === "expired") {
                 clearInterval(pollInterval);
                 sessionStorage.removeItem("lastForebitPaymentId");
+                sessionStorage.removeItem("lastForebitPurpose");
                 toast({ title: "Payment " + data.status, variant: "destructive" });
               }
             }
@@ -65,6 +71,7 @@ export default function ProfilePage() {
           if (attempts >= 30) {
             clearInterval(pollInterval);
             sessionStorage.removeItem("lastForebitPaymentId");
+            sessionStorage.removeItem("lastForebitPurpose");
           }
         }, 5000);
         return () => clearInterval(pollInterval);

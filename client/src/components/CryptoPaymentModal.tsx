@@ -34,6 +34,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         setCheckoutUrl(data.checkoutUrl);
         if (data.paymentId) {
           sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
+          sessionStorage.setItem("lastForebitPurpose", purpose);
         }
         if (onSuccess) onSuccess();
         window.location.href = data.checkoutUrl;
