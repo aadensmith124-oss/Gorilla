@@ -1201,6 +1201,7 @@ function OrdersSection() {
                   <th className="p-3 text-left">User</th>
                   <th className="p-3 text-left">Amount</th>
                   <th className="p-3 text-left">Items</th>
+                  <th className="p-3 text-left">Payment</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Date</th>
                   <th className="p-3 text-right">Action</th>
@@ -1217,6 +1218,11 @@ function OrdersSection() {
                     </td>
                     <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
                     <td className="p-3 text-muted-foreground">{o.items?.length || 0}</td>
+                    <td className="p-3">
+                      <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
+                        {o.paymentMethod || "Balance"}
+                      </Badge>
+                    </td>
                     <td className="p-3">
                       <span className={o.status === 'fulfilled' || o.status === 'paid' ? 'text-green-500' : o.status === 'refunded' ? 'text-red-500' : 'text-orange-500'}>
                         {o.status === 'paid' ? 'Fulfilled' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
@@ -1406,6 +1412,8 @@ function UsersSection() {
   });
 
   const { toast } = useToast();
+  const [balanceUserId, setBalanceUserId] = useState<number | null>(null);
+  const [balanceAmount, setBalanceAmount] = useState("");
 
   const banMutation = useMutation({
     mutationFn: async ({ id, isBanned }: { id: number; isBanned: boolean }) => {
@@ -1414,6 +1422,21 @@ function UsersSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "User status updated" });
+    }
+  });
+
+  const balanceMutation = useMutation({
+    mutationFn: async ({ id, amount }: { id: number; amount: number }) => {
+      await apiRequest("POST", `/api/admin/users/${id}/balance`, { amount });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setBalanceUserId(null);
+      setBalanceAmount("");
+      toast({ title: "Balance updated" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update balance", variant: "destructive" });
     }
   });
 
@@ -1448,7 +1471,7 @@ function UsersSection() {
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">User</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Balance</TableHead>
               <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
+              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1470,16 +1493,78 @@ function UsersSection() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={u.isBanned ? "text-green-500 hover:text-green-600 hover:bg-green-500/10" : "text-destructive hover:text-destructive hover:bg-destructive/10"}
-                    onClick={() => banMutation.mutate({ id: u.id, isBanned: !u.isBanned })}
-                    disabled={banMutation.isPending}
-                  >
-                    {u.isBanned ? <Check className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
-                    {u.isBanned ? "Unban" : "Ban"}
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    {balanceUserId === u.id ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="$0.00"
+                          value={balanceAmount}
+                          onChange={(e) => setBalanceAmount(e.target.value)}
+                          className="w-24 h-8 bg-black/50 border-white/10 text-xs"
+                          data-testid={`input-balance-${u.id}`}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                          disabled={balanceMutation.isPending || !balanceAmount}
+                          onClick={() => {
+                            const cents = Math.round(parseFloat(balanceAmount) * 100);
+                            if (!Number.isFinite(cents) || cents <= 0) return;
+                            balanceMutation.mutate({ id: u.id, amount: cents });
+                          }}
+                          data-testid={`button-add-balance-${u.id}`}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />Add
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          disabled={balanceMutation.isPending || !balanceAmount}
+                          onClick={() => {
+                            const cents = Math.round(parseFloat(balanceAmount) * 100);
+                            if (!Number.isFinite(cents) || cents <= 0) return;
+                            balanceMutation.mutate({ id: u.id, amount: -cents });
+                          }}
+                          data-testid={`button-remove-balance-${u.id}`}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />Remove
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-white"
+                          onClick={() => { setBalanceUserId(null); setBalanceAmount(""); }}
+                          data-testid={`button-cancel-balance-${u.id}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary hover:text-primary/80 hover:bg-primary/10"
+                        onClick={() => setBalanceUserId(u.id)}
+                        data-testid={`button-edit-balance-${u.id}`}
+                      >
+                        <DollarSign className="h-4 w-4 mr-1" />Balance
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className={u.isBanned ? "text-green-500 hover:text-green-600 hover:bg-green-500/10" : "text-destructive hover:text-destructive hover:bg-destructive/10"}
+                      onClick={() => banMutation.mutate({ id: u.id, isBanned: !u.isBanned })}
+                      disabled={banMutation.isPending}
+                    >
+                      {u.isBanned ? <Check className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
+                      {u.isBanned ? "Unban" : "Ban"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

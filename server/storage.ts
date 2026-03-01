@@ -388,7 +388,11 @@ export class DatabaseStorage implements IStorage {
         const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
         itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
       }
-      result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email }, items: itemsWithDetails });
+      const [purchaseTx] = await db.select().from(transactions)
+        .where(sql`${transactions.userId} = ${o.userId} AND ${transactions.type} = 'purchase' AND ${transactions.description} LIKE '%Order purchase%' AND ${transactions.createdAt} >= ${o.createdAt} - interval '5 seconds' AND ${transactions.createdAt} <= ${o.createdAt} + interval '5 seconds'`)
+        .limit(1);
+      const paymentMethod = purchaseTx?.paymentMethod || "Balance";
+      result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email }, items: itemsWithDetails, paymentMethod });
     }
     return result;
   }
