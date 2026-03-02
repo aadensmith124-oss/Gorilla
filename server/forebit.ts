@@ -92,5 +92,7 @@ export async function getForebitPayment(paymentId: string): Promise<ForebitPayme
     throw new Error(`Forebit API error: ${response.status} - ${errorText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log("Forebit GET payment response:", JSON.stringify(data, null, 2));
+  return data;
 }

@@ -48,6 +48,10 @@ export default function CartPage() {
   };
 
   const handleCryptoSuccess = () => {
+    const paymentId = sessionStorage.getItem("lastForebitPaymentId");
+    if (paymentId) {
+      sessionStorage.setItem("pendingCartItems", JSON.stringify({ paymentId, items }));
+    }
     setShowCryptoModal(false);
   };
 

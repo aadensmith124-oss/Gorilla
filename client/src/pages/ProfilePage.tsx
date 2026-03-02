@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const orderId = searchParams.get("order");
-  const tabParam = searchParams.get("tab");
+  const tabParam = searchParams.get("tab");  
   const { data: orders } = useOrders();
   
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -30,54 +30,12 @@ export default function ProfilePage() {
     return "dashboard";
   });
 
-  const paymentParam = searchParams.get("payment");
   const { toast } = useToast();
 
   useEffect(() => {
     if (tabParam === "orders") setActiveTab("orders");
     else if (tabParam === "balance") setActiveTab("balance");
   }, [tabParam]);
-
-  useEffect(() => {
-    if (paymentParam === "success") {
-      const lastPaymentId = sessionStorage.getItem("lastForebitPaymentId");
-      const lastPurpose = sessionStorage.getItem("lastForebitPurpose") || "deposit";
-      if (lastPaymentId) {
-        let attempts = 0;
-        const pollInterval = setInterval(async () => {
-          attempts++;
-          try {
-            const res = await fetch(`/api/payments/forebit/${lastPaymentId}/status`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.status === "completed") {
-                clearInterval(pollInterval);
-                sessionStorage.removeItem("lastForebitPaymentId");
-                sessionStorage.removeItem("lastForebitPurpose");
-                queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-                const desc = lastPurpose === "order"
-                  ? "Your item is ready! Check your orders."
-                  : `$${(data.amount / 100).toFixed(2)} has been added to your balance.`;
-                toast({ title: "Payment completed!", description: desc });
-              } else if (data.status === "failed" || data.status === "expired") {
-                clearInterval(pollInterval);
-                sessionStorage.removeItem("lastForebitPaymentId");
-                sessionStorage.removeItem("lastForebitPurpose");
-                toast({ title: "Payment " + data.status, variant: "destructive" });
-              }
-            }
-          } catch {}
-          if (attempts >= 30) {
-            clearInterval(pollInterval);
-            sessionStorage.removeItem("lastForebitPaymentId");
-            sessionStorage.removeItem("lastForebitPurpose");
-          }
-        }, 5000);
-        return () => clearInterval(pollInterval);
-      }
-    }
-  }, [paymentParam]);
 
   useEffect(() => {
     if (orderId && orders) {

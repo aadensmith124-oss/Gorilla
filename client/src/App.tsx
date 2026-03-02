@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/use-auth";
+import { useForebitPolling } from "@/hooks/use-forebit-polling";
 import { useEffect } from "react";
 
 // Pages
@@ -27,6 +28,7 @@ import SupportPage from "@/pages/SupportPage";
 function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
+  useForebitPolling();
 
   useEffect(() => {
     if (!isLoading && !user && location !== "/auth" && location !== "/admin") {

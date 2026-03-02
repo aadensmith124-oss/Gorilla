@@ -69,7 +69,10 @@ Preferred communication style: Simple, everyday language.
   - Server module: `server/forebit.ts`
   - Webhook: `POST /api/webhooks/forebit`
   - Payment tracking table: `crypto_payments`
-  - Flow: Create payment → redirect to Forebit checkout → webhook confirms → balance credited
+  - Flow: Create payment → redirect to Forebit checkout → balance credited via polling or webhook
+  - Polling: Global `useForebitPolling` hook in App.tsx polls `/api/payments/forebit/:id/status` every 5s after user returns from Forebit checkout (uses sessionStorage `lastForebitPaymentId`)
+  - Cart crypto flow: Stores `pendingCartItems` in sessionStorage (bound to paymentId); after crypto deposit completes, auto-places the order and clears cart
+  - Idempotency: DB update uses atomic `WHERE status != 'completed'` guard to prevent double-credit from webhook+polling race
 - The build script includes allowlisted packages for:
   - OpenAI / Google Generative AI (AI features - not yet implemented)
   - Nodemailer (email - not yet implemented)
