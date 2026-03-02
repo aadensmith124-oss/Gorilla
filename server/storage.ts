@@ -5,7 +5,7 @@ import {
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard
 } from "@shared/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, lt } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -430,6 +430,18 @@ export class DatabaseStorage implements IStorage {
         await db.update(cards).set({ isSold: false, userId: null }).where(eq(cards.id, item.cardId));
       }
     }
+  }
+
+  async cancelStalePendingOrders(maxAgeMs: number = 60 * 60 * 1000): Promise<number> {
+    const cutoff = new Date(Date.now() - maxAgeMs);
+    const staleOrders = await db.select().from(orders)
+      .where(and(eq(orders.status, "pending"), lt(orders.createdAt, cutoff)));
+    let cancelled = 0;
+    for (const order of staleOrders) {
+      await this.cancelPendingOrder(order.id);
+      cancelled++;
+    }
+    return cancelled;
   }
 
   async getOrders(userId: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] })[]> {

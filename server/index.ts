@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { storage } from "./storage";
 
 const app = express();
 const httpServer = createServer(app);
@@ -84,6 +85,20 @@ app.use((req, res, next) => {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
+
+  // Cancel stale pending orders (older than 1 hour) — releases reserved stock back
+  const cancelStaleOrders = async () => {
+    try {
+      const cancelled = await storage.cancelStalePendingOrders(60 * 60 * 1000);
+      if (cancelled > 0) {
+        log(`Cancelled ${cancelled} stale pending order(s) older than 1 hour`);
+      }
+    } catch (err) {
+      console.error("Error in stale order cleanup job:", err);
+    }
+  };
+  cancelStaleOrders();
+  setInterval(cancelStaleOrders, 5 * 60 * 1000);
 
   // Balance Decay (0.7% per hour) — only on unprotected balance (gambling wins, daily spin, redeemed codes)
   const runDecay = async () => {
