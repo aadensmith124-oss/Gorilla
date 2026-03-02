@@ -550,6 +550,60 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.post("/api/orders/crypto", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    let pendingOrderId: number | null = null;
+    try {
+      const userId = (req.user as any).id;
+      const { items, cardIds } = req.body;
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const cardIdList: number[] = cardIds || [];
+
+      const order = await storage.createPendingOrder(userId, productItems, cardIdList);
+      pendingOrderId = order.id;
+
+      const CRYPTO_FEE_PERCENT = 10;
+      const totalWithFee = order.total + Math.round(order.total * CRYPTO_FEE_PERCENT / 100);
+      const amountUsd = totalWithFee / 100;
+
+      const forebitPayment = await createForebitPayment({
+        amount: amountUsd,
+        currency: "USD",
+      });
+
+      if (!forebitPayment.id || !forebitPayment.url) {
+        await storage.cancelPendingOrder(order.id);
+        pendingOrderId = null;
+        return res.status(502).json({ message: "Payment provider error. Please try again." });
+      }
+
+      await db.insert(cryptoPayments).values({
+        userId,
+        forebitPaymentId: forebitPayment.id,
+        amount: totalWithFee,
+        currency: "USD",
+        status: "pending",
+        purpose: "order",
+        orderId: order.id,
+        checkoutUrl: forebitPayment.url,
+        metadata: null,
+      });
+
+      pendingOrderId = null;
+      res.status(201).json({
+        order,
+        paymentId: forebitPayment.id,
+        checkoutUrl: forebitPayment.url,
+      });
+    } catch (e: any) {
+      console.error("Crypto order creation failed:", e);
+      if (pendingOrderId) {
+        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      }
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/payments/forebit/create", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     
@@ -618,7 +672,7 @@ export async function registerRoutes(
       }
 
       if (localPayment.status === "completed") {
-        return res.json({ status: "completed", amount: localPayment.amount });
+        return res.json({ status: "completed", amount: localPayment.amount, purpose: localPayment.purpose, orderId: localPayment.orderId });
       }
 
       try {
@@ -637,9 +691,12 @@ export async function registerRoutes(
           if (newStatus === "completed" && updated) {
             await processForebitCompletion(localPayment);
           }
+          if ((newStatus === "failed" || newStatus === "expired") && updated && localPayment.purpose === "order" && localPayment.orderId) {
+            await storage.cancelPendingOrder(localPayment.orderId);
+          }
         }
 
-        res.json({ status: newStatus, amount: localPayment.amount });
+        res.json({ status: newStatus, amount: localPayment.amount, purpose: localPayment.purpose, orderId: localPayment.orderId });
       } catch {
         res.json({ status: localPayment.status, amount: localPayment.amount });
       }
@@ -691,6 +748,9 @@ export async function registerRoutes(
           console.warn("Forebit webhook: payment verification failed for:", id);
         }
       }
+      if ((newStatus === "failed" || newStatus === "expired") && updated && payment.purpose === "order" && payment.orderId) {
+        await storage.cancelPendingOrder(payment.orderId);
+      }
 
       res.status(200).json({ received: true });
     } catch (error: any) {
@@ -700,15 +760,26 @@ export async function registerRoutes(
   });
 
   async function processForebitCompletion(payment: typeof cryptoPayments.$inferSelect) {
-    await storage.updateUserBalance(payment.userId, payment.amount);
-    await storage.updateProtectedBalance(payment.userId, payment.amount);
-    await storage.createTransactionWithMethod(
-      payment.userId,
-      payment.amount,
-      "deposit",
-      `Crypto deposit via Forebit ($${(payment.amount / 100).toFixed(2)})`,
-      "Forebit"
-    );
+    if (payment.purpose === "order" && payment.orderId) {
+      await storage.fulfillPendingOrder(payment.orderId);
+      await storage.createTransactionWithMethod(
+        payment.userId,
+        -payment.amount,
+        "purchase",
+        `Crypto order payment via Forebit ($${(payment.amount / 100).toFixed(2)})`,
+        "Forebit"
+      );
+    } else {
+      await storage.updateUserBalance(payment.userId, payment.amount);
+      await storage.updateProtectedBalance(payment.userId, payment.amount);
+      await storage.createTransactionWithMethod(
+        payment.userId,
+        payment.amount,
+        "deposit",
+        `Crypto deposit via Forebit ($${(payment.amount / 100).toFixed(2)})`,
+        "Forebit"
+      );
+    }
   }
 
   function mapForebitStatus(forebitStatus: string): "pending" | "completed" | "failed" | "expired" | "underpaid" {

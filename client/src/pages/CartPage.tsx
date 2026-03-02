@@ -8,9 +8,10 @@ import { Trash2, ShoppingCart, ArrowRight, Loader2, AlertTriangle, Wallet } from
 import { Link, useLocation } from "wouter";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { CryptoPaymentModal } from "@/components/CryptoPaymentModal";
 import { useToast } from "@/hooks/use-toast";
 import { SiBitcoin } from "react-icons/si";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 type PaymentProcessor = "crypto" | "balance";
 
@@ -25,18 +26,46 @@ export default function CartPage() {
   
   const [selectedProcessor, setSelectedProcessor] = useState<PaymentProcessor>("crypto");
   const [couponCode, setCouponCode] = useState("");
-  const [showCryptoModal, setShowCryptoModal] = useState(false);
 
   const cartTotal = total();
   const processorFee = selectedProcessor === "crypto" ? Math.round(cartTotal * CRYPTO_FEE_PERCENT / 100) : 0;
   const totalWithFee = cartTotal + processorFee;
   const canAfford = user ? user.balance >= totalWithFee : false;
 
+  const cryptoOrderMutation = useMutation({
+    mutationFn: async () => {
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity, cardId: i.cardId }));
+      const cardIds = items.filter(i => i.cardId).map(i => i.cardId);
+      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems, cardIds });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.paymentId) {
+        sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
+        sessionStorage.setItem("lastForebitPurpose", "order");
+        if (data.order?.orderId) {
+          sessionStorage.setItem("lastForebitOrderId", data.order.orderId);
+        }
+      }
+      clearCart();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Checkout failed",
+        description: error.message || "Could not create order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
     
     if (selectedProcessor === "crypto") {
-      setShowCryptoModal(true);
+      cryptoOrderMutation.mutate();
     } else {
       createOrder(
         items.map(i => ({ variantId: i.variantId, quantity: i.quantity, cardId: i.cardId })),
@@ -45,14 +74,6 @@ export default function CartPage() {
         }
       );
     }
-  };
-
-  const handleCryptoSuccess = () => {
-    const paymentId = sessionStorage.getItem("lastForebitPaymentId");
-    if (paymentId) {
-      sessionStorage.setItem("pendingCartItems", JSON.stringify({ paymentId, items }));
-    }
-    setShowCryptoModal(false);
   };
 
   const handleApplyCoupon = () => {
@@ -208,11 +229,11 @@ export default function CartPage() {
           <CardFooter className="flex-col gap-3">
             <Button 
               className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700" 
-              disabled={(selectedProcessor === "balance" && !canAfford) || isPending}
+              disabled={(selectedProcessor === "balance" && !canAfford) || isPending || cryptoOrderMutation.isPending}
               onClick={handleCheckout}
               data-testid="button-proceed-payment"
             >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {(isPending || cryptoOrderMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Proceed to Payment
             </Button>
             
@@ -248,13 +269,6 @@ export default function CartPage() {
         </Card>
       </div>
 
-      <CryptoPaymentModal 
-        open={showCryptoModal}
-        onOpenChange={setShowCryptoModal}
-        total={totalWithFee}
-        purpose="deposit"
-        onSuccess={handleCryptoSuccess}
-      />
     </div>
   );
 }

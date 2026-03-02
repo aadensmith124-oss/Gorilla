@@ -272,9 +272,17 @@ function OrdersTab() {
                       </td>
                       <td className="p-4 text-green-500">${(order.total / 100).toFixed(2)}</td>
                       <td className="p-4">
-                        <span className={`flex items-center gap-2 ${order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' : 'text-amber-500'}`}>
-                          <span className={`w-2 h-2 rounded-full ${order.status === 'fulfilled' || order.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                          {order.status === 'fulfilled' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : 'Unpaid'}
+                        <span className={`flex items-center gap-2 ${
+                          order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' 
+                          : order.status === 'unpaid' ? 'text-red-500'
+                          : 'text-amber-500'
+                        }`}>
+                          <span className={`w-2 h-2 rounded-full ${
+                            order.status === 'fulfilled' || order.status === 'paid' ? 'bg-green-500'
+                            : order.status === 'unpaid' ? 'bg-red-500'
+                            : 'bg-amber-500'
+                          }`} />
+                          {order.status === 'fulfilled' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
                           <br />
                           <span className="text-xs text-muted-foreground">on {new Date(order.createdAt).toLocaleDateString()}</span>
                         </span>
@@ -400,7 +408,13 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
-                <p className="text-xs text-green-500 font-bold">{order.status === 'paid' ? 'fulfilled' : order.status}</p>
+                <p className={`text-xs font-bold ${
+                  order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500'
+                  : order.status === 'unpaid' ? 'text-red-500'
+                  : 'text-amber-500'
+                }`}>
+                  {order.status === 'fulfilled' || order.status === 'paid' ? 'Fulfilled' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
+                </p>
               </div>
             </TabsContent>
 
@@ -450,7 +464,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     <p className="text-xs font-bold">${((item.price * item.quantity) / 100).toFixed(2)}</p>
                   </div>
 
-                  {(item.stockItem || (item.itemType === 'card' && item.card)) && (
+                  {(order.status === 'fulfilled' || order.status === 'paid') && (item.stockItem || (item.itemType === 'card' && item.card)) && (
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
                       onClick={() => setViewingStockIdx(idx)}
@@ -458,6 +472,12 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     >
                       View stock
                     </Button>
+                  )}
+                  {order.status === 'pending' && (
+                    <p className="text-xs text-amber-500 text-center font-medium">Awaiting payment confirmation</p>
+                  )}
+                  {order.status === 'unpaid' && (
+                    <p className="text-xs text-red-500 text-center font-medium">Order cancelled</p>
                   )}
                 </div>
               ))}
