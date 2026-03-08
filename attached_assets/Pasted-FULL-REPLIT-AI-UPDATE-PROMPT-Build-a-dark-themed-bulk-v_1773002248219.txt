@@ -1,0 +1,204 @@
+FULL REPLIT  AI UPDATE PROMPT
+Build a dark themed bulk vendor marketplace website where users purchase digital items in bulk and admins manually deliver the items.
+The site must be mobile friendly and optimized for phones.
+Use:
+Frontend: React + Tailwind
+Backend: Node.js + Express
+Database: MongoDB
+Authentication: JWT login system
+
+GENERAL SITE PURPOSE
+This website is a bulk vendor shop where users purchase digital products in bulk for the cheapest prices.
+After purchasing, users must wait up to 4 hours for an admin to deliver their order.
+Admins manually send the items.
+There is no coupon system and no tag system.
+
+HOME PAGE
+Display products in a grid layout.
+Rules:
+• 2 products per row
+• Dark theme
+• Mobile responsive
+Each product card shows:
+Product Image
+Product Name
+Lowest Price
+Price format:
+From $X.XX
+Example:
+Subway Logs
+From $2.00
+Clicking a product opens the product purchase page.
+
+PRODUCT PAGE
+At the top show this message:
+PURCHASE (ITEM) LOG BULK FOR THE CHEAPEST
+AFTER PURCHASE YOU WILL WAIT UP TO 4 HOURS FOR A ADMIN TO PUSH YOUR ORDER
+ANY SUPPORT PLEASE CONTACT @OMZRII ON TELEGRAM
+Below this message show purchase options.
+
+PRODUCT OPTIONS SYSTEM
+Admins can create products.
+After creating a product, admins can add multiple options.
+Each option must include:
+Option Name
+Price
+Minimum Quantity
+Example:
+Option Name: $25 Giftcard
+Price: $18
+Minimum Quantity: 5
+Users must buy at least the minimum quantity.
+
+USER ACCOUNT SYSTEM
+Users must create an account before using the site.
+Register Fields
+Name
+Telegram Username
+Email
+Password
+
+Login Fields
+Email
+Password
+
+USER MENU (HAMBURGER MENU)
+Menu items:
+Home
+Channel
+Support
+Profile
+Logout
+Channel link:
+https://t.me/+cCqG21qX1VMyZTJh
+Support link:
+https://t.me/m/iP8zL2axM2Rh
+
+PROFILE PAGE
+Users can view and edit:
+Username
+Email
+Password
+Telegram Username
+
+PROFILE – ORDERS
+Inside profile there must be an Orders section.
+Orders display like this:
+Order Name – Status – Spent
+Example:
+Subway Logs – Pending – $120
+Amazon Logs – Completed – $90
+Users can click an order.
+
+ORDER DETAILS PAGE
+Show:
+Order ID
+Product Name
+Status
+Example:
+Order ID: order-9j8776f987nhdhd8
+Product Name: Subway Logs
+Status: Pending
+If order is Pending, show:
+ORDER IS BEING PROCESSED
+PLEASE WAIT FOR ADMIN DELIVERY
+
+ADMIN DELIVERY SYSTEM
+Admins deliver items by pasting all items in one message box.
+Example admin input:
+apple:pass
+apple:pass
+apple:pass
+apple:pass
+apple:pass
+The system must save the entire message exactly as pasted.
+
+WHEN ORDER IS COMPLETED
+When admin presses Send Items:
+• Order status becomes Completed
+• User can see the message with all items
+Example user view:
+Items Delivered
+apple:pass
+apple:pass
+apple:pass
+apple:pass
+apple:pass
+
+ORDER STATUS
+Only two statuses exist:
+Pending
+Completed
+
+ADMIN PANEL
+Admins have a separate admin dashboard.
+Admin hamburger menu:
+Dashboard
+Users
+Orders
+Products
+Logout
+
+ADMIN DASHBOARD
+Show:
+Total Users
+Total Orders
+Pending Orders
+Revenue
+
+USER MANAGEMENT
+Admins can:
+View users
+Search users
+Ban users
+If a banned user logs in show this screen:
+YOU ARE BANNED
+SMD
+Only button available:
+Logout
+
+ADMIN ORDER PANEL
+When a user places an order it appears in Pending Orders.
+Each order shows:
+Order ID
+User
+Product
+Quantity
+Total Price
+Admins can click the order.
+
+ADMIN SEND ORDER
+Inside the order page show button:
+Send Order
+Clicking it opens:
+Enter Order Items
+Admin pastes all items.
+Below show button:
+Send Items
+After pressing:
+• Items saved
+• Status becomes Completed
+• User can now see the items
+
+PRODUCT MANAGEMENT
+Admins can create products.
+Fields:
+Product Name
+Product Image
+After creation admins can add options:
+Option Name
+Price
+Minimum Quantity
+
+DESIGN
+Dark theme
+Modern marketplace style
+Mobile optimized
+Product cards:
+• 2 per row
+• Rounded corners
+• Product image
+• Product name
+• Price badge
+Price badge format:
+From $X.XX
