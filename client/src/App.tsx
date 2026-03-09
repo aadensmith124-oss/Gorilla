@@ -13,7 +13,7 @@ import AuthPage from "@/pages/AuthPage";
 import ShopPage from "@/pages/ShopPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
-import ProfilePage from "@/pages/ProfilePage";
+import ProfilePage from "@/pages/ProfilePageFix";
 import CardsPage from "@/pages/CardsPage";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import GamesPage from "@/pages/GamesPage";

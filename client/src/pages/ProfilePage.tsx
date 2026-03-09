@@ -64,8 +64,8 @@ export default function ProfilePage() {
           <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium text-destructive">
             Orders
           </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
-            Balance
+          <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -77,8 +77,8 @@ export default function ProfilePage() {
           <OrdersTab />
         </TabsContent>
 
-        <TabsContent value="balance" className="pt-6">
-          <BalanceTab user={user} />
+        <TabsContent value="settings" className="pt-6">
+          <SettingsTab user={user} />
         </TabsContent>
       </Tabs>
     </div>
@@ -86,18 +86,47 @@ export default function ProfilePage() {
 }
 
 function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
-  const [newEmail, setNewEmail] = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
+  return (
+    <Card className="bg-card/40 border-white/5">
+      <CardHeader>
+        <CardTitle>Account Information</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Username</p>
+          <p className="text-lg font-bold text-white">{user.username}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Email</p>
+          <p className="text-lg font-bold text-white">{user.email}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Telegram</p>
+          <p className="text-lg font-bold text-white">{user.telegramUsername}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Member Since</p>
+          <p className="text-sm text-white">{new Date(user.createdAt).toLocaleDateString()}</p>
+        </div>
+        <button 
+          onClick={logout}
+          className="w-full h-10 mt-4 bg-destructive/20 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/30 transition-colors font-bold uppercase tracking-wider text-sm"
+        >
+          Logout
+        </button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SettingsTab({ user }: { user: any }) {
+  const [newTelegram, setNewTelegram] = useState(user.telegramUsername);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
 
-  const handleUpdateEmail = () => {
-    if (newEmail !== confirmEmail) {
-      toast({ title: "Error", description: "Emails do not match", variant: "destructive" });
-      return;
-    }
-    toast({ title: "Email Updated", description: "Your email has been updated successfully" });
+  const handleUpdateTelegram = () => {
+    toast({ title: "Telegram Updated", description: "Your telegram username has been updated successfully" });
   };
 
   const handleUpdatePassword = () => {

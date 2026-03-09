@@ -621,18 +621,17 @@ export class DatabaseStorage implements IStorage {
 
   async getDashboardStats() {
     const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
-    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.paidAmount})` }).from(orders).where(eq(orders.status, 'fulfilled'));
-    const [balanceSum] = await db.select({ sum: sql<number>`sum(${users.balance})` }).from(users);
+    const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders).where(eq(orders.status, 'fulfilled'));
     const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, false));
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
     const [ordersCount] = await db.select({ count: sql<number>`count(*)` }).from(orders);
-    const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'unpaid'));
+    const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'waiting_payment'));
 
     return {
       totalUsers: Number(usersCount.count),
       totalSales: Number(salesSum.sum || 0),
       totalRevenue: Number(salesSum.sum || 0),
-      storeBalance: Number(balanceSum.sum || 0),
+      storeBalance: 0,
       itemsInStock: Number(stockCount.count),
       itemsSold: Number(soldCount.count),
       totalOrders: Number(ordersCount.count),

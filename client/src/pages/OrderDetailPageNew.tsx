@@ -64,19 +64,31 @@ export default function OrderDetailPageNew() {
             </div>
           </div>
 
-          {isPending && (
+          {order.status === "waiting_payment" && (
             <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg space-y-2">
               <div className="flex items-start gap-2">
                 <Clock className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-yellow-400">ORDER IS BEING PROCESSED</p>
-                  <p className="text-xs text-yellow-400/80">PLEASE WAIT FOR ADMIN DELIVERY</p>
+                  <p className="text-sm font-bold text-yellow-400">WAITING FOR PAYMENT</p>
+                  <p className="text-xs text-yellow-400/80">Please complete your payment to proceed</p>
                 </div>
               </div>
             </div>
           )}
 
-          {isCompleted && order.deliveryContent && (
+          {order.status === "delivering" && (
+            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg space-y-2">
+              <div className="flex items-start gap-2">
+                <Clock className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-blue-400">ORDER IS BEING PROCESSED</p>
+                  <p className="text-xs text-blue-400/80">PLEASE WAIT FOR ADMIN DELIVERY (UP TO 4 HOURS)</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {order.status === "fulfilled" && order.deliveryContent && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-400" />

@@ -39,29 +39,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
         </Link>
 
-        <a 
-          href="https://t.me/+4LVBYQu4T8UwODkx" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider"
-        >
-          Vouches
-        </a>
-
-        <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
-            Fun <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pl-4 pt-3 space-y-3">
-            <Link href="/games" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold">GAMBLE</span>
-            </Link>
-            <Link href="/daily-spin" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest italic font-bold">DAILY SPIN</span>
-            </Link>
-          </CollapsibleContent>
-        </Collapsible>
-
         <Collapsible>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
             Profile <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
@@ -73,8 +50,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
               <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
             </Link>
-            <Link href="/profile?tab=balance" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">BALANCE</span>
+            <Link href="/profile?tab=settings" onClick={() => setIsMobileOpen(false)}>
+              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">SETTINGS</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
@@ -83,10 +60,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
             Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{cartCount}</span>}
           </div>
-        </Link>
-
-        <Link href="/support" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Support</span>
         </Link>
 
         {user?.role === 'admin' && (

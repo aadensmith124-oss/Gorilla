@@ -10,21 +10,15 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   telegramUsername: text("telegram_username").default("").notNull(),
-  balance: integer("balance").default(0).notNull(), // stored in cents
-  protectedBalance: integer("protected_balance").default(0).notNull(), // non-decayable (from purchases/deposits)
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
-  lastDailySpin: timestamp("last_daily_spin"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
-  balance: true, 
-  protectedBalance: true,
   role: true, 
   isBanned: true, 
-  lastDailySpin: true,
   createdAt: true,
   telegramUsername: true
 }).extend({
@@ -92,12 +86,11 @@ export const insertStockItemSchema = createInsertSchema(stockItems).omit({
 // === ORDERS ===
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
-  orderId: text("order_id").notNull().unique(), // Public-facing UUID or similar
+  orderId: text("order_id").notNull().unique(),
   userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status", { enum: ["pending", "paid", "refunded", "replaced", "fulfilled", "unpaid", "completed"] }).default("pending").notNull(),
-  total: integer("total").notNull(), // in cents
-  paidAmount: integer("paid_amount").default(0).notNull(), // for partial/full payment tracking
-  deliveryContent: text("delivery_content").default("").notNull(), // Admin-pasted delivery items
+  status: text("status", { enum: ["pending", "waiting_payment", "delivering", "fulfilled"] }).default("pending").notNull(),
+  total: integer("total").notNull(),
+  deliveryContent: text("delivery_content").default("").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

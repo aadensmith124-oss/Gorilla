@@ -71,12 +71,6 @@ export default function ProductDetailPage() {
             <p className="text-xs text-destructive/80 leading-relaxed">AFTER PURCHASE YOU WILL WAIT UP TO 4 HOURS FOR AN ADMIN TO PUSH YOUR ORDER</p>
             <p className="text-xs text-destructive/80">ANY SUPPORT PLEASE CONTACT @OMZRII ON TELEGRAM</p>
           </div>
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">About Product</h3>
-            <div className="text-sm text-[#9ca3af] leading-relaxed whitespace-pre-wrap">
-              {product.description || "No description available."}
-            </div>
-          </div>
 
           <div className="space-y-3">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
@@ -89,10 +83,9 @@ export default function ProductDetailPage() {
                   <SelectItem 
                     key={v.id} 
                     value={v.id.toString()}
-                    disabled={v.stockCount === 0}
                     className="font-bold uppercase tracking-wide hover:bg-white/5 focus:bg-white/5 cursor-pointer"
                   >
-                    ${(v.price / 100).toFixed(2)} - {v.name} {v.stockCount === 0 ? "(OUT OF STOCK)" : `(${v.stockCount} IN STOCK)`}
+                    ${(v.price / 100).toFixed(2)} - {v.name}
                   </SelectItem>
                 ))}
               </SelectContent>
