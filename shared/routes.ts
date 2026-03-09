@@ -228,6 +228,33 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    deliverOrder: {
+      method: 'POST' as const,
+      path: '/api/admin/orders/:id/deliver',
+      input: z.object({
+        deliveryContent: z.string().min(1),
+      }),
+      responses: {
+        200: z.custom<typeof orders.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    banUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:id/ban',
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    unbanUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:id/unban',
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
     generateCodes: {
       method: 'POST' as const,
       path: '/api/admin/codes',

@@ -95,10 +95,12 @@ export function setupAuth(app: Express) {
       const isAdminEmail = adminEmails.includes(req.body.email?.toLowerCase());
       
       const user = await storage.createUser({
-        ...req.body,
+        username: req.body.username,
+        email: req.body.email,
         password: hashedPassword,
+        telegramUsername: req.body.telegramUsername || "",
         role: isAdminEmail ? "admin" : "user",
-      });
+      } as any);
 
       req.login(user, (err) => {
         if (err) return next(err);

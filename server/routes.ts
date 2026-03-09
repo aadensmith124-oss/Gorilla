@@ -205,6 +205,46 @@ export async function registerRoutes(
     });
   });
 
+  // Admin - Deliver Order
+  app.post(api.admin.deliverOrder.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const orderId = Number(req.params.id);
+      const order = await storage.updateOrderDelivery(orderId, req.body.deliveryContent);
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // Admin - Ban User
+  app.post(api.admin.banUser.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const user = await storage.banUser(Number(req.params.id));
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // Admin - Unban User
+  app.post(api.admin.unbanUser.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const user = await storage.unbanUser(Number(req.params.id));
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // Admin
   app.get(api.admin.dashboard.path, async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {

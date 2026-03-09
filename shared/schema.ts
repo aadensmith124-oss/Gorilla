@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
+  telegramUsername: text("telegram_username").default("").notNull(),
   balance: integer("balance").default(0).notNull(), // stored in cents
   protectedBalance: integer("protected_balance").default(0).notNull(), // non-decayable (from purchases/deposits)
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
@@ -24,8 +25,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   role: true, 
   isBanned: true, 
   lastDailySpin: true,
-  createdAt: true 
+  createdAt: true,
+  telegramUsername: true
 }).extend({
+  telegramUsername: z.string().min(1, "Telegram username is required"),
   confirmPassword: z.string().min(1, "Please confirm your password")
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -91,9 +94,10 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderId: text("order_id").notNull().unique(), // Public-facing UUID or similar
   userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status", { enum: ["pending", "paid", "refunded", "replaced", "fulfilled", "unpaid"] }).default("pending").notNull(),
+  status: text("status", { enum: ["pending", "paid", "refunded", "replaced", "fulfilled", "unpaid", "completed"] }).default("pending").notNull(),
   total: integer("total").notNull(), // in cents
   paidAmount: integer("paid_amount").default(0).notNull(), // for partial/full payment tracking
+  deliveryContent: text("delivery_content").default("").notNull(), // Admin-pasted delivery items
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

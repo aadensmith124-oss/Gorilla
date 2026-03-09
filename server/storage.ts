@@ -57,6 +57,9 @@ export interface IStorage {
   // Admin
   getDashboardStats(): Promise<{ totalUsers: number; totalSales: number; storeBalance: number; itemsInStock: number; itemsSold: number; totalOrders: number; pendingOrders: number; totalRevenue: number }>;
   getAdminLogs(): Promise<any[]>;
+  updateOrderDelivery(orderId: number, deliveryContent: string): Promise<Order>;
+  banUser(userId: number): Promise<User>;
+  unbanUser(userId: number): Promise<User>;
   
   // Announcements
   getAnnouncements(): Promise<Announcement[]>;
@@ -133,6 +136,16 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async banUser(userId: number): Promise<User> {
+    const [user] = await db.update(users).set({ isBanned: true }).where(eq(users.id, userId)).returning();
+    return user;
+  }
+
+  async unbanUser(userId: number): Promise<User> {
+    const [user] = await db.update(users).set({ isBanned: false }).where(eq(users.id, userId)).returning();
+    return user;
   }
 
   async updateUser(id: number, data: Partial<User>): Promise<User> {
@@ -532,6 +545,14 @@ export class DatabaseStorage implements IStorage {
     
     const [updated] = await db.update(orders).set({ status: 'refunded' as const }).where(eq(orders.id, orderId)).returning();
     return updated;
+  }
+
+  async updateOrderDelivery(orderId: number, deliveryContent: string): Promise<Order> {
+    const [order] = await db.update(orders).set({
+      deliveryContent,
+      status: "completed" as any
+    }).where(eq(orders.id, orderId)).returning();
+    return order;
   }
 
   async replaceOrderItem(orderId: number): Promise<Order> {

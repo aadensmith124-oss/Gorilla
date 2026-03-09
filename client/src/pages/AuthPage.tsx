@@ -104,6 +104,11 @@ function RegisterForm({ onSubmit, isLoading }: { onSubmit: any; isLoading: boole
         <Input id="email" type="email" {...register("email")} disabled={isLoading} />
         {errors.email && <span className="text-xs text-destructive">{errors.email.message}</span>}
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="telegram">Telegram Username</Label>
+        <Input id="telegram" placeholder="@yourname" {...register("telegramUsername")} disabled={isLoading} />
+        {errors.telegramUsername && <span className="text-xs text-destructive">{errors.telegramUsername.message}</span>}
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="reg-password">Password</Label>

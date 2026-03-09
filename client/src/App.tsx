@@ -15,7 +15,7 @@ import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
 import ProfilePage from "@/pages/ProfilePage";
 import CardsPage from "@/pages/CardsPage";
-import OrderDetailPage from "@/pages/OrderDetailPage";
+import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import GamesPage from "@/pages/GamesPage";
 import DiceGamePage from "@/pages/DiceGamePage";
 import MinesGamePage from "@/pages/MinesGamePage";
@@ -46,6 +46,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/" component={ShopPage} />
         <Route path="/product/:id" component={ProductDetailPage} />
+        <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/cards" component={CardsPage} />

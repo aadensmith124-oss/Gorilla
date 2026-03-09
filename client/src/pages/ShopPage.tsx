@@ -76,7 +76,7 @@ export default function ShopPage() {
           <p className="text-sm font-bold uppercase tracking-widest opacity-50">No products found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-2 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 gap-3 px-2 max-w-2xl mx-auto">
           {filtered?.map((product, i) => (
             <motion.div
               key={product.id}

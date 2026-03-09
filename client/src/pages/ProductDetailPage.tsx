@@ -66,6 +66,11 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="p-6 space-y-6">
+          <div className="bg-destructive/10 border border-destructive/30 p-4 rounded-xl space-y-2">
+            <p className="text-xs font-bold text-destructive uppercase tracking-widest">PURCHASE {product.name.toUpperCase()} BULK FOR THE CHEAPEST</p>
+            <p className="text-xs text-destructive/80 leading-relaxed">AFTER PURCHASE YOU WILL WAIT UP TO 4 HOURS FOR AN ADMIN TO PUSH YOUR ORDER</p>
+            <p className="text-xs text-destructive/80">ANY SUPPORT PLEASE CONTACT @OMZRII ON TELEGRAM</p>
+          </div>
           <div className="space-y-3">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">About Product</h3>
             <div className="text-sm text-[#9ca3af] leading-relaxed whitespace-pre-wrap">
