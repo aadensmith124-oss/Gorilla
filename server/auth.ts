@@ -91,7 +91,7 @@ export function setupAuth(app: Express) {
 
       const hashedPassword = await hashPassword(req.body.password);
       
-      const adminEmails = ["lifeanime886@gmail.com"];
+      const adminEmails = ["lifeanime886@gmail.com", "erizl9521@gmail.com"];
       const isAdminEmail = adminEmails.includes(req.body.email?.toLowerCase());
       
       const user = await storage.createUser({
