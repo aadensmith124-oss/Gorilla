@@ -5,42 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
-  Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, Terminal, ShieldX,
-  LayoutDashboard, Box, Receipt, UserCog, Ticket, Megaphone, Database,
-  Gamepad2, HeadphonesIcon, ScrollText, ChevronRight, Copy, Ban, CreditCard,
-  RefreshCw, Eye, EyeOff, Search, Check, Menu, X, Edit2, Upload, ImageIcon
-} from "lucide-react";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
-} from "@/components/ui/table";
+import { Loader2, Plus, Trash2, Package, Users, DollarSign, ShoppingBag, LayoutDashboard, Receipt, UserCog, ShieldX, Menu, ChevronRight, Send, Mail } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const adminSections = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "products", label: "Products", icon: Package },
-  { id: "orders", label: "Orders", icon: Receipt },
-  { id: "users", label: "Users", icon: UserCog },
-  { id: "codes", label: "Redeem Codes", icon: Ticket },
-  { id: "announcements", label: "Announcements", icon: Megaphone },
-  { id: "games", label: "Games", icon: Gamepad2 },
-  { id: "cards", label: "Manage Cards", icon: CreditCard },
-  { id: "support", label: "Support", icon: HeadphonesIcon },
-  { id: "logs", label: "Logs", icon: ScrollText },
+  { id: "dashboard", label: "Dashboard" },
+  { id: "products", label: "Products" },
+  { id: "orders", label: "Orders" },
+  { id: "users", label: "Users" },
 ];
 
 export default function AdminPage() {
@@ -58,11 +43,7 @@ export default function AdminPage() {
   }, [authLoading, isAdmin, setLocation]);
 
   if (authLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#090a0c]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!isAdmin) {
@@ -70,49 +51,29 @@ export default function AdminPage() {
       <div className="flex h-screen flex-col items-center justify-center bg-[#090a0c] gap-4">
         <ShieldX className="h-16 w-16 text-destructive" />
         <h1 className="text-xl font-bold text-white">Access Denied</h1>
-        <p className="text-muted-foreground">You don't have permission to view this page.</p>
       </div>
     );
   }
 
-  const handleNavClick = (id: string) => {
-    setActiveSection(id);
-    setSidebarOpen(false);
-  };
-
   const SidebarContent = () => (
     <>
       <div className="p-4 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-5 w-5 text-primary" />
-          <span className="text-lg font-display font-black tracking-tighter italic uppercase">
-            8765 <span className="text-primary">Admin</span>
-          </span>
-        </div>
+        <h1 className="text-lg font-display font-black italic uppercase">ADMIN</h1>
       </div>
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-2 space-y-1">
         {adminSections.map((section) => (
           <button
             key={section.id}
-            onClick={() => handleNavClick(section.id)}
-            data-testid={`nav-${section.id}`}
+            onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              activeSection === section.id 
-                ? "bg-primary/20 text-primary border border-primary/30" 
-                : "text-white/60 hover:bg-white/5 hover:text-white"
+              activeSection === section.id ? "bg-primary/20 text-primary border border-primary/30" : "text-white/60 hover:bg-white/5 hover:text-white"
             }`}
           >
-            <section.icon className="h-4 w-4" />
             <span>{section.label}</span>
             {activeSection === section.id && <ChevronRight className="h-4 w-4 ml-auto" />}
           </button>
         ))}
       </nav>
-      <div className="p-4 border-t border-white/5">
-        <Badge variant="outline" className="w-full justify-center py-1 text-[10px] uppercase tracking-widest">
-          Level 4 Access
-        </Badge>
-      </div>
     </>
   );
 
@@ -124,17 +85,10 @@ export default function AdminPage() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#0d0f12]">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-5 w-5 text-primary" />
-            <span className="text-lg font-display font-black tracking-tighter italic uppercase">
-              ADMIN
-            </span>
-          </div>
+          <h1 className="text-lg font-display font-black italic uppercase">ADMIN</h1>
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <Button size="icon" variant="ghost" data-testid="btn-mobile-menu">
-                <Menu className="h-5 w-5" />
-              </Button>
+              <Button size="icon" variant="ghost"><Menu className="h-5 w-5" /></Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0 bg-[#0d0f12] border-white/5">
               <SidebarContent />
@@ -147,12 +101,6 @@ export default function AdminPage() {
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "users" && <UsersSection />}
-          {activeSection === "codes" && <CodesSection />}
-          {activeSection === "announcements" && <AnnouncementsSection />}
-          {activeSection === "games" && <GamesSection />}
-          {activeSection === "cards" && <AdminCardsSection />}
-          {activeSection === "support" && <AdminSupportSection />}
-          {activeSection === "logs" && <LogsSection />}
         </main>
       </div>
     </div>
@@ -160,7 +108,6 @@ export default function AdminPage() {
 }
 
 function DashboardSection() {
-  const { data: products } = useProducts();
   const { data: stats, isLoading } = useQuery({
     queryKey: [api.admin.dashboard.path],
     queryFn: async () => {
@@ -170,84 +117,72 @@ function DashboardSection() {
     }
   });
 
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Dashboard</h1>
-      
+      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Dashboard</h1>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} />
         <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={ShoppingBag} />
         <StatCard title="Total Sales" value={`$${((stats?.totalSales || 0) / 100).toFixed(2)}`} icon={DollarSign} color="green" />
-        <StatCard title="Store Balance" value={`$${((stats?.storeBalance || 0) / 100).toFixed(2)}`} icon={CreditCard} />
-        <StatCard title="Items in Stock" value={stats?.itemsInStock || 0} icon={Box} />
-        <StatCard title="Items Sold" value={stats?.itemsSold || 0} icon={Package} color="purple" />
-        <StatCard title="Active Products" value={products?.length || 0} icon={Box} />
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
       </div>
     </div>
   );
 }
 
-function AdminCardsSection() {
+function StatCard({ title, value, icon: Icon, color }: any) {
+  const colorClass = color === "green" ? "text-green-500" : color === "orange" ? "text-orange-500" : "text-primary";
+  return (
+    <Card className="bg-[#0f1115] border-white/5">
+      <CardContent className="p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">{title}</p>
+          <p className="text-xl font-bold mt-1">{value}</p>
+        </div>
+        <Icon className={`h-8 w-8 ${colorClass} opacity-60`} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProductsSection() {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
-  const { data: cards, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/cards/all"],
-    queryFn: async () => {
-      const res = await fetch("/api/cards");
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    }
+  const { data: products, isLoading } = useProducts();
+
+  const productSchema = z.object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    image: z.string().optional(),
   });
 
-  const cardSchema = z.object({
-    cardNumber: z.string().min(13, "Invalid card number"),
-    expiry: z.string().min(5, "MM/YY format"),
-    cvv: z.string().min(3, "Invalid CVV"),
-    price: z.string().min(1, "Required"),
-    isFirstHand: z.boolean().default(false),
-  });
-
-  const form = useForm<z.infer<typeof cardSchema>>({
-    resolver: zodResolver(cardSchema),
-    defaultValues: { cardNumber: "", expiry: "", cvv: "", price: "7.00", isFirstHand: false },
+  const form = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
+    defaultValues: { name: "", description: "", image: "" },
   });
 
   const addMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof cardSchema>) => {
-      const maskedCard = `${data.cardNumber.substring(0, 4)} ******`;
-      
-      const res = await apiRequest("POST", "/api/cards", {
-        cardNumber: data.cardNumber,
-        expiry: data.expiry,
-        cvv: data.cvv,
-        maskedCard,
-        price: Math.round(parseFloat(data.price) * 100),
-        isFirstHand: data.isFirstHand,
-      });
+    mutationFn: async (data: z.infer<typeof productSchema>) => {
+      const res = await apiRequest("POST", api.products.create.path, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cards/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       form.reset();
       setShowAddForm(false);
-      toast({ title: "Card added successfully" });
+      toast({ title: "Product added" });
     }
   });
 
-  const removeMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/cards/${id}`);
+      await apiRequest("DELETE", `/api/admin/products/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cards/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
-      toast({ title: "Card removed successfully" });
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Product deleted" });
     }
   });
 
@@ -256,10 +191,8 @@ function AdminCardsSection() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-white">Card Management</h1>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2 bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase">
-          <Plus className="h-4 w-4" /> Add Card
-        </Button>
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Products</h1>
+        <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2"><Plus className="h-4 w-4" />Add</Button>
       </div>
 
       {showAddForm && (
@@ -267,47 +200,27 @@ function AdminCardsSection() {
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((d) => addMutation.mutate(d))} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField control={form.control} name="cardNumber" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Card Number</FormLabel>
-                      <FormControl><Input {...field} placeholder="4003..." className="bg-black/50 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="expiry" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expiry (MM/YY)</FormLabel>
-                      <FormControl><Input {...field} placeholder="12/26" className="bg-black/50 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="cvv" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CVV</FormLabel>
-                      <FormControl><Input {...field} placeholder="123" className="bg-black/50 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="price" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price ($)</FormLabel>
-                      <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="isFirstHand" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-3 rounded-md bg-black/30 border border-white/5 mt-8">
-                      <FormLabel className="!mt-0 text-xs font-bold uppercase tracking-widest text-white">First Hand</FormLabel>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
-                </div>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase" disabled={addMutation.isPending}>
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Name</FormLabel>
+                    <FormControl><Input {...field} className="bg-black/50 border-white/10" /></FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea {...field} className="bg-black/50 border-white/10" /></FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="image" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL</FormLabel>
+                    <FormControl><Input {...field} className="bg-black/50 border-white/10" /></FormControl>
+                  </FormItem>
+                )} />
+                <Button type="submit" className="w-full" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Card
+                  Save
                 </Button>
               </form>
             </Form>
@@ -319,44 +232,20 @@ function AdminCardsSection() {
         <Table>
           <TableHeader className="bg-white/5">
             <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Name</TableHead>
+              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Image</TableHead>
               <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cards?.map((card) => (
-              <TableRow key={card.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                <TableCell className="font-mono text-white">{card.maskedCard}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
-                    {card.country}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge className="bg-primary text-white font-bold italic text-[10px]">
-                    ${(card.price / 100).toFixed(2)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={card.isSold ? "secondary" : "default"} className={card.isSold ? "bg-white/5 text-muted-foreground border-none" : "bg-green-500/20 text-green-500 border-green-500/20"}>
-                    {card.isSold ? "Sold" : "Active"}
-                  </Badge>
-                </TableCell>
+            {products?.map((product: any) => (
+              <TableRow key={product.id} className="border-white/5 hover:bg-white/5">
+                <TableCell className="font-bold">{product.name}</TableCell>
+                <TableCell>{product.image ? <Badge>Has Image</Badge> : "—"}</TableCell>
                 <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to remove this card?")) {
-                        removeMutation.mutate(card.id);
-                      }
-                    }}
-                    disabled={removeMutation.isPending}
-                  >
+                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
+                    if (confirm("Delete?")) deleteMutation.mutate(product.id);
+                  }} disabled={deleteMutation.isPending}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
@@ -366,1256 +255,127 @@ function AdminCardsSection() {
         </Table>
       </div>
     </div>
-  );
-}
-
-function AdminSupportSection() {
-  const [filter, setFilter] = useState<"open" | "closed">("open");
-  const { toast } = useToast();
-  const { data: tickets, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/support"],
-  });
-
-  const actionMutation = useMutation({
-    mutationFn: async ({ id, action, message }: { id: number, action: string, message?: string }) => {
-      await apiRequest("PATCH", `/api/admin/support/${id}`, { action, message });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/support"] });
-      toast({ title: "Action completed" });
-    }
-  });
-
-  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-
-  const filteredTickets = tickets?.filter(t => t.status === filter) || [];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Support Tickets</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant={filter === "open" ? "default" : "outline"} 
-            onClick={() => setFilter("open")}
-            className="uppercase text-[10px] font-black tracking-widest"
-          >
-            Open
-          </Button>
-          <Button 
-            variant={filter === "closed" ? "default" : "outline"} 
-            onClick={() => setFilter("closed")}
-            className="uppercase text-[10px] font-black tracking-widest"
-          >
-            Closed
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-6">
-        {filteredTickets.map((ticket) => (
-          <Card key={ticket.id} className="bg-[#0f1115] border-white/5">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-white/5">
-              <div className="space-y-1">
-                <CardTitle className="text-lg font-bold uppercase italic tracking-tighter">
-                  {ticket.subject} - User ID: {ticket.userId}
-                </CardTitle>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order ID: {ticket.orderId}</p>
-              </div>
-              <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className="uppercase">
-                {ticket.status}
-              </Badge>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Description</p>
-                    <p className="text-sm leading-relaxed">{ticket.description}</p>
-                  </div>
-                  {ticket.imageUrl && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-primary">Proof</p>
-                      <img src={ticket.imageUrl} className="max-w-xs rounded-lg border border-white/10" />
-                    </div>
-                  )}
-                </div>
-                {ticket.status === 'open' && (
-                  <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Take Action</p>
-                    <Textarea 
-                      placeholder="Admin message (optional)..." 
-                      id={`msg-${ticket.id}`}
-                      className="bg-black/50 border-white/10 min-h-[100px]"
-                    />
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button 
-                        onClick={() => actionMutation.mutate({ 
-                          id: ticket.id, 
-                          action: 'refund', 
-                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
-                        })}
-                        className="bg-red-500 hover:bg-red-600 text-white font-black uppercase italic tracking-tighter text-xs"
-                      >
-                        Refund
-                      </Button>
-                      <Button 
-                        onClick={() => actionMutation.mutate({ 
-                          id: ticket.id, 
-                          action: 'replace', 
-                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
-                        })}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-black uppercase italic tracking-tighter text-xs"
-                      >
-                        Replace
-                      </Button>
-                      <Button 
-                        onClick={() => actionMutation.mutate({ 
-                          id: ticket.id, 
-                          action: 'close', 
-                          message: (document.getElementById(`msg-${ticket.id}`) as HTMLTextAreaElement).value 
-                        })}
-                        variant="outline"
-                        className="font-black uppercase italic tracking-tighter text-xs"
-                      >
-                        Close
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {ticket.status === 'closed' && ticket.adminMessage && (
-                  <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-green-500">Resolution Message</p>
-                    <p className="text-sm italic mt-2 text-muted-foreground">"{ticket.adminMessage}"</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon: Icon, color = "primary" }: { title: string; value: string | number; icon: any; color?: string }) {
-  const colorClasses: Record<string, string> = {
-    primary: "text-primary",
-    green: "text-green-500",
-    orange: "text-orange-500",
-    purple: "text-purple-500",
-  };
-  return (
-    <Card className="bg-[#16181d] border-white/5 shadow-lg shadow-black/20">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 p-3 md:p-4">
-        <CardTitle className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
-        <div className={`p-1.5 rounded-md bg-white/5 ${colorClasses[color]}`}>
-          <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-        </div>
-      </CardHeader>
-      <CardContent className="p-3 md:p-4 pt-0">
-        <div className={`text-lg md:text-2xl font-black italic tracking-tighter ${colorClasses[color]}`}>{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ProductsSection() {
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["/api/admin/products"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/products");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    }
-  });
-  const { toast } = useToast();
-  const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const deleteProductMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/products/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      toast({ title: "Product deleted" });
-    },
-    onError: (err: any) => {
-      toast({ title: "Failed to delete product", description: err.message, variant: "destructive" });
-    }
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/products/${id}`, { active });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-    }
-  });
-
-  const productSchema = z.object({
-    name: z.string().min(1, "Required"),
-    image: z.string().optional().default(""),
-    description: z.string().optional(),
-    active: z.boolean().default(true),
-  });
-
-  const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(productSchema),
-    defaultValues: { name: "", image: "", description: "", active: true },
-  });
-
-  const resizeImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.8): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return reject(new Error("Canvas not supported"));
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", quality);
-          resolve(dataUrl.split(",")[1]);
-        };
-        img.onerror = () => reject(new Error("Failed to load image"));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const base64 = await resizeImage(file);
-      const res = await apiRequest("POST", "/api/upload", {
-        filename: file.name.replace(/\.[^.]+$/, ".jpg"),
-        mimeType: "image/jpeg",
-        data: base64,
-      });
-      const data = await res.json();
-      form.setValue("image", data.url);
-      setImagePreview(data.url);
-      toast({ title: "Image uploaded" });
-    } catch (uploadErr: any) {
-      toast({ 
-        title: "Upload failed", 
-        description: uploadErr.message, 
-        variant: "destructive" 
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof productSchema>) => {
-      await apiRequest("POST", "/api/products", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      form.reset();
-      setImagePreview("");
-      setShowForm(false);
-      toast({ title: "Product created" });
-    },
-    onError: (err: any) => {
-      toast({ title: "Failed to create product", description: err.message, variant: "destructive" });
-    }
-  });
-
-  const updateProductMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof productSchema> & { id: number }) => {
-      await apiRequest("PATCH", `/api/admin/products/${data.id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      setEditingProduct(null);
-      form.reset();
-      setImagePreview("");
-      toast({ title: "Product updated" });
-    },
-    onError: (err: any) => {
-      toast({ title: "Failed to update product", description: err.message, variant: "destructive" });
-    }
-  });
-
-  const handleEdit = (product: any) => {
-    setEditingProduct(product);
-    form.reset({
-      name: product.name,
-      image: product.image,
-      description: product.description || "",
-      active: product.active,
-    });
-    setImagePreview(product.image);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
-
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Products</h1>
-        <Button onClick={() => setShowForm(!showForm)} className="gap-2" data-testid="btn-add-product">
-          <Plus className="h-4 w-4" /> Add Product
-        </Button>
-      </div>
-
-      {showForm && (
-        <Card className="bg-[#16181d] border-white/5">
-          <CardContent className="p-4 md:p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit((d) => editingProduct ? updateProductMutation.mutate({ ...d, id: editingProduct.id }) : createMutation.mutate(d))} className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Name</FormLabel>
-                    <FormControl><Input {...field} placeholder="Netflix Premium" data-testid="input-product-name" className="bg-[#0d0f12] border-white/10" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                {form.watch("name") && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0d0f12] border border-white/5">
-                    <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
-                      {(imagePreview || form.watch("image")) ? (
-                        <img src={imagePreview || form.watch("image")} className="h-full w-full rounded object-cover" />
-                      ) : (
-                        form.watch("name").charAt(0).toUpperCase()
-                      )}
-                    </div>
-                    <span className="font-bold text-white truncate">{form.watch("name")}</span>
-                  </div>
-                )}
-
-                <div>
-                  <FormLabel className="text-xs text-muted-foreground">Image (optional)</FormLabel>
-                  <div className="flex gap-2 mt-1.5">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      data-testid="input-product-image-file"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="gap-2 text-xs"
-                      data-testid="btn-upload-image"
-                    >
-                      {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                      {isUploading ? "Uploading..." : "Upload Image"}
-                    </Button>
-                    <FormField control={form.control} name="image" render={({ field }) => (
-                      <Input {...field} placeholder="or paste URL..." className="flex-1 h-8 text-xs bg-[#0d0f12] border-white/10" data-testid="input-product-image-url" />
-                    )} />
-                  </div>
-                </div>
-
-                <FormField control={form.control} name="description" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (optional)</FormLabel>
-                    <FormControl><Textarea {...field} rows={2} placeholder="Brief product description..." className="bg-[#0d0f12] border-white/10" data-testid="input-product-description" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="active" render={({ field }) => (
-                  <FormItem className="flex items-center gap-3">
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-product-active" /></FormControl>
-                    <FormLabel className="!mt-0">Active</FormLabel>
-                  </FormItem>
-                )} />
-                <Button type="submit" disabled={createMutation.isPending || updateProductMutation.isPending} className="w-full" data-testid="btn-save-product">
-                  {(createMutation.isPending || updateProductMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingProduct ? "Update Product" : "Save Product"}
-                </Button>
-                {editingProduct && (
-                  <Button type="button" variant="ghost" onClick={() => {
-                    setEditingProduct(null);
-                    setShowForm(false);
-                    form.reset();
-                    setImagePreview("");
-                  }} className="w-full mt-2">
-                    Cancel Edit
-                  </Button>
-                )}
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-3">
-        {products?.map((p: any) => (
-          <Card key={p.id} className="bg-[#16181d] border-white/5" data-testid={`card-product-${p.id}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                      {p.image ? (
-                        <img src={p.image} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-white font-black text-lg">{p.name?.charAt(0)?.toUpperCase()}</span>
-                      )}
-                    </div>
-                  <div className="min-w-0">
-                    <p className="font-bold truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.variants?.length || 0} options • {p.variants?.reduce((s: number, v: any) => s + (v.stockCount || 0), 0) || 0} in stock
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge variant={p.active ? "default" : "secondary"} className="hidden sm:flex">
-                    {p.active ? "Active" : "Hidden"}
-                  </Badge>
-                  <Button size="icon" variant="ghost" onClick={() => {
-                    if (confirm("Are you sure?")) deleteProductMutation.mutate(p.id);
-                  }} className="text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleEdit(p)} data-testid={`btn-edit-${p.id}`}>
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => toggleMutation.mutate({ id: p.id, active: !p.active })} data-testid={`btn-toggle-${p.id}`}>
-                    {p.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {editingProduct && (
-        <ProductEditDialog product={editingProduct} onClose={() => setEditingProduct(null)} />
-      )}
-    </div>
-  );
-}
-
-function ProductEditDialog({ product, onClose }: { product: any; onClose: () => void }) {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("options");
-  const [editingVariant, setEditingVariant] = useState<any>(null);
-  const [selectedVariantForStock, setSelectedVariantForStock] = useState<number | null>(null);
-  const [newStockContent, setNewStockContent] = useState("");
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [descriptionValue, setDescriptionValue] = useState(product.description || "");
-
-  const updateDescriptionMutation = useMutation({
-    mutationFn: async (description: string) => {
-      await apiRequest("PATCH", `/api/admin/products/${product.id}`, { description });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      setEditingDescription(false);
-      toast({ title: "Description updated" });
-    },
-    onError: () => {
-      toast({ title: "Failed to update description", variant: "destructive" });
-    }
-  });
-
-
-  const { data: stockItems, refetch: refetchStock } = useQuery({
-    queryKey: ["/api/admin/stock", selectedVariantForStock],
-    queryFn: async () => {
-      if (!selectedVariantForStock) return [];
-      const res = await fetch(`/api/admin/stock/${selectedVariantForStock}`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!selectedVariantForStock,
-  });
-
-  const optionSchema = z.object({
-    name: z.string().min(1, "Required"),
-    price: z.string().min(1, "Required"),
-  });
-
-  const optionForm = useForm<z.infer<typeof optionSchema>>({
-    resolver: zodResolver(optionSchema),
-    defaultValues: { name: "", price: "" },
-  });
-
-  const deleteProductMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("DELETE", `/api/admin/products/${product.id}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      toast({ title: "Product deleted" });
-      onClose();
-    }
-  });
-
-  const createOptionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof optionSchema>) => {
-      await apiRequest("POST", api.variants.create.path, {
-        productId: product.id,
-        name: data.name,
-        price: Math.round(parseFloat(data.price) * 100),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      optionForm.reset();
-      toast({ title: "Option added" });
-    }
-  });
-
-  const updateVariantMutation = useMutation({
-    mutationFn: async ({ id, name, price }: { id: number; name: string; price: number }) => {
-      await apiRequest("PATCH", `/api/admin/variants/${id}`, { name, price });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      setEditingVariant(null);
-      toast({ title: "Option updated" });
-    }
-  });
-
-  const deleteVariantMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/variants/${id}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      toast({ title: "Option deleted" });
-    }
-  });
-
-  const addStockMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/stock/bulk", {
-        variantId: selectedVariantForStock,
-        rawContent: newStockContent,
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      refetchStock();
-      setNewStockContent("");
-      toast({ title: `${data.addedCount || 0} stock items added` });
-    }
-  });
-
-  const deleteStockMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/stock/${id}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      refetchStock();
-      toast({ title: "Stock item removed" });
-    }
-  });
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-[#16181d] border-white/10 max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded bg-gradient-to-br from-purple-600 to-purple-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
-              {product.image ? (
-                <img src={product.image} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-white font-black text-lg">{product.name?.charAt(0)?.toUpperCase()}</span>
-              )}
-            </div>
-            {product.name}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="mt-2 p-3 bg-[#0d0f12] rounded-lg border border-white/5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</span>
-            {!editingDescription && (
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-primary hover:text-primary/80" onClick={() => setEditingDescription(true)} data-testid="btn-edit-description">
-                <Edit2 className="h-3 w-3 mr-1" />Edit
-              </Button>
-            )}
-          </div>
-          {editingDescription ? (
-            <div className="space-y-2">
-              <Textarea
-                value={descriptionValue}
-                onChange={(e) => setDescriptionValue(e.target.value)}
-                rows={3}
-                placeholder="Product description..."
-                className="bg-black/50 border-white/10 text-sm"
-                data-testid="input-edit-description"
-              />
-              <div className="flex gap-2">
-                <Button size="sm" className="h-7 text-[10px]" onClick={() => updateDescriptionMutation.mutate(descriptionValue)} disabled={updateDescriptionMutation.isPending} data-testid="btn-save-description">
-                  {updateDescriptionMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => { setEditingDescription(false); setDescriptionValue(product.description || ""); }} data-testid="btn-cancel-description">
-                  <X className="h-3 w-3 mr-1" />Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-white/70">{product.description || <span className="italic text-muted-foreground">No description</span>}</p>
-          )}
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="options">Options</TabsTrigger>
-            <TabsTrigger value="stock">Stock</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="options" className="space-y-4 mt-4">
-                  <div className="space-y-1">
-                    {(product.variants || []).map((v: any) => (
-                      <div key={v.id} className="p-3 bg-[#0d0f12] border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
-                        {editingVariant?.id === v.id ? (
-                          <div className="space-y-3 p-2">
-                            <Input 
-                              value={editingVariant.name} 
-                              onChange={(e) => setEditingVariant({ ...editingVariant, name: e.target.value })}
-                              placeholder="Name"
-                              className="h-8 text-xs bg-black/40 border-white/10"
-                            />
-                            <Input 
-                              type="number" 
-                              step="0.01"
-                              value={(editingVariant.price / 100).toFixed(2)} 
-                              onChange={(e) => setEditingVariant({ ...editingVariant, price: Math.round(parseFloat(e.target.value) * 100) })}
-                              placeholder="Price"
-                              className="h-8 text-xs bg-black/40 border-white/10"
-                            />
-                            <div className="flex gap-2">
-                              <Button size="sm" className="h-7 text-[10px]" onClick={() => updateVariantMutation.mutate(editingVariant)} disabled={updateVariantMutation.isPending}>
-                                {updateVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setEditingVariant(null)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-white truncate">{v.name}</p>
-                            </div>
-                            <div className="w-20 text-right">
-                              <p className="text-xs font-bold text-green-500">${(v.price / 100).toFixed(2)}</p>
-                            </div>
-                            <div className="w-24 text-right">
-                              <p className="text-xs font-bold text-blue-400">{v.stockCount} in stock</p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:bg-blue-400/10" onClick={() => {
-                                setSelectedVariantForStock(v.id);
-                                setActiveTab("stock");
-                              }} data-testid={`btn-stock-${v.id}`}>
-                                <Database className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-white/60 hover:bg-white/10" onClick={() => setEditingVariant({ ...v })} data-testid={`btn-edit-variant-${v.id}`}>
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-red-500/10" onClick={() => { if (confirm(`Delete option "${v.name}"?`)) deleteVariantMutation.mutate(v.id); }} data-testid={`btn-delete-variant-${v.id}`}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-            <Form {...optionForm}>
-              <form onSubmit={optionForm.handleSubmit((d) => createOptionMutation.mutate(d))} className="space-y-4 p-4 rounded-lg bg-[#1c1f26]">
-                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Add New Option</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField control={optionForm.control} name="name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl><Input {...field} placeholder="Private Account" data-testid="input-option-name" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={optionForm.control} name="price" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price ($)</FormLabel>
-                      <FormControl><Input {...field} type="number" step="0.01" placeholder="5.00" data-testid="input-option-price" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <Button type="submit" disabled={createOptionMutation.isPending} className="w-full" data-testid="btn-save-option">
-                  {createOptionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Add Option
-                </Button>
-              </form>
-            </Form>
-
-            <Button variant="destructive" className="w-full" onClick={() => deleteProductMutation.mutate()} disabled={deleteProductMutation.isPending} data-testid="btn-delete-product">
-              {deleteProductMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Product
-            </Button>
-          </TabsContent>
-
-          <TabsContent value="stock" className="space-y-4 mt-4">
-            <div className="p-4 bg-[#1c1f26] rounded-lg space-y-4 border border-white/5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Manage Stock</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <Select onValueChange={(v) => setSelectedVariantForStock(parseInt(v))} value={selectedVariantForStock?.toString() || ""}>
-                  <SelectTrigger data-testid="select-stock-variant" className="bg-[#0f1115] border-white/5">
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1c1f26] border-white/10 text-white">
-                    {product.variants?.map((v: any) => (
-                      <SelectItem key={v.id} value={v.id.toString()}>{v.name} ({v.stockCount})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="text-sm font-medium">Add Stock <span className="text-muted-foreground text-xs">(separate items with a blank line)</span></div>
-
-                <div className="space-y-2">
-                  <Textarea 
-                    placeholder={'user@email.com:password123\n\nuser2@email.com:pass456\n\naccount3\nextra info line'}
-                    value={newStockContent}
-                    onChange={(e) => setNewStockContent(e.target.value)}
-                    rows={8}
-                    className="bg-[#0f1115] border-white/5 font-mono text-xs"
-                  />
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>Items to add: {newStockContent.split(/\n\s*\n/).map(s => s.trim()).filter(s => s.length > 0).length}</span>
-                    <span>Stock in database: {stockItems?.length || 0}</span>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={() => addStockMutation.mutate()} 
-                  disabled={addStockMutation.isPending || !newStockContent.trim() || !selectedVariantForStock}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase italic tracking-tighter"
-                >
-                  {addStockMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : `Add ${newStockContent.split(/\n\s*\n/).map(s => s.trim()).filter(s => s.length > 0).length} Items`}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 border-purple-500/30 text-purple-400">Copy all as text</Button>
-              <Button variant="outline" size="sm" className="flex-1 border-purple-500/30 text-purple-400">Export to CSV</Button>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</p>
-              <div className="flex gap-2 p-1 bg-white/5 rounded-lg w-fit">
-                <Button size="sm" variant="secondary" className="h-7 text-[10px] uppercase font-bold">Available</Button>
-                <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase font-bold text-muted-foreground">Sold</Button>
-                <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase font-bold text-muted-foreground">All</Button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {selectedVariantForStock && (
-                <div className="space-y-2">
-                  <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Stock ({stockItems?.length || 0})</p>
-                  {stockItems?.map((item: any) => (
-                    <div key={item.id} className="flex items-start justify-between p-3 rounded-lg bg-[#1c1f26] gap-2">
-                      <pre className="text-xs font-mono whitespace-pre-wrap break-all flex-1">{item.content}</pre>
-                      <Button size="icon" variant="ghost" onClick={() => deleteStockMutation.mutate(item.id)} data-testid={`btn-delete-stock-${item.id}`}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                  {(!stockItems || stockItems.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center py-4">No stock items</p>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
   );
 }
 
 function OrdersSection() {
-  const [orderIdSearch, setOrderIdSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [deliveryContent, setDeliveryContent] = useState("");
   const { data: orders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
     queryFn: async () => {
       const res = await fetch("/api/admin/orders");
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     }
   });
 
-  const filteredOrders = orders?.filter((o: any) => {
-    if (orderIdSearch) {
-      const search = orderIdSearch.toLowerCase();
-      const matchesOrderId = (o.orderId || '').toLowerCase().includes(search);
-      const matchesDbId = o.id.toString().includes(search);
-      const matchesUser = (o.user?.username || '').toLowerCase().includes(search);
-      if (!matchesOrderId && !matchesDbId && !matchesUser) return false;
+  const deliverMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", api.admin.deliverOrder.path.replace(":id", selectedOrder.id.toString()), {
+        deliveryContent
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      setDeliveryContent("");
+      toast({ title: "Order delivered" });
     }
-    const matchesStatus = statusFilter === "all" ? true : o.status === statusFilter;
-    return matchesStatus;
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase text-primary">Orders</h1>
-      </div>
+  if (selectedOrder) {
+    return (
+      <div className="space-y-6">
+        <Button variant="outline" onClick={() => setSelectedOrder(null)}>← Back</Button>
+        
+        <Card className="bg-[#0f1115] border-white/5">
+          <CardHeader>
+            <CardTitle>Order #{selectedOrder.orderId}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase">Status</p>
+                <Badge className={selectedOrder.status === "fulfilled" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
+                  {selectedOrder.status}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase">Total</p>
+                <p className="font-bold">${(selectedOrder.total / 100).toFixed(2)}</p>
+              </div>
+            </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-             <span className="text-blue-500 font-bold text-sm uppercase italic">{filteredOrders?.length || 0} Orders Found</span>
-          </div>
-          <div className="relative group">
-            <Input 
-              placeholder="Search by order ID, username..." 
-              value={orderIdSearch}
-              onChange={(e) => setOrderIdSearch(e.target.value)}
-              className="bg-[#16181d] border-white/5 pr-20 uppercase font-mono text-xs"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">Order ID</div>
-          </div>
-          <div className="relative">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-[#16181d] border-white/5 text-xs font-bold uppercase">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#16181d] border-white/10 text-white">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="fulfilled">Fulfilled</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="absolute right-10 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">Status</div>
-          </div>
-        </div>
+            {selectedOrder.status === "delivering" && (
+              <div className="space-y-4 border-t border-white/5 pt-4">
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Paste Items Below</label>
+                  <Textarea
+                    value={deliveryContent}
+                    onChange={(e) => setDeliveryContent(e.target.value)}
+                    placeholder="Paste all items here..."
+                    className="bg-black/50 border-white/10 min-h-32 font-mono text-xs"
+                  />
+                </div>
+                <Button
+                  onClick={() => deliverMutation.mutate()}
+                  disabled={deliverMutation.isPending || !deliveryContent}
+                  className="w-full gap-2"
+                >
+                  {deliverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send Items
+                </Button>
+              </div>
+            )}
 
-        <Card className="bg-[#16181d] border-white/5 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-[10px] md:text-xs uppercase font-bold tracking-tight">
-              <thead>
-                <tr className="border-b border-white/5 text-muted-foreground">
-                  <th className="p-3 text-left">User</th>
-                  <th className="p-3 text-left">Amount</th>
-                  <th className="p-3 text-left">Items</th>
-                  <th className="p-3 text-left">Payment</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Date</th>
-                  <th className="p-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders?.map((o: any) => (
-                  <tr key={o.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                    <td className="p-3 text-white">
-                      <div className="flex flex-col">
-                        <span className="font-bold">{o.user?.username || 'Unknown'}</span>
-                        <span className="text-[9px] text-muted-foreground">ID: {o.user?.id || o.userId}</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-white">${(o.total / 100).toFixed(2)}</td>
-                    <td className="p-3 text-muted-foreground">{o.items?.length || 0}</td>
-                    <td className="p-3">
-                      <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
-                        {o.paymentMethod || "Balance"}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <span className={o.status === 'fulfilled' || o.status === 'paid' ? 'text-green-500' : o.status === 'refunded' ? 'text-red-500' : 'text-orange-500'}>
-                        {o.status === 'paid' ? 'Fulfilled' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {new Date(o.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="p-3 text-right">
-                      <AdminOrderDetailsSheet order={o} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            {selectedOrder.status === "fulfilled" && selectedOrder.deliveryContent && (
+              <div className="border-t border-white/5 pt-4 space-y-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Delivered Items</p>
+                <div className="bg-black/30 p-3 rounded border border-white/5 text-sm font-mono whitespace-pre-wrap text-xs">
+                  {selectedOrder.deliveryContent}
+                </div>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function AdminOrderDetailsSheet({ order }: { order: any }) {
-  const [activeTab, setActiveTab] = useState("info");
-  const [viewingStockIdx, setViewingStockIdx] = useState<number | null>(null);
-  const { toast } = useToast();
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied!" });
-  };
-
-  const viewingItem = viewingStockIdx !== null ? order.items?.[viewingStockIdx] : null;
-
-  const stockView = viewingItem ? (() => {
-    const content = viewingItem.itemType === 'card' && viewingItem.card
-      ? `${viewingItem.card.cardNumber} | ${viewingItem.card.expiry} | ${viewingItem.card.cvv}`
-      : viewingItem.stockItem?.content || '';
-    return (
-      <div className="flex-1 flex flex-col gap-4">
-        <div
-          className="bg-black border border-white/10 text-white rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
-          onClick={() => copyToClipboard(content)}
-          data-testid="admin-stock-content-box"
-        >
-          {content}
-        </div>
-        <Button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-          onClick={() => setViewingStockIdx(null)}
-        >
-          Back
-        </Button>
-      </div>
     );
-  })() : null;
-
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary">
-          <Eye className="h-3 w-3" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
-        <div className="p-6 space-y-6 h-full flex flex-col">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
-          </div>
-
-          {stockView || (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
-            <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
-              <TabsTrigger 
-                value="info" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
-              >
-                Info
-              </TabsTrigger>
-              <TabsTrigger 
-                value="products" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
-              >
-                Products
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="info" className="pt-6 space-y-4">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Order ID</p>
-                <p className="text-xs font-mono break-all">{order.orderId || order.id}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">User</p>
-                <p className="text-xs font-bold">{order.user?.username || 'Unknown'} <span className="text-muted-foreground font-normal">(ID: {order.user?.id || order.userId})</span></p>
-              </div>
-              {order.user?.email && (
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Email</p>
-                  <p className="text-xs">{order.user.email}</p>
-                </div>
-              )}
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Creation date</p>
-                <p className="text-xs">{new Date(order.createdAt).toLocaleString()}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Items</p>
-                <p className="text-xs">{order.items?.length || 0} item(s)</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Expected amount</p>
-                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Paid amount</p>
-                <p className="text-xs">${(order.total / 100).toFixed(2)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
-                <p className={`text-xs font-bold ${order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' : order.status === 'refunded' ? 'text-red-500' : 'text-amber-500'}`}>
-                  {order.status === 'paid' ? 'fulfilled' : order.status}
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
-              {order.items?.map((item: any, idx: number) => (
-                <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={item.itemType === 'card' ? 'border-yellow-500/30 text-yellow-500 text-[9px]' : 'border-primary/30 text-primary text-[9px]'}>
-                      {item.itemType === 'card' ? '💳 Credit Card' : '📦 Product'}
-                    </Badge>
-                  </div>
-
-                  {item.itemType === 'card' ? (
-                    <>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Card</p>
-                        <p className="text-xs font-bold font-mono">{item.card?.maskedCard || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Country</p>
-                        <p className="text-xs font-bold">{item.card?.country || 'N/A'}</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Product</p>
-                        <p className="text-xs font-bold">{item.variant?.name || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Quantity</p>
-                        <p className="text-xs font-bold">{item.quantity}</p>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Price</p>
-                    <p className="text-xs font-bold">${(item.price / 100).toFixed(2)}</p>
-                  </div>
-
-                  {(item.stockItem || (item.itemType === 'card' && item.card)) && (
-                    <Button 
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
-                      onClick={() => setViewingStockIdx(idx)}
-                    >
-                      View stock
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </TabsContent>
-          </Tabs>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function UsersSection() {
-  const { data: users, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"],
-  });
-
-  const { toast } = useToast();
-  const [balanceUserId, setBalanceUserId] = useState<number | null>(null);
-  const [balanceAmount, setBalanceAmount] = useState("");
-
-  const banMutation = useMutation({
-    mutationFn: async ({ id, isBanned }: { id: number; isBanned: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/users/${id}`, { isBanned });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "User status updated" });
-    }
-  });
-
-  const balanceMutation = useMutation({
-    mutationFn: async ({ id, amount }: { id: number; amount: number }) => {
-      await apiRequest("POST", `/api/admin/users/${id}/balance`, { amount });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      setBalanceUserId(null);
-      setBalanceAmount("");
-      toast({ title: "Balance updated" });
-    },
-    onError: () => {
-      toast({ title: "Failed to update balance", variant: "destructive" });
-    }
-  });
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const filteredUsers = users?.filter(u => 
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.id.toString() === searchTerm
-  ) || [];
-
-  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">User Management</h1>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search username or ID..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#0f1115] border-white/5"
-          />
-        </div>
-      </div>
-
+      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Orders</h1>
       <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
         <Table>
           <TableHeader className="bg-white/5">
             <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">ID</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">User</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Balance</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Status</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Actions</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Order ID</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Total</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Status</TableHead>
+              <TableHead className="text-right text-xs font-bold uppercase">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((u) => (
-              <TableRow key={u.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                <TableCell className="font-mono text-xs text-muted-foreground">{u.id}</TableCell>
+            {orders?.map((order: any) => (
+              <TableRow key={order.id} className="border-white/5 hover:bg-white/5">
+                <TableCell className="font-mono text-xs">{order.orderId}</TableCell>
+                <TableCell className="font-bold">${(order.total / 100).toFixed(2)}</TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-sm">{u.username}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{u.role}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-green-500 font-bold">${(u.balance / 100).toFixed(2)}</span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={u.isBanned ? "destructive" : "outline"} className="uppercase text-[10px]">
-                    {u.isBanned ? "Banned" : "Active"}
+                  <Badge className={
+                    order.status === "delivering" ? "bg-blue-500/20 text-blue-400" :
+                    order.status === "fulfilled" ? "bg-green-500/20 text-green-400" :
+                    "bg-yellow-500/20 text-yellow-400"
+                  }>
+                    {order.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {balanceUserId === u.id ? (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="$0.00"
-                          value={balanceAmount}
-                          onChange={(e) => setBalanceAmount(e.target.value)}
-                          className="w-24 h-8 bg-black/50 border-white/10 text-xs"
-                          data-testid={`input-balance-${u.id}`}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-green-500 hover:text-green-600 hover:bg-green-500/10"
-                          disabled={balanceMutation.isPending || !balanceAmount}
-                          onClick={() => {
-                            const cents = Math.round(parseFloat(balanceAmount) * 100);
-                            if (!Number.isFinite(cents) || cents <= 0) return;
-                            balanceMutation.mutate({ id: u.id, amount: cents });
-                          }}
-                          data-testid={`button-add-balance-${u.id}`}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />Add
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                          disabled={balanceMutation.isPending || !balanceAmount}
-                          onClick={() => {
-                            const cents = Math.round(parseFloat(balanceAmount) * 100);
-                            if (!Number.isFinite(cents) || cents <= 0) return;
-                            balanceMutation.mutate({ id: u.id, amount: -cents });
-                          }}
-                          data-testid={`button-remove-balance-${u.id}`}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />Remove
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-muted-foreground hover:text-white"
-                          onClick={() => { setBalanceUserId(null); setBalanceAmount(""); }}
-                          data-testid={`button-cancel-balance-${u.id}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-primary hover:text-primary/80 hover:bg-primary/10"
-                        onClick={() => setBalanceUserId(u.id)}
-                        data-testid={`button-edit-balance-${u.id}`}
-                      >
-                        <DollarSign className="h-4 w-4 mr-1" />Balance
-                      </Button>
-                    )}
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className={u.isBanned ? "text-green-500 hover:text-green-600 hover:bg-green-500/10" : "text-destructive hover:text-destructive hover:bg-destructive/10"}
-                      onClick={() => banMutation.mutate({ id: u.id, isBanned: !u.isBanned })}
-                      disabled={banMutation.isPending}
-                    >
-                      {u.isBanned ? <Check className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
-                      {u.isBanned ? "Unban" : "Ban"}
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>View</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -1626,371 +386,86 @@ function UsersSection() {
   );
 }
 
-function CodesSection() {
-  const { data: codes, isLoading } = useQuery({
-    queryKey: ["/api/admin/codes"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/codes");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    }
-  });
+function UsersSection() {
   const { toast } = useToast();
-  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
-
-  const codeSchema = z.object({
-    amount: z.string().min(1, "Required"),
-    count: z.string().min(1, "Required"),
-  });
-
-  const form = useForm<z.infer<typeof codeSchema>>({
-    resolver: zodResolver(codeSchema),
-    defaultValues: { amount: "", count: "10" },
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof codeSchema>) => {
-      const res = await apiRequest("POST", api.admin.generateCodes.path, {
-        amount: Math.round(parseFloat(data.amount) * 100),
-        count: parseInt(data.count),
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/codes"] });
-      setGeneratedCodes(data.codes);
-      toast({ title: `Generated ${data.codes.length} codes` });
-    }
-  });
-
-  const copyAll = () => {
-    navigator.clipboard.writeText(generatedCodes.join('\n'));
-    toast({ title: "Copied to clipboard" });
-  };
-
-  const available = codes?.filter((c: any) => !c.isUsed) || [];
-  const used = codes?.filter((c: any) => c.isUsed) || [];
-
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
-
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Redeem Codes</h1>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard title="Total" value={codes?.length || 0} icon={Ticket} />
-        <StatCard title="Available" value={available.length} icon={Check} color="green" />
-        <StatCard title="Used" value={used.length} icon={Ticket} color="orange" />
-        <StatCard title="Issued" value={`$${(codes?.reduce((s: number, c: any) => s + c.amount, 0) / 100 || 0).toFixed(2)}`} icon={DollarSign} color="purple" />
-      </div>
-
-      <Card className="bg-[#16181d] border-white/5">
-        <CardHeader><CardTitle className="text-sm uppercase tracking-widest">Generate Codes</CardTitle></CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((d) => generateMutation.mutate(d))} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="amount" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount ($)</FormLabel>
-                    <FormControl><Input {...field} type="number" step="0.01" placeholder="5.00" data-testid="input-code-amount" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="count" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity</FormLabel>
-                    <FormControl><Input {...field} type="number" min="1" max="100" data-testid="input-code-count" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <Button type="submit" disabled={generateMutation.isPending} className="w-full" data-testid="btn-generate-codes">
-                {generateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate Codes
-              </Button>
-            </form>
-          </Form>
-
-          {generatedCodes.length > 0 && (
-            <div className="mt-4 p-4 rounded-lg bg-[#1c1f26] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold">Generated Codes</span>
-                <Button size="sm" variant="ghost" onClick={copyAll} className="gap-2" data-testid="btn-copy-codes">
-                  <Copy className="h-4 w-4" /> Copy All
-                </Button>
-              </div>
-              <div className="font-mono text-xs space-y-1 max-h-40 overflow-y-auto">
-                {generatedCodes.map((c, i) => <div key={i} className="text-primary">{c}</div>)}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-[#16181d] border-white/5">
-          <CardHeader><CardTitle className="text-sm uppercase tracking-widest">Available</CardTitle></CardHeader>
-          <CardContent className="max-h-60 overflow-y-auto">
-            <div className="space-y-2">
-              {available.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between p-2 rounded bg-[#1c1f26] text-sm">
-                  <span className="font-mono text-primary text-xs">{c.code}</span>
-                  <Badge>${(c.amount / 100).toFixed(2)}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#16181d] border-white/5">
-          <CardHeader><CardTitle className="text-sm uppercase tracking-widest">Used</CardTitle></CardHeader>
-          <CardContent className="max-h-60 overflow-y-auto">
-            <div className="space-y-2">
-              {used.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between p-2 rounded bg-[#1c1f26] text-sm opacity-60">
-                  <span className="font-mono text-xs">{c.code}</span>
-                  <Badge variant="secondary">${(c.amount / 100).toFixed(2)}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function AnnouncementsSection() {
-  const { data: announcements, isLoading } = useQuery({
-    queryKey: ["/api/admin/announcements"],
+  const { data: users, isLoading } = useQuery({
+    queryKey: ["/api/admin/users"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/announcements");
-      if (!res.ok) throw new Error("Failed");
+      const res = await fetch("/api/admin/users");
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     }
   });
-  const { toast } = useToast();
 
-  const annSchema = z.object({
-    content: z.string().min(1, "Required"),
-    link: z.string().optional(),
-    active: z.boolean().default(true),
-  });
-
-  const form = useForm<z.infer<typeof annSchema>>({
-    resolver: zodResolver(annSchema),
-    defaultValues: { content: "", link: "", active: true },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof annSchema>) => {
-      await apiRequest("POST", "/api/admin/announcements", data);
+  const banMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest("POST", api.admin.banUser.path.replace(":id", userId.toString()));
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
-      form.reset();
-      toast({ title: "Announcement saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "User banned" });
     }
   });
 
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
-
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Announcements</h1>
-
-      <Card className="bg-[#16181d] border-white/5">
-        <CardHeader><CardTitle className="text-sm uppercase tracking-widest">New Announcement</CardTitle></CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
-              <FormField control={form.control} name="content" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Text</FormLabel>
-                  <FormControl><Textarea {...field} rows={3} placeholder="Your announcement..." data-testid="textarea-announcement" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="link" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Link (optional)</FormLabel>
-                  <FormControl><Input {...field} placeholder="https://..." data-testid="input-announcement-link" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="active" render={({ field }) => (
-                <FormItem className="flex items-center gap-3">
-                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-announcement-active" /></FormControl>
-                  <FormLabel className="!mt-0">Enable</FormLabel>
-                </FormItem>
-              )} />
-              <Button type="submit" disabled={createMutation.isPending} className="w-full" data-testid="btn-save-announcement">
-                {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-2">
-        {announcements?.map((a: any) => (
-          <Card key={a.id} className="bg-[#16181d] border-white/5">
-            <CardContent className="p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate">{a.content}</p>
-                {a.link && <a href={a.link} className="text-sm text-primary truncate block">{a.link}</a>}
-              </div>
-              <Badge variant={a.active ? "default" : "secondary"}>{a.active ? "Active" : "Off"}</Badge>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function GamesSection() {
-  const { toast } = useToast();
-  
-  const gameSchema = z.object({
-    diceDefaultLoseChance: z.string().default("50"),
-    diceReductionPerPurchase: z.string().default("1"),
-    diceMinLoseChance: z.string().default("30"),
-  });
-
-  const form = useForm<z.infer<typeof gameSchema>>({
-    resolver: zodResolver(gameSchema),
-    defaultValues: { diceDefaultLoseChance: "50", diceReductionPerPurchase: "1", diceMinLoseChance: "30" },
-  });
-
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Game Settings</h1>
-
-      <Card className="bg-[#16181d] border-white/5">
-        <CardHeader><CardTitle className="text-sm uppercase tracking-widest">Dice Game</CardTitle></CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField control={form.control} name="diceDefaultLoseChance" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Lose %</FormLabel>
-                    <FormControl><Input {...field} type="number" data-testid="input-dice-lose" /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="diceReductionPerPurchase" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>% Reduction/Purchase</FormLabel>
-                    <FormControl><Input {...field} type="number" data-testid="input-dice-reduction" /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="diceMinLoseChance" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Min Lose Cap</FormLabel>
-                    <FormControl><Input {...field} type="number" data-testid="input-dice-min" /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-              <Button type="button" onClick={() => toast({ title: "Settings saved" })} className="w-full" data-testid="btn-save-games">
-                Save Settings
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function SupportSection() {
-  const { toast } = useToast();
-  
-  const supportSchema = z.object({
-    redirectUrl: z.string().min(1, "Required"),
-    buttonLabel: z.string().optional(),
-  });
-
-  const form = useForm<z.infer<typeof supportSchema>>({
-    resolver: zodResolver(supportSchema),
-    defaultValues: { redirectUrl: "", buttonLabel: "Get Support" },
-  });
-
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Support Settings</h1>
-
-      <Card className="bg-[#16181d] border-white/5">
-        <CardHeader><CardTitle className="text-sm uppercase tracking-widest">Configuration</CardTitle></CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form className="space-y-4">
-              <FormField control={form.control} name="redirectUrl" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Support URL</FormLabel>
-                  <FormControl><Input {...field} placeholder="https://discord.gg/..." data-testid="input-support-url" /></FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="buttonLabel" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Button Label</FormLabel>
-                  <FormControl><Input {...field} placeholder="Get Support" data-testid="input-support-label" /></FormControl>
-                </FormItem>
-              )} />
-              <Button type="button" onClick={() => toast({ title: "Settings saved" })} className="w-full" data-testid="btn-save-support">
-                Save
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function LogsSection() {
-  const { data: logs, isLoading } = useQuery({
-    queryKey: ["/api/admin/logs"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/logs");
-      if (!res.ok) throw new Error("Failed");
+  const unbanMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest("POST", api.admin.unbanUser.path.replace(":id", userId.toString()));
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "User unbanned" });
     }
   });
 
-  if (isLoading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-  }
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <h1 className="text-xl md:text-2xl font-display font-black tracking-tighter italic uppercase">Admin Logs</h1>
-
-      <Card className="bg-[#16181d] border-white/5">
-        <CardContent className="p-0">
-          <div className="divide-y divide-white/5">
-            {logs?.map((log: any, i: number) => (
-              <div key={i} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">{log.action}</p>
-                  <p className="text-sm text-muted-foreground font-mono">{log.target}</p>
-                </div>
-                <span className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
-              </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
+      <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader className="bg-white/5">
+            <TableRow className="hover:bg-transparent border-white/5">
+              <TableHead className="text-xs font-bold uppercase">Username</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Email</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Telegram</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Status</TableHead>
+              <TableHead className="text-right text-xs font-bold uppercase">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users?.map((user: any) => (
+              <TableRow key={user.id} className="border-white/5 hover:bg-white/5">
+                <TableCell className="font-bold">{user.username}</TableCell>
+                <TableCell className="text-xs">{user.email}</TableCell>
+                <TableCell className="text-xs">{user.telegramUsername}</TableCell>
+                <TableCell>
+                  <Badge variant={user.isBanned ? "destructive" : "default"} className={user.isBanned ? "bg-red-500/20 text-red-400 border-none" : "bg-green-500/20 text-green-400 border-none"}>
+                    {user.isBanned ? "Banned" : "Active"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {user.isBanned ? (
+                    <Button variant="ghost" size="sm" className="text-green-400" onClick={() => {
+                      if (confirm("Unban?")) unbanMutation.mutate(user.id);
+                    }} disabled={unbanMutation.isPending}>
+                      Unban
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="text-red-400" onClick={() => {
+                      if (confirm("Ban?")) banMutation.mutate(user.id);
+                    }} disabled={banMutation.isPending}>
+                      Ban
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
             ))}
-            {(!logs || logs.length === 0) && (
-              <div className="p-8 text-center text-muted-foreground">No logs yet</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <p className="text-xs text-muted-foreground text-center">Logs are permanent and cannot be deleted</p>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

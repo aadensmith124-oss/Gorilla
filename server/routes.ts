@@ -343,8 +343,26 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  // Admin Orders
+  // Admin - Get all orders for admin
   app.get("/api/admin/orders", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const allOrders = await storage.getAllOrders();
+    res.json(allOrders);
+  });
+
+  // Admin - Get all users
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const allUsers = await storage.getAllUsers();
+    res.json(allUsers);
+  });
+
+  // Old Admin Orders (keeping for backward compat)
+  app.get("/api/admin/orders-old", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
