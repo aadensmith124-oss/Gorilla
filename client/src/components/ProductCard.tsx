@@ -10,7 +10,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
   const hasStock = product.variants.some(v => v.stockCount > 0);
 
   return (
-    <Link href={`/product/${product.id}`}>
+    <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div className="group relative cursor-pointer overflow-hidden rounded-xl bg-[#16181d] border border-white/5 transition-all hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5">
         <div className="w-full relative overflow-hidden bg-[#0f1115]" style={{ aspectRatio: '1280 / 853' }}>
           {product.image ? (
@@ -20,7 +20,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
               className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600/30 to-purple-900/30">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-600/30 to-yellow-900/30">
               <span className="text-5xl font-black text-white/80 italic tracking-tighter">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}

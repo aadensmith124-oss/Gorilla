@@ -35,10 +35,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Shop</span>
         </Link>
 
-        <Link href="/cards" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Cards</span>
-        </Link>
-
         <Collapsible>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
             Profile <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />

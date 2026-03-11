@@ -1,4 +1,4 @@
-import { useProduct } from "@/hooks/use-products";
+import { useProducts } from "@/hooks/use-products";
 import { useRoute, useLocation } from "wouter";
 import { Loader2, ShoppingCart, Minus, Plus, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/select";
 
 export default function ProductDetailPage() {
-  const [, params] = useRoute("/product/:id");
+  const [, params] = useRoute("/product/:name");
   const [, setLocation] = useLocation();
-  const id = parseInt(params?.id || "0");
-  const { data: product, isLoading } = useProduct(id);
+  const name = decodeURIComponent(params?.name || "");
+  const { data: products } = useProducts();
+  const product = products?.find((p: any) => p.name === name);
+  const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
