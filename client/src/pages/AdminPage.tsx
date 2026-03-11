@@ -26,6 +26,7 @@ const adminSections = [
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
   { id: "users", label: "Users" },
+  { id: "test", label: "Test Mode" },
 ];
 
 export default function AdminPage() {
@@ -101,6 +102,7 @@ export default function AdminPage() {
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "users" && <UsersSection />}
+          {activeSection === "test" && <TestModeSection />}
         </main>
       </div>
     </div>
@@ -214,8 +216,27 @@ function ProductsSection() {
                 )} />
                 <FormField control={form.control} name="image" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl><Input {...field} className="bg-black/50 border-white/10" /></FormControl>
+                    <FormLabel>Image URL or Upload</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <Input {...field} placeholder="https://example.com/image.png" className="bg-black/50 border-white/10" />
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="text-xs text-white/60" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                field.onChange(e.target?.result);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </FormControl>
                   </FormItem>
                 )} />
                 <Button type="submit" className="w-full" disabled={addMutation.isPending}>
@@ -382,6 +403,90 @@ function OrdersSection() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+function TestModeSection() {
+  const { toast } = useToast();
+  const { data: products } = useProducts();
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState(1);
+
+  const testOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedProduct || !selectedVariant) throw new Error("Select product and variant");
+      const res = await apiRequest("POST", "/api/admin/test-order", {
+        productId: selectedProduct,
+        variantId: selectedVariant,
+        quantity
+      });
+      return res.json();
+    },
+    onSuccess: (order) => {
+      toast({ title: "Test order created", description: `Order #${order.orderId} ready for delivery` });
+      setSelectedProduct(null);
+      setSelectedVariant(null);
+      setQuantity(1);
+    }
+  });
+
+  const product = products?.find((p: any) => p.id === selectedProduct);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Test Mode</h1>
+      <Card className="bg-[#0f1115] border-white/5 border-primary/30">
+        <CardHeader>
+          <CardTitle>Create Test Order (No Payment)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Product</label>
+            <Select value={selectedProduct?.toString()} onValueChange={(v) => { setSelectedProduct(Number(v)); setSelectedVariant(null); }}>
+              <SelectTrigger className="bg-black/50 border-white/10">
+                <SelectValue placeholder="Select product" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0f1115] border-white/10">
+                {products?.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {product && (
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Variant</label>
+              <Select value={selectedVariant?.toString()} onValueChange={(v) => setSelectedVariant(Number(v))}>
+                <SelectTrigger className="bg-black/50 border-white/10">
+                  <SelectValue placeholder="Select variant" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0f1115] border-white/10">
+                  {product.variants.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id.toString()}>${(v.price / 100).toFixed(2)} - {v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Quantity</label>
+            <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="bg-black/50 border-white/10" />
+          </div>
+
+          <Button 
+            onClick={() => testOrderMutation.mutate()}
+            disabled={testOrderMutation.isPending || !selectedProduct || !selectedVariant}
+            className="w-full"
+          >
+            {testOrderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create Test Order
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -245,6 +245,32 @@ export async function registerRoutes(
     }
   });
 
+  // Admin - Test Order (No Payment)
+  app.post("/api/admin/test-order", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const { productId, variantId, quantity } = req.body;
+      const [variant] = await db.select().from(variants).where(eq(variants.id, variantId));
+      if (!variant) throw new Error("Variant not found");
+      
+      const total = variant.price * quantity;
+      const orderId = `TEST-${Date.now()}`;
+      
+      const [order] = await db.insert(orders).values({
+        orderId,
+        userId: (req.user as any).id,
+        status: "delivering" as any,
+        total
+      }).returning();
+      
+      res.status(201).json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // Admin
   app.get(api.admin.dashboard.path, async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
