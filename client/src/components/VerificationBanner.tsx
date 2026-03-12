@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { AlertTriangle, ChevronRight, X, CheckSquare, Square, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronRight, X, CheckSquare, Square, Loader2, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVerification, useSubmitVerification } from "@/hooks/use-verification";
 import { useToast } from "@/hooks/use-toast";
+import { RulesModal, RulesLink } from "@/components/RulesModal";
 
 const TERMS = `By purchasing from this store, you automatically agree to the following terms:
 
@@ -20,11 +21,12 @@ Products are sold at low reseller pricing so buyers can resell them in their own
 You are responsible for how you resell the products and managing your own customers.
 
 5. Agreement
-By using this store or purchasing any product, you confirm that you accept and agree to these terms.`;
+By using this store or purchasing any product, you confirm that you accept and agree to these terms and all RULES.`;
 
 export function VerificationBanner() {
-  const { verification, isLoading, isApproved, isDenied, isPending, hasApplied } = useVerification();
+  const { verification, isLoading, isApproved, isDenied, isPending, isTermed } = useVerification();
   const [showForm, setShowForm] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState("");
   const [channelLink, setChannelLink] = useState("");
@@ -51,6 +53,33 @@ export function VerificationBanner() {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
+
+  if (isTermed) {
+    return (
+      <div className="w-full bg-[#1a0a0a] border-b-2 border-destructive text-white px-4 py-4 space-y-2">
+        <div className="flex items-center gap-3">
+          <ShieldX className="h-6 w-6 text-destructive shrink-0" />
+          <div>
+            <p className="font-black text-sm uppercase tracking-wide text-destructive">YOU ARE TERMED</p>
+            {verification?.termMessage && (
+              <p className="text-xs text-white/70 mt-0.5">{verification.termMessage}</p>
+            )}
+          </div>
+        </div>
+        <p className="text-[10px] text-white/40 pl-9">Your account has been terminated. You may reapply but approval is not guaranteed.</p>
+        <div className="pl-9">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10 text-xs h-7"
+            onClick={() => setShowForm(true)}
+          >
+            Reapply
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isDenied) {
     return (
@@ -112,6 +141,11 @@ export function VerificationBanner() {
               <div className="bg-black/30 border border-white/5 rounded-xl p-4">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Terms of Service</p>
                 <pre className="text-xs text-white/70 leading-relaxed whitespace-pre-wrap font-sans">{TERMS}</pre>
+                <div className="mt-3 pt-3 border-t border-white/5 text-xs text-white/60">
+                  You agree to follow all{" "}
+                  <RulesLink onClick={() => setShowRules(true)} />
+                  {" "}of this store.
+                </div>
               </div>
 
               <button
@@ -125,7 +159,7 @@ export function VerificationBanner() {
                   }
                 </div>
                 <p className="text-sm text-white/80 group-hover:text-white transition-colors">
-                  I have read and agree to the Terms of Service above
+                  I have read and agree to the Terms of Service and all Rules above
                 </p>
               </button>
 
@@ -172,6 +206,8 @@ export function VerificationBanner() {
           </div>
         </div>
       )}
+
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </>
   );
 }

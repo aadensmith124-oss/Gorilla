@@ -5,9 +5,9 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User, userIps } from "@shared/schema";
 import pgSession from "connect-pg-simple";
-import { pool } from "./db";
+import { pool, db } from "./db";
 
 const scryptAsync = promisify(scrypt);
 
@@ -75,8 +75,12 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: any, user: User, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
+        try {
+          const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+          await db.insert(userIps).values({ userId: (user as any).id, ip });
+        } catch {}
         res.status(200).json(user);
       });
     })(req, res, next);

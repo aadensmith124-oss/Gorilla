@@ -25,6 +25,7 @@ const adminSections = [
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
   { id: "verifications", label: "Verifications" },
+  { id: "sellers", label: "Sellers" },
   { id: "users", label: "Users" },
   { id: "test", label: "Test Mode" },
 ];
@@ -96,6 +97,7 @@ export default function AdminPage() {
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "verifications" && <VerificationsSection />}
+          {activeSection === "sellers" && <SellersSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
         </main>
@@ -768,6 +770,186 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function SellersSection() {
+  const { toast } = useToast();
+  const [selectedSeller, setSelectedSeller] = useState<any>(null);
+  const [termMessage, setTermMessage] = useState("");
+  const [showTermInput, setShowTermInput] = useState(false);
+
+  const { data: sellers, isLoading } = useQuery({
+    queryKey: ["/api/admin/sellers"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/sellers");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    refetchInterval: 15000,
+  });
+
+  const termMutation = useMutation({
+    mutationFn: async ({ id, message }: { id: number; message: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/term`, { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setShowTermInput(false);
+      setTermMessage("");
+      toast({ title: "Seller termed" });
+      if (selectedSeller) setSelectedSeller((s: any) => ({ ...s, status: "termed" }));
+    },
+  });
+
+  const unverifyMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/unverify`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      toast({ title: "Seller unverified — must reapply" });
+      setSelectedSeller(null);
+    },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  if (selectedSeller) {
+    const current = sellers?.find((s: any) => s.id === selectedSeller.id) || selectedSeller;
+    return (
+      <div className="space-y-6">
+        <Button variant="outline" size="sm" onClick={() => { setSelectedSeller(null); setShowTermInput(false); setTermMessage(""); }}>← Back to Sellers</Button>
+
+        <Card className="bg-[#0f1115] border-white/5">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>{current.user?.username || `User ${current.userId}`}</span>
+              <Badge className={current.status === "approved" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
+                {current.status === "termed" ? "TERMED" : "APPROVED"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 text-sm">
+              <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Reseller Info</p>
+                <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs font-bold">{current.telegramUsername}</p></div>
+                <div className="flex justify-between"><p className="text-xs text-muted-foreground">Channel</p><p className="text-xs font-bold">{current.channelName}</p></div>
+                <div className="flex justify-between items-center"><p className="text-xs text-muted-foreground">Link</p><a href={current.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">{current.channelLink}</a></div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Login IPs ({current.ips?.length || 0} unique, {current.totalLogins || 0} total)</p>
+                {current.ips?.length === 0 && <p className="text-xs text-muted-foreground">No logins recorded yet</p>}
+                {current.ips?.map((ip: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${i >= 3 ? "bg-destructive" : "bg-green-500"}`} />
+                    <p className="text-xs font-mono text-white">{ip}</p>
+                    {i >= 3 && <Badge className="text-[9px] bg-destructive/20 text-destructive">FLAGGED</Badge>}
+                  </div>
+                ))}
+                {(current.ips?.length || 0) >= 3 && (
+                  <p className="text-[10px] text-destructive font-bold mt-1">⚠ 3+ UNIQUE IPs — POSSIBLE ACCOUNT SHARING</p>
+                )}
+              </div>
+
+              {current.status === "termed" && current.termMessage && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+                  <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-1">Term Reason</p>
+                  <p className="text-xs text-white/70">{current.termMessage}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/5 pt-4 space-y-3">
+              {showTermInput ? (
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Reason for termination (shown to user)..."
+                    value={termMessage}
+                    onChange={e => setTermMessage(e.target.value)}
+                    className="bg-black/50 border-white/10 text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
+                      onClick={() => termMutation.mutate({ id: current.id, message: termMessage })}
+                      disabled={termMutation.isPending}
+                    >
+                      {termMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                      Confirm Term
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowTermInput(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {current.status !== "termed" && (
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
+                      onClick={() => setShowTermInput(true)}
+                    >
+                      Term
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 border-white/20 h-8 text-xs"
+                    onClick={() => unverifyMutation.mutate(current.id)}
+                    disabled={unverifyMutation.isPending}
+                  >
+                    {unverifyMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                    Unverify
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Sellers</h1>
+        <p className="text-sm text-muted-foreground mt-1">{sellers?.length || 0} active seller{sellers?.length !== 1 ? "s" : ""}</p>
+      </div>
+
+      {(!sellers || sellers.length === 0) && (
+        <div className="text-center py-12 text-muted-foreground text-sm">No sellers yet.</div>
+      )}
+
+      <div className="space-y-3">
+        {sellers?.map((s: any) => (
+          <Card key={s.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors" onClick={() => setSelectedSeller(s)}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-sm text-white">{s.user?.username}</p>
+                  <Badge className={s.status === "approved" ? "bg-green-500/20 text-green-400 text-[9px]" : "bg-red-500/20 text-red-400 text-[9px]"}>
+                    {s.status === "termed" ? "TERMED" : "ACTIVE"}
+                  </Badge>
+                  {(s.ips?.length || 0) >= 3 && <Badge className="bg-destructive/20 text-destructive text-[9px]">IP ALERT</Badge>}
+                </div>
+                <p className="text-xs text-muted-foreground">{s.telegramUsername} · {s.channelName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">{s.ips?.length || 0} unique IPs</p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 ml-auto" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

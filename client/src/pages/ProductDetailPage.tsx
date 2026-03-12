@@ -24,7 +24,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { toast } = useToast();
-  const { isApproved, isPending, isDenied, hasApplied } = useVerification();
+  const { isApproved, isPending, isDenied, isTermed, hasApplied } = useVerification();
 
   const selectedVariant = product?.variants.find((v: any) => v.id.toString() === selectedVariantId);
   const minQty = selectedVariant?.minQuantity || 1;
@@ -42,7 +42,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!canBuy) {
-      toast({ title: "Not verified", description: isPending ? "Wait for admin approval" : "Verify your account first", variant: "destructive" });
+      toast({ title: "Not verified", description: isTermed ? "Your account has been termed" : isPending ? "Wait for admin approval" : "Verify your account first", variant: "destructive" });
       return;
     }
     if (!selectedVariant) {
@@ -88,8 +88,13 @@ export default function ProductDetailPage() {
 
         <div className="p-6 space-y-6">
           {!isApproved && (
-            <div className="bg-destructive/10 border border-destructive/30 p-4 rounded-xl space-y-1.5">
-              {isDenied ? (
+            <div className={`border p-4 rounded-xl space-y-1.5 ${isTermed ? "bg-[#1a0a0a] border-destructive/50" : "bg-destructive/10 border-destructive/30"}`}>
+              {isTermed ? (
+                <>
+                  <p className="text-xs font-black text-destructive uppercase tracking-widest">YOU ARE TERMED</p>
+                  <p className="text-xs text-destructive/80">Your account has been terminated. You cannot purchase products.</p>
+                </>
+              ) : isDenied ? (
                 <>
                   <p className="text-xs font-bold text-destructive uppercase tracking-widest">NOT VERIFIED — DENIED</p>
                   <p className="text-xs text-destructive/80">Your application was denied. Return to the shop page to reapply.</p>
@@ -173,7 +178,7 @@ export default function ProductDetailPage() {
               }}
             >
               <ShoppingCart className="h-4 w-4" />
-              {canBuy ? "Add to Cart" : isPending ? "Verification Pending" : "Verify to Purchase"}
+              {canBuy ? "Add to Cart" : isTermed ? "Account Termed" : isPending ? "Verification Pending" : "Verify to Purchase"}
             </button>
 
             <button

@@ -15,9 +15,10 @@ export function useVerification() {
   const isApproved = verification?.status === "approved";
   const isDenied = verification?.status === "denied";
   const isPending = verification?.status === "pending";
+  const isTermed = verification?.status === "termed";
   const hasApplied = !!verification;
 
-  return { verification, isLoading, isApproved, isDenied, isPending, hasApplied };
+  return { verification, isLoading, isApproved, isDenied, isPending, isTermed, hasApplied };
 }
 
 export function useSubmitVerification() {

@@ -197,9 +197,18 @@ export const verifications = pgTable("verifications", {
   channelLink: text("channel_link").notNull(),
   channelName: text("channel_name").notNull(),
   agreedToTerms: boolean("agreed_to_terms").default(false).notNull(),
-  status: text("status", { enum: ["pending", "approved", "denied"] }).default("pending").notNull(),
+  status: text("status", { enum: ["pending", "approved", "denied", "termed"] }).default("pending").notNull(),
   adminNote: text("admin_note").default(""),
+  termMessage: text("term_message").default(""),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// === USER IPS ===
+export const userIps = pgTable("user_ips", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  ip: text("ip").notNull(),
+  loggedAt: timestamp("logged_at").defaultNow().notNull(),
 });
 
 export const insertVerificationSchema = createInsertSchema(verifications).omit({ id: true, status: true, adminNote: true, createdAt: true });

@@ -6,9 +6,9 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { cryptoPayments, orders, verifications, variants } from "@shared/schema";
+import { cryptoPayments, orders, verifications, variants, userIps, users } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -254,8 +254,8 @@ export async function registerRoutes(
       if (!agreedToTerms) return res.status(400).json({ message: "Must agree to terms" });
       const existing = await db.select().from(verifications).where(eq(verifications.userId, userId));
       if (existing.length > 0) {
-        if (existing[0].status === "denied") {
-          const [updated] = await db.update(verifications).set({ telegramUsername, channelLink, channelName, agreedToTerms, status: "pending" as any, adminNote: "" }).where(eq(verifications.userId, userId)).returning();
+        if (existing[0].status === "denied" || existing[0].status === "termed") {
+          const [updated] = await db.update(verifications).set({ telegramUsername, channelLink, channelName, agreedToTerms, status: "pending" as any, adminNote: "", termMessage: "" }).where(eq(verifications.userId, userId)).returning();
           return res.json(updated);
         }
         return res.status(400).json({ message: "Already submitted" });
@@ -293,6 +293,36 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
     const [verif] = await db.update(verifications).set({ status: "denied" as any, adminNote: req.body.note || "" }).where(eq(verifications.id, Number(req.params.id))).returning();
     res.json(verif);
+  });
+
+  // Admin - Term a seller (ban with message)
+  app.post("/api/admin/verifications/:id/term", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const [verif] = await db.update(verifications).set({ status: "termed" as any, termMessage: req.body.message || "" }).where(eq(verifications.id, Number(req.params.id))).returning();
+    res.json(verif);
+  });
+
+  // Admin - Unverify a seller (revoke, must reapply)
+  app.post("/api/admin/verifications/:id/unverify", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const [verif] = await db.update(verifications).set({ status: "denied" as any, adminNote: "Verification revoked by admin" }).where(eq(verifications.id, Number(req.params.id))).returning();
+    res.json(verif);
+  });
+
+  // Admin - Sellers list (approved + termed)
+  app.get("/api/admin/sellers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const approved = await db.select().from(verifications).where(eq(verifications.status, "approved" as any));
+    const termed = await db.select().from(verifications).where(eq(verifications.status, "termed" as any));
+    const all = [...approved, ...termed];
+    const result = [];
+    for (const v of all) {
+      const [user] = await db.select().from(users).where(eq(users.id, v.userId));
+      const ips = await db.select().from(userIps).where(eq(userIps.userId, v.userId)).orderBy(desc(userIps.loggedAt));
+      const uniqueIps = [...new Set(ips.map((i: any) => i.ip))];
+      result.push({ ...v, user: { id: user?.id, username: user?.username, email: user?.email }, ips: uniqueIps, totalLogins: ips.length });
+    }
+    res.json(result);
   });
 
   // Admin - Update Order Status
