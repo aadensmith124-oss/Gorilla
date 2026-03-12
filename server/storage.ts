@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard
@@ -520,7 +520,8 @@ export class DatabaseStorage implements IStorage {
         });
         if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
       } catch (e) {}
-      result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email }, items: itemsWithDetails, paymentMethod });
+      const [verif] = await db.select().from(verifications).where(eq(verifications.userId, o.userId)).catch(() => [undefined]);
+      result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email, telegramUsername: verif?.telegramUsername || null, channelName: verif?.channelName || null, channelLink: verif?.channelLink || null }, items: itemsWithDetails, paymentMethod });
     }
     return result;
   }

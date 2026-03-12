@@ -528,6 +528,30 @@ function OrdersSection() {
               </div>
             </div>
 
+            {(current.user?.telegramUsername || current.user?.channelName || current.user?.channelLink) && (
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Reseller Info</p>
+                {current.user?.telegramUsername && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Telegram</p>
+                    <p className="text-xs font-bold text-white">{current.user.telegramUsername}</p>
+                  </div>
+                )}
+                {current.user?.channelName && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Channel</p>
+                    <p className="text-xs font-bold text-white">{current.user.channelName}</p>
+                  </div>
+                )}
+                {current.user?.channelLink && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Link</p>
+                    <a href={current.user.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[180px]">{current.user.channelLink}</a>
+                  </div>
+                )}
+              </div>
+            )}
+
             {current.items && current.items.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest">Items Ordered</p>
