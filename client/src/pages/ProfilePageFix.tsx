@@ -81,7 +81,7 @@ export default function ProfilePage() {
                         <p className="text-xs text-muted-foreground">${(order.total / 100).toFixed(2)}</p>
                       </div>
                       <Badge className={getStatusBadgeClass(order.status)}>
-                        {order.status.toUpperCase()}
+                        {getStatusLabel(order.status).toUpperCase()}
                       </Badge>
                     </CardContent>
                   </Card>
@@ -104,17 +104,19 @@ export default function ProfilePage() {
   );
 }
 
+function getStatusLabel(status: string) {
+  if (status === "pending") return "Pending";
+  if (status === "waiting_payment") return "Unpaid";
+  if (status === "delivering") return "Waiting";
+  if (status === "fulfilled") return "Fulfilled";
+  return status;
+}
+
 function getStatusBadgeClass(status: string) {
-  switch (status) {
-    case 'waiting_payment':
-      return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-    case 'delivering':
-      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-    case 'fulfilled':
-      return "bg-green-500/20 text-green-400 border-green-500/30";
-    default:
-      return "bg-muted/20 text-muted-foreground border-muted/30";
-  }
+  if (status === "waiting_payment") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+  if (status === "delivering") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (status === "fulfilled") return "bg-green-500/20 text-green-400 border-green-500/30";
+  return "bg-muted/20 text-muted-foreground border-muted/30";
 }
 
 function SettingsTab({ user }: { user: any }) {

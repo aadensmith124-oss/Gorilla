@@ -444,6 +444,21 @@ function ProductsSection() {
   );
 }
 
+function statusLabel(s: string) {
+  if (s === "pending") return "Pending";
+  if (s === "waiting_payment") return "Unpaid";
+  if (s === "delivering") return "Waiting";
+  if (s === "fulfilled") return "Fulfilled";
+  return s;
+}
+
+function statusBadgeClass(s: string) {
+  if (s === "fulfilled") return "bg-green-500/20 text-green-400 border-green-500/30";
+  if (s === "delivering") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (s === "waiting_payment") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+  return "bg-white/10 text-white/60";
+}
+
 function OrdersSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -498,12 +513,7 @@ function OrdersSection() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Order #{current.orderId}</span>
-              <Badge className={
-                current.status === "fulfilled" ? "bg-green-500/20 text-green-400 border-green-500/30" :
-                current.status === "delivering" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-                current.status === "waiting_payment" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
-                "bg-white/10 text-white/60"
-              }>{current.status}</Badge>
+              <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -513,10 +523,25 @@ function OrdersSection() {
                 <p className="font-bold">${(current.total / 100).toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">User ID</p>
-                <p className="font-bold">{current.userId}</p>
+                <p className="text-xs text-muted-foreground uppercase mb-1">Customer</p>
+                <p className="font-bold">{current.user?.username || current.userId}</p>
               </div>
             </div>
+
+            {current.items && current.items.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">Items Ordered</p>
+                {current.items.filter((i: any) => i.itemType === "product").map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/5">
+                    <div>
+                      <p className="font-bold text-white">{item.variant?.name || "Unknown variant"}</p>
+                      <p className="text-xs text-muted-foreground">Qty: {item.quantity ?? 1}</p>
+                    </div>
+                    <p className="text-primary font-bold">${(item.price / 100).toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground uppercase">Change Status</p>
@@ -526,7 +551,7 @@ function OrdersSection() {
                     className="text-xs h-7"
                     onClick={() => updateStatusMutation.mutate({ orderId: current.id, status: s })}
                     disabled={updateStatusMutation.isPending || current.status === s}>
-                    {s}
+                    {statusLabel(s)}
                   </Button>
                 ))}
               </div>
@@ -588,12 +613,7 @@ function OrdersSection() {
                 <TableCell className="font-mono text-xs">{order.orderId}</TableCell>
                 <TableCell className="font-bold">${(order.total / 100).toFixed(2)}</TableCell>
                 <TableCell>
-                  <Badge className={
-                    order.status === "delivering" ? "bg-blue-500/20 text-blue-400" :
-                    order.status === "fulfilled" ? "bg-green-500/20 text-green-400" :
-                    order.status === "waiting_payment" ? "bg-yellow-500/20 text-yellow-400" :
-                    "bg-white/10 text-white/60"
-                  }>{order.status}</Badge>
+                  <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" onClick={() => { setSelectedOrder(order); setDeliveryContent(""); }}>

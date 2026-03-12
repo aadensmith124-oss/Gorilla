@@ -92,7 +92,7 @@ export function VerificationBanner() {
       >
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <div className="flex-1">
-          <p className="font-bold text-sm uppercase tracking-wide">Verify your account to start shopping here</p>
+          <p className="font-bold text-sm uppercase tracking-wide">VERIFY NOW</p>
           <p className="text-xs text-white/80">You need to verify before you can purchase products.</p>
         </div>
         <ChevronRight className="h-5 w-5 shrink-0" />
