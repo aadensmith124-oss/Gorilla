@@ -24,6 +24,7 @@ const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
+  { id: "verifications", label: "Verifications" },
   { id: "users", label: "Users" },
   { id: "test", label: "Test Mode" },
 ];
@@ -94,6 +95,7 @@ export default function AdminPage() {
           {activeSection === "dashboard" && <DashboardSection />}
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
+          {activeSection === "verifications" && <VerificationsSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
         </main>
@@ -721,6 +723,136 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
             </Button>
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+}
+
+function VerificationsSection() {
+  const { toast } = useToast();
+  const { data: verifications, isLoading } = useQuery({
+    queryKey: ["/api/admin/verifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/verifications");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    }
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: number; note?: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/approve`, { note: note || "" });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
+      toast({ title: "Application approved" });
+    }
+  });
+
+  const denyMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: number; note?: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/deny`, { note: note || "" });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
+      toast({ title: "Application denied" });
+    }
+  });
+
+  const pending = verifications?.filter((v: any) => v.status === "pending") || [];
+  const others = verifications?.filter((v: any) => v.status !== "pending") || [];
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Verifications</h1>
+        <p className="text-sm text-muted-foreground mt-1">{pending.length} pending application{pending.length !== 1 ? "s" : ""}</p>
+      </div>
+
+      {verifications?.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground text-sm">No applications yet.</div>
+      )}
+
+      {pending.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-primary uppercase tracking-widest">Pending Review</p>
+          {pending.map((v: any) => (
+            <Card key={v.id} className="bg-[#0f1115] border-primary/20">
+              <CardContent className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Telegram</p>
+                    <p className="font-medium">{v.telegramUsername}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Channel</p>
+                    <p className="font-medium">{v.channelName}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Channel Link</p>
+                    <a href={v.channelLink} target="_blank" rel="noreferrer" className="text-primary text-xs hover:underline truncate block">{v.channelLink}</a>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1 border-t border-white/5">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                    onClick={() => approveMutation.mutate({ id: v.id })}
+                    disabled={approveMutation.isPending}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10 h-8 text-xs"
+                    onClick={() => {
+                      const note = prompt("Denial reason (optional):");
+                      denyMutation.mutate({ id: v.id, note: note || "" });
+                    }}
+                    disabled={denyMutation.isPending}
+                  >
+                    Deny
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {others.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Reviewed</p>
+          <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader className="bg-white/5">
+                <TableRow className="hover:bg-transparent border-white/5">
+                  <TableHead className="text-xs font-bold uppercase">Telegram</TableHead>
+                  <TableHead className="text-xs font-bold uppercase">Channel</TableHead>
+                  <TableHead className="text-xs font-bold uppercase">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {others.map((v: any) => (
+                  <TableRow key={v.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell className="text-sm">{v.telegramUsername}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{v.channelName}</TableCell>
+                    <TableCell>
+                      <Badge className={v.status === "approved" ? "bg-green-500/20 text-green-400 text-[10px]" : "bg-red-500/20 text-red-400 text-[10px]"}>
+                        {v.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       )}
     </div>
   );

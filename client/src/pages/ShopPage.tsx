@@ -1,7 +1,8 @@
 import { useProducts } from "@/hooks/use-products";
 import { ProductCard } from "@/components/ProductCard";
+import { VerificationBanner } from "@/components/VerificationBanner";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Headset, Send, ShieldX } from "lucide-react";
+import { Loader2, Headset, ShieldX } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export default function ShopPage() {
 
   return (
     <div className="space-y-12 pb-20 pt-4">
+      <VerificationBanner />
       <div className="flex flex-col items-center gap-8">
         <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
           RULF<span className="text-primary italic">.CC</span>

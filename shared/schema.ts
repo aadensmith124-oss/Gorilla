@@ -189,6 +189,22 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
   createdAt: true 
 });
 
+// === VERIFICATIONS ===
+export const verifications = pgTable("verifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  telegramUsername: text("telegram_username").notNull(),
+  channelLink: text("channel_link").notNull(),
+  channelName: text("channel_name").notNull(),
+  agreedToTerms: boolean("agreed_to_terms").default(false).notNull(),
+  status: text("status", { enum: ["pending", "approved", "denied"] }).default("pending").notNull(),
+  adminNote: text("admin_note").default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertVerificationSchema = createInsertSchema(verifications).omit({ id: true, status: true, adminNote: true, createdAt: true });
+export type Verification = typeof verifications.$inferSelect;
+
 // === RELATIONS ===
 export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
   user: one(users, {
