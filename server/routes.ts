@@ -245,6 +245,20 @@ export async function registerRoutes(
     }
   });
 
+  // Admin - Update Order Status
+  app.patch("/api/admin/orders/:id/status", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const { status } = req.body;
+      const [order] = await db.update(orders).set({ status } as any).where(eq(orders.id, Number(req.params.id))).returning();
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // Admin - Test Order (No Payment)
   app.post("/api/admin/test-order", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {

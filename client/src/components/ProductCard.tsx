@@ -6,8 +6,7 @@ interface ProductWithVariants extends Product {
 }
 
 export function ProductCard({ product }: { product: ProductWithVariants }) {
-  const lowestPrice = Math.min(...product.variants.map(v => v.price));
-  const hasStock = product.variants.some(v => v.stockCount > 0);
+  const lowestPrice = product.variants.length > 0 ? Math.min(...product.variants.map(v => v.price)) : 0;
 
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
@@ -20,20 +19,16 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
               className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-600/30 to-yellow-900/30">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-800/30 to-amber-950/40">
               <span className="text-5xl font-black text-white/80 italic tracking-tighter">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}
           
-          <div className="absolute top-2 right-2 z-10">
-            <div className="bg-[#e11d48] text-white text-[9px] font-black px-2 py-0.5 rounded italic shadow-lg uppercase tracking-tighter">
-              From ${(lowestPrice / 100).toFixed(2)}
-            </div>
-          </div>
-
-          {!hasStock && (
-            <div className="absolute inset-0 bg-[#090a0c]/80 flex items-center justify-center backdrop-blur-[2px] z-20">
-              <span className="font-black text-[#e11d48] rotate-[-15deg] border-2 border-[#e11d48] px-2 py-0.5 text-[10px] uppercase tracking-tighter italic">OUT OF STOCK</span>
+          {lowestPrice > 0 && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-[#e11d48] text-white text-[9px] font-black px-2 py-0.5 rounded italic shadow-lg uppercase tracking-tighter">
+                From ${(lowestPrice / 100).toFixed(2)}
+              </div>
             </div>
           )}
         </div>

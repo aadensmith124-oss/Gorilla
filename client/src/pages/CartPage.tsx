@@ -18,7 +18,7 @@ type PaymentProcessor = "crypto" | "balance";
 const CRYPTO_FEE_PERCENT = 10;
 
 export default function CartPage() {
-  const { items, removeItem, removeCard, total, clearCart } = useCart();
+  const { items, removeItem, total, clearCart } = useCart();
   const { user } = useAuth();
   const { mutate: createOrder, isPending } = useCreateOrder();
   const [, setLocation] = useLocation();
@@ -34,9 +34,8 @@ export default function CartPage() {
 
   const cryptoOrderMutation = useMutation({
     mutationFn: async () => {
-      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity, cardId: i.cardId }));
-      const cardIds = items.filter(i => i.cardId).map(i => i.cardId);
-      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems, cardIds });
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems });
       return res.json();
     },
     onSuccess: (data) => {
@@ -133,16 +132,16 @@ export default function CartPage() {
             <div className="flex-1 text-center sm:text-left">
               <h3 className="font-bold">{item.productName}</h3>
               <p className="text-sm text-muted-foreground">{item.variantName}</p>
-              {!item.cardId && <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>}
+              <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
             </div>
             <div className="text-right flex items-center gap-3">
               <div className="font-mono font-bold text-green-500">${((item.price * item.quantity) / 100).toFixed(2)}</div>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => item.cardId ? removeCard(item.cardId) : removeItem(item.variantId)} 
+                onClick={() => removeItem(item.variantId)}
                 className="text-destructive border-destructive/30"
-                data-testid={`button-remove-item-${item.cardId || item.variantId}`}
+                data-testid={`button-remove-item-${item.variantId}`}
               >
                 Remove
               </Button>

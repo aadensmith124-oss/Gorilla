@@ -59,6 +59,7 @@ export const variants = pgTable("variants", {
   productId: integer("product_id").notNull().references(() => products.id),
   name: text("name").notNull(),
   price: integer("price").notNull(), // in cents
+  minQuantity: integer("min_quantity").default(1).notNull(),
 });
 
 export const insertVariantSchema = createInsertSchema(variants).omit({ id: true });
