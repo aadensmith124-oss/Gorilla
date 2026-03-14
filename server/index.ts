@@ -100,29 +100,6 @@ app.use((req, res, next) => {
   cancelStaleOrders();
   setInterval(cancelStaleOrders, 5 * 60 * 1000);
 
-  // Balance Decay (0.7% per hour) — only on unprotected balance (gambling wins, daily spin, redeemed codes)
-  const runDecay = async () => {
-    try {
-      const allUsers = await storage.getAllUsers();
-      for (const user of allUsers) {
-        const clampedProtected = Math.min(user.protectedBalance, user.balance);
-        if (clampedProtected !== user.protectedBalance) {
-          await storage.setProtectedBalance(user.id, Math.max(0, clampedProtected));
-        }
-        const decayableBalance = Math.max(0, user.balance - clampedProtected);
-        if (decayableBalance > 0) {
-          const decay = Math.max(1, Math.floor(decayableBalance * 0.007));
-          await storage.updateUserBalance(user.id, -decay);
-          await storage.createTransaction(user.id, -decay, "fee", "Hourly balance decay (0.7%)");
-          log(`Decayed ${decay} cents from user ${user.username} (decayable: ${decayableBalance}, total: ${user.balance})`);
-        }
-      }
-    } catch (err) {
-      console.error("Error in balance decay job:", err);
-    }
-  };
-  setInterval(runDecay, 60 * 60 * 1000);
-
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.

@@ -60,7 +60,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-white">{new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
               <button 
-                onClick={logout}
+                onClick={() => logout()}
                 className="w-full h-10 mt-4 bg-destructive/20 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/30 transition-colors font-bold uppercase tracking-wider text-sm"
               >
                 Logout

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVerification, useSubmitVerification } from "@/hooks/use-verification";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { RulesModal, RulesLink } from "@/components/RulesModal";
 
 const TERMS = `By purchasing from this store, you automatically agree to the following terms:
@@ -33,8 +34,11 @@ export function VerificationBanner() {
   const [channelName, setChannelName] = useState("");
   const { toast } = useToast();
   const submitMutation = useSubmitVerification();
+  const { user } = useAuth();
 
-  if (isLoading || isApproved) return null;
+  if (isLoading) return null;
+  if (user?.role === "admin") return null;
+  if (isApproved) return null;
 
   const handleSubmit = async () => {
     if (!agreed) {

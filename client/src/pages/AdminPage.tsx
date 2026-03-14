@@ -788,10 +788,11 @@ function SellersSection() {
   const [termMessage, setTermMessage] = useState("");
   const [showTermInput, setShowTermInput] = useState(false);
 
-  const { data: sellers, isLoading } = useQuery({
+  const { data: sellers, isLoading, error } = useQuery({
     queryKey: ["/api/admin/sellers"],
     queryFn: async () => {
       const res = await fetch("/api/admin/sellers");
+      if (res.status === 401) throw new Error("SESSION_EXPIRED");
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -825,6 +826,15 @@ function SellersSection() {
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  if ((error as any)?.message === "SESSION_EXPIRED") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+        <p className="text-sm text-muted-foreground">Session expired. Please log in again.</p>
+        <Button size="sm" onClick={() => window.location.href = "/auth"}>Go to Login</Button>
+      </div>
+    );
+  }
 
   if (selectedSeller) {
     const current = sellers?.find((s: any) => s.id === selectedSeller.id) || selectedSeller;
