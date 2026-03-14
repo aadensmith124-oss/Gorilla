@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { 
   Menu,
   ChevronDown,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -15,6 +16,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useVerification } from "@/hooks/use-verification";
 import { RulesModal } from "@/components/RulesModal";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -25,11 +27,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
+  const { data: mailsData } = useQuery<any[]>({
+    queryKey: ["/api/mails"],
+    enabled: !!user && isApproved,
+    refetchInterval: 30000,
+  });
+
+  const unreadCount = mailsData?.filter(m => !m.isRead).length ?? 0;
+
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-xl font-display font-black tracking-tighter italic">
-          RULF<span className="text-primary italic">.CC</span>
+          RULF<span className="text-primary italic"> BULK</span>
         </h1>
       </div>
 
@@ -60,6 +70,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{cartCount}</span>}
           </div>
         </Link>
+
+        {isApproved && (
+          <Link href="/mailbox" onClick={() => setIsMobileOpen(false)}>
+            <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
+              <span className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Mailbox
+              </span>
+              {unreadCount > 0 && (
+                <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{unreadCount}</span>
+              )}
+            </div>
+          </Link>
+        )}
 
         {isApproved && (
           <button
@@ -101,12 +125,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
             <h1 className="text-lg font-display font-black tracking-tighter italic text-white">
-              RULF<span className="text-primary italic">.CC</span>
+              RULF<span className="text-primary italic"> BULK</span>
             </h1>
           </div>
         </Link>
 
         <div className="flex items-center gap-2">
+          {isApproved && unreadCount > 0 && (
+            <Link href="/mailbox">
+              <Button variant="ghost" size="icon" className="h-8 w-8 relative text-white/70 hover:text-white hover:bg-white/5">
+                <Mail className="h-4 w-4" />
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">{unreadCount}</span>
+              </Button>
+            </Link>
+          )}
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/5">

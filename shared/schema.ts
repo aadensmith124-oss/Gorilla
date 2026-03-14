@@ -276,6 +276,25 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 }));
 
 
+// === MAILS ===
+export const mails = pgTable("mails", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  senderId: integer("sender_id").notNull().references(() => users.id),
+  recipientId: integer("recipient_id"), // null = all sellers
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const mailReads = pgTable("mail_reads", {
+  id: serial("id").primaryKey(),
+  mailId: integer("mail_id").notNull().references(() => mails.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  readAt: timestamp("read_at").defaultNow().notNull(),
+});
+
+export type Mail = typeof mails.$inferSelect;
+
 // === CRYPTO PAYMENTS ===
 export const cryptoPayments = pgTable("crypto_payments", {
   id: serial("id").primaryKey(),

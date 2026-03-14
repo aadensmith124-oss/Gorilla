@@ -23,6 +23,7 @@ import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
 
 import SupportPage from "@/pages/SupportPage";
+import { MailInboxPage } from "@/pages/MailInboxPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -53,6 +54,7 @@ function Router() {
         <Route path="/games/mines" component={MinesGamePage} />
         <Route path="/daily-spin" component={DailySpinPage} />
         <Route path="/support" component={SupportPage} />
+        <Route path="/mailbox" component={MailInboxPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

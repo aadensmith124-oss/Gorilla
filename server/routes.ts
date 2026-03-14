@@ -6,7 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { cryptoPayments, orders, verifications, variants, userIps, users } from "@shared/schema";
+import { cryptoPayments, orders, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc } from "drizzle-orm";
 
@@ -318,11 +318,51 @@ export async function registerRoutes(
     const result = [];
     for (const v of all) {
       const [user] = await db.select().from(users).where(eq(users.id, v.userId));
+      if (!user) continue;
       const ips = await db.select().from(userIps).where(eq(userIps.userId, v.userId)).orderBy(desc(userIps.loggedAt));
       const uniqueIps = [...new Set(ips.map((i: any) => i.ip))];
-      result.push({ ...v, user: { id: user?.id, username: user?.username, email: user?.email }, ips: uniqueIps, totalLogins: ips.length });
+      result.push({ ...v, user: { id: user.id, username: user.username, email: user.email }, ips: uniqueIps, totalLogins: ips.length });
     }
     res.json(result);
+  });
+
+  // === MAIL ROUTES ===
+
+  // Admin: send mail to one seller or all sellers
+  app.post("/api/admin/mails/send", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const { title, body, recipientId } = req.body;
+    if (!title?.trim() || !body?.trim()) return res.status(400).json({ message: "Title and body required" });
+    const [mail] = await db.insert(mails).values({
+      title: title.trim(),
+      body: body.trim(),
+      senderId: (req.user as any).id,
+      recipientId: recipientId ? Number(recipientId) : null,
+    }).returning();
+    res.json(mail);
+  });
+
+  // User: get own mails (all-sellers broadcasts + personal)
+  app.get("/api/mails", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const allMails = await db.select().from(mails).orderBy(desc(mails.createdAt));
+    const myMails = allMails.filter(m => m.recipientId === null || m.recipientId === userId);
+    const reads = await db.select().from(mailReads).where(eq(mailReads.userId, userId));
+    const readIds = new Set(reads.map(r => r.mailId));
+    res.json(myMails.map(m => ({ ...m, isRead: readIds.has(m.id) })));
+  });
+
+  // User: mark mail as read
+  app.post("/api/mails/:id/read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const mailId = Number(req.params.id);
+    const existing = await db.select().from(mailReads).where(and(eq(mailReads.mailId, mailId), eq(mailReads.userId, userId)));
+    if (existing.length === 0) {
+      await db.insert(mailReads).values({ mailId, userId });
+    }
+    res.json({ ok: true });
   });
 
   // Admin - Update Order Status

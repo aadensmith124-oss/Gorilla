@@ -27,6 +27,7 @@ const adminSections = [
   { id: "verifications", label: "Verifications" },
   { id: "sellers", label: "Sellers" },
   { id: "users", label: "Users" },
+  { id: "mail", label: "Mail" },
   { id: "test", label: "Test Mode" },
 ];
 
@@ -99,6 +100,7 @@ export default function AdminPage() {
           {activeSection === "verifications" && <VerificationsSection />}
           {activeSection === "sellers" && <SellersSection />}
           {activeSection === "users" && <UsersSection />}
+          {activeSection === "mail" && <AdminMailSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
         </main>
       </div>
@@ -628,6 +630,7 @@ function OrdersSection() {
           <TableHeader className="bg-white/5">
             <TableRow className="hover:bg-transparent border-white/5">
               <TableHead className="text-xs font-bold uppercase">Order ID</TableHead>
+              <TableHead className="text-xs font-bold uppercase">Items</TableHead>
               <TableHead className="text-xs font-bold uppercase">Total</TableHead>
               <TableHead className="text-xs font-bold uppercase">Status</TableHead>
               <TableHead className="text-right text-xs font-bold uppercase">Action</TableHead>
@@ -637,6 +640,11 @@ function OrdersSection() {
             {orders?.map((order: any) => (
               <TableRow key={order.id} className="border-white/5 hover:bg-white/5">
                 <TableCell className="font-mono text-xs">{order.orderId}</TableCell>
+                <TableCell className="text-xs text-white/80 max-w-[160px]">
+                  {order.items?.filter((i: any) => i.itemType === "product").map((item: any, idx: number) => (
+                    <div key={idx} className="truncate">{item.variant?.name || "Item"} ×{item.quantity ?? 1}</div>
+                  ))}
+                </TableCell>
                 <TableCell className="font-bold">${(order.total / 100).toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
@@ -1163,6 +1171,155 @@ function UsersSection() {
             ))}
           </TableBody>
         </Table>
+      </div>
+    </div>
+  );
+}
+
+function AdminMailSection() {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [recipientId, setRecipientId] = useState<string>("");
+  const [selectedMail, setSelectedMail] = useState<any>(null);
+
+  const { data: sellers } = useQuery<any[]>({
+    queryKey: ["/api/admin/sellers"],
+  });
+
+  const { data: mails, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/mails"],
+    queryFn: async () => {
+      const res = await fetch("/api/mails");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    refetchInterval: 15000,
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/mails/send", {
+        title: title.trim(),
+        body: body.trim(),
+        recipientId: recipientId ? Number(recipientId) : null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/mails"] });
+      setTitle("");
+      setBody("");
+      setRecipientId("");
+      toast({ title: "Mail sent" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  if (selectedMail) {
+    return (
+      <div className="space-y-4 max-w-2xl">
+        <Button variant="outline" size="sm" onClick={() => setSelectedMail(null)}>← Back</Button>
+        <Card className="bg-[#0f1115] border-white/5">
+          <CardHeader>
+            <CardTitle className="text-white">{selectedMail.title}</CardTitle>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+              {selectedMail.recipientId
+                ? `To: ${sellers?.find((s: any) => s.userId === selectedMail.recipientId)?.user?.username || `User #${selectedMail.recipientId}`}`
+                : "Broadcast — All Sellers"}
+              {" · "}{new Date(selectedMail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-[#e1e1e1] whitespace-pre-wrap leading-relaxed">{selectedMail.body}</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Mail</h1>
+
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardHeader>
+          <CardTitle className="text-base">Send New Mail</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Recipient</label>
+            <select
+              value={recipientId}
+              onChange={e => setRecipientId(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Sellers (Broadcast)</option>
+              {sellers?.map((s: any) => (
+                <option key={s.userId} value={s.userId}>{s.user?.username || `User #${s.userId}`}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Subject</label>
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Mail subject..."
+              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/30"
+              data-testid="input-mail-title"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Message</label>
+            <textarea
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              rows={5}
+              placeholder="Write your message..."
+              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/30 resize-none"
+              data-testid="input-mail-body"
+            />
+          </div>
+          <Button
+            onClick={() => sendMutation.mutate()}
+            disabled={sendMutation.isPending || !title.trim() || !body.trim()}
+            className="bg-primary hover:bg-primary/80 text-white font-bold text-xs uppercase"
+            data-testid="button-send-mail"
+          >
+            {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {recipientId ? "Send to Seller" : "Broadcast to All Sellers"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <div>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Sent Mails</h2>
+        {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
+        {!isLoading && (!mails || mails.length === 0) && (
+          <div className="text-center py-8 text-sm text-muted-foreground">No mails sent yet.</div>
+        )}
+        <div className="space-y-2">
+          {mails?.map((mail: any) => (
+            <button key={mail.id} onClick={() => setSelectedMail(mail)} className="w-full text-left">
+              <Card className="bg-[#0f1115] border-white/5 hover:border-primary/20 transition-colors cursor-pointer">
+                <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-white">{mail.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {mail.recipientId
+                        ? `To: ${sellers?.find((s: any) => s.userId === mail.recipientId)?.user?.username || `User #${mail.recipientId}`}`
+                        : "Broadcast — All Sellers"}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {new Date(mail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </CardContent>
+              </Card>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

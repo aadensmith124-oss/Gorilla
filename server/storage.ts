@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard
@@ -505,20 +505,22 @@ export class DatabaseStorage implements IStorage {
         const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
         itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
       }
-      let paymentMethod = "Balance";
+      let paymentMethod = "Unknown";
       try {
-        const purchaseTxs = await db.select().from(transactions)
-          .where(and(
-            eq(transactions.userId, o.userId),
-            eq(transactions.type, "purchase")
-          ))
-          .orderBy(desc(transactions.createdAt));
-        const purchaseTx = purchaseTxs.find(tx => {
-          const txTime = new Date(tx.createdAt).getTime();
-          const orderTime = new Date(o.createdAt).getTime();
-          return Math.abs(txTime - orderTime) < 10000;
-        });
-        if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
+        const [cryptoPay] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.orderId, o.id));
+        if (cryptoPay) {
+          paymentMethod = "Crypto";
+        } else {
+          const purchaseTxs = await db.select().from(transactions)
+            .where(and(eq(transactions.userId, o.userId), eq(transactions.type, "purchase")))
+            .orderBy(desc(transactions.createdAt));
+          const purchaseTx = purchaseTxs.find(tx => {
+            const txTime = new Date(tx.createdAt).getTime();
+            const orderTime = new Date(o.createdAt).getTime();
+            return Math.abs(txTime - orderTime) < 30000;
+          });
+          if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
+        }
       } catch (e) {}
       const [verif] = await db.select().from(verifications).where(eq(verifications.userId, o.userId)).catch(() => [undefined]);
       result.push({ ...o, user: { id: user?.id, username: user?.username, email: user?.email, telegramUsername: verif?.telegramUsername || null, channelName: verif?.channelName || null, channelLink: verif?.channelLink || null }, items: itemsWithDetails, paymentMethod });

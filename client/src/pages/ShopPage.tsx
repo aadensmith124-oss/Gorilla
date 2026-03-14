@@ -50,7 +50,7 @@ export default function ShopPage() {
       <VerificationBanner />
       <div className="flex flex-col items-center gap-8">
         <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
-          RULF<span className="text-primary italic">.CC</span>
+          RULF<span className="text-primary italic"> BULK</span>
         </h1>
 
         <a 
