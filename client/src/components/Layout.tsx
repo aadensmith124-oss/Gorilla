@@ -1,9 +1,8 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Menu,
   ChevronDown,
-  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     refetchInterval: 30000,
   });
 
-  const unreadCount = mailsData?.filter(m => !m.isRead).length ?? 0;
+  const hasUnread = (mailsData?.filter(m => !m.isRead).length ?? 0) > 0;
 
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
@@ -75,12 +74,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link href="/mailbox" onClick={() => setIsMobileOpen(false)}>
             <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
               <span className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Mailbox
+                Mails
+                {hasUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
               </span>
-              {unreadCount > 0 && (
-                <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{unreadCount}</span>
-              )}
             </div>
           </Link>
         )}
@@ -131,18 +127,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Link>
 
         <div className="flex items-center gap-2">
-          {isApproved && unreadCount > 0 && (
-            <Link href="/mailbox">
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative text-white/70 hover:text-white hover:bg-white/5">
-                <Mail className="h-4 w-4" />
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">{unreadCount}</span>
-              </Button>
-            </Link>
-          )}
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" className="h-8 w-8 relative text-white/70 hover:text-white hover:bg-white/5">
                 <Menu className="h-5 w-5" />
+                {isApproved && hasUnread && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] p-0 border-l border-white/5 bg-[#0f1115]">

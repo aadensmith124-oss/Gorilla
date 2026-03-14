@@ -943,8 +943,13 @@ function SellersSection() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-sm text-white">{s.user?.username}</p>
-                  <Badge className={s.status === "approved" ? "bg-green-500/20 text-green-400 text-[9px]" : "bg-red-500/20 text-red-400 text-[9px]"}>
-                    {s.status === "termed" ? "TERMED" : "ACTIVE"}
+                  <Badge className={
+                    s.status === "approved" ? "bg-green-500/20 text-green-400 text-[9px]" :
+                    s.status === "termed" ? "bg-red-500/20 text-red-400 text-[9px]" :
+                    s.status === "pending" ? "bg-yellow-500/20 text-yellow-400 text-[9px]" :
+                    "bg-white/10 text-white/50 text-[9px]"
+                  }>
+                    {s.status === "approved" ? "ACTIVE" : s.status === "termed" ? "TERMED" : s.status === "pending" ? "PENDING" : "DENIED"}
                   </Badge>
                   {(s.ips?.length || 0) >= 3 && <Badge className="bg-destructive/20 text-destructive text-[9px]">IP ALERT</Badge>}
                 </div>

@@ -309,12 +309,10 @@ export async function registerRoutes(
     res.json(verif);
   });
 
-  // Admin - Sellers list (approved + termed)
+  // Admin - Sellers list (all verification statuses)
   app.get("/api/admin/sellers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
-    const approved = await db.select().from(verifications).where(eq(verifications.status, "approved" as any));
-    const termed = await db.select().from(verifications).where(eq(verifications.status, "termed" as any));
-    const all = [...approved, ...termed];
+    const all = await db.select().from(verifications).orderBy(desc(verifications.createdAt));
     const result = [];
     for (const v of all) {
       const [user] = await db.select().from(users).where(eq(users.id, v.userId));
