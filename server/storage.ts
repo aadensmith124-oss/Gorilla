@@ -357,33 +357,11 @@ export class DatabaseStorage implements IStorage {
 
   async createPendingOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
     let total = 0;
-    const reservedStockItems: { variantId: number, stockItemId: number, price: number }[] = [];
-    const cardPurchases: { cardId: number, price: number }[] = [];
 
-    try {
-      for (const item of items) {
-        const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
-        if (!variant) throw new Error("Variant not found");
-        total += variant.price * item.quantity;
-        for (let i = 0; i < item.quantity; i++) {
-          const stockItem = await this.reserveStockItem(item.variantId);
-          if (!stockItem) throw new Error(`Insufficient stock for ${variant.name}`);
-          reservedStockItems.push({ variantId: item.variantId, stockItemId: stockItem.id, price: variant.price });
-        }
-      }
-
-      for (const cardId of cardIds) {
-        const [card] = await db.select().from(cards).where(eq(cards.id, cardId));
-        if (!card) throw new Error("Card not found");
-        if (card.isSold) throw new Error("Card already sold");
-        total += card.price;
-        cardPurchases.push({ cardId: card.id, price: card.price });
-      }
-    } catch (e) {
-      for (const res of reservedStockItems) {
-        await db.update(stockItems).set({ isSold: false, orderId: null }).where(eq(stockItems.id, res.stockItemId));
-      }
-      throw e;
+    for (const item of items) {
+      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+      if (!variant) throw new Error("Variant not found");
+      total += variant.price * item.quantity;
     }
 
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -391,33 +369,21 @@ export class DatabaseStorage implements IStorage {
       userId,
       orderId: publicOrderId,
       total,
-      paidAmount: 0,
       status: "pending"
     }).returning();
 
-    for (const res of reservedStockItems) {
+    for (const item of items) {
+      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+      if (!variant) continue;
       await db.insert(orderItems).values({
         orderId: order.id,
-        variantId: res.variantId,
-        stockItemId: res.stockItemId,
+        variantId: item.variantId,
+        stockItemId: null,
         cardId: null,
         itemType: "product",
-        price: res.price,
-        quantity: 1
+        price: variant.price,
+        quantity: item.quantity,
       });
-      await db.update(stockItems).set({ orderId: order.id }).where(eq(stockItems.id, res.stockItemId));
-    }
-
-    for (const cp of cardPurchases) {
-      await db.insert(orderItems).values({
-        orderId: order.id,
-        variantId: null,
-        cardId: cp.cardId,
-        itemType: "card",
-        price: cp.price,
-        quantity: 1
-      });
-      await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cp.cardId));
     }
 
     return order;
@@ -426,24 +392,14 @@ export class DatabaseStorage implements IStorage {
   async fulfillPendingOrder(orderId: number): Promise<void> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) throw new Error("Order not found");
-    await db.update(orders).set({ status: "fulfilled", paidAmount: order.total }).where(eq(orders.id, orderId));
+    await db.update(orders).set({ status: "fulfilled" }).where(eq(orders.id, orderId));
   }
 
   async cancelPendingOrder(orderId: number): Promise<void> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order || order.status !== "pending") return;
-
-    await db.update(orders).set({ status: "unpaid" }).where(eq(orders.id, orderId));
-
-    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-    for (const item of items) {
-      if (item.stockItemId) {
-        await db.update(stockItems).set({ isSold: false, orderId: null }).where(eq(stockItems.id, item.stockItemId));
-      }
-      if (item.cardId) {
-        await db.update(cards).set({ isSold: false, userId: null }).where(eq(cards.id, item.cardId));
-      }
-    }
+    await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+    await db.update(orders).set({ status: "waiting_payment" as any }).where(eq(orders.id, orderId));
   }
 
   async cancelStalePendingOrders(maxAgeMs: number = 60 * 60 * 1000): Promise<number> {

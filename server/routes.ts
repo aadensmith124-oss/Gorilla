@@ -254,11 +254,12 @@ export async function registerRoutes(
       if (!agreedToTerms) return res.status(400).json({ message: "Must agree to terms" });
       const existing = await db.select().from(verifications).where(eq(verifications.userId, userId));
       if (existing.length > 0) {
-        if (existing[0].status === "denied" || existing[0].status === "termed") {
-          const [updated] = await db.update(verifications).set({ telegramUsername, channelLink, channelName, agreedToTerms, status: "pending" as any, adminNote: "", termMessage: "" }).where(eq(verifications.userId, userId)).returning();
-          return res.json(updated);
+        const existingStatus = existing[0].status;
+        if (existingStatus === "approved") {
+          return res.status(400).json({ message: "Already verified" });
         }
-        return res.status(400).json({ message: "Already submitted" });
+        const [updated] = await db.update(verifications).set({ telegramUsername, channelLink, channelName, agreedToTerms, status: "pending" as any, adminNote: "", termMessage: "" }).where(eq(verifications.userId, userId)).returning();
+        return res.json(updated);
       }
       const [verif] = await db.insert(verifications).values({ userId, telegramUsername, channelLink, channelName, agreedToTerms }).returning();
       res.status(201).json(verif);

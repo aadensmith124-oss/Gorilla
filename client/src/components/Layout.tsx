@@ -24,7 +24,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showRules, setShowRules] = useState(false);
 
-  const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
+  const cartCount = items.length;
 
   const { data: mailsData } = useQuery<any[]>({
     queryKey: ["/api/mails"],
