@@ -25,7 +25,6 @@ const adminSections = [
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
   { id: "verifications", label: "Verifications" },
-  { id: "sellers", label: "Sellers" },
   { id: "users", label: "Users" },
   { id: "mail", label: "Mail" },
   { id: "test", label: "Test Mode" },
@@ -98,7 +97,6 @@ export default function AdminPage() {
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "verifications" && <VerificationsSection />}
-          {activeSection === "sellers" && <SellersSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "mail" && <AdminMailSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
@@ -800,202 +798,6 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
   );
 }
 
-function SellersSection() {
-  const { toast } = useToast();
-  const [selectedSeller, setSelectedSeller] = useState<any>(null);
-  const [termMessage, setTermMessage] = useState("");
-  const [showTermInput, setShowTermInput] = useState(false);
-
-  const { data: sellers, isLoading, error } = useQuery({
-    queryKey: ["/api/admin/sellers"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/sellers");
-      if (res.status === 401) throw new Error("SESSION_EXPIRED");
-      if (!res.ok) throw new Error("Failed to fetch");
-      return res.json();
-    },
-    refetchInterval: 15000,
-  });
-
-  const termMutation = useMutation({
-    mutationFn: async ({ id, message }: { id: number; message: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/term`, { message });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      setShowTermInput(false);
-      setTermMessage("");
-      toast({ title: "Seller termed" });
-      if (selectedSeller) setSelectedSeller((s: any) => ({ ...s, status: "termed" }));
-    },
-  });
-
-  const unverifyMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/unverify`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      toast({ title: "Seller unverified — must reapply" });
-      setSelectedSeller(null);
-    },
-  });
-
-  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-
-  if ((error as any)?.message === "SESSION_EXPIRED") {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Session expired. Please log in again.</p>
-        <Button size="sm" onClick={() => window.location.href = "/auth"}>Go to Login</Button>
-      </div>
-    );
-  }
-
-  if (selectedSeller) {
-    const current = sellers?.find((s: any) => s.id === selectedSeller.id) || selectedSeller;
-    return (
-      <div className="space-y-6">
-        <Button variant="outline" size="sm" onClick={() => { setSelectedSeller(null); setShowTermInput(false); setTermMessage(""); }}>← Back to Sellers</Button>
-
-        <Card className="bg-[#0f1115] border-white/5">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{current.user?.username || `User ${current.userId}`}</span>
-              <Badge className={current.status === "approved" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
-                {current.status === "termed" ? "TERMED" : "APPROVED"}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 text-sm">
-              <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Reseller Info</p>
-                <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs font-bold">{current.telegramUsername}</p></div>
-                <div className="flex justify-between"><p className="text-xs text-muted-foreground">Channel</p><p className="text-xs font-bold">{current.channelName}</p></div>
-                <div className="flex justify-between items-center"><p className="text-xs text-muted-foreground">Link</p><a href={current.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">{current.channelLink}</a></div>
-              </div>
-
-              <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Login IPs ({current.ips?.length || 0} unique, {current.totalLogins || 0} total)</p>
-                {current.ips?.length === 0 && <p className="text-xs text-muted-foreground">No logins recorded yet</p>}
-                {current.ips?.map((ip: string, i: number) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${i >= 3 ? "bg-destructive" : "bg-green-500"}`} />
-                    <p className="text-xs font-mono text-white">{ip}</p>
-                    {i >= 3 && <Badge className="text-[9px] bg-destructive/20 text-destructive">FLAGGED</Badge>}
-                  </div>
-                ))}
-                {(current.ips?.length || 0) >= 3 && (
-                  <p className="text-[10px] text-destructive font-bold mt-1">⚠ 3+ UNIQUE IPs — POSSIBLE ACCOUNT SHARING</p>
-                )}
-              </div>
-
-              {current.status === "termed" && current.termMessage && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
-                  <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-1">Term Reason</p>
-                  <p className="text-xs text-white/70">{current.termMessage}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-white/5 pt-4 space-y-3">
-              {showTermInput ? (
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Reason for termination (shown to user)..."
-                    value={termMessage}
-                    onChange={e => setTermMessage(e.target.value)}
-                    className="bg-black/50 border-white/10 text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
-                      onClick={() => termMutation.mutate({ id: current.id, message: termMessage })}
-                      disabled={termMutation.isPending}
-                    >
-                      {termMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                      Confirm Term
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowTermInput(false)}>Cancel</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  {current.status !== "termed" && (
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
-                      onClick={() => setShowTermInput(true)}
-                    >
-                      Term
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-white/20 h-8 text-xs"
-                    onClick={() => unverifyMutation.mutate(current.id)}
-                    disabled={unverifyMutation.isPending}
-                  >
-                    {unverifyMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                    Unverify
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Sellers</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {sellers?.filter((s: any) => s.status === "approved").length || 0} active · {sellers?.filter((s: any) => s.status === "termed").length || 0} termed
-        </p>
-      </div>
-
-      {(!sellers || sellers.filter((s: any) => s.status === "approved" || s.status === "termed").length === 0) && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No approved sellers yet. Approve them from the Verifications section.</div>
-      )}
-
-      <div className="space-y-3">
-        {sellers?.filter((s: any) => s.status === "approved" || s.status === "termed").map((s: any) => (
-          <Card key={s.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors" onClick={() => setSelectedSeller(s)}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-sm text-white">{s.user?.username}</p>
-                  <Badge className={
-                    s.status === "approved" ? "bg-green-500/20 text-green-400 text-[9px]" :
-                    s.status === "termed" ? "bg-red-500/20 text-red-400 text-[9px]" :
-                    s.status === "pending" ? "bg-yellow-500/20 text-yellow-400 text-[9px]" :
-                    "bg-white/10 text-white/50 text-[9px]"
-                  }>
-                    {s.status === "approved" ? "ACTIVE" : s.status === "termed" ? "TERMED" : s.status === "pending" ? "PENDING" : "DENIED"}
-                  </Badge>
-                  {(s.ips?.length || 0) >= 3 && <Badge className="bg-destructive/20 text-destructive text-[9px]">IP ALERT</Badge>}
-                </div>
-                <p className="text-xs text-muted-foreground">{s.telegramUsername} · {s.channelName}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">{s.ips?.length || 0} unique IPs</p>
-                <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 ml-auto" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function VerificationsSection() {
   const { toast } = useToast();
@@ -1129,13 +931,28 @@ function VerificationsSection() {
 
 function UsersSection() {
   const { toast } = useToast();
-  const { data: users, isLoading } = useQuery({
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [termMessage, setTermMessage] = useState("");
+  const [showTermInput, setShowTermInput] = useState(false);
+
+  const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
     queryFn: async () => {
       const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) throw new Error("Failed");
       return res.json();
-    }
+    },
+    refetchInterval: 15000,
+  });
+
+  const { data: sellers, isLoading: sellersLoading } = useQuery({
+    queryKey: ["/api/admin/sellers"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/sellers");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: 15000,
   });
 
   const banMutation = useMutation({
@@ -1146,7 +963,8 @@ function UsersSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "User banned" });
-    }
+      if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: true }));
+    },
   });
 
   const unbanMutation = useMutation({
@@ -1157,55 +975,202 @@ function UsersSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "User unbanned" });
-    }
+      if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: false }));
+    },
   });
 
+  const termMutation = useMutation({
+    mutationFn: async ({ verifId, message }: { verifId: number; message: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${verifId}/term`, { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setShowTermInput(false);
+      setTermMessage("");
+      toast({ title: "User termed" });
+    },
+  });
+
+  const unverifyMutation = useMutation({
+    mutationFn: async (verifId: number) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${verifId}/unverify`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      toast({ title: "User removed from program — must reapply" });
+    },
+  });
+
+  const isLoading = usersLoading || sellersLoading;
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  const getVerif = (userId: number) => sellers?.find((s: any) => s.userId === userId);
+
+  const verifBadge = (status: string | undefined) => {
+    if (!status) return <Badge className="bg-white/10 text-white/40 text-[9px]">UNVERIFIED</Badge>;
+    if (status === "approved") return <Badge className="bg-green-500/20 text-green-400 text-[9px]">VERIFIED</Badge>;
+    if (status === "termed") return <Badge className="bg-red-500/20 text-red-400 text-[9px]">TERMED</Badge>;
+    if (status === "pending") return <Badge className="bg-yellow-500/20 text-yellow-400 text-[9px]">PENDING</Badge>;
+    return <Badge className="bg-white/10 text-white/40 text-[9px]">DENIED</Badge>;
+  };
+
+  if (selectedUser) {
+    const verif = getVerif(selectedUser.id);
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setShowTermInput(false); setTermMessage(""); }}>
+          ← Back to Users
+        </Button>
+
+        <Card className="bg-[#0f1115] border-white/5">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+              <span>{selectedUser.username}</span>
+              <div className="flex gap-2 flex-wrap">
+                {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400">BANNED</Badge>}
+                {verifBadge(verif?.status)}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5 text-sm">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Account</p>
+              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Email</p><p className="text-xs">{selectedUser.email}</p></div>
+              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || "—"}</p></div>
+              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Role</p><p className="text-xs capitalize">{selectedUser.role}</p></div>
+            </div>
+
+            {verif && (
+              <>
+                <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Verification</p>
+                  <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs font-bold">{verif.telegramUsername}</p></div>
+                  <div className="flex justify-between"><p className="text-xs text-muted-foreground">Channel</p><p className="text-xs font-bold">{verif.channelName}</p></div>
+                  {verif.channelLink && verif.channelLink !== "N/A" && (
+                    <div className="flex justify-between items-center"><p className="text-xs text-muted-foreground">Link</p><a href={verif.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[180px]">{verif.channelLink}</a></div>
+                  )}
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Login IPs ({verif.ips?.length || 0} unique, {verif.totalLogins || 0} total)
+                  </p>
+                  {(verif.ips?.length === 0 || !verif.ips) && <p className="text-xs text-muted-foreground">No logins recorded</p>}
+                  {verif.ips?.map((ip: string, i: number) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${i >= 3 ? "bg-destructive" : "bg-green-500"}`} />
+                      <p className="text-xs font-mono text-white">{ip}</p>
+                      {i >= 3 && <Badge className="text-[9px] bg-destructive/20 text-destructive">FLAGGED</Badge>}
+                    </div>
+                  ))}
+                  {(verif.ips?.length || 0) >= 3 && (
+                    <p className="text-[10px] text-destructive font-bold mt-1">⚠ 3+ UNIQUE IPs — POSSIBLE ACCOUNT SHARING</p>
+                  )}
+                </div>
+
+                {verif.status === "termed" && verif.termMessage && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+                    <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-1">Term Reason</p>
+                    <p className="text-xs text-white/70">{verif.termMessage}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="border-t border-white/5 pt-4 space-y-3">
+              <div className="flex gap-2">
+                {selectedUser.isBanned ? (
+                  <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                    onClick={() => unbanMutation.mutate(selectedUser.id)} disabled={unbanMutation.isPending}>
+                    {unbanMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                    Unban
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="flex-1 border-white/20 h-8 text-xs"
+                    onClick={() => { if (confirm("Ban this user?")) banMutation.mutate(selectedUser.id); }}
+                    disabled={banMutation.isPending}>
+                    {banMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                    Ban
+                  </Button>
+                )}
+              </div>
+
+              {verif && (
+                <>
+                  {showTermInput ? (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Reason for termination (shown to user)..."
+                        value={termMessage}
+                        onChange={e => setTermMessage(e.target.value)}
+                        className="bg-black/50 border-white/10 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
+                          onClick={() => termMutation.mutate({ verifId: verif.id, message: termMessage })}
+                          disabled={termMutation.isPending}>
+                          {termMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                          Confirm Term
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowTermInput(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      {verif.status !== "termed" && (
+                        <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
+                          onClick={() => setShowTermInput(true)}>
+                          Term
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" className="flex-1 border-white/20 h-8 text-xs"
+                        onClick={() => unverifyMutation.mutate(verif.id)} disabled={unverifyMutation.isPending}>
+                        {unverifyMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                        Remove from Program
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
-      <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader className="bg-white/5">
-            <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead className="text-xs font-bold uppercase">Username</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Email</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Telegram</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Status</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map((user: any) => (
-              <TableRow key={user.id} className="border-white/5 hover:bg-white/5">
-                <TableCell className="font-bold text-sm">{user.username}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">@{user.telegramUsername || "—"}</TableCell>
-                <TableCell>
-                  {user.isBanned
-                    ? <Badge className="bg-red-500/20 text-red-400 text-[10px]">Banned</Badge>
-                    : <Badge className="bg-green-500/20 text-green-400 text-[10px]">Active</Badge>
-                  }
-                </TableCell>
-                <TableCell className="text-right">
-                  {user.isBanned ? (
-                    <Button variant="ghost" size="sm" className="text-green-400 hover:bg-green-500/10 text-xs h-7"
-                      onClick={() => unbanMutation.mutate(user.id)} disabled={unbanMutation.isPending}>
-                      Unban
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs h-7"
-                      onClick={() => { if (confirm("Ban this user?")) banMutation.mutate(user.id); }}
-                      disabled={banMutation.isPending}>
-                      Ban
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div>
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {users?.length || 0} total · {sellers?.filter((s: any) => s.status === "approved").length || 0} verified
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {users?.map((user: any) => {
+          const verif = getVerif(user.id);
+          return (
+            <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
+              onClick={() => { setSelectedUser(user); setShowTermInput(false); setTermMessage(""); }}>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-sm text-white">{user.username}</p>
+                    {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
+                    {verifBadge(verif?.status)}
+                    {(verif?.ips?.length || 0) >= 3 && <Badge className="bg-destructive/20 text-destructive text-[9px]">IP ALERT</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{user.email} · @{user.telegramUsername || "—"}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
