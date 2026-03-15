@@ -6,6 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
+import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
@@ -203,6 +204,37 @@ export async function registerRoutes(
       reward, // in cents
       newBalance: updatedUser?.balance || 0,
     });
+  });
+
+  // User - Update Telegram
+  app.patch("/api/user/telegram", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const { telegramUsername } = req.body;
+      if (!telegramUsername) return res.status(400).json({ message: "Telegram username required" });
+      const user = await storage.updateUser((req.user as any).id, { telegramUsername });
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // User - Update Password
+  app.patch("/api/user/password", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) return res.status(400).json({ message: "Both passwords required" });
+      const [currentUser] = await db.select().from(users).where(eq(users.id, (req.user as any).id));
+      if (!currentUser) return res.status(404).json({ message: "User not found" });
+      const isMatch = await comparePassword(currentPassword, currentUser.password);
+      if (!isMatch) return res.status(400).json({ message: "Current password is incorrect" });
+      const hashed = await hashPassword(newPassword);
+      const user = await storage.updateUser((req.user as any).id, { password: hashed });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
   });
 
   // Admin - Deliver Order

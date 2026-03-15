@@ -19,7 +19,7 @@ export async function hashPassword(password: string) {
 }
 
 // Helper to compare password
-async function comparePassword(supplied: string, stored: string) {
+export async function comparePassword(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;

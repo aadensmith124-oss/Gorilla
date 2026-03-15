@@ -1,7 +1,7 @@
 import { useRoute, useLocation } from "wouter";
 import { useOrders } from "@/hooks/use-orders";
 import { Loader2, X, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 function statusLabel(s: string) {
@@ -199,7 +199,7 @@ export default function OrderDetailPageNew() {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string | JSX.Element }) {
+function InfoRow({ label, value }: { label: string; value: string | ReactNode }) {
   return (
     <div>
       <p className="text-xs text-white/40 mb-1">{label}</p>

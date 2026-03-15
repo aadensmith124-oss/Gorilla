@@ -5,15 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Package } from "lucide-react";
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
   const { data: orders } = useOrders();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const search = useSearch();
+  const queryClient = useQueryClient();
+
+  const tabFromUrl = new URLSearchParams(search).get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "dashboard");
+
+  useEffect(() => {
+    if (tabFromUrl) setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -53,7 +63,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Telegram</p>
-                <p className="text-lg font-bold text-white">{user.telegramUsername}</p>
+                <p className="text-lg font-bold text-white">{user.telegramUsername || "—"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Member Since</p>
@@ -109,7 +119,7 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="settings" className="pt-6">
-          <SettingsTab user={user} />
+          <SettingsTab user={user} onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/user"] })} />
         </TabsContent>
       </Tabs>
     </div>
@@ -135,23 +145,52 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
 }
 
-function SettingsTab({ user }: { user: any }) {
-  const [newTelegram, setNewTelegram] = useState(user.telegramUsername);
+function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
+  const [newTelegram, setNewTelegram] = useState(user.telegramUsername || "");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
 
-  const handleUpdateTelegram = () => {
-    toast({ title: "Success", description: "Telegram username updated" });
-  };
-
-  const handleUpdatePassword = () => {
-    if (newPassword !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
-      return;
+  const telegramMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", "/api/user/telegram", { telegramUsername: newTelegram });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Telegram updated" });
+      onUpdate();
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-    toast({ title: "Success", description: "Password updated" });
-  };
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: async () => {
+      if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
+      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
+      const res = await apiRequest("PATCH", "/api/user/password", { currentPassword, newPassword });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Password updated" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -169,7 +208,14 @@ function SettingsTab({ user }: { user: any }) {
               className="bg-white/5 border-white/5 text-white"
             />
           </div>
-          <Button onClick={handleUpdateTelegram} className="w-full">Update Telegram</Button>
+          <Button
+            onClick={() => telegramMutation.mutate()}
+            disabled={telegramMutation.isPending || !newTelegram.trim()}
+            className="w-full"
+          >
+            {telegramMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Telegram
+          </Button>
         </CardContent>
       </Card>
 
@@ -179,14 +225,25 @@ function SettingsTab({ user }: { user: any }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">New Password</label>
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" />
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Current Password</label>
+            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Enter current password" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Confirm Password</label>
-            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" />
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">New Password</label>
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Enter new password" />
           </div>
-          <Button onClick={handleUpdatePassword} className="w-full">Update Password</Button>
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Confirm New Password</label>
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Confirm new password" />
+          </div>
+          <Button
+            onClick={() => passwordMutation.mutate()}
+            disabled={passwordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+            className="w-full"
+          >
+            {passwordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Password
+          </Button>
         </CardContent>
       </Card>
     </div>

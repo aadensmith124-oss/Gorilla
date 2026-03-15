@@ -21,7 +21,7 @@ const supportSchema = z.object({
   orderId: z.string().min(1, "Product ID (Order ID) is required"),
   subject: z.string().min(1, "Please select what you need"),
   description: z.string().min(1, "Please describe what happened"),
-  imageUrl: z.string().min(1, "Image is required"),
+  imageUrl: z.string().optional(),
 });
 
 export default function SupportPage() {
