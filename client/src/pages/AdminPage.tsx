@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -457,10 +457,20 @@ function statusBadgeClass(s: string) {
   return "bg-white/10 text-white/60";
 }
 
+function parseDeliveryContents(raw: string | null | undefined): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, string>;
+  } catch {}
+  return {};
+}
+
 function OrdersSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [deliveryContent, setDeliveryContent] = useState("");
+  const [deliveryContents, setDeliveryContents] = useState<Record<string, string>>({});
+  const [activeProductKey, setActiveProductKey] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -473,14 +483,15 @@ function OrdersSection() {
 
   const deliverMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/deliver`, { deliveryContent });
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/deliver`, { deliveryContents });
       if (!res.ok) throw new Error("Delivery failed");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       setSelectedOrder(null);
-      setDeliveryContent("");
+      setDeliveryContents({});
+      setActiveProductKey(null);
       toast({ title: "Order delivered successfully" });
     },
     onError: (e: any) => {
@@ -492,18 +503,19 @@ function OrdersSection() {
 
   if (selectedOrder) {
     const current = orders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
-    const productItems = current.items?.filter((i: any) => i.itemType === "product") || [];
+    const productItems = current.items?.filter((i: any) => !i.itemType || i.itemType === "product") || [];
     const grouped: Record<string, { productName: string; variantName: string; qty: number; unitPrice: number }> = {};
     for (const item of productItems) {
       const key = String(item.variantId || item.id);
       if (!grouped[key]) grouped[key] = { productName: item.productName || "Product", variantName: item.variant?.name || "—", qty: 0, unitPrice: item.price };
       grouped[key].qty += (item.quantity ?? 1);
     }
-    const groupedItems = Object.values(grouped);
+    const groupedEntries = Object.entries(grouped);
+    const allFilled = groupedEntries.length > 0 && groupedEntries.every(([key]) => !!deliveryContents[key]?.trim());
 
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => { setSelectedOrder(null); setDeliveryContent(""); }}>← Back</Button>
+        <Button variant="outline" size="sm" onClick={() => { setSelectedOrder(null); setDeliveryContents({}); setActiveProductKey(null); }}>← Back</Button>
 
         <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -518,42 +530,76 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment method</p><p className="text-sm text-white">{current.paymentMethod || "Crypto"}</p></div>
             <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Expected amount</p><p className="text-sm text-white">${(current.total / 100).toFixed(2)}</p></div>
             <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-sm font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
-            {current.deliveryContent && <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Logs</p><p className="text-xs font-mono text-white/70 whitespace-pre-wrap">{current.deliveryContent}</p></div>}
           </div>
 
-          {groupedItems.length > 0 && (
-            <div className="space-y-3 border-b border-white/5 pb-4">
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Products</p>
-              {groupedItems.map((g, idx) => (
-                <div key={idx} className="bg-white/5 rounded-lg px-3 py-2.5 space-y-1 border border-white/5">
-                  <p className="text-sm font-black text-white">{g.productName}</p>
-                  <p className="text-xs text-white/50">{g.variantName}</p>
-                  <div className="flex items-center justify-between text-xs text-white/50">
-                    <span>Qty: {g.qty} · ${(g.unitPrice / 100).toFixed(2)} each</span>
-                    <span className="text-primary font-bold">${((g.unitPrice * g.qty) / 100).toFixed(2)}</span>
+          {groupedEntries.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Products — click to add delivery items</p>
+              {groupedEntries.map(([key, g]) => {
+                const hasFill = !!deliveryContents[key]?.trim();
+                const isOpen = activeProductKey === key;
+                return (
+                  <div key={key} className="space-y-2">
+                    <button
+                      onClick={() => setActiveProductKey(isOpen ? null : key)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
+                        hasFill
+                          ? "border-green-500/40 bg-green-500/10"
+                          : "border-white/10 bg-white/5 hover:bg-white/10"
+                      } ${isOpen ? "ring-1 ring-primary" : ""}`}
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-white">{g.productName} ({g.qty})</p>
+                        <p className="text-xs text-white/40 mt-0.5">{g.variantName}</p>
+                      </div>
+                      {hasFill
+                        ? <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                        : isOpen
+                          ? <ChevronUp className="h-4 w-4 text-white/40 flex-shrink-0" />
+                          : <ChevronDown className="h-4 w-4 text-white/40 flex-shrink-0" />
+                      }
+                    </button>
+
+                    {isOpen && (
+                      <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
+                        <div className="space-y-1 text-xs text-white/50">
+                          <p><span className="text-white/30">Product:</span> {g.productName}</p>
+                          <p><span className="text-white/30">Option:</span> {g.variantName}</p>
+                          <p><span className="text-white/30">Quantity:</span> {g.qty}</p>
+                        </div>
+                        <textarea
+                          value={deliveryContents[key] || ""}
+                          onChange={(e) => setDeliveryContents(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={`Paste ${g.qty} item(s) for this product...`}
+                          rows={4}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20 resize-none"
+                        />
+                        <button
+                          onClick={() => setActiveProductKey(null)}
+                          className="w-full h-9 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-bold transition-colors"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
-          <div className="space-y-2 border-t border-white/5 pt-4">
-            <p className="text-[10px] text-white/40 uppercase tracking-widest">Send to Customer</p>
-            <textarea
-              value={deliveryContent}
-              onChange={(e) => setDeliveryContent(e.target.value)}
-              placeholder="Paste account credentials, keys, or delivery content..."
-              rows={5}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20 resize-none"
-            />
+          <div className="border-t border-white/5 pt-4">
             <Button
               onClick={() => deliverMutation.mutate()}
-              disabled={deliverMutation.isPending || !deliveryContent.trim()}
-              className="w-full gap-2 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest"
+              disabled={deliverMutation.isPending || !allFilled}
+              className="w-full gap-2 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest disabled:opacity-40"
             >
               {deliverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send & Mark Fulfilled
             </Button>
+            {!allFilled && groupedEntries.length > 0 && (
+              <p className="text-xs text-white/30 text-center mt-2">Fill in items for all products to send</p>
+            )}
           </div>
         </div>
       </div>
@@ -583,7 +629,11 @@ function OrdersSection() {
             <span className="text-xs text-white/50">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}</span>
             <span className={`text-sm font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
             <span className="text-xs text-white/60">{order.paymentMethod || "Crypto"}</span>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-3" onClick={() => { setSelectedOrder(order); setDeliveryContent(order.deliveryContent || ""); }}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-3" onClick={() => {
+              setSelectedOrder(order);
+              setDeliveryContents(parseDeliveryContents(order.deliveryContent));
+              setActiveProductKey(null);
+            }}>
               View
             </Button>
           </div>

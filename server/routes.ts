@@ -212,7 +212,14 @@ export async function registerRoutes(
     }
     try {
       const orderId = Number(req.params.id);
-      const order = await storage.updateOrderDelivery(orderId, req.body.deliveryContent);
+      // Accept either deliveryContents (per-product map) or legacy deliveryContent (string)
+      let content: string;
+      if (req.body.deliveryContents && typeof req.body.deliveryContents === "object") {
+        content = JSON.stringify(req.body.deliveryContents);
+      } else {
+        content = req.body.deliveryContent || "";
+      }
+      const order = await storage.updateOrderDelivery(orderId, content);
       res.json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
