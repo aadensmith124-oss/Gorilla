@@ -14,13 +14,20 @@ import {
 import { useCart } from "@/hooks/use-cart";
 import { useVerification } from "@/hooks/use-verification";
 import { RulesModal } from "@/components/RulesModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading: isUserLoading } = useAuth();
-  const { items } = useCart();
+  const { items, setUserId } = useCart();
   const { isApproved } = useVerification(!!user && !isUserLoading);
+
+  useEffect(() => {
+    if (!isUserLoading) {
+      setUserId(user?.id ?? null);
+    }
+  }, [user?.id, isUserLoading]);
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showRules, setShowRules] = useState(false);
 

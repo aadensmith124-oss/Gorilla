@@ -957,7 +957,9 @@ function SellersSection() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Sellers</h1>
-        <p className="text-sm text-muted-foreground mt-1">{sellers?.length || 0} active seller{sellers?.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {sellers?.filter((s: any) => s.status === "approved").length || 0} active · {sellers?.filter((s: any) => s.status === "pending").length || 0} pending
+        </p>
       </div>
 
       {(!sellers || sellers.length === 0) && (
@@ -1217,7 +1219,12 @@ function AdminMailSection() {
   const [selectedMail, setSelectedMail] = useState<any>(null);
 
   const { data: sellers } = useQuery<any[]>({
-    queryKey: ["/api/admin/sellers"],
+    queryKey: ["/api/admin/sellers/approved"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/sellers/approved");
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   const { data: mails, isLoading } = useQuery<any[]>({
