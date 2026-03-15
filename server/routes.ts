@@ -314,24 +314,26 @@ export async function registerRoutes(
   app.get("/api/admin/sellers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
     try {
-      const rows = await db.execute(sql`
-        SELECT v.*, u.id as u_id, u.username as u_username, u.email as u_email
+      const { rows } = await db.execute(sql`
+        SELECT v.id, v.user_id, v.telegram_username, v.channel_link, v.channel_name,
+               v.agreed_to_terms, v.status, v.admin_note, v.term_message, v.created_at,
+               u.id as u_id, u.username as u_username, u.email as u_email
         FROM verifications v
         LEFT JOIN users u ON u.id = v.user_id
         ORDER BY v.created_at DESC
-      `);
+      `) as any;
       const result = [];
-      for (const row of rows as any[]) {
+      for (const row of rows) {
         if (!row.u_id) continue;
-        const ips = await db.execute(sql`SELECT ip FROM user_ips WHERE user_id = ${row.user_id} ORDER BY logged_at DESC`);
-        const uniqueIps = [...new Set((ips as any[]).map((i: any) => i.ip))];
+        const { rows: ipRows } = await db.execute(sql`SELECT ip FROM user_ips WHERE user_id = ${row.user_id} ORDER BY logged_at DESC`) as any;
+        const uniqueIps = [...new Set(ipRows.map((i: any) => i.ip))];
         result.push({
           id: row.id, userId: row.user_id, telegramUsername: row.telegram_username,
           channelLink: row.channel_link, channelName: row.channel_name,
           agreedToTerms: row.agreed_to_terms, status: row.status,
           adminNote: row.admin_note, termMessage: row.term_message, createdAt: row.created_at,
           user: { id: row.u_id, username: row.u_username, email: row.u_email },
-          ips: uniqueIps, totalLogins: (ips as any[]).length,
+          ips: uniqueIps, totalLogins: ipRows.length,
         });
       }
       res.json(result);
@@ -345,14 +347,16 @@ export async function registerRoutes(
   app.get("/api/admin/sellers/approved", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
     try {
-      const rows = await db.execute(sql`
-        SELECT v.*, u.id as u_id, u.username as u_username, u.email as u_email
+      const { rows } = await db.execute(sql`
+        SELECT v.id, v.user_id, v.telegram_username, v.channel_link, v.channel_name,
+               v.agreed_to_terms, v.status, v.admin_note, v.term_message, v.created_at,
+               u.id as u_id, u.username as u_username, u.email as u_email
         FROM verifications v
         LEFT JOIN users u ON u.id = v.user_id
         WHERE v.status = 'approved'
         ORDER BY v.created_at DESC
-      `);
-      const result = (rows as any[]).filter((r: any) => r.u_id).map((row: any) => ({
+      `) as any;
+      const result = rows.filter((r: any) => r.u_id).map((row: any) => ({
         id: row.id, userId: row.user_id, telegramUsername: row.telegram_username,
         channelLink: row.channel_link, channelName: row.channel_name,
         agreedToTerms: row.agreed_to_terms, status: row.status,
