@@ -12,15 +12,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useCart } from "@/hooks/use-cart";
-import { useVerification } from "@/hooks/use-verification";
 import { RulesModal } from "@/components/RulesModal";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading: isUserLoading } = useAuth();
   const { items, setUserId } = useCart();
-  const { isApproved } = useVerification(!!user && !isUserLoading);
 
   useEffect(() => {
     if (!isUserLoading) {
@@ -32,14 +29,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showRules, setShowRules] = useState(false);
 
   const cartCount = items.length;
-
-  const { data: mailsData } = useQuery<any[]>({
-    queryKey: ["/api/mails"],
-    enabled: !!user && isApproved,
-    refetchInterval: 30000,
-  });
-
-  const hasUnread = (mailsData?.filter(m => !m.isRead).length ?? 0) > 0;
 
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
@@ -77,25 +66,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
 
-        {isApproved && (
-          <Link href="/mailbox" onClick={() => setIsMobileOpen(false)}>
-            <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
-              <span className="flex items-center gap-2">
-                Mails
-                {hasUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
-              </span>
-            </div>
-          </Link>
-        )}
-
-        {isApproved && (
-          <button
-            onClick={() => { setShowRules(true); setIsMobileOpen(false); }}
-            className="text-sm font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-wider text-left"
-          >
-            Rules
-          </button>
-        )}
+        <button
+          onClick={() => { setShowRules(true); setIsMobileOpen(false); }}
+          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-wider text-left"
+        >
+          Rules
+        </button>
 
         {user?.role === 'admin' && (
           <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
@@ -138,9 +114,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 relative text-white/70 hover:text-white hover:bg-white/5">
                 <Menu className="h-5 w-5" />
-                {isApproved && hasUnread && (
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
-                )}
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] p-0 border-l border-white/5 bg-[#0f1115]">

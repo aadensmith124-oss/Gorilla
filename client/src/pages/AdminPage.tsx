@@ -24,9 +24,7 @@ const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
-  { id: "verifications", label: "Verifications" },
   { id: "users", label: "Users" },
-  { id: "mail", label: "Mail" },
   { id: "test", label: "Test Mode" },
 ];
 
@@ -96,9 +94,7 @@ export default function AdminPage() {
           {activeSection === "dashboard" && <DashboardSection />}
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
-          {activeSection === "verifications" && <VerificationsSection />}
           {activeSection === "users" && <UsersSection />}
-          {activeSection === "mail" && <AdminMailSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
         </main>
       </div>
@@ -528,6 +524,14 @@ function OrdersSection() {
                 <p className="text-xs text-muted-foreground uppercase mb-1">Customer</p>
                 <p className="font-bold">{current.user?.username || current.userId}</p>
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase mb-1">Payment</p>
+                <p className="font-bold">{current.paymentMethod || "Crypto"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase mb-1">Telegram</p>
+                <p className="font-bold">@{current.user?.telegramUsername || "—"}</p>
+              </div>
             </div>
 
             {(current.user?.telegramUsername || current.user?.channelName || current.user?.channelLink) && (
@@ -799,160 +803,15 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
 }
 
 
-function VerificationsSection() {
-  const { toast } = useToast();
-  const { data: verifications, isLoading } = useQuery({
-    queryKey: ["/api/admin/verifications"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/verifications");
-      if (!res.ok) throw new Error("Failed to fetch");
-      return res.json();
-    }
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, note }: { id: number; note?: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/approve`, { note: note || "" });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
-      toast({ title: "Application approved" });
-    }
-  });
-
-  const denyMutation = useMutation({
-    mutationFn: async ({ id, note }: { id: number; note?: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/deny`, { note: note || "" });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
-      toast({ title: "Application denied" });
-    }
-  });
-
-  const pending = verifications?.filter((v: any) => v.status === "pending") || [];
-  const others = verifications?.filter((v: any) => v.status !== "pending") || [];
-
-  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Verifications</h1>
-        <p className="text-sm text-muted-foreground mt-1">{pending.length} pending application{pending.length !== 1 ? "s" : ""}</p>
-      </div>
-
-      {verifications?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No applications yet.</div>
-      )}
-
-      {pending.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs font-bold text-primary uppercase tracking-widest">Pending Review</p>
-          {pending.map((v: any) => (
-            <Card key={v.id} className="bg-[#0f1115] border-primary/20">
-              <CardContent className="p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Telegram</p>
-                    <p className="font-medium">{v.telegramUsername}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Channel</p>
-                    <p className="font-medium">{v.channelName}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Channel Link</p>
-                    <a href={v.channelLink} target="_blank" rel="noreferrer" className="text-primary text-xs hover:underline truncate block">{v.channelLink}</a>
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-1 border-t border-white/5">
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
-                    onClick={() => approveMutation.mutate({ id: v.id })}
-                    disabled={approveMutation.isPending}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10 h-8 text-xs"
-                    onClick={() => {
-                      const note = prompt("Denial reason (optional):");
-                      denyMutation.mutate({ id: v.id, note: note || "" });
-                    }}
-                    disabled={denyMutation.isPending}
-                  >
-                    Deny
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {others.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Reviewed</p>
-          <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader className="bg-white/5">
-                <TableRow className="hover:bg-transparent border-white/5">
-                  <TableHead className="text-xs font-bold uppercase">Telegram</TableHead>
-                  <TableHead className="text-xs font-bold uppercase">Channel</TableHead>
-                  <TableHead className="text-xs font-bold uppercase">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {others.map((v: any) => (
-                  <TableRow key={v.id} className="border-white/5 hover:bg-white/5">
-                    <TableCell className="text-sm">{v.telegramUsername}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{v.channelName}</TableCell>
-                    <TableCell>
-                      <Badge className={v.status === "approved" ? "bg-green-500/20 text-green-400 text-[10px]" : "bg-red-500/20 text-red-400 text-[10px]"}>
-                        {v.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function UsersSection() {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [termMessage, setTermMessage] = useState("");
-  const [showTermInput, setShowTermInput] = useState(false);
-  const [showMailForm, setShowMailForm] = useState(false);
-  const [mailTitle, setMailTitle] = useState("");
-  const [mailBody, setMailBody] = useState("");
 
-  const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ["/api/admin/users"],
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['/api/admin/users'],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-    refetchInterval: 15000,
-  });
-
-  const { data: sellers, isLoading: sellersLoading } = useQuery({
-    queryKey: ["/api/admin/sellers"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/sellers");
-      if (!res.ok) return [];
+      const res = await fetch('/api/admin/users');
+      if (!res.ok) throw new Error('Failed');
       return res.json();
     },
     refetchInterval: 15000,
@@ -960,227 +819,63 @@ function UsersSection() {
 
   const banMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const res = await apiRequest("POST", api.admin.banUser.path.replace(":id", userId.toString()));
+      const res = await apiRequest('POST', api.admin.banUser.path.replace(':id', userId.toString()));
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "User banned" });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: 'User banned' });
       if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: true }));
     },
   });
 
   const unbanMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const res = await apiRequest("POST", api.admin.unbanUser.path.replace(":id", userId.toString()));
+      const res = await apiRequest('POST', api.admin.unbanUser.path.replace(':id', userId.toString()));
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "User unbanned" });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: 'User unbanned' });
       if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: false }));
     },
   });
 
-  const termMutation = useMutation({
-    mutationFn: async ({ verifId, message }: { verifId: number; message: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${verifId}/term`, { message });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      setShowTermInput(false);
-      setTermMessage("");
-      toast({ title: "User termed" });
-    },
-  });
-
-  const unverifyMutation = useMutation({
-    mutationFn: async (verifId: number) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${verifId}/unverify`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      toast({ title: "User removed from program — must reapply" });
-    },
-  });
-
-  const sendMailMutation = useMutation({
-    mutationFn: async ({ title, body, recipientId }: { title: string; body: string; recipientId: number }) => {
-      const res = await apiRequest("POST", "/api/admin/mails/send", { title, body, recipientId });
-      return res.json();
-    },
-    onSuccess: () => {
-      setShowMailForm(false);
-      setMailTitle("");
-      setMailBody("");
-      toast({ title: "Mail sent" });
-    },
-  });
-
-  const isLoading = usersLoading || sellersLoading;
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
-  const getVerif = (userId: number) => sellers?.find((s: any) => s.userId === userId);
-
-  const verifBadge = (status: string | undefined) => {
-    if (!status) return <Badge className="bg-white/10 text-white/40 text-[9px]">UNVERIFIED</Badge>;
-    if (status === "approved") return <Badge className="bg-green-500/20 text-green-400 text-[9px]">VERIFIED</Badge>;
-    if (status === "termed") return <Badge className="bg-red-500/20 text-red-400 text-[9px]">TERMED</Badge>;
-    if (status === "pending") return <Badge className="bg-yellow-500/20 text-yellow-400 text-[9px]">PENDING</Badge>;
-    return <Badge className="bg-white/10 text-white/40 text-[9px]">DENIED</Badge>;
-  };
-
   if (selectedUser) {
-    const verif = getVerif(selectedUser.id);
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setShowTermInput(false); setTermMessage(""); setShowMailForm(false); setMailTitle(""); setMailBody(""); }}>
-          ← Back to Users
-        </Button>
-
+        <Button variant="outline" size="sm" onClick={() => setSelectedUser(null)}>← Back to Users</Button>
         <Card className="bg-[#0f1115] border-white/5">
           <CardHeader>
             <CardTitle className="flex items-center justify-between flex-wrap gap-2">
               <span>{selectedUser.username}</span>
-              <div className="flex gap-2 flex-wrap">
-                {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400">BANNED</Badge>}
-                {verifBadge(verif?.status)}
-              </div>
+              {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400">BANNED</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5 text-sm">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Account</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Account</p>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Email</p><p className="text-xs">{selectedUser.email}</p></div>
-              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || "—"}</p></div>
+              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || '—'}</p></div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Role</p><p className="text-xs capitalize">{selectedUser.role}</p></div>
+              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Joined</p><p className="text-xs">{new Date(selectedUser.createdAt).toLocaleDateString()}</p></div>
             </div>
-
-            {verif && (
-              <>
-                <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Verification</p>
-                  <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs font-bold">{verif.telegramUsername}</p></div>
-                  <div className="flex justify-between"><p className="text-xs text-muted-foreground">Channel</p><p className="text-xs font-bold">{verif.channelName}</p></div>
-                  {verif.channelLink && verif.channelLink !== "N/A" && (
-                    <div className="flex justify-between items-center"><p className="text-xs text-muted-foreground">Link</p><a href={verif.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[180px]">{verif.channelLink}</a></div>
-                  )}
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Login IPs ({verif.ips?.length || 0} unique, {verif.totalLogins || 0} total)
-                  </p>
-                  {(verif.ips?.length === 0 || !verif.ips) && <p className="text-xs text-muted-foreground">No logins recorded</p>}
-                  {verif.ips?.map((ip: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${i >= 3 ? "bg-destructive" : "bg-green-500"}`} />
-                      <p className="text-xs font-mono text-white">{ip}</p>
-                      {i >= 3 && <Badge className="text-[9px] bg-destructive/20 text-destructive">FLAGGED</Badge>}
-                    </div>
-                  ))}
-                  {(verif.ips?.length || 0) >= 3 && (
-                    <p className="text-[10px] text-destructive font-bold mt-1">⚠ 3+ UNIQUE IPs — POSSIBLE ACCOUNT SHARING</p>
-                  )}
-                </div>
-
-                {verif.status === "termed" && verif.termMessage && (
-                  <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-1">Term Reason</p>
-                    <p className="text-xs text-white/70">{verif.termMessage}</p>
-                  </div>
-                )}
-              </>
-            )}
-
-            <div className="border-t border-white/5 pt-4 space-y-3">
-              <div className="flex gap-2">
-                {selectedUser.isBanned ? (
-                  <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
-                    onClick={() => unbanMutation.mutate(selectedUser.id)} disabled={unbanMutation.isPending}>
-                    {unbanMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                    Unban
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" className="flex-1 border-white/20 h-8 text-xs"
-                    onClick={() => { if (confirm("Ban this user?")) banMutation.mutate(selectedUser.id); }}
-                    disabled={banMutation.isPending}>
-                    {banMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                    Ban
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" className="flex-1 border-primary/40 text-primary hover:bg-primary/10 h-8 text-xs"
-                  onClick={() => { setShowMailForm(v => !v); setShowTermInput(false); }}>
-                  Mail
+            <div className="border-t border-white/5 pt-3 flex gap-2">
+              {selectedUser.isBanned ? (
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                  onClick={() => unbanMutation.mutate(selectedUser.id)} disabled={unbanMutation.isPending}>
+                  {unbanMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                  Unban User
                 </Button>
-              </div>
-
-              {showMailForm && (
-                <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/10">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Send Mail to {selectedUser.username}</p>
-                  <Input
-                    placeholder="Subject..."
-                    value={mailTitle}
-                    onChange={e => setMailTitle(e.target.value)}
-                    className="bg-black/50 border-white/10 text-sm h-8"
-                  />
-                  <textarea
-                    placeholder="Message body..."
-                    value={mailBody}
-                    onChange={e => setMailBody(e.target.value)}
-                    rows={3}
-                    className="w-full bg-black/50 border border-white/10 rounded-md text-sm px-3 py-2 text-white placeholder:text-white/30 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="flex-1 h-8 text-xs"
-                      onClick={() => sendMailMutation.mutate({ title: mailTitle, body: mailBody, recipientId: selectedUser.id })}
-                      disabled={sendMailMutation.isPending || !mailTitle.trim() || !mailBody.trim()}>
-                      {sendMailMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                      Send
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowMailForm(false)}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-
-              {verif && (
-                <>
-                  {showTermInput ? (
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Reason for termination (shown to user)..."
-                        value={termMessage}
-                        onChange={e => setTermMessage(e.target.value)}
-                        className="bg-black/50 border-white/10 text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
-                          onClick={() => termMutation.mutate({ verifId: verif.id, message: termMessage })}
-                          disabled={termMutation.isPending}>
-                          {termMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                          Confirm Term
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowTermInput(false)}>Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      {verif.status !== "termed" && (
-                        <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90 text-white h-8 text-xs"
-                          onClick={() => setShowTermInput(true)}>
-                          Term
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" className="flex-1 border-white/20 h-8 text-xs"
-                        onClick={() => unverifyMutation.mutate(verif.id)} disabled={unverifyMutation.isPending}>
-                        {unverifyMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                        Remove from Program
-                      </Button>
-                    </div>
-                  )}
-                </>
+              ) : (
+                <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 h-8 text-xs"
+                  onClick={() => { if (confirm('Ban this user?')) banMutation.mutate(selectedUser.id); }}
+                  disabled={banMutation.isPending}>
+                  {banMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                  Ban User
+                </Button>
               )}
             </div>
           </CardContent>
@@ -1193,186 +888,24 @@ function UsersSection() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {users?.length || 0} total · {sellers?.filter((s: any) => s.status === "approved").length || 0} verified
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">{users?.length || 0} total</p>
       </div>
-
       <div className="space-y-2">
-        {users?.map((user: any) => {
-          const verif = getVerif(user.id);
-          return (
-            <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
-              onClick={() => { setSelectedUser(user); setShowTermInput(false); setTermMessage(""); setShowMailForm(false); setMailTitle(""); setMailBody(""); }}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-sm text-white">{user.username}</p>
-                    {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
-                    {verifBadge(verif?.status)}
-                    {(verif?.ips?.length || 0) >= 3 && <Badge className="bg-destructive/20 text-destructive text-[9px]">IP ALERT</Badge>}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{user.email} · @{user.telegramUsername || "—"}</p>
+        {users?.map((user: any) => (
+          <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
+            onClick={() => setSelectedUser(user)}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-bold text-sm text-white">{user.username}</p>
+                  {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AdminMailSection() {
-  const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [recipientId, setRecipientId] = useState<string>("");
-  const [selectedMail, setSelectedMail] = useState<any>(null);
-
-  const { data: sellers } = useQuery<any[]>({
-    queryKey: ["/api/admin/sellers/approved"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/sellers/approved");
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
-
-  const { data: mails, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/mails"],
-    queryFn: async () => {
-      const res = await fetch("/api/mails");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-    refetchInterval: 15000,
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/mails/send", {
-        title: title.trim(),
-        body: body.trim(),
-        recipientId: recipientId ? Number(recipientId) : null,
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/mails"] });
-      setTitle("");
-      setBody("");
-      setRecipientId("");
-      toast({ title: "Mail sent" });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  if (selectedMail) {
-    return (
-      <div className="space-y-4 max-w-2xl">
-        <Button variant="outline" size="sm" onClick={() => setSelectedMail(null)}>← Back</Button>
-        <Card className="bg-[#0f1115] border-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">{selectedMail.title}</CardTitle>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              {selectedMail.recipientId
-                ? `To: ${sellers?.find((s: any) => s.userId === selectedMail.recipientId)?.user?.username || `User #${selectedMail.recipientId}`}`
-                : "Broadcast — All Sellers"}
-              {" · "}{new Date(selectedMail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-[#e1e1e1] whitespace-pre-wrap leading-relaxed">{selectedMail.body}</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Mail</h1>
-
-      <Card className="bg-[#0f1115] border-white/5">
-        <CardHeader>
-          <CardTitle className="text-base">Send New Mail</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Recipient</label>
-            <select
-              value={recipientId}
-              onChange={e => setRecipientId(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">All Sellers (Broadcast)</option>
-              {sellers?.map((s: any) => (
-                <option key={s.userId} value={s.userId}>{s.user?.username || `User #${s.userId}`}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Subject</label>
-            <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Mail subject..."
-              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/30"
-              data-testid="input-mail-title"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-1">Message</label>
-            <textarea
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              rows={5}
-              placeholder="Write your message..."
-              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/30 resize-none"
-              data-testid="input-mail-body"
-            />
-          </div>
-          <Button
-            onClick={() => sendMutation.mutate()}
-            disabled={sendMutation.isPending || !title.trim() || !body.trim()}
-            className="bg-primary hover:bg-primary/80 text-white font-bold text-xs uppercase"
-            data-testid="button-send-mail"
-          >
-            {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {recipientId ? "Send to Seller" : "Broadcast to All Sellers"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Sent Mails</h2>
-        {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
-        {!isLoading && (!mails || mails.length === 0) && (
-          <div className="text-center py-8 text-sm text-muted-foreground">No mails sent yet.</div>
-        )}
-        <div className="space-y-2">
-          {mails?.map((mail: any) => (
-            <button key={mail.id} onClick={() => setSelectedMail(mail)} className="w-full text-left">
-              <Card className="bg-[#0f1115] border-white/5 hover:border-primary/20 transition-colors cursor-pointer">
-                <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-bold text-white">{mail.title}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {mail.recipientId
-                        ? `To: ${sellers?.find((s: any) => s.userId === mail.recipientId)?.user?.username || `User #${mail.recipientId}`}`
-                        : "Broadcast — All Sellers"}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {new Date(mail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
-                </CardContent>
-              </Card>
-            </button>
-          ))}
-        </div>
+                <p className="text-xs text-muted-foreground">{user.email} · @{user.telegramUsername || '—'}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

@@ -4,8 +4,6 @@ import { Loader2, Minus, Plus, X, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
-import { useVerification } from "@/hooks/use-verification";
-import { useAuth } from "@/hooks/use-auth";
 import {
   Select,
   SelectContent,
@@ -25,8 +23,6 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { toast } = useToast();
-  const { user, isLoading: isUserLoading } = useAuth();
-  const { isApproved, isPending, isDenied, isTermed, hasApplied } = useVerification(!!user && !isUserLoading);
 
   const selectedVariant = product?.variants.find((v: any) => v.id.toString() === selectedVariantId);
   const minQty = selectedVariant?.minQuantity || 1;
@@ -40,13 +36,7 @@ export default function ProductDetailPage() {
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white">Product not found</div>;
 
-  const canBuy = isApproved;
-
   const handleAddToCart = () => {
-    if (!canBuy) {
-      toast({ title: "Not verified", description: isTermed ? "Your account has been termed" : isPending ? "Wait for admin approval" : "Verify your account first", variant: "destructive" });
-      return;
-    }
     if (!selectedVariant) {
       toast({ title: "Error", description: "Please select an option", variant: "destructive" });
       return;
@@ -69,8 +59,12 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = () => {
+    if (!selectedVariant) {
+      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
+      return;
+    }
     handleAddToCart();
-    if (canBuy && selectedVariant) setLocation("/cart");
+    setLocation("/cart");
   };
 
   return (
@@ -89,39 +83,11 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="p-6 space-y-6">
-          {!isApproved && (
-            <div className={`border p-4 rounded-xl space-y-1.5 ${isTermed ? "bg-[#1a0a0a] border-destructive/50" : "bg-destructive/10 border-destructive/30"}`}>
-              {isTermed ? (
-                <>
-                  <p className="text-xs font-black text-destructive uppercase tracking-widest">YOU ARE TERMED</p>
-                  <p className="text-xs text-destructive/80">Your account has been terminated. You cannot purchase products.</p>
-                </>
-              ) : isDenied ? (
-                <>
-                  <p className="text-xs font-bold text-destructive uppercase tracking-widest">NOT VERIFIED — DENIED</p>
-                  <p className="text-xs text-destructive/80">Your application was denied. Return to the shop page to reapply.</p>
-                </>
-              ) : isPending ? (
-                <>
-                  <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest">VERIFICATION PENDING</p>
-                  <p className="text-xs text-yellow-400/80">Your application is under review. You cannot purchase until approved.</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs font-bold text-destructive uppercase tracking-widest">ACCOUNT NOT VERIFIED</p>
-                  <p className="text-xs text-destructive/80">You must verify your account before purchasing. Go back to the shop to apply.</p>
-                </>
-              )}
-            </div>
-          )}
-
-          {isApproved && (
-            <div className="bg-destructive/10 border border-destructive/30 p-4 rounded-xl space-y-2">
-              <p className="text-xs font-bold text-destructive uppercase tracking-widest">PURCHASE {product.name.toUpperCase()} BULK FOR THE CHEAPEST</p>
-              <p className="text-xs text-destructive/80 leading-relaxed">AFTER PURCHASE YOU WILL WAIT UP TO 4 HOURS FOR AN ADMIN TO PUSH YOUR ORDER</p>
-              <p className="text-xs text-destructive/80">ANY SUPPORT PLEASE CONTACT @OMZRII ON TELEGRAM</p>
-            </div>
-          )}
+          <div className="bg-destructive/10 border border-destructive/30 p-4 rounded-xl space-y-2">
+            <p className="text-xs font-bold text-destructive uppercase tracking-widest">PURCHASE {product.name.toUpperCase()} BULK FOR THE CHEAPEST</p>
+            <p className="text-xs text-destructive/80 leading-relaxed">AFTER PURCHASE YOU WILL WAIT UP TO 4 HOURS FOR AN ADMIN TO PUSH YOUR ORDER</p>
+            <p className="text-xs text-destructive/80">ANY SUPPORT PLEASE CONTACT @OMZRII ON TELEGRAM</p>
+          </div>
 
           <div className="space-y-3">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
@@ -170,22 +136,19 @@ export default function ProductDetailPage() {
               disabled={!selectedVariantId}
               className="w-full h-12 rounded-xl font-black uppercase italic tracking-tighter text-sm shadow-lg hover:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
               style={{
-                background: canBuy
-                  ? "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))"
-                  : "rgba(255,255,255,0.05)",
-                color: canBuy ? "#0a0a0a" : "rgba(255,255,255,0.4)",
-                boxShadow: canBuy ? "0 8px 32px hsl(38,82%,52%,0.25)" : "none",
-                border: canBuy ? "none" : "1px solid rgba(255,255,255,0.1)",
+                background: "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))",
+                color: "#0a0a0a",
+                boxShadow: "0 8px 32px hsl(38,82%,52%,0.25)",
                 cursor: !selectedVariantId ? "not-allowed" : "pointer",
               }}
             >
               <ShoppingCart className="h-4 w-4" />
-              {canBuy ? "Add to Cart" : isTermed ? "Account Termed" : isPending ? "Verification Pending" : "Verify to Purchase"}
+              Add to Cart
             </button>
 
             <button
               onClick={handleBuyNow}
-              disabled={!selectedVariantId || !canBuy}
+              disabled={!selectedVariantId}
               className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Buy Now
