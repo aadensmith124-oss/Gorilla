@@ -488,26 +488,15 @@ function OrdersSection() {
     }
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
-      const res = await apiRequest("PATCH", `/api/admin/orders/${orderId}/status`, { status });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      toast({ title: "Status updated" });
-    }
-  });
-
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
     const current = orders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
     const productItems = current.items?.filter((i: any) => i.itemType === "product") || [];
-    const grouped: Record<string, { name: string; qty: number; unitPrice: number }> = {};
+    const grouped: Record<string, { productName: string; variantName: string; qty: number; unitPrice: number }> = {};
     for (const item of productItems) {
       const key = String(item.variantId || item.id);
-      if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Item", qty: 0, unitPrice: item.price };
+      if (!grouped[key]) grouped[key] = { productName: item.productName || "Product", variantName: item.variant?.name || "—", qty: 0, unitPrice: item.price };
       grouped[key].qty += (item.quantity ?? 1);
     }
     const groupedItems = Object.values(grouped);
@@ -537,7 +526,8 @@ function OrdersSection() {
               <p className="text-[10px] text-white/40 uppercase tracking-widest">Products</p>
               {groupedItems.map((g, idx) => (
                 <div key={idx} className="bg-white/5 rounded-lg px-3 py-2.5 space-y-1 border border-white/5">
-                  <p className="text-sm font-black text-white uppercase">{g.name}</p>
+                  <p className="text-sm font-black text-white">{g.productName}</p>
+                  <p className="text-xs text-white/50">{g.variantName}</p>
                   <div className="flex items-center justify-between text-xs text-white/50">
                     <span>Qty: {g.qty} · ${(g.unitPrice / 100).toFixed(2)} each</span>
                     <span className="text-primary font-bold">${((g.unitPrice * g.qty) / 100).toFixed(2)}</span>
@@ -546,20 +536,6 @@ function OrdersSection() {
               ))}
             </div>
           )}
-
-          <div className="space-y-2">
-            <p className="text-[10px] text-white/40 uppercase tracking-widest">Change Status</p>
-            <div className="flex flex-wrap gap-2">
-              {["pending", "waiting_payment", "delivering", "fulfilled"].map((s) => (
-                <Button key={s} size="sm" variant={current.status === s ? "default" : "outline"}
-                  className="text-xs h-7"
-                  onClick={() => updateStatusMutation.mutate({ orderId: current.id, status: s })}
-                  disabled={updateStatusMutation.isPending || current.status === s}>
-                  {statusLabel(s)}
-                </Button>
-              ))}
-            </div>
-          </div>
 
           <div className="space-y-2 border-t border-white/5 pt-4">
             <p className="text-[10px] text-white/40 uppercase tracking-widest">Send to Customer</p>

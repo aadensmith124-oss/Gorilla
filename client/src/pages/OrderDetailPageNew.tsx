@@ -1,6 +1,6 @@
 import { useRoute, useLocation } from "wouter";
 import { useOrders } from "@/hooks/use-orders";
-import { Loader2, X, Copy, Check } from "lucide-react";
+import { Loader2, X, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,7 +24,8 @@ export default function OrderDetailPageNew() {
   const [, setLocation] = useLocation();
   const { data: orders } = useOrders();
   const [activeTab, setActiveTab] = useState<"info" | "products">("info");
-  const [copied, setCopied] = useState(false);
+  const [stockVisible, setStockVisible] = useState<Record<number, boolean>>({});
+  const [copied, setCopied] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
 
   const order = orders?.find((o: any) => o.orderId === params?.id || o.id.toString() === params?.id);
@@ -63,13 +64,17 @@ export default function OrderDetailPageNew() {
     }
   }
 
-  const logs = order.deliveryContent || "no log";
+  const hasStock = order.status === "fulfilled" && order.deliveryContent;
 
-  const handleCopy = () => {
+  const toggleStock = (idx: number) => {
+    setStockVisible(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const handleCopy = (idx: number) => {
     if (order.deliveryContent) {
       navigator.clipboard.writeText(order.deliveryContent).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopied(prev => ({ ...prev, [idx]: true }));
+        setTimeout(() => setCopied(prev => ({ ...prev, [idx]: false })), 2000);
         toast({ title: "Copied to clipboard" });
       });
     }
@@ -137,25 +142,11 @@ export default function OrderDetailPageNew() {
               <p className="text-xs text-white/40 mb-1">Status</p>
               <p className={`text-sm font-bold ${statusColor(order.status)}`}>{statusLabel(order.status)}</p>
             </div>
-            <div>
-              <p className="text-xs text-white/40 mb-1">Logs</p>
-              <p className="text-sm text-white/70 font-mono whitespace-pre-wrap">{logs}</p>
-            </div>
-
-            {order.status === "fulfilled" && order.deliveryContent && (
-              <button
-                onClick={handleCopy}
-                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-black font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-colors mt-4"
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied!" : "Copy Stock"}
-              </button>
-            )}
           </div>
         )}
 
         {activeTab === "products" && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             {grouped.length === 0 && (
               <p className="text-sm text-white/40">No products found</p>
             )}
@@ -181,16 +172,43 @@ export default function OrderDetailPageNew() {
                   <p className="text-xs text-white/40 mb-1">Total</p>
                   <p className="text-sm text-white font-bold">${((item.unitPrice * item.qty) / 100).toFixed(2)}</p>
                 </div>
-                {idx < grouped.length - 1 && <div className="border-b border-white/5" />}
+
+                {hasStock && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => toggleStock(idx)}
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-black font-bold uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      {stockVisible[idx] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {stockVisible[idx] ? "Hide Stock" : "View Stock"}
+                    </button>
+
+                    {stockVisible[idx] && (
+                      <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed">
+                          {order.deliveryContent}
+                        </p>
+                        <button
+                          onClick={() => handleCopy(idx)}
+                          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-bold transition-colors"
+                        >
+                          {copied[idx] ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {copied[idx] ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!hasStock && order.status !== "fulfilled" && (
+                  <div className="w-full h-11 rounded-xl bg-white/5 border border-white/10 text-white/30 font-bold uppercase tracking-widest text-sm flex items-center justify-center">
+                    Pending Delivery
+                  </div>
+                )}
+
+                {idx < grouped.length - 1 && <div className="border-b border-white/5 pt-2" />}
               </div>
             ))}
-
-            <button
-              onClick={() => setActiveTab("info")}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-black font-bold uppercase tracking-widest text-sm transition-colors mt-4"
-            >
-              View Stock
-            </button>
           </div>
         )}
       </div>
