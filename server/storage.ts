@@ -424,8 +424,9 @@ export class DatabaseStorage implements IStorage {
       for (const i of oItems) {
         const [stockItem] = i.stockItemId ? await db.select().from(stockItems).where(eq(stockItems.id, i.stockItemId)) : [undefined];
         const [variant] = i.variantId ? await db.select().from(variants).where(eq(variants.id, i.variantId)) : [undefined];
+        const [product] = variant?.productId ? await db.select().from(products).where(eq(products.id, variant.productId)) : [undefined];
         const [card] = i.cardId ? await db.select().from(cards).where(eq(cards.id, i.cardId)) : [undefined];
-        itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null });
+        itemsWithDetails.push({ ...i, stockItem: stockItem || null, variant: variant || null, card: card || null, productName: product?.name || null });
       }
       result.push({ ...o, items: itemsWithDetails });
     }

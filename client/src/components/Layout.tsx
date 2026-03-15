@@ -12,7 +12,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useCart } from "@/hooks/use-cart";
-import { RulesModal } from "@/components/RulesModal";
 import { useState, useEffect } from "react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -26,7 +25,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [user?.id, isUserLoading]);
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [showRules, setShowRules] = useState(false);
 
   const cartCount = items.length;
 
@@ -65,13 +63,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{cartCount}</span>}
           </div>
         </Link>
-
-        <button
-          onClick={() => { setShowRules(true); setIsMobileOpen(false); }}
-          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-wider text-left"
-        >
-          Rules
-        </button>
 
         {user?.role === 'admin' && (
           <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
@@ -129,7 +120,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </div>
   );
 }

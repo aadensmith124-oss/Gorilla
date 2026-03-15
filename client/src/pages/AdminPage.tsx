@@ -503,185 +503,127 @@ function OrdersSection() {
 
   if (selectedOrder) {
     const current = orders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
+    const productItems = current.items?.filter((i: any) => i.itemType === "product") || [];
+    const grouped: Record<string, { name: string; qty: number; unitPrice: number }> = {};
+    for (const item of productItems) {
+      const key = String(item.variantId || item.id);
+      if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Item", qty: 0, unitPrice: item.price };
+      grouped[key].qty += (item.quantity ?? 1);
+    }
+    const groupedItems = Object.values(grouped);
+
     return (
-      <div className="space-y-6">
-        <Button variant="outline" onClick={() => { setSelectedOrder(null); setDeliveryContent(""); }}>← Back</Button>
+      <div className="space-y-4">
+        <Button variant="outline" size="sm" onClick={() => { setSelectedOrder(null); setDeliveryContent(""); }}>← Back</Button>
 
-        <Card className="bg-[#0f1115] border-white/5">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Order #{current.orderId}</span>
-              <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Total</p>
-                <p className="font-bold">${(current.total / 100).toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Customer</p>
-                <p className="font-bold">{current.user?.username || current.userId}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Payment</p>
-                <p className="font-bold">{current.paymentMethod || "Crypto"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Telegram</p>
-                <p className="font-bold">@{current.user?.telegramUsername || "—"}</p>
-              </div>
-            </div>
+        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-white uppercase tracking-tight">Order Detail</h2>
+            <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
+          </div>
 
-            {(current.user?.telegramUsername || current.user?.channelName || current.user?.channelLink) && (
-              <div className="bg-white/5 border border-white/5 rounded-xl p-3 space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Reseller Info</p>
-                {current.user?.telegramUsername && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Telegram</p>
-                    <p className="text-xs font-bold text-white">{current.user.telegramUsername}</p>
+          <div className="space-y-3 border-b border-white/5 pb-4">
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Creation date</p><p className="text-sm text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-sm text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment method</p><p className="text-sm text-white">{current.paymentMethod || "Crypto"}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Expected amount</p><p className="text-sm text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-sm font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
+            {current.deliveryContent && <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Logs</p><p className="text-xs font-mono text-white/70 whitespace-pre-wrap">{current.deliveryContent}</p></div>}
+          </div>
+
+          {groupedItems.length > 0 && (
+            <div className="space-y-3 border-b border-white/5 pb-4">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Products</p>
+              {groupedItems.map((g, idx) => (
+                <div key={idx} className="bg-white/5 rounded-lg px-3 py-2.5 space-y-1 border border-white/5">
+                  <p className="text-sm font-black text-white uppercase">{g.name}</p>
+                  <div className="flex items-center justify-between text-xs text-white/50">
+                    <span>Qty: {g.qty} · ${(g.unitPrice / 100).toFixed(2)} each</span>
+                    <span className="text-primary font-bold">${((g.unitPrice * g.qty) / 100).toFixed(2)}</span>
                   </div>
-                )}
-                {current.user?.channelName && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Channel</p>
-                    <p className="text-xs font-bold text-white">{current.user.channelName}</p>
-                  </div>
-                )}
-                {current.user?.channelLink && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Link</p>
-                    <a href={current.user.channelLink} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate max-w-[180px]">{current.user.channelLink}</a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {current.items && current.items.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">Items Ordered</p>
-                {(() => {
-                  const productItems = current.items.filter((i: any) => i.itemType === "product");
-                  const grouped: Record<string, { name: string; qty: number; price: number }> = {};
-                  for (const item of productItems) {
-                    const key = String(item.variantId || item.id);
-                    if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Unknown variant", qty: 0, price: item.price };
-                    grouped[key].qty += (item.quantity ?? 1);
-                  }
-                  return Object.values(grouped).map((g, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/5">
-                      <div>
-                        <p className="font-bold text-white">{g.name}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {g.qty}</p>
-                      </div>
-                      <p className="text-primary font-bold">${((g.price * g.qty) / 100).toFixed(2)}</p>
-                    </div>
-                  ));
-                })()}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground uppercase">Change Status</p>
-              <div className="flex flex-wrap gap-2">
-                {["pending", "waiting_payment", "delivering", "fulfilled"].map((s) => (
-                  <Button key={s} size="sm" variant={current.status === s ? "default" : "outline"}
-                    className="text-xs h-7"
-                    onClick={() => updateStatusMutation.mutate({ orderId: current.id, status: s })}
-                    disabled={updateStatusMutation.isPending || current.status === s}>
-                    {statusLabel(s)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {(current.status === "delivering" || current.status === "waiting_payment" || current.status === "pending") && (
-              <div className="space-y-3 border-t border-white/5 pt-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Paste Items to Deliver</p>
-                <Textarea
-                  value={deliveryContent}
-                  onChange={(e) => setDeliveryContent(e.target.value)}
-                  placeholder="Paste account credentials, keys, or any delivery content here..."
-                  className="bg-black/50 border-white/10 min-h-32 font-mono text-xs"
-                />
-                <Button
-                  onClick={() => deliverMutation.mutate()}
-                  disabled={deliverMutation.isPending || !deliveryContent.trim()}
-                  className="w-full gap-2"
-                >
-                  {deliverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Send Items & Mark Fulfilled
-                </Button>
-              </div>
-            )}
-
-            {current.status === "fulfilled" && current.deliveryContent && (
-              <div className="border-t border-white/5 pt-4 space-y-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Delivered Content</p>
-                <div className="bg-green-500/5 border border-green-500/20 p-3 rounded-lg text-xs font-mono whitespace-pre-wrap">
-                  {current.deliveryContent}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-[10px] text-white/40 uppercase tracking-widest">Change Status</p>
+            <div className="flex flex-wrap gap-2">
+              {["pending", "waiting_payment", "delivering", "fulfilled"].map((s) => (
+                <Button key={s} size="sm" variant={current.status === s ? "default" : "outline"}
+                  className="text-xs h-7"
+                  onClick={() => updateStatusMutation.mutate({ orderId: current.id, status: s })}
+                  disabled={updateStatusMutation.isPending || current.status === s}>
+                  {statusLabel(s)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t border-white/5 pt-4">
+            <p className="text-[10px] text-white/40 uppercase tracking-widest">Send to Customer</p>
+            <textarea
+              value={deliveryContent}
+              onChange={(e) => setDeliveryContent(e.target.value)}
+              placeholder="Paste account credentials, keys, or delivery content..."
+              rows={5}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20 resize-none"
+            />
+            <Button
+              onClick={() => deliverMutation.mutate()}
+              disabled={deliverMutation.isPending || !deliveryContent.trim()}
+              className="w-full gap-2 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest"
+            >
+              {deliverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Send & Mark Fulfilled
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Orders</h1>
+      <p className="text-sm text-muted-foreground">{orders?.length || 0} orders total</p>
+
       {(!orders || orders.length === 0) && (
         <div className="text-center py-12 text-muted-foreground text-sm">No orders yet.</div>
       )}
-      <div className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader className="bg-white/5">
-            <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead className="text-xs font-bold uppercase">Order ID</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Items</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Total</TableHead>
-              <TableHead className="text-xs font-bold uppercase">Status</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders?.map((order: any) => (
-              <TableRow key={order.id} className="border-white/5 hover:bg-white/5">
-                <TableCell className="font-mono text-xs">{order.orderId}</TableCell>
-                <TableCell className="text-xs text-white/80 max-w-[180px]">
-                  {(() => {
-                    const productItems = order.items?.filter((i: any) => i.itemType === "product") || [];
-                    const grouped: Record<string, { name: string; qty: number }> = {};
-                    for (const item of productItems) {
-                      const key = String(item.variantId || item.id);
-                      if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Item", qty: 0 };
-                      grouped[key].qty += (item.quantity ?? 1);
-                    }
-                    return Object.values(grouped).map((g, idx) => (
-                      <div key={idx} className="truncate font-medium">{g.name} <span className="text-primary">×{g.qty}</span></div>
-                    ));
-                  })()}
-                </TableCell>
-                <TableCell className="font-bold">${(order.total / 100).toFixed(2)}</TableCell>
-                <TableCell>
-                  <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => { setSelectedOrder(order); setDeliveryContent(""); }}>
-                    View
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+
+      <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 py-2.5 border-b border-white/5">
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Price</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Date</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Payment</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Action</span>
+        </div>
+        {orders?.map((order: any) => (
+          <div key={order.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 py-3 border-b border-white/5 last:border-0 items-center hover:bg-white/5 transition-colors">
+            <span className="text-sm font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+            <span className="text-xs text-white/50">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}</span>
+            <span className={`text-sm font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
+            <span className="text-xs text-white/60">{order.paymentMethod || "Crypto"}</span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-3" onClick={() => { setSelectedOrder(order); setDeliveryContent(order.deliveryContent || ""); }}>
+              View
+            </Button>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
+function statusTextColor(s: string) {
+  if (s === "fulfilled") return "text-green-400";
+  if (s === "delivering") return "text-blue-400";
+  if (s === "waiting_payment") return "text-orange-400";
+  return "text-white/50";
+}
+
 
 function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
   const { toast } = useToast();
