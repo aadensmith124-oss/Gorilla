@@ -309,13 +309,13 @@ export async function registerRoutes(
     res.json(verif);
   });
 
-  // Admin - Sellers list (all verification statuses)
+  // Admin - Sellers list (approved/verified only)
   app.get("/api/admin/sellers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
-    const all = await db.select().from(verifications).orderBy(desc(verifications.createdAt));
+    const all = await db.select().from(verifications).where(eq(verifications.status, "approved" as any)).orderBy(desc(verifications.createdAt));
     const result = [];
     for (const v of all) {
-      const [user] = await db.select().from(users).where(eq(users.id, v.userId));
+      const [user] = await db.select().from(users).where(eq(users.id, v.userId)) as any[];
       if (!user) continue;
       const ips = await db.select().from(userIps).where(eq(userIps.userId, v.userId)).orderBy(desc(userIps.loggedAt));
       const uniqueIps = [...new Set(ips.map((i: any) => i.ip))];

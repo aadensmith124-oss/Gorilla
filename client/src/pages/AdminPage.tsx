@@ -559,15 +559,24 @@ function OrdersSection() {
             {current.items && current.items.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest">Items Ordered</p>
-                {current.items.filter((i: any) => i.itemType === "product").map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/5">
-                    <div>
-                      <p className="font-bold text-white">{item.variant?.name || "Unknown variant"}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {item.quantity ?? 1}</p>
+                {(() => {
+                  const productItems = current.items.filter((i: any) => i.itemType === "product");
+                  const grouped: Record<string, { name: string; qty: number; price: number }> = {};
+                  for (const item of productItems) {
+                    const key = String(item.variantId || item.id);
+                    if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Unknown variant", qty: 0, price: item.price };
+                    grouped[key].qty += (item.quantity ?? 1);
+                  }
+                  return Object.values(grouped).map((g, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/5">
+                      <div>
+                        <p className="font-bold text-white">{g.name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {g.qty}</p>
+                      </div>
+                      <p className="text-primary font-bold">${((g.price * g.qty) / 100).toFixed(2)}</p>
                     </div>
-                    <p className="text-primary font-bold">${(item.price / 100).toFixed(2)}</p>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             )}
 
@@ -640,10 +649,19 @@ function OrdersSection() {
             {orders?.map((order: any) => (
               <TableRow key={order.id} className="border-white/5 hover:bg-white/5">
                 <TableCell className="font-mono text-xs">{order.orderId}</TableCell>
-                <TableCell className="text-xs text-white/80 max-w-[160px]">
-                  {order.items?.filter((i: any) => i.itemType === "product").map((item: any, idx: number) => (
-                    <div key={idx} className="truncate">{item.variant?.name || "Item"} ×{item.quantity ?? 1}</div>
-                  ))}
+                <TableCell className="text-xs text-white/80 max-w-[180px]">
+                  {(() => {
+                    const productItems = order.items?.filter((i: any) => i.itemType === "product") || [];
+                    const grouped: Record<string, { name: string; qty: number }> = {};
+                    for (const item of productItems) {
+                      const key = String(item.variantId || item.id);
+                      if (!grouped[key]) grouped[key] = { name: item.variant?.name || "Item", qty: 0 };
+                      grouped[key].qty += (item.quantity ?? 1);
+                    }
+                    return Object.values(grouped).map((g, idx) => (
+                      <div key={idx} className="truncate font-medium">{g.name} <span className="text-primary">×{g.qty}</span></div>
+                    ));
+                  })()}
                 </TableCell>
                 <TableCell className="font-bold">${(order.total / 100).toFixed(2)}</TableCell>
                 <TableCell>
