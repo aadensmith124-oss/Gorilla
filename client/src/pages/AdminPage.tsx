@@ -934,6 +934,9 @@ function UsersSection() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [termMessage, setTermMessage] = useState("");
   const [showTermInput, setShowTermInput] = useState(false);
+  const [showMailForm, setShowMailForm] = useState(false);
+  const [mailTitle, setMailTitle] = useState("");
+  const [mailBody, setMailBody] = useState("");
 
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
@@ -1003,6 +1006,19 @@ function UsersSection() {
     },
   });
 
+  const sendMailMutation = useMutation({
+    mutationFn: async ({ title, body, recipientId }: { title: string; body: string; recipientId: number }) => {
+      const res = await apiRequest("POST", "/api/admin/mails/send", { title, body, recipientId });
+      return res.json();
+    },
+    onSuccess: () => {
+      setShowMailForm(false);
+      setMailTitle("");
+      setMailBody("");
+      toast({ title: "Mail sent" });
+    },
+  });
+
   const isLoading = usersLoading || sellersLoading;
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
@@ -1020,7 +1036,7 @@ function UsersSection() {
     const verif = getVerif(selectedUser.id);
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setShowTermInput(false); setTermMessage(""); }}>
+        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setShowTermInput(false); setTermMessage(""); setShowMailForm(false); setMailTitle(""); setMailBody(""); }}>
           ← Back to Users
         </Button>
 
@@ -1095,7 +1111,39 @@ function UsersSection() {
                     Ban
                   </Button>
                 )}
+                <Button size="sm" variant="outline" className="flex-1 border-primary/40 text-primary hover:bg-primary/10 h-8 text-xs"
+                  onClick={() => { setShowMailForm(v => !v); setShowTermInput(false); }}>
+                  Mail
+                </Button>
               </div>
+
+              {showMailForm && (
+                <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/10">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Send Mail to {selectedUser.username}</p>
+                  <Input
+                    placeholder="Subject..."
+                    value={mailTitle}
+                    onChange={e => setMailTitle(e.target.value)}
+                    className="bg-black/50 border-white/10 text-sm h-8"
+                  />
+                  <textarea
+                    placeholder="Message body..."
+                    value={mailBody}
+                    onChange={e => setMailBody(e.target.value)}
+                    rows={3}
+                    className="w-full bg-black/50 border border-white/10 rounded-md text-sm px-3 py-2 text-white placeholder:text-white/30 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 h-8 text-xs"
+                      onClick={() => sendMailMutation.mutate({ title: mailTitle, body: mailBody, recipientId: selectedUser.id })}
+                      disabled={sendMailMutation.isPending || !mailTitle.trim() || !mailBody.trim()}>
+                      {sendMailMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                      Send
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowMailForm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
 
               {verif && (
                 <>
@@ -1155,7 +1203,7 @@ function UsersSection() {
           const verif = getVerif(user.id);
           return (
             <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
-              onClick={() => { setSelectedUser(user); setShowTermInput(false); setTermMessage(""); }}>
+              onClick={() => { setSelectedUser(user); setShowTermInput(false); setTermMessage(""); setShowMailForm(false); setMailTitle(""); setMailBody(""); }}>
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
