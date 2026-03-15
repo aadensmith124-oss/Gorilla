@@ -6,7 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { cryptoPayments, orders, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 
@@ -449,6 +449,16 @@ export async function registerRoutes(
         status: "delivering" as any,
         total
       }).returning();
+
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        variantId: variant.id,
+        stockItemId: null,
+        cardId: null,
+        itemType: "product",
+        price: variant.price,
+        quantity,
+      });
       
       res.status(201).json(order);
     } catch (e: any) {
