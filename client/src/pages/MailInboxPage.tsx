@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Mail, ArrowLeft, Inbox } from "lucide-react";
 import { useVerification } from "@/hooks/use-verification";
+import { useAuth } from "@/hooks/use-auth";
 
 export function MailInboxPage() {
-  const { isApproved } = useVerification();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const { isApproved } = useVerification(!!user && !isUserLoading);
   const [selectedMail, setSelectedMail] = useState<any>(null);
 
   const { data: mails, isLoading } = useQuery<any[]>({

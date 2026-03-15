@@ -18,9 +18,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: isUserLoading } = useAuth();
   const { items } = useCart();
-  const { isApproved } = useVerification();
+  const { isApproved } = useVerification(!!user && !isUserLoading);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showRules, setShowRules] = useState(false);
 

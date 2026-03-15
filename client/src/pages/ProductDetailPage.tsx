@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
 import { useVerification } from "@/hooks/use-verification";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Select,
   SelectContent,
@@ -24,7 +25,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const { toast } = useToast();
-  const { isApproved, isPending, isDenied, isTermed, hasApplied } = useVerification();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const { isApproved, isPending, isDenied, isTermed, hasApplied } = useVerification(!!user && !isUserLoading);
 
   const selectedVariant = product?.variants.find((v: any) => v.id.toString() === selectedVariantId);
   const minQty = selectedVariant?.minQuantity || 1;

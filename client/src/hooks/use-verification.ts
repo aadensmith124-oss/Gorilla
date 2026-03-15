@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-export function useVerification() {
+export function useVerification(enabled = true) {
   const { data: verification, isLoading } = useQuery({
     queryKey: ["/api/verification/me"],
     queryFn: async () => {
@@ -10,6 +10,8 @@ export function useVerification() {
       return res.json();
     },
     retry: false,
+    enabled,
+    staleTime: 15000,
   });
 
   const isApproved = verification?.status === "approved";
@@ -18,7 +20,7 @@ export function useVerification() {
   const isTermed = verification?.status === "termed";
   const hasApplied = !!verification;
 
-  return { verification, isLoading, isApproved, isDenied, isPending, isTermed, hasApplied };
+  return { verification, isLoading: enabled ? isLoading : true, isApproved, isDenied, isPending, isTermed, hasApplied };
 }
 
 export function useSubmitVerification() {

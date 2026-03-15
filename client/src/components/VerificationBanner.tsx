@@ -25,7 +25,8 @@ You are responsible for how you resell the products and managing your own custom
 By using this store or purchasing any product, you confirm that you accept and agree to these terms and all RULES.`;
 
 export function VerificationBanner() {
-  const { verification, isLoading, isApproved, isDenied, isPending, isTermed } = useVerification();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const { verification, isLoading, isApproved, isDenied, isPending, isTermed } = useVerification(!!user && !isUserLoading);
   const [showForm, setShowForm] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -34,9 +35,8 @@ export function VerificationBanner() {
   const [channelName, setChannelName] = useState("");
   const { toast } = useToast();
   const submitMutation = useSubmitVerification();
-  const { user } = useAuth();
 
-  if (isLoading) return null;
+  if (isUserLoading || isLoading) return null;
   if (user?.role === "admin") return null;
   if (isApproved) return null;
 
