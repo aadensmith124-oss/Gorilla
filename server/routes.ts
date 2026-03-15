@@ -8,7 +8,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { cryptoPayments, orders, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc, sql } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -313,29 +313,57 @@ export async function registerRoutes(
   // Admin - Sellers list (all submitted verifications for management)
   app.get("/api/admin/sellers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
-    const all = await db.select().from(verifications).orderBy(desc(verifications.createdAt));
-    const result = [];
-    for (const v of all) {
-      const [user] = await db.select().from(users).where(eq(users.id, v.userId)) as any[];
-      if (!user) continue;
-      const ips = await db.select().from(userIps).where(eq(userIps.userId, v.userId)).orderBy(desc(userIps.loggedAt));
-      const uniqueIps = [...new Set(ips.map((i: any) => i.ip))];
-      result.push({ ...v, user: { id: user.id, username: user.username, email: user.email }, ips: uniqueIps, totalLogins: ips.length });
+    try {
+      const rows = await db.execute(sql`
+        SELECT v.*, u.id as u_id, u.username as u_username, u.email as u_email
+        FROM verifications v
+        LEFT JOIN users u ON u.id = v.user_id
+        ORDER BY v.created_at DESC
+      `);
+      const result = [];
+      for (const row of rows as any[]) {
+        if (!row.u_id) continue;
+        const ips = await db.execute(sql`SELECT ip FROM user_ips WHERE user_id = ${row.user_id} ORDER BY logged_at DESC`);
+        const uniqueIps = [...new Set((ips as any[]).map((i: any) => i.ip))];
+        result.push({
+          id: row.id, userId: row.user_id, telegramUsername: row.telegram_username,
+          channelLink: row.channel_link, channelName: row.channel_name,
+          agreedToTerms: row.agreed_to_terms, status: row.status,
+          adminNote: row.admin_note, termMessage: row.term_message, createdAt: row.created_at,
+          user: { id: row.u_id, username: row.u_username, email: row.u_email },
+          ips: uniqueIps, totalLogins: (ips as any[]).length,
+        });
+      }
+      res.json(result);
+    } catch (e: any) {
+      console.error("sellers route error:", e);
+      res.status(500).json({ message: e.message });
     }
-    res.json(result);
   });
 
   // Admin - Approved sellers only (for mail recipient dropdown)
   app.get("/api/admin/sellers/approved", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
-    const all = await db.select().from(verifications).where(eq(verifications.status, "approved" as any)).orderBy(desc(verifications.createdAt));
-    const result = [];
-    for (const v of all) {
-      const [user] = await db.select().from(users).where(eq(users.id, v.userId)) as any[];
-      if (!user) continue;
-      result.push({ ...v, user: { id: user.id, username: user.username, email: user.email } });
+    try {
+      const rows = await db.execute(sql`
+        SELECT v.*, u.id as u_id, u.username as u_username, u.email as u_email
+        FROM verifications v
+        LEFT JOIN users u ON u.id = v.user_id
+        WHERE v.status = 'approved'
+        ORDER BY v.created_at DESC
+      `);
+      const result = (rows as any[]).filter((r: any) => r.u_id).map((row: any) => ({
+        id: row.id, userId: row.user_id, telegramUsername: row.telegram_username,
+        channelLink: row.channel_link, channelName: row.channel_name,
+        agreedToTerms: row.agreed_to_terms, status: row.status,
+        adminNote: row.admin_note, termMessage: row.term_message, createdAt: row.created_at,
+        user: { id: row.u_id, username: row.u_username, email: row.u_email },
+      }));
+      res.json(result);
+    } catch (e: any) {
+      console.error("sellers/approved route error:", e);
+      res.status(500).json({ message: e.message });
     }
-    res.json(result);
   });
 
   // === MAIL ROUTES ===

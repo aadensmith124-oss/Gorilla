@@ -958,16 +958,16 @@ function SellersSection() {
       <div>
         <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Sellers</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {sellers?.filter((s: any) => s.status === "approved").length || 0} active · {sellers?.filter((s: any) => s.status === "pending").length || 0} pending
+          {sellers?.filter((s: any) => s.status === "approved").length || 0} active · {sellers?.filter((s: any) => s.status === "termed").length || 0} termed
         </p>
       </div>
 
-      {(!sellers || sellers.length === 0) && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No sellers yet.</div>
+      {(!sellers || sellers.filter((s: any) => s.status === "approved" || s.status === "termed").length === 0) && (
+        <div className="text-center py-12 text-muted-foreground text-sm">No approved sellers yet. Approve them from the Verifications section.</div>
       )}
 
       <div className="space-y-3">
-        {sellers?.map((s: any) => (
+        {sellers?.filter((s: any) => s.status === "approved" || s.status === "termed").map((s: any) => (
           <Card key={s.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors" onClick={() => setSelectedSeller(s)}>
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-0.5">
