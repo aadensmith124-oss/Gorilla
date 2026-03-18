@@ -890,17 +890,7 @@ function IntegrationsSection() {
     {
       key: "TELEGRAM_BOT_TOKEN",
       label: "Telegram Bot Token",
-      desc: "Enables Telegram Stars payments. Create a bot via @BotFather and enable Stars/Payments.",
-    },
-    {
-      key: "STRIPE_SECRET_KEY",
-      label: "Stripe Secret Key",
-      desc: "Enables Credit Card & PayPal payments. Found in your Stripe Dashboard → API Keys.",
-    },
-    {
-      key: "STRIPE_WEBHOOK_SECRET",
-      label: "Stripe Webhook Secret",
-      desc: "Verifies Stripe payment events. Add webhook endpoint /api/webhooks/stripe in Stripe Dashboard.",
+      desc: "Required for Telegram Stars payments. Create a bot via @BotFather, then go to Payments → Stars to enable it.",
     },
   ];
 
@@ -946,11 +936,14 @@ function IntegrationsSection() {
       )}
 
       <Card className="bg-[#0f1115] border-primary/20">
-        <CardContent className="p-4 space-y-1">
-          <p className="text-xs font-semibold text-primary uppercase tracking-wider">How to set secrets</p>
-          <p className="text-xs text-muted-foreground">
-            In Replit, open the <span className="text-white font-medium">Secrets</span> panel (🔒 icon in the left toolbar) and add each variable as a new secret. The server reads them automatically on restart.
-          </p>
+        <CardContent className="p-4 space-y-2">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider">How to set the token</p>
+          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+            <li>Message <span className="text-white font-medium">@BotFather</span> on Telegram and create a new bot</li>
+            <li>In BotFather go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
+            <li>Copy your bot token and add it as a secret named <span className="text-white font-mono">TELEGRAM_BOT_TOKEN</span> in Replit's Secrets panel (🔒 in the left toolbar)</li>
+            <li>Restart the server — the webhook registers automatically</li>
+          </ol>
         </CardContent>
       </Card>
     </div>

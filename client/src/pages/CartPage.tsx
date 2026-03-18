@@ -3,18 +3,18 @@ import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, ArrowRight, Loader2, CreditCard, Star } from "lucide-react";
+import { ShoppingCart, ArrowRight, Loader2, Star } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { SiBitcoin, SiPaypal } from "react-icons/si";
+import { SiBitcoin } from "react-icons/si";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const CRYPTO_FEE_PERCENT = 10;
 
-type PaymentMethod = "crypto" | "stars" | "card" | "paypal";
+type PaymentMethod = "crypto" | "stars";
 
 const PAYMENT_OPTIONS: {
   id: PaymentMethod;
@@ -36,20 +36,6 @@ const PAYMENT_OPTIONS: {
     label: "Telegram Stars",
     desc: "Pay with ⭐ Stars in Telegram",
     feeNote: "No extra markup",
-  },
-  {
-    id: "card",
-    icon: <CreditCard className="h-5 w-5 text-blue-400" />,
-    label: "Credit Card",
-    desc: "Visa, Mastercard & more",
-    feeNote: "Stripe processing fee",
-  },
-  {
-    id: "paypal",
-    icon: <SiPaypal className="h-5 w-5 text-blue-500" />,
-    label: "PayPal",
-    desc: "Fast & secure via PayPal",
-    feeNote: "Stripe processing fee",
   },
 ];
 
@@ -106,29 +92,12 @@ export default function CartPage() {
     },
   });
 
-  const stripeOrderMutation = useMutation({
-    mutationFn: async (method: "card" | "paypal") => {
-      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", "/api/orders/stripe-checkout", { items: cartItems, paymentMethod: method });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      clearCart();
-      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
-    },
-    onError: (error: any) => {
-      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
-    },
-  });
-
-  const isPending = cryptoOrderMutation.isPending || starsOrderMutation.isPending || stripeOrderMutation.isPending;
+  const isPending = cryptoOrderMutation.isPending || starsOrderMutation.isPending;
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
     if (selectedMethod === "crypto") cryptoOrderMutation.mutate();
     else if (selectedMethod === "stars") starsOrderMutation.mutate();
-    else if (selectedMethod === "card") stripeOrderMutation.mutate("card");
-    else if (selectedMethod === "paypal") stripeOrderMutation.mutate("paypal");
   };
 
   const handleApplyCoupon = () => {
