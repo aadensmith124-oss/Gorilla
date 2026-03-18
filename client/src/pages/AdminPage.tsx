@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -26,6 +26,7 @@ const adminSections = [
   { id: "orders", label: "Orders" },
   { id: "users", label: "Users" },
   { id: "test", label: "Test Mode" },
+  { id: "integrations", label: "Integrations" },
 ];
 
 export default function AdminPage() {
@@ -96,6 +97,7 @@ export default function AdminPage() {
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
+          {activeSection === "integrations" && <IntegrationsSection />}
         </main>
       </div>
     </div>
@@ -875,6 +877,82 @@ function UsersSection() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function IntegrationsSection() {
+  const { data, isLoading } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/admin/integrations/status"],
+  });
+
+  const secrets = [
+    {
+      key: "TELEGRAM_BOT_TOKEN",
+      label: "Telegram Bot Token",
+      desc: "Enables Telegram Stars payments. Create a bot via @BotFather and enable Stars/Payments.",
+    },
+    {
+      key: "STRIPE_SECRET_KEY",
+      label: "Stripe Secret Key",
+      desc: "Enables Credit Card & PayPal payments. Found in your Stripe Dashboard → API Keys.",
+    },
+    {
+      key: "STRIPE_WEBHOOK_SECRET",
+      label: "Stripe Webhook Secret",
+      desc: "Verifies Stripe payment events. Add webhook endpoint /api/webhooks/stripe in Stripe Dashboard.",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase flex items-center gap-2">
+          <Link2 className="h-5 w-5 text-primary" /> Integrations
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Set these environment variable secrets in Replit to activate each payment method.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {secrets.map((item) => {
+            const isSet = data?.[item.key] === true;
+            return (
+              <Card key={item.key} className="bg-[#0f1115] border-white/5" data-testid={`card-integration-${item.key}`}>
+                <CardContent className="p-4 flex items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <p className="font-mono text-sm text-white break-all">{item.key}</p>
+                    <p className="text-xs font-medium text-primary">{item.label}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </div>
+                  <div className="shrink-0 mt-0.5">
+                    {isSet ? (
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ Set</Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">⚠ Not set</Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Card className="bg-[#0f1115] border-primary/20">
+        <CardContent className="p-4 space-y-1">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider">How to set secrets</p>
+          <p className="text-xs text-muted-foreground">
+            In Replit, open the <span className="text-white font-medium">Secrets</span> panel (🔒 icon in the left toolbar) and add each variable as a new secret. The server reads them automatically on restart.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

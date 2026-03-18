@@ -6,6 +6,8 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
+import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
+import { createStripeCheckoutSession, constructStripeEvent } from "./stripe";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
 import { db } from "./db";
@@ -1115,6 +1117,148 @@ export async function registerRoutes(
       return false;
     }
   }
+
+  // ── Integrations status ──────────────────────────────────────────────────
+  app.get("/api/admin/integrations/status", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    res.json({
+      TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
+      STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+      STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
+    });
+  });
+
+  // ── Telegram Stars order ──────────────────────────────────────────────────
+  app.post("/api/orders/stars", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    let pendingOrderId: number | null = null;
+    try {
+      const userId = (req.user as any).id;
+      const { items } = req.body;
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const order = await storage.createPendingOrder(userId, productItems, []);
+      pendingOrderId = order.id;
+
+      const invoiceLink = await createStarsInvoiceLink(
+        "RULF.CC Order",
+        `Order #${order.orderId}`,
+        String(order.id),
+        order.total
+      );
+
+      pendingOrderId = null;
+      res.status(201).json({ order, invoiceLink });
+    } catch (e: any) {
+      console.error("Stars order creation failed:", e);
+      if (pendingOrderId) {
+        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      }
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Telegram webhook (pre_checkout_query + successful_payment) ────────────
+  app.post("/api/telegram/webhook", async (req, res) => {
+    res.status(200).json({ ok: true });
+    try {
+      const update = req.body || {};
+      if (update.pre_checkout_query) {
+        const pcq = update.pre_checkout_query;
+        const orderId = Number(pcq.invoice_payload);
+        const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+        if (!order || order.status !== "pending") {
+          await answerPreCheckoutQuery(pcq.id, false, "Order no longer available");
+        } else {
+          await answerPreCheckoutQuery(pcq.id, true);
+        }
+      } else if (update.message?.successful_payment) {
+        const sp = update.message.successful_payment;
+        const orderId = Number(sp.invoice_payload);
+        const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+        if (order && order.status === "pending") {
+          await storage.fulfillPendingOrder(orderId);
+          console.log(`Telegram Stars: order ${orderId} fulfilled`);
+        }
+      }
+    } catch (e) {
+      console.error("Telegram webhook error:", e);
+    }
+  });
+
+  // ── Stripe Checkout order ─────────────────────────────────────────────────
+  app.post("/api/orders/stripe-checkout", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    let pendingOrderId: number | null = null;
+    try {
+      const userId = (req.user as any).id;
+      const { items, paymentMethod } = req.body;
+      const method: "card" | "paypal" = paymentMethod === "paypal" ? "paypal" : "card";
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const order = await storage.createPendingOrder(userId, productItems, []);
+      pendingOrderId = order.id;
+
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const session = await createStripeCheckoutSession({
+        amountCents: order.total,
+        orderId: order.id,
+        paymentMethodType: method,
+        successUrl: `${origin}/orders?payment=success&orderId=${order.orderId}`,
+        cancelUrl: `${origin}/cart?payment=cancelled`,
+      });
+
+      pendingOrderId = null;
+      res.status(201).json({ order, checkoutUrl: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("Stripe order creation failed:", e);
+      if (pendingOrderId) {
+        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      }
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Stripe webhook ────────────────────────────────────────────────────────
+  app.post("/api/webhooks/stripe", async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+    if (!sig || !rawBody) {
+      return res.status(400).json({ message: "Missing stripe-signature or body" });
+    }
+    let event: any;
+    try {
+      event = constructStripeEvent(rawBody, sig);
+    } catch (e: any) {
+      console.error("Stripe webhook signature error:", e.message);
+      return res.status(400).json({ message: `Webhook error: ${e.message}` });
+    }
+    try {
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as any;
+        const orderId = Number(session.metadata?.orderId);
+        if (orderId) {
+          const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+          if (order && order.status === "pending") {
+            await storage.fulfillPendingOrder(orderId);
+            console.log(`Stripe: order ${orderId} fulfilled (session ${session.id})`);
+          }
+        }
+      }
+      res.status(200).json({ received: true });
+    } catch (e: any) {
+      console.error("Stripe webhook processing error:", e);
+      res.status(200).json({ received: true });
+    }
+  });
+
+  // ── Register Telegram webhook on server start ─────────────────────────────
+  (async () => {
+    const domain = process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
+    if (domain) {
+      await setupTelegramWebhook(`https://${domain}/api/telegram/webhook`);
+    }
+  })();
 
   // Seed Data (if empty)
   const users = await storage.getDashboardStats();
