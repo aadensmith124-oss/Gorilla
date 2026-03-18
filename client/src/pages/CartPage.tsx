@@ -16,26 +16,18 @@ const CRYPTO_FEE_PERCENT = 10;
 
 type PaymentMethod = "crypto" | "stars";
 
-const PAYMENT_OPTIONS: {
-  id: PaymentMethod;
-  icon: React.ReactNode;
-  label: string;
-  desc: string;
-  feeNote: string;
-}[] = [
+const PAYMENT_OPTIONS: { id: PaymentMethod; icon: React.ReactNode; label: string; bg: string }[] = [
   {
     id: "crypto",
-    icon: <SiBitcoin className="h-5 w-5 text-amber-400" />,
+    icon: <SiBitcoin className="h-4 w-4 text-white" />,
     label: "Crypto",
-    desc: "BTC, USDT, ETH & more",
-    feeNote: "+10% processor fee",
+    bg: "bg-amber-500",
   },
   {
     id: "stars",
-    icon: <Star className="h-5 w-5 text-yellow-300 fill-yellow-300" />,
+    icon: <Star className="h-4 w-4 text-white fill-white" />,
     label: "Telegram Stars",
-    desc: "Pay with ⭐ Stars in Telegram",
-    feeNote: "No extra markup",
+    bg: "bg-blue-500",
   },
 ];
 
@@ -189,26 +181,22 @@ export default function CartPage() {
 
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Payment Method</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2">
                 {PAYMENT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => setSelectedMethod(opt.id)}
                     data-testid={`button-payment-${opt.id}`}
-                    className={`flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-all ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                       selectedMethod === opt.id
-                        ? "border-primary bg-primary/10 shadow-sm shadow-primary/20"
-                        : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
+                        ? "border-primary/50 bg-primary/10"
+                        : "border-white/10 bg-white/5 hover:border-white/20"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className={`h-6 w-6 rounded-full ${opt.bg} flex items-center justify-center flex-shrink-0`}>
                       {opt.icon}
-                      <span className="text-xs font-semibold text-white">{opt.label}</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
-                    <p className={`text-[10px] font-medium ${selectedMethod === opt.id ? "text-primary" : "text-muted-foreground"}`}>
-                      {opt.feeNote}
-                    </p>
+                    <span className="text-sm font-medium text-white">{opt.label}</span>
                   </button>
                 ))}
               </div>
