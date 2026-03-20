@@ -878,9 +878,13 @@ export async function registerRoutes(
       const totalWithFee = order.total + Math.round(order.total * CRYPTO_FEE_PERCENT / 100);
       const amountUsd = totalWithFee / 100;
 
+      const origin = (req.headers.origin as string) || `https://${req.headers.host}`;
+      const returnUrl = `${origin}/profile?tab=orders`;
+
       const forebitPayment = await createForebitPayment({
         amount: amountUsd,
         currency: "USD",
+        returnUrl,
       });
 
       if (!forebitPayment.id || !forebitPayment.url) {

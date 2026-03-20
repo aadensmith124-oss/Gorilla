@@ -476,13 +476,16 @@ function OrdersSection() {
   const [deliveryContents, setDeliveryContents] = useState<Record<string, string>>({});
   const [activeProductKey, setActiveProductKey] = useState<string | null>(null);
 
+  const [orderFilter, setOrderFilter] = useState<"all" | "waiting" | "fulfilled" | "pending">("all");
+
   const { data: orders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
     queryFn: async () => {
       const res = await fetch("/api/admin/orders");
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
-    }
+    },
+    refetchInterval: 8000,
   });
 
   const deliverMutation = useMutation({
@@ -610,13 +613,43 @@ function OrdersSection() {
     );
   }
 
+  const filteredOrders = (orders || []).filter((o: any) => {
+    if (orderFilter === "waiting") return o.status === "waiting_payment" || o.status === "pending";
+    if (orderFilter === "fulfilled") return o.status === "fulfilled";
+    if (orderFilter === "pending") return o.status === "pending";
+    return true;
+  });
+
+  const waitingCount = (orders || []).filter((o: any) => o.status === "waiting_payment" || o.status === "pending").length;
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Orders</h1>
-      <p className="text-sm text-muted-foreground">{orders?.length || 0} orders total</p>
 
-      {(!orders || orders.length === 0) && (
-        <div className="text-center py-12 text-muted-foreground text-sm">No orders yet.</div>
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { key: "all", label: "All" },
+          { key: "waiting", label: `Waiting Payment${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
+          { key: "fulfilled", label: "Fulfilled" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setOrderFilter(key as any)}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
+              orderFilter === key
+                ? key === "waiting"
+                  ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                  : "bg-primary/20 border-primary/40 text-primary"
+                : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {filteredOrders.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground text-sm">No orders here.</div>
       )}
 
       <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
@@ -627,7 +660,7 @@ function OrdersSection() {
           <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Payment</span>
           <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Action</span>
         </div>
-        {orders?.map((order: any) => (
+        {filteredOrders.map((order: any) => (
           <div key={order.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 py-3 border-b border-white/5 last:border-0 items-center hover:bg-white/5 transition-colors">
             <span className="text-sm font-bold text-white">${(order.total / 100).toFixed(2)}</span>
             <span className="text-xs text-white/50">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}</span>
