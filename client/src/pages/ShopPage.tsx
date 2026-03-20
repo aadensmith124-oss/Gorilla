@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
-const PRODUCTS_PER_PAGE = 20;
+const PRODUCTS_PER_PAGE = 40;
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const result = [...arr];
