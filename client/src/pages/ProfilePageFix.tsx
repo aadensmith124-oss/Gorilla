@@ -80,42 +80,39 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="orders" className="pt-6">
-          {orders && orders.length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-sm font-black text-white uppercase tracking-widest mb-4">
-                {orders.length} ORDER{orders.length !== 1 ? "S" : ""} FOUND
-              </p>
-              <div className="bg-[#0d0f12] rounded-xl border border-white/5 overflow-hidden">
-                <div className="grid grid-cols-4 px-4 py-2.5 border-b border-white/5">
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Paid</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Expected</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Date</span>
-                </div>
-                {orders.map((order: any) => {
-                  const paid = order.status === "fulfilled" ? order.total : 0;
-                  const expected = order.total;
-                  return (
+          {(() => {
+            const visibleOrders = (orders || []).filter((o: any) => o.status === "fulfilled" || o.status === "delivering");
+            return visibleOrders.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-black text-white uppercase tracking-widest mb-4">
+                  {visibleOrders.length} ORDER{visibleOrders.length !== 1 ? "S" : ""} FOUND
+                </p>
+                <div className="bg-[#0d0f12] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/5">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Amount</span>
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Date</span>
+                  </div>
+                  {visibleOrders.map((order: any) => (
                     <button
                       key={order.id}
                       onClick={() => setLocation(`/order/${order.orderId}`)}
-                      className="w-full grid grid-cols-4 px-4 py-3.5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors text-left"
+                      className="w-full grid grid-cols-3 px-4 py-3.5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors text-left"
                     >
-                      <span className="text-sm font-bold text-white">${(paid / 100).toFixed(2)}</span>
-                      <span className="text-sm text-white/70">${(expected / 100).toFixed(2)}</span>
+                      <span className="text-sm font-bold text-white">${(order.total / 100).toFixed(2)}</span>
                       <span className={`text-sm font-bold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
                       <span className="text-xs text-white/50">{formatDate(order.createdAt)}</span>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-16 text-muted-foreground">
-              <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-bold uppercase tracking-widest">No orders yet</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-16 text-muted-foreground">
+                <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-bold uppercase tracking-widest">No orders yet</p>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="settings" className="pt-6">
@@ -127,17 +124,14 @@ export default function ProfilePage() {
 }
 
 function statusLabel(s: string) {
-  if (s === "pending") return "Pending";
-  if (s === "waiting_payment") return "Unpaid";
-  if (s === "delivering") return "Processing";
-  if (s === "fulfilled") return "Fulfilled";
+  if (s === "fulfilled") return "Waiting";
+  if (s === "delivering") return "Delivered";
   return s;
 }
 
 function statusColor(s: string) {
-  if (s === "fulfilled") return "text-green-400";
-  if (s === "delivering") return "text-blue-400";
-  if (s === "waiting_payment") return "text-orange-400";
+  if (s === "fulfilled") return "text-orange-400";
+  if (s === "delivering") return "text-green-400";
   return "text-white/50";
 }
 

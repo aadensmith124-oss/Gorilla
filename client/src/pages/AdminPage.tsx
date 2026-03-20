@@ -447,16 +447,16 @@ function ProductsSection() {
 }
 
 function statusLabel(s: string) {
-  if (s === "pending") return "Pending";
+  if (s === "pending") return "Unconfirmed";
   if (s === "waiting_payment") return "Unpaid";
-  if (s === "delivering") return "Waiting";
-  if (s === "fulfilled") return "Fulfilled";
+  if (s === "fulfilled") return "Waiting Order";
+  if (s === "delivering") return "Delivered";
   return s;
 }
 
 function statusBadgeClass(s: string) {
-  if (s === "fulfilled") return "bg-green-500/20 text-green-400 border-green-500/30";
-  if (s === "delivering") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (s === "fulfilled") return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+  if (s === "delivering") return "bg-green-500/20 text-green-400 border-green-500/30";
   if (s === "waiting_payment") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
   return "bg-white/10 text-white/60";
 }
@@ -614,13 +614,12 @@ function OrdersSection() {
   }
 
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.status === "waiting_payment" || o.status === "pending";
-    if (orderFilter === "fulfilled") return o.status === "fulfilled";
-    if (orderFilter === "pending") return o.status === "pending";
+    if (orderFilter === "waiting") return o.status === "fulfilled";
+    if (orderFilter === "fulfilled") return o.status === "delivering";
     return true;
   });
 
-  const waitingCount = (orders || []).filter((o: any) => o.status === "waiting_payment" || o.status === "pending").length;
+  const waitingCount = (orders || []).filter((o: any) => o.status === "fulfilled").length;
 
   return (
     <div className="space-y-4">
@@ -629,8 +628,8 @@ function OrdersSection() {
       <div className="flex gap-2 flex-wrap">
         {[
           { key: "all", label: "All" },
-          { key: "waiting", label: `Waiting Payment${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
-          { key: "fulfilled", label: "Fulfilled" },
+          { key: "waiting", label: `Waiting Order${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
+          { key: "fulfilled", label: "Delivered" },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -681,9 +680,9 @@ function OrdersSection() {
 }
 
 function statusTextColor(s: string) {
-  if (s === "fulfilled") return "text-green-400";
-  if (s === "delivering") return "text-blue-400";
-  if (s === "waiting_payment") return "text-orange-400";
+  if (s === "fulfilled") return "text-orange-400";
+  if (s === "delivering") return "text-green-400";
+  if (s === "waiting_payment") return "text-yellow-400";
   return "text-white/50";
 }
 
