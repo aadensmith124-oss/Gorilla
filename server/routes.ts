@@ -1117,6 +1117,33 @@ export async function registerRoutes(
     }
   }
 
+  // ── Payment method config (public) ───────────────────────────────────────
+  app.get("/api/payment-methods", async (_req, res) => {
+    const config = await storage.getPaymentMethodsConfig();
+    res.json(config);
+  });
+
+  // ── Payment method admin toggle ───────────────────────────────────────────
+  app.get("/api/admin/payment-methods", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    res.json(await storage.getPaymentMethodsConfig());
+  });
+
+  app.patch("/api/admin/payment-methods/:method", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { method } = req.params;
+    const { enabled } = req.body;
+    if (!["crypto", "stars"].includes(method) || typeof enabled !== "boolean") {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    await storage.setSetting(`payment_method_${method}`, String(enabled));
+    res.json(await storage.getPaymentMethodsConfig());
+  });
+
   // ── Integrations status ──────────────────────────────────────────────────
   app.get("/api/admin/integrations/status", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {

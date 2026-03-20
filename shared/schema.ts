@@ -332,3 +332,9 @@ export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+
+// === SITE SETTINGS ===
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});

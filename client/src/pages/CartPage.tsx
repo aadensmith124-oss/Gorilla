@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { SiBitcoin } from "react-icons/si";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const CRYPTO_FEE_PERCENT = 10;
@@ -38,6 +38,14 @@ export default function CartPage() {
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("crypto");
+
+  const { data: paymentConfig } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/payment-methods"],
+  });
+
+  const enabledOptions = PAYMENT_OPTIONS.filter(
+    (opt) => paymentConfig === undefined || paymentConfig[opt.id] !== false
+  );
 
   const cartTotal = total();
   const isCrypto = selectedMethod === "crypto";
@@ -182,7 +190,7 @@ export default function CartPage() {
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Payment Method</p>
               <div className="flex flex-col gap-2">
-                {PAYMENT_OPTIONS.map((opt) => (
+                {enabledOptions.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => setSelectedMethod(opt.id)}
@@ -196,9 +204,12 @@ export default function CartPage() {
                     <div className={`h-6 w-6 rounded-full ${opt.bg} flex items-center justify-center flex-shrink-0`}>
                       {opt.icon}
                     </div>
-                    <span className="text-sm font-medium text-white">{opt.label}</span>
+                    <span className="text-sm font-bold text-white">{opt.label}</span>
                   </button>
                 ))}
+                {enabledOptions.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No payment methods available</p>
+                )}
               </div>
             </div>
           </CardContent>

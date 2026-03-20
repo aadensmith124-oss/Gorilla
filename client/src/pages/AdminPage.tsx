@@ -11,7 +11,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2, Star } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { SiBitcoin } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -882,16 +884,33 @@ function UsersSection() {
 }
 
 function IntegrationsSection() {
-  const { data, isLoading } = useQuery<Record<string, boolean>>({
+  const { toast } = useToast();
+
+  const { data: integrationStatus, isLoading: statusLoading } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/admin/integrations/status"],
   });
 
-  const secrets = [
-    {
-      key: "TELEGRAM_BOT_TOKEN",
-      label: "Telegram Bot Token",
-      desc: "Required for Telegram Stars payments. Create a bot via @BotFather, then go to Payments → Stars to enable it.",
+  const { data: paymentMethods, isLoading: methodsLoading } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/admin/payment-methods"],
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ method, enabled }: { method: string; enabled: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/payment-methods/${method}`, { enabled });
+      return res.json();
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-methods"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to update", variant: "destructive" });
+    },
+  });
+
+  const METHODS = [
+    { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-amber-500" },
+    { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
 
   return (
@@ -900,49 +919,74 @@ function IntegrationsSection() {
         <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase flex items-center gap-2">
           <Link2 className="h-5 w-5 text-primary" /> Integrations
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Set these environment variable secrets in Replit to activate each payment method.
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Enable or disable payment methods and manage your bot token.</p>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {secrets.map((item) => {
-            const isSet = data?.[item.key] === true;
+      {/* Payment Method Toggles */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Payment Methods</p>
+        <div className="space-y-2">
+          {methodsLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : METHODS.map((m) => {
+            const enabled = paymentMethods?.[m.id] !== false;
             return (
-              <Card key={item.key} className="bg-[#0f1115] border-white/5" data-testid={`card-integration-${item.key}`}>
-                <CardContent className="p-4 flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <p className="font-mono text-sm text-white break-all">{item.key}</p>
-                    <p className="text-xs font-medium text-primary">{item.label}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              <Card key={m.id} className="bg-[#0f1115] border-white/5" data-testid={`card-payment-toggle-${m.id}`}>
+                <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full ${m.bg} flex items-center justify-center flex-shrink-0`}>
+                      {m.icon}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-white">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">{enabled ? "Visible to customers" : "Hidden from customers"}</p>
+                    </div>
                   </div>
-                  <div className="shrink-0 mt-0.5">
-                    {isSet ? (
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ Set</Badge>
-                    ) : (
-                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">⚠ Not set</Badge>
-                    )}
-                  </div>
+                  <Switch
+                    checked={enabled}
+                    disabled={toggleMutation.isPending}
+                    onCheckedChange={(val) => toggleMutation.mutate({ method: m.id, enabled: val })}
+                    data-testid={`switch-payment-${m.id}`}
+                  />
                 </CardContent>
               </Card>
             );
           })}
         </div>
-      )}
+      </div>
+
+      {/* Telegram Bot Token Status */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Telegram Bot Token</p>
+        {statusLoading ? (
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : (
+          <Card className="bg-[#0f1115] border-white/5" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
+            <CardContent className="p-4 flex items-start justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <p className="font-mono text-sm text-white">TELEGRAM_BOT_TOKEN</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Required for Telegram Stars payments. Create a bot via @BotFather and enable Stars in Payments.</p>
+              </div>
+              <div className="shrink-0 mt-0.5">
+                {integrationStatus?.TELEGRAM_BOT_TOKEN ? (
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">✓ Set</Badge>
+                ) : (
+                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">⚠ Not set</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Card className="bg-[#0f1115] border-primary/20">
         <CardContent className="p-4 space-y-2">
           <p className="text-xs font-semibold text-primary uppercase tracking-wider">How to set the token</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Message <span className="text-white font-medium">@BotFather</span> on Telegram and create a new bot</li>
-            <li>In BotFather go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
-            <li>Copy your bot token and add it as a secret named <span className="text-white font-mono">TELEGRAM_BOT_TOKEN</span> in Replit's Secrets panel (🔒 in the left toolbar)</li>
-            <li>Restart the server — the webhook registers automatically</li>
+            <li>Go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
+            <li>Add the token as a secret named <span className="text-white font-mono">TELEGRAM_BOT_TOKEN</span> in Replit's Secrets panel (🔒)</li>
+            <li>Restart the server — webhook registers automatically</li>
           </ol>
         </CardContent>
       </Card>

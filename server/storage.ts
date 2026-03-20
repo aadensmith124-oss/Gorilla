@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard
@@ -82,6 +82,11 @@ export interface IStorage {
   createCard(card: InsertCard): Promise<Card>;
   updateCard(id: number, data: Partial<Card>): Promise<Card>;
   purchaseCard(cardId: number, userId: number): Promise<Card>;
+
+  // Settings
+  getSetting(key: string, defaultValue?: string): Promise<string>;
+  setSetting(key: string, value: string): Promise<void>;
+  getPaymentMethodsConfig(): Promise<Record<string, boolean>>;
   getUserCards(userId: number): Promise<Card[]>;
   deleteCard(id: number): Promise<void>;
 
@@ -693,6 +698,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async getSetting(key: string, defaultValue: string = ""): Promise<string> {
+    const [row] = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
+    return row?.value ?? defaultValue;
+  }
+
+  async setSetting(key: string, value: string): Promise<void> {
+    await db
+      .insert(siteSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value } });
+  }
+
+  async getPaymentMethodsConfig(): Promise<Record<string, boolean>> {
+    const rows = await db.select().from(siteSettings)
+      .where(sql`key LIKE 'payment_method_%'`);
+    const defaults: Record<string, boolean> = { crypto: true, stars: true };
+    for (const row of rows) {
+      const method = row.key.replace("payment_method_", "");
+      defaults[method] = row.value === "true";
+    }
+    return defaults;
   }
 
 }
