@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2, Star, Package, Wallet } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,6 +26,7 @@ const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
   { id: "orders", label: "Orders" },
+  { id: "cashapp", label: "CashApp" },
   { id: "users", label: "Users" },
   { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
@@ -97,6 +98,7 @@ export default function AdminPage() {
           {activeSection === "dashboard" && <DashboardSection />}
           {activeSection === "products" && <ProductsSection />}
           {activeSection === "orders" && <OrdersSection />}
+          {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
@@ -598,21 +600,9 @@ function statusBadgeClass(s: string) {
   return "bg-white/10 text-white/60";
 }
 
-function parseDeliveryContents(raw: string | null | undefined): Record<string, string> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, string>;
-  } catch {}
-  return {};
-}
-
 function OrdersSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [deliveryContents, setDeliveryContents] = useState<Record<string, string>>({});
-  const [activeProductKey, setActiveProductKey] = useState<string | null>(null);
-
   const [orderFilter, setOrderFilter] = useState<"all" | "waiting" | "fulfilled" | "pending">("all");
 
   const { data: orders, isLoading } = useQuery({
@@ -623,24 +613,6 @@ function OrdersSection() {
       return res.json();
     },
     refetchInterval: 8000,
-  });
-
-  const deliverMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/deliver`, { deliveryContents });
-      if (!res.ok) throw new Error("Delivery failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setSelectedOrder(null);
-      setDeliveryContents({});
-      setActiveProductKey(null);
-      toast({ title: "Order delivered successfully" });
-    },
-    onError: (e: any) => {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    }
   });
 
   const cashappFulfillMutation = useMutation({
@@ -681,11 +653,10 @@ function OrdersSection() {
       grouped[key].qty += (item.quantity ?? 1);
     }
     const groupedEntries = Object.entries(grouped);
-    const allFilled = groupedEntries.length > 0 && groupedEntries.every(([key]) => !!deliveryContents[key]?.trim());
 
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => { setSelectedOrder(null); setDeliveryContents({}); setActiveProductKey(null); }}>← Back</Button>
+        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
 
         <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -725,74 +696,19 @@ function OrdersSection() {
           )}
 
           {groupedEntries.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Products — click to add delivery items</p>
-              {groupedEntries.map(([key, g]) => {
-                const hasFill = !!deliveryContents[key]?.trim();
-                const isOpen = activeProductKey === key;
-                return (
-                  <div key={key} className="space-y-2">
-                    <button
-                      onClick={() => setActiveProductKey(isOpen ? null : key)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
-                        hasFill
-                          ? "border-green-500/40 bg-green-500/10"
-                          : "border-white/10 bg-white/5 hover:bg-white/10"
-                      } ${isOpen ? "ring-1 ring-primary" : ""}`}
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-white">{g.productName} ({g.qty})</p>
-                        <p className="text-xs text-white/40 mt-0.5">{g.variantName}</p>
-                      </div>
-                      {hasFill
-                        ? <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
-                        : isOpen
-                          ? <ChevronUp className="h-4 w-4 text-white/40 flex-shrink-0" />
-                          : <ChevronDown className="h-4 w-4 text-white/40 flex-shrink-0" />
-                      }
-                    </button>
-
-                    {isOpen && (
-                      <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
-                        <div className="space-y-1 text-xs text-white/50">
-                          <p><span className="text-white/30">Product:</span> {g.productName}</p>
-                          <p><span className="text-white/30">Option:</span> {g.variantName}</p>
-                          <p><span className="text-white/30">Quantity:</span> {g.qty}</p>
-                        </div>
-                        <textarea
-                          value={deliveryContents[key] || ""}
-                          onChange={(e) => setDeliveryContents(prev => ({ ...prev, [key]: e.target.value }))}
-                          placeholder={`Paste ${g.qty} item(s) for this product...`}
-                          rows={4}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20 resize-none"
-                        />
-                        <button
-                          onClick={() => setActiveProductKey(null)}
-                          className="w-full h-9 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-bold transition-colors"
-                        >
-                          Done
-                        </button>
-                      </div>
-                    )}
+            <div className="space-y-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Items Ordered</p>
+              {groupedEntries.map(([key, g]) => (
+                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
+                  <div>
+                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">{g.variantName} · qty {g.qty}</p>
                   </div>
-                );
-              })}
+                  <p className="text-xs text-white/70">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
+                </div>
+              ))}
             </div>
           )}
-
-          <div className="border-t border-white/5 pt-4">
-            <Button
-              onClick={() => deliverMutation.mutate()}
-              disabled={deliverMutation.isPending || !allFilled}
-              className="w-full gap-2 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest disabled:opacity-40"
-            >
-              {deliverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send & Mark Fulfilled
-            </Button>
-            {!allFilled && groupedEntries.length > 0 && (
-              <p className="text-xs text-white/30 text-center mt-2">Fill in items for all products to send</p>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -871,11 +787,7 @@ function OrdersSection() {
                     >Unpaid</button>
                   </>
                 )}
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                  setSelectedOrder(order);
-                  setDeliveryContents(parseDeliveryContents(order.deliveryContent));
-                  setActiveProductKey(null);
-                }}>View</Button>
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
               </div>
             </div>
           );
@@ -1285,6 +1197,193 @@ function IntegrationsSection() {
           </ol>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CashAppSection() {
+  const { toast } = useToast();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [filter, setFilter] = useState<"all" | "pending" | "waiting_payment" | "delivering">("all");
+
+  const { data: allOrders, isLoading } = useQuery({
+    queryKey: ["/api/admin/orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/orders");
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    refetchInterval: 6000,
+  });
+
+  const orders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
+
+  const cashappFulfillMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Order fulfilled — items sent to user" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
+  const markUnpaidMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/mark-unpaid`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Order marked unpaid" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  if (selectedOrder) {
+    const current = orders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
+    const productItems = current.items?.filter((i: any) => !i.itemType || i.itemType === "product") || [];
+    const grouped: Record<string, { productName: string; variantName: string; qty: number; unitPrice: number }> = {};
+    for (const item of productItems) {
+      const key = String(item.variantId || item.id);
+      if (!grouped[key]) grouped[key] = { productName: item.productName || "Product", variantName: item.variant?.name || "—", qty: 0, unitPrice: item.price };
+      grouped[key].qty += (item.quantity ?? 1);
+    }
+    const groupedEntries = Object.entries(grouped);
+    const isPending = current.status === "pending" || current.status === "waiting_payment";
+
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
+        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SiCashapp className="h-5 w-5 text-[#00D632]" />
+              <h2 className="text-lg font-black text-white uppercase tracking-tight">CashApp Order</h2>
+            </div>
+            <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
+          </div>
+          <div className="space-y-3 border-b border-white/5 pb-4">
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            {current.paymentNote && (
+              <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
+            )}
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
+          </div>
+          {isPending && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => cashappFulfillMutation.mutate(current.id)}
+                disabled={cashappFulfillMutation.isPending}
+                className="flex-1 h-11 rounded-xl bg-[#00D632]/20 border border-[#00D632]/40 text-[#00D632] text-sm font-black hover:bg-[#00D632]/30 transition-colors disabled:opacity-50"
+                data-testid={`button-cashapp-paid-${current.id}`}
+              >
+                {cashappFulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "✓ Paid — Deliver Stock"}
+              </button>
+              <button
+                onClick={() => markUnpaidMutation.mutate(current.id)}
+                disabled={markUnpaidMutation.isPending}
+                className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-black hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                data-testid={`button-cashapp-unpaid-${current.id}`}
+              >
+                ✕ Unpaid
+              </button>
+            </div>
+          )}
+          {groupedEntries.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Items Ordered</p>
+              {groupedEntries.map(([key, g]) => (
+                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
+                  <div>
+                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">{g.variantName} · qty {g.qty}</p>
+                  </div>
+                  <p className="text-xs text-white/70">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const filterLabels: Record<string, string> = { all: "All", pending: "Pending", waiting_payment: "Unpaid", delivering: "Fulfilled" };
+  const filteredOrders = orders.filter((o: any) => filter === "all" || o.status === filter);
+  const pendingCount = orders.filter((o: any) => o.status === "pending" || o.status === "waiting_payment").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <SiCashapp className="h-6 w-6 text-[#00D632]" />
+        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">CashApp</h1>
+        {pendingCount > 0 && (
+          <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingCount} pending</Badge>
+        )}
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {Object.entries(filterLabels).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key as any)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === key ? "bg-primary text-black" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {filteredOrders.length === 0 ? (
+        <div className="text-center py-20 text-white/20 text-sm">No CashApp orders</div>
+      ) : (
+        <div className="space-y-2">
+          {filteredOrders.map((order: any) => {
+            const isPending = order.status === "pending" || order.status === "waiting_payment";
+            return (
+              <div key={order.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-mono text-white/50 truncate">{order.orderId}</p>
+                    <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
+                  </div>
+                  <p className="text-sm font-black text-white mt-0.5">${(order.total / 100).toFixed(2)}</p>
+                  {order.paymentNote && <p className="text-[10px] font-mono text-[#00D632]/70 mt-0.5">{order.paymentNote}</p>}
+                  <p className="text-[10px] text-white/30 mt-0.5">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {isPending && (
+                    <>
+                      <button
+                        onClick={() => cashappFulfillMutation.mutate(order.id)}
+                        disabled={cashappFulfillMutation.isPending}
+                        className="px-2.5 py-1 rounded-md bg-[#00D632]/20 border border-[#00D632]/30 text-[#00D632] text-[10px] font-bold hover:bg-[#00D632]/30 transition-colors disabled:opacity-50"
+                        data-testid={`button-cashapp-paid-row-${order.id}`}
+                      >Paid</button>
+                      <button
+                        onClick={() => markUnpaidMutation.mutate(order.id)}
+                        disabled={markUnpaidMutation.isPending}
+                        className="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        data-testid={`button-cashapp-unpaid-row-${order.id}`}
+                      >Unpaid</button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { ShoppingCart, ArrowRight, Loader2, Trash2, Wallet, Copy, X, Clock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { SiCashapp } from "react-icons/si";
+import { SiCashapp, SiBitcoin } from "react-icons/si";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
 const CASHAPP_FEE_PERCENT = 3;
+const CRYPTO_FEE_PERCENT = 10;
 
-type PaymentMethod = "balance" | "cashapp";
+type PaymentMethod = "balance" | "cashapp" | "crypto";
 
 function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
   orderId: string;
@@ -112,15 +113,28 @@ export default function CartPage() {
   });
   const cashappEnabled = enabledMethods?.cashapp !== false;
   const walletEnabled = enabledMethods?.wallet !== false;
+  const cryptoEnabled = enabledMethods?.crypto !== false;
 
-  // If selected method gets disabled, switch to the other
+  // If selected method gets disabled, switch to another available one
   useEffect(() => {
-    if (selectedMethod === "cashapp" && !cashappEnabled) setSelectedMethod("balance");
-    if (selectedMethod === "balance" && !walletEnabled && cashappEnabled) setSelectedMethod("cashapp");
-  }, [cashappEnabled, walletEnabled, selectedMethod]);
+    if (selectedMethod === "cashapp" && !cashappEnabled) {
+      setSelectedMethod(walletEnabled ? "balance" : cryptoEnabled ? "crypto" : "balance");
+    }
+    if (selectedMethod === "balance" && !walletEnabled) {
+      setSelectedMethod(cashappEnabled ? "cashapp" : cryptoEnabled ? "crypto" : "balance");
+    }
+    if (selectedMethod === "crypto" && !cryptoEnabled) {
+      setSelectedMethod(walletEnabled ? "balance" : cashappEnabled ? "cashapp" : "balance");
+    }
+  }, [cashappEnabled, walletEnabled, cryptoEnabled, selectedMethod]);
 
   const cashappFee = Math.round(cartTotal * CASHAPP_FEE_PERCENT / 100);
-  const displayTotal = selectedMethod === "cashapp" ? cartTotal + cashappFee : cartTotal;
+  const cryptoFee = Math.round(cartTotal * CRYPTO_FEE_PERCENT / 100);
+  const displayTotal = selectedMethod === "cashapp"
+    ? cartTotal + cashappFee
+    : selectedMethod === "crypto"
+      ? cartTotal + cryptoFee
+      : cartTotal;
 
   const cashappOrderMutation = useMutation({
     mutationFn: async () => {
@@ -168,7 +182,31 @@ export default function CartPage() {
     },
   });
 
-  const isPending = cashappOrderMutation.isPending || balanceOrderMutation.isPending;
+  const cryptoOrderMutation = useMutation({
+    mutationFn: async () => {
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Order failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      clearCart();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast({ title: "Order placed!", description: "Your crypto order is pending." });
+        setLocation("/profile?tab=orders");
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    },
+  });
+
+  const isPending = cashappOrderMutation.isPending || balanceOrderMutation.isPending || cryptoOrderMutation.isPending;
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
@@ -180,6 +218,8 @@ export default function CartPage() {
       balanceOrderMutation.mutate();
     } else if (selectedMethod === "cashapp") {
       cashappOrderMutation.mutate();
+    } else if (selectedMethod === "crypto") {
+      cryptoOrderMutation.mutate();
     }
   };
 
@@ -292,6 +332,12 @@ export default function CartPage() {
               <span className="text-green-400">+${(cashappFee / 100).toFixed(2)}</span>
             </div>
           )}
+          {selectedMethod === "crypto" && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Crypto Fee (+{CRYPTO_FEE_PERCENT}%)</span>
+              <span className="text-orange-400">+${(cryptoFee / 100).toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Discount</span>
             <span className="text-white">$0.00</span>
@@ -345,6 +391,26 @@ export default function CartPage() {
                 <span className={`text-[11px] font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
                   ${(userBalance / 100).toFixed(2)}
                 </span>
+              </button>
+            )}
+
+            {/* Crypto option */}
+            {cryptoEnabled && (
+              <button
+                onClick={() => setSelectedMethod("crypto")}
+                data-testid="button-payment-crypto"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                  selectedMethod === "crypto"
+                    ? "border-orange-400/30 bg-orange-400/5"
+                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                }`}
+              >
+                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "crypto" ? "border-orange-400" : "border-white/30"}`}>
+                  {selectedMethod === "crypto" && <div className="h-2 w-2 rounded-full bg-orange-400" />}
+                </div>
+                <SiBitcoin className="h-4 w-4 text-orange-400 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-bold text-white">Crypto</span>
+                <span className="text-[11px] font-bold text-orange-400">+{CRYPTO_FEE_PERCENT}% fee</span>
               </button>
             )}
           </div>
