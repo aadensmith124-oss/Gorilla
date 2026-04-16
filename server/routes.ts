@@ -1202,7 +1202,7 @@ export async function registerRoutes(
     }
   });
 
-  // ── CashApp order (manual payment) ───────────────────────────────────────
+  // ── CashApp order (auto-delivers from stock) ─────────────────────────────
   app.get("/api/site-settings/cashapp-tag", async (req, res) => {
     const tag = await storage.getSetting("cashapp_tag", "");
     res.json({ tag });
@@ -1225,6 +1225,8 @@ export async function registerRoutes(
         if (!v) throw new Error("Variant not found");
         total += v.price * item.quantity;
       }
+
+      // Create order as pending first
       const [order] = await db.insert(orders).values({
         orderId: publicOrderId,
         userId,
@@ -1248,35 +1250,12 @@ export async function registerRoutes(
         });
       }
 
-      res.status(201).json({ order, paymentNote, cashappTag });
+      // Auto-fulfill from stock immediately
+      const fulfilledOrder = await storage.fulfillCashappOrder(order.id);
+
+      res.status(201).json({ order: fulfilledOrder, paymentNote, cashappTag });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
-      res.status(400).json({ message: e.message });
-    }
-  });
-
-  // ── Admin: fulfill CashApp order (Paid) ──────────────────────────────────
-  app.post("/api/admin/orders/:id/cashapp-fulfill", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const order = await storage.fulfillCashappOrder(Number(req.params.id));
-      res.json(order);
-    } catch (e: any) {
-      res.status(400).json({ message: e.message });
-    }
-  });
-
-  // ── Admin: mark order unpaid ──────────────────────────────────────────────
-  app.post("/api/admin/orders/:id/mark-unpaid", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const order = await storage.markOrderUnpaid(Number(req.params.id));
-      res.json(order);
-    } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
   });

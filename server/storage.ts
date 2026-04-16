@@ -515,19 +515,24 @@ export class DatabaseStorage implements IStorage {
       }
       let paymentMethod = "Unknown";
       try {
-        const [cryptoPay] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.orderId, o.id));
-        if (cryptoPay) {
-          paymentMethod = "Crypto";
+        if (o.paymentMethod) {
+          paymentMethod = o.paymentMethod;
         } else {
-          const purchaseTxs = await db.select().from(transactions)
-            .where(and(eq(transactions.userId, o.userId), eq(transactions.type, "purchase")))
-            .orderBy(desc(transactions.createdAt));
-          const purchaseTx = purchaseTxs.find(tx => {
-            const txTime = new Date(tx.createdAt).getTime();
-            const orderTime = new Date(o.createdAt).getTime();
-            return Math.abs(txTime - orderTime) < 30000;
-          });
-          if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
+          const [cryptoPay] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.orderId, o.id));
+          if (cryptoPay) {
+            paymentMethod = "Crypto";
+          } else {
+            const purchaseTxs = await db.select().from(transactions)
+              .where(and(eq(transactions.userId, o.userId), eq(transactions.type, "purchase")))
+              .orderBy(desc(transactions.createdAt));
+            const purchaseTx = purchaseTxs.find(tx => {
+              const txTime = new Date(tx.createdAt).getTime();
+              const orderTime = new Date(o.createdAt).getTime();
+              return Math.abs(txTime - orderTime) < 30000;
+            });
+            if (purchaseTx?.paymentMethod) paymentMethod = purchaseTx.paymentMethod;
+            else paymentMethod = "Wallet";
+          }
         }
       } catch (e) {}
       const [verif] = await db.select().from(verifications).where(eq(verifications.userId, o.userId)).catch(() => [undefined]);
@@ -760,7 +765,7 @@ export class DatabaseStorage implements IStorage {
   async getPaymentMethodsConfig(): Promise<Record<string, boolean>> {
     const rows = await db.select().from(siteSettings)
       .where(sql`key LIKE 'payment_method_%'`);
-    const defaults: Record<string, boolean> = { crypto: true, stars: true };
+    const defaults: Record<string, boolean> = { wallet: true, cashapp: true, crypto: true, stars: true };
     for (const row of rows) {
       const method = row.key.replace("payment_method_", "");
       defaults[method] = row.value === "true";

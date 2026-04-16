@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { ShoppingCart, ArrowRight, Loader2, Trash2, Wallet, Copy, X, Clock } fro
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { SiCashapp } from "react-icons/si";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
@@ -106,6 +106,18 @@ export default function CartPage() {
   const cartTotal = total();
   const userBalance = user?.balance || 0;
   const hasEnoughBalance = userBalance >= cartTotal;
+
+  const { data: enabledMethods } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/payment-methods"],
+  });
+  const cashappEnabled = enabledMethods?.cashapp !== false;
+  const walletEnabled = enabledMethods?.wallet !== false;
+
+  // If selected method gets disabled, switch to the other
+  useEffect(() => {
+    if (selectedMethod === "cashapp" && !cashappEnabled) setSelectedMethod("balance");
+    if (selectedMethod === "balance" && !walletEnabled && cashappEnabled) setSelectedMethod("cashapp");
+  }, [cashappEnabled, walletEnabled, selectedMethod]);
 
   const cashappFee = Math.round(cartTotal * CASHAPP_FEE_PERCENT / 100);
   const displayTotal = selectedMethod === "cashapp" ? cartTotal + cashappFee : cartTotal;
@@ -295,42 +307,46 @@ export default function CartPage() {
           <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-2">Payment Method</h2>
           <div className="space-y-1.5">
             {/* CashApp option */}
-            <button
-              onClick={() => setSelectedMethod("cashapp")}
-              data-testid="button-payment-cashapp"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
-                selectedMethod === "cashapp"
-                  ? "border-[#00D632]/30 bg-[#00D632]/5"
-                  : "border-white/8 bg-[#0d1017] hover:border-white/15"
-              }`}
-            >
-              <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "cashapp" ? "border-[#00D632]" : "border-white/30"}`}>
-                {selectedMethod === "cashapp" && <div className="h-2 w-2 rounded-full bg-[#00D632]" />}
-              </div>
-              <SiCashapp className="h-5 w-5 text-[#00D632] flex-shrink-0" />
-              <span className="flex-1 text-left text-xs font-bold text-white">CashApp</span>
-              <span className="text-[11px] font-bold text-green-400">+{CASHAPP_FEE_PERCENT}% fee</span>
-            </button>
+            {cashappEnabled && (
+              <button
+                onClick={() => setSelectedMethod("cashapp")}
+                data-testid="button-payment-cashapp"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                  selectedMethod === "cashapp"
+                    ? "border-[#00D632]/30 bg-[#00D632]/5"
+                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                }`}
+              >
+                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "cashapp" ? "border-[#00D632]" : "border-white/30"}`}>
+                  {selectedMethod === "cashapp" && <div className="h-2 w-2 rounded-full bg-[#00D632]" />}
+                </div>
+                <SiCashapp className="h-5 w-5 text-[#00D632] flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-bold text-white">CashApp</span>
+                <span className="text-[11px] font-bold text-green-400">+{CASHAPP_FEE_PERCENT}% fee</span>
+              </button>
+            )}
 
             {/* Balance option */}
-            <button
-              onClick={() => setSelectedMethod("balance")}
-              data-testid="button-payment-balance"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
-                selectedMethod === "balance"
-                  ? "border-white/20 bg-white/5"
-                  : "border-white/8 bg-[#0d1017] hover:border-white/15"
-              }`}
-            >
-              <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "balance" ? "border-white" : "border-white/30"}`}>
-                {selectedMethod === "balance" && <div className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-              <Wallet className="h-4 w-4 text-white/70 flex-shrink-0" />
-              <span className="flex-1 text-left text-xs font-bold text-white">Balance</span>
-              <span className={`text-[11px] font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
-                ${(userBalance / 100).toFixed(2)}
-              </span>
-            </button>
+            {walletEnabled && (
+              <button
+                onClick={() => setSelectedMethod("balance")}
+                data-testid="button-payment-balance"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                  selectedMethod === "balance"
+                    ? "border-white/20 bg-white/5"
+                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                }`}
+              >
+                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "balance" ? "border-white" : "border-white/30"}`}>
+                  {selectedMethod === "balance" && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+                <Wallet className="h-4 w-4 text-white/70 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-bold text-white">Balance</span>
+                <span className={`text-[11px] font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
+                  ${(userBalance / 100).toFixed(2)}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
