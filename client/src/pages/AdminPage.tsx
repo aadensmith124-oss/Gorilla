@@ -670,7 +670,7 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
             <div><p className="text-[10px] text-white/40 mb-0.5">Payment</p><p className="text-xs text-white">{current.paymentMethod || "—"}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-amber-300">{current.paymentNote}</p></div>
+              <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-lime-300">{current.paymentNote}</p></div>
             )}
             <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
             <div><p className="text-[10px] text-white/40 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
@@ -1087,7 +1087,7 @@ function IntegrationsSection() {
   const METHODS = [
     { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-white" />, bg: "bg-primary" },
     { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
-    { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-amber-500" },
+    { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-lime-500" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
 

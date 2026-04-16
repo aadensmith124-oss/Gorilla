@@ -65,12 +65,12 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
             </button>
           </div>
 
-          <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+          <div className="flex items-center justify-between bg-lime-500/10 border border-lime-500/20 rounded-xl px-3 py-2.5">
             <div>
-              <p className="text-[10px] text-amber-400/70 mb-0.5">Note (required)</p>
-              <p className="text-sm font-bold text-amber-300 font-mono">{paymentNote}</p>
+              <p className="text-[10px] text-lime-400/70 mb-0.5">Note (required)</p>
+              <p className="text-sm font-bold text-lime-300 font-mono">{paymentNote}</p>
             </div>
-            <button onClick={() => copy(paymentNote, "Note")} className="text-amber-400/50 hover:text-amber-300 transition-colors">
+            <button onClick={() => copy(paymentNote, "Note")} className="text-lime-400/50 hover:text-lime-300 transition-colors">
               <Copy className="h-3.5 w-3.5" />
             </button>
           </div>

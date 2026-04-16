@@ -22,7 +22,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-800/30 to-amber-950/40">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-lime-800/30 to-lime-950/40">
               <span className="text-5xl font-black text-white/80 italic tracking-tighter">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}

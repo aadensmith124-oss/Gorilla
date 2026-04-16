@@ -77,7 +77,7 @@ export default function CardsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 items-center text-center">
-        <h1 className="text-3xl text-white">RULF<span className="text-primary">.CC</span></h1>
+        <h1 className="text-3xl text-white">Cashplug</h1>
         <p className="text-muted-foreground">Fresh <span className="text-primary">HIGH QUALITY CCS</span></p>
       </div>
 

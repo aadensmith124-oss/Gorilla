@@ -59,7 +59,7 @@ export const useCart = create<CartStore>()(
       total: () => get().items.reduce((acc, item) => acc + (item.price * item.quantity), 0),
     }),
     {
-      name: 'rulf-cart',
+      name: 'cashplug-cart',
       storage: createJSONStorage(() => localStorage),
     }
   )

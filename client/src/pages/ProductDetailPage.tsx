@@ -136,7 +136,7 @@ export default function ProductDetailPage() {
               disabled={!selectedVariantId}
               className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
               style={{
-                background: "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))",
+                background: "linear-gradient(135deg, hsl(84,81%,44%), hsl(90,80%,35%))",
                 color: "#0a0a0a",
               }}
               data-testid="button-add-to-cart"

@@ -304,12 +304,12 @@ function OrdersTab() {
                         <span className={`flex items-center gap-2 ${
                           order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' 
                           : order.status === 'unpaid' ? 'text-red-500'
-                          : 'text-amber-500'
+                          : 'text-lime-500'
                         }`}>
                           <span className={`w-2 h-2 rounded-full ${
                             order.status === 'fulfilled' || order.status === 'paid' ? 'bg-green-500'
                             : order.status === 'unpaid' ? 'bg-red-500'
-                            : 'bg-amber-500'
+                            : 'bg-lime-500'
                           }`} />
                           {order.status === 'fulfilled' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
                           <br />
@@ -317,7 +317,7 @@ function OrdersTab() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <Button size="icon" variant="ghost" className="text-amber-500" data-testid={`button-view-order-${order.id}`}>
+                        <Button size="icon" variant="ghost" className="text-lime-500" data-testid={`button-view-order-${order.id}`}>
                           <Package className="h-4 w-4" />
                         </Button>
                       </td>
@@ -440,7 +440,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                 <p className={`text-xs font-bold ${
                   order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500'
                   : order.status === 'unpaid' ? 'text-red-500'
-                  : 'text-amber-500'
+                  : 'text-lime-500'
                 }`}>
                   {order.status === 'fulfilled' || order.status === 'paid' ? 'Fulfilled' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
                 </p>
@@ -503,7 +503,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     </Button>
                   )}
                   {order.status === 'pending' && (
-                    <p className="text-xs text-amber-500 text-center font-medium">Awaiting payment confirmation</p>
+                    <p className="text-xs text-lime-500 text-center font-medium">Awaiting payment confirmation</p>
                   )}
                   {order.status === 'unpaid' && (
                     <p className="text-xs text-red-500 text-center font-medium">Order cancelled</p>
@@ -568,7 +568,7 @@ function BalanceTab({ user }: { user: any }) {
           </div>
 
           <Button 
-            className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+            className="w-full h-12 bg-lime-600 hover:bg-lime-700 text-white font-bold"
             onClick={() => {
               if (!amount || parseFloat(amount) < 0.50) {
                 toast({ title: "Error", description: "Minimum top-up is $0.50", variant: "destructive" });

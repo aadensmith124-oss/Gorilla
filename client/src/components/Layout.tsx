@@ -32,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
         <span className="text-base font-bold text-white">
-          RULF<span className="text-primary">.CC</span>
+          Cashplug
         </span>
       </div>
 
@@ -95,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
             <span className="text-base font-bold text-white">
-              RULF<span className="text-primary">.CC</span>
+              Cashplug
             </span>
           </div>
         </Link>

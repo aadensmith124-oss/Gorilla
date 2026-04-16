@@ -184,7 +184,7 @@ export default function SupportPage() {
                 <Card key={ticket.id} className="bg-[#0f1115] border-white/5 hover:border-white/10 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between py-4">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-2 rounded-lg", ticket.status === 'open' ? "bg-amber-500/10 text-amber-500" : "bg-green-500/10 text-green-500")}>
+                      <div className={cn("p-2 rounded-lg", ticket.status === 'open' ? "bg-lime-500/10 text-lime-500" : "bg-green-500/10 text-green-500")}>
                         {ticket.status === 'open' ? <Clock className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
                       </div>
                       <div>
@@ -194,7 +194,7 @@ export default function SupportPage() {
                     </div>
                     <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className={cn(
                       "uppercase text-[10px]",
-                      ticket.status === 'open' ? "border-amber-500/50 text-amber-500" : "bg-green-500 text-white"
+                      ticket.status === 'open' ? "border-lime-500/50 text-lime-500" : "bg-green-500 text-white"
                     )}>
                       {ticket.status}
                     </Badge>
