@@ -4,7 +4,7 @@ import {
   Menu,
   ChevronDown,
 } from "lucide-react";
-import logoImg from "@assets/IMG_6987_1776367750874.png";
+import logoImg from "../assets/logo_nobg.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -95,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="h-14 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
-            <img src={logoImg} alt="CASHPLUG SHOP" className="h-12 w-auto max-w-[220px] object-contain" style={{ mixBlendMode: "screen" }} />
+            <img src={logoImg} alt="CASHPLUG SHOP" className="h-10 w-auto max-w-[240px] object-contain" />
           </div>
         </Link>
 
