@@ -33,7 +33,7 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SiCashapp className="h-5 w-5 text-[#00D632]" />
-            <span className="text-sm font-black text-white uppercase tracking-widest">CashApp Payment</span>
+            <span className="text-sm text-white">CashApp Payment</span>
           </div>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X className="h-4 w-4" />
@@ -47,7 +47,7 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
         <div className="space-y-2">
           <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
             <div>
-              <p className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Send to</p>
+              <p className="text-[10px] text-white/40 mb-0.5">Send to</p>
               <p className="text-sm font-bold text-[#00D632]">{cashappTag || "$YourCashTag"}</p>
             </div>
             <button onClick={() => copy(cashappTag, "CashApp tag")} className="text-white/30 hover:text-white transition-colors">
@@ -57,7 +57,7 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
 
           <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
             <div>
-              <p className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Amount</p>
+              <p className="text-[10px] text-white/40 mb-0.5">Amount</p>
               <p className="text-sm font-bold text-white">${(total / 100).toFixed(2)}</p>
             </div>
             <button onClick={() => copy((total / 100).toFixed(2), "Amount")} className="text-white/30 hover:text-white transition-colors">
@@ -67,7 +67,7 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
 
           <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
             <div>
-              <p className="text-[10px] text-amber-400/70 uppercase tracking-wider mb-0.5">Note (required)</p>
+              <p className="text-[10px] text-amber-400/70 mb-0.5">Note (required)</p>
               <p className="text-sm font-bold text-amber-300 font-mono">{paymentNote}</p>
             </div>
             <button onClick={() => copy(paymentNote, "Note")} className="text-amber-400/50 hover:text-amber-300 transition-colors">
@@ -85,7 +85,7 @@ function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
 
         <Button
           size="sm"
-          className="w-full bg-[#00D632] hover:bg-[#00C02C] text-black font-black text-xs uppercase tracking-widest"
+          className="w-full bg-[#00D632] hover:bg-[#00C02C] text-black text-xs"
           onClick={onClose}
         >
           Done — I've sent it
@@ -268,7 +268,7 @@ export default function CartPage() {
                 {item.image ? (
                   <img src={item.image} alt={item.productName} className="h-full w-full object-contain p-1" />
                 ) : (
-                  <span className="text-sm font-black text-white/20">{item.productName?.charAt(0)}</span>
+                  <span className="text-sm text-white/20">{item.productName?.charAt(0)}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -328,7 +328,7 @@ export default function CartPage() {
         </div>
 
         <div>
-          <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Payment Method</h2>
+          <h2 className="text-xs font-bold text-white/50 mb-2">Payment Method</h2>
           <div className="space-y-1">
             {cashappEnabled && (
               <button
@@ -392,7 +392,7 @@ export default function CartPage() {
         </div>
 
         <Button
-          className="w-full h-10 text-xs font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-black rounded-xl"
+          className="w-full h-10 text-xs bg-primary hover:bg-primary/90 text-black rounded-xl"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"

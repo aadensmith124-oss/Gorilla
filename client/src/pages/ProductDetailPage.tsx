@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-[#090a0c] flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-[#16181d] rounded-2xl border border-white/5 overflow-hidden relative shadow-2xl">
         <div className="p-6 border-b border-white/5 flex justify-between items-start">
-          <h1 className="text-xl font-display font-black tracking-tight text-white uppercase pr-8 leading-tight">
+          <h1 className="text-xl text-white pr-8 leading-tight">
             {product.name}
           </h1>
           <button
@@ -86,15 +86,15 @@ export default function ProductDetailPage() {
         <div className="p-6 space-y-6">
           {product.description ? (
             <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">About this product</p>
+              <p className="text-xs font-bold text-muted-foreground mb-2">About this product</p>
               <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{product.description}</p>
             </div>
           ) : null}
 
           <div className="space-y-3">
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
+            <h3 className="text-[10px] font-bold text-muted-foreground">Available Options</h3>
             <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
-              <SelectTrigger className="w-full h-12 bg-[#1c1f26] border-white/5 text-white font-bold uppercase tracking-wide" data-testid="select-variant">
+              <SelectTrigger className="w-full h-12 bg-[#1c1f26] border-white/5 text-white font-bold" data-testid="select-variant">
                 <SelectValue placeholder="SELECT AN OPTION" />
               </SelectTrigger>
               <SelectContent className="bg-[#1c1f26] border-white/5 text-white">
@@ -102,7 +102,7 @@ export default function ProductDetailPage() {
                   <SelectItem
                     key={v.id}
                     value={v.id.toString()}
-                    className="font-bold uppercase tracking-wide hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                    className="font-bold hover:bg-white/5 focus:bg-white/5 cursor-pointer"
                   >
                     ${(v.price / 100).toFixed(2)} - {v.name}{v.minQuantity > 1 ? ` (min ${v.minQuantity})` : ""}
                   </SelectItem>
@@ -112,7 +112,7 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+            <h3 className="text-[10px] font-bold text-muted-foreground">
               Quantity {minQty > 1 && <span className="text-primary">(min {minQty})</span>}
             </h3>
             <div className="inline-flex items-center gap-3 p-1.5 bg-[#1c1f26] rounded-xl border border-white/5">
@@ -138,7 +138,7 @@ export default function ProductDetailPage() {
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariantId}
-              className="w-full h-12 rounded-xl font-black uppercase italic tracking-tighter text-sm shadow-lg hover:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl text-sm shadow-lg hover:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
               style={{
                 background: "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))",
                 color: "#0a0a0a",
@@ -154,7 +154,7 @@ export default function ProductDetailPage() {
             <button
               onClick={handleBuyNow}
               disabled={!selectedVariantId}
-              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white text-sm hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               data-testid="button-buy-now"
             >
               Buy Now
@@ -162,7 +162,7 @@ export default function ProductDetailPage() {
 
             <button
               onClick={() => setLocation("/cart")}
-              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors"
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white text-sm hover:bg-white/5 transition-colors"
               data-testid="button-view-cart"
             >
               View Cart

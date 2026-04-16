@@ -77,15 +77,15 @@ export default function CardsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 items-center text-center">
-        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">RULF<span className="text-primary">.CC</span></h1>
-        <p className="text-muted-foreground italic">Fresh <span className="text-primary">HIGH QUALITY CCS</span></p>
+        <h1 className="text-3xl text-white">RULF<span className="text-primary">.CC</span></h1>
+        <p className="text-muted-foreground">Fresh <span className="text-primary">HIGH QUALITY CCS</span></p>
       </div>
 
       <Card className="bg-[#0f1115] border-white/5">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Country</label>
+              <label className="text-xs font-bold text-muted-foreground">Country</label>
               <Select value={countryFilter} onValueChange={setCountryFilter}>
                 <SelectTrigger className="bg-black/50 border-white/10">
                   <SelectValue placeholder="All Countries" />
@@ -101,7 +101,7 @@ export default function CardsPage() {
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price Range</label>
+                <label className="text-xs font-bold text-muted-foreground">Price Range</label>
                 <span className="text-xs font-mono text-primary">${priceRange[0]} - ${priceRange[1]}</span>
               </div>
               <Slider 
@@ -116,8 +116,8 @@ export default function CardsPage() {
 
             <div className="flex items-center justify-between bg-black/30 p-3 rounded-md border border-white/5">
               <div className="flex flex-col">
-                <label className="text-xs font-bold uppercase tracking-widest text-white">First Hand Only</label>
-                <span className="text-[10px] text-muted-foreground italic">Verified direct source</span>
+                <label className="text-xs font-bold text-white">First Hand Only</label>
+                <span className="text-[10px] text-muted-foreground">Verified direct source</span>
               </div>
               <Switch checked={firstHandOnly} onCheckedChange={setFirstHandOnly} />
             </div>
@@ -126,8 +126,8 @@ export default function CardsPage() {
       </Card>
 
       <div className="flex items-center justify-between px-2">
-        <div className="text-xl font-bold italic tracking-tighter text-white uppercase">
-          Total found: <span className="text-primary italic">{filteredCards.length}</span>
+        <div className="text-xl font-bold text-white">
+          Total found: <span className="text-primary">{filteredCards.length}</span>
         </div>
       </div>
 
@@ -135,17 +135,17 @@ export default function CardsPage() {
         <Table>
           <TableHeader className="bg-white/5">
             <TableRow className="hover:bg-transparent border-white/5">
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Card</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Country</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">Price</TableHead>
-              <TableHead className="text-xs font-bold uppercase text-muted-foreground">First Hand</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase text-muted-foreground">Action</TableHead>
+              <TableHead className="text-xs font-bold text-muted-foreground">Card</TableHead>
+              <TableHead className="text-xs font-bold text-muted-foreground">Country</TableHead>
+              <TableHead className="text-xs font-bold text-muted-foreground">Price</TableHead>
+              <TableHead className="text-xs font-bold text-muted-foreground">First Hand</TableHead>
+              <TableHead className="text-right text-xs font-bold text-muted-foreground">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCards.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                   No cards found matching your criteria.
                 </TableCell>
               </TableRow>
@@ -156,12 +156,12 @@ export default function CardsPage() {
                   <TableRow key={card.id} className="hover:bg-white/5 border-white/5 transition-colors">
                     <TableCell className="font-mono text-sm text-white">{card.maskedCard}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-white/5 text-[10px] font-bold uppercase border-none">
+                      <Badge variant="outline" className="bg-white/5 text-[10px] font-bold border-none">
                         {card.country}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-primary text-white font-bold italic text-[10px]">
+                      <Badge className="bg-primary text-white font-bold text-[10px]">
                         ${(card.price / 100).toFixed(2)}
                       </Badge>
                     </TableCell>
@@ -173,7 +173,7 @@ export default function CardsPage() {
                     <TableCell className="text-right">
                       <Button 
                         size="sm" 
-                        className={inCart ? "bg-green-600 hover:bg-green-700 text-white font-bold italic tracking-tighter uppercase" : "bg-primary hover:bg-primary/90 text-white font-bold italic tracking-tighter uppercase"}
+                        className={inCart ? "bg-green-600 hover:bg-green-700 text-white font-bold" : "bg-primary hover:bg-primary/90 text-white font-bold"}
                         onClick={() => handleAddToCart(card)}
                         disabled={inCart}
                         data-testid={`btn-add-card-${card.id}`}

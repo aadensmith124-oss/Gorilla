@@ -38,10 +38,10 @@ export default function GamesPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="text-center space-y-4 mb-12">
-        <h1 className="text-4xl md:text-6xl font-display font-black tracking-tighter italic uppercase text-white">
+        <h1 className="text-4xl md:text-6xl text-white">
           GAMBLE
         </h1>
-        <p className="text-muted-foreground italic uppercase tracking-widest text-sm font-bold">Test your luck and win credits</p>
+        <p className="text-muted-foreground text-sm font-bold">Test your luck and win credits</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -59,14 +59,14 @@ export default function GamesPage() {
               <div className={cn("p-4 rounded-2xl bg-black/40 mb-6 group-hover:scale-110 transition-transform", game.iconColor)}>
                 <game.icon className="h-12 w-12" />
               </div>
-              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-2 group-hover:text-primary transition-colors">
+              <h2 className="text-3xl text-white mb-2 group-hover:text-primary transition-colors">
                 {game.name}
               </h2>
-              <p className="text-muted-foreground text-sm italic max-w-[250px]">
+              <p className="text-muted-foreground text-sm max-w-[250px]">
                 {game.description}
               </p>
               
-              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-white text-white font-bold italic tracking-tighter uppercase border border-white/5">
+              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-white text-white font-bold border border-white/5">
                 Play Now
               </Button>
             </CardContent>
@@ -117,7 +117,7 @@ function DiceGame() {
                 </motion.div>
               </>
             ) : (
-              <div className="text-6xl text-muted-foreground opacity-20 font-display">? ?</div>
+              <div className="text-6xl text-muted-foreground opacity-20">? ?</div>
             )}
           </AnimatePresence>
         </div>

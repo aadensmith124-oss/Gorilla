@@ -56,7 +56,7 @@ export default function AdminPage() {
   const SidebarContent = () => (
     <>
       <div className="p-4 border-b border-white/5">
-        <h1 className="text-lg font-display font-black italic uppercase">ADMIN</h1>
+        <h1 className="text-lg font-semibold">ADMIN</h1>
       </div>
       <nav className="flex-1 p-2 space-y-1">
         {adminSections.map((section) => (
@@ -83,7 +83,7 @@ export default function AdminPage() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#0d0f12]">
-          <h1 className="text-lg font-display font-black italic uppercase">ADMIN</h1>
+          <h1 className="text-lg font-semibold">ADMIN</h1>
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
               <Button size="icon" variant="ghost"><Menu className="h-5 w-5" /></Button>
@@ -122,7 +122,7 @@ function DashboardSection() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Dashboard</h1>
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} />
         <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={ShoppingBag} />
@@ -139,7 +139,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
     <Card className="bg-[#0f1115] border-white/5">
       <CardContent className="p-4 flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest">{title}</p>
+          <p className="text-xs text-muted-foreground">{title}</p>
           <p className="text-xl font-bold mt-1">{value}</p>
         </div>
         <Icon className={`h-8 w-8 ${colorClass} opacity-60`} />
@@ -284,7 +284,7 @@ function ProductsSection() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Products</h1>
+        <h1 className="text-2xl font-semibold">Products</h1>
         <Button onClick={() => { setShowAddForm(!showAddForm); setEditingProduct(null); }} className="gap-2">
           <Plus className="h-4 w-4" />Add Product
         </Button>
@@ -412,7 +412,7 @@ function ProductsSection() {
 
             {expandedProduct === product.id && (
               <div className="border-t border-white/5 p-4 space-y-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Variants</p>
+                <p className="text-xs text-muted-foreground font-bold">Variants</p>
 
                 {product.variants?.length > 0 ? (
                   <div className="space-y-2">
@@ -536,7 +536,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
 
   return (
     <div className="mt-1 mb-2 bg-black/50 rounded-lg border border-white/8 p-3 space-y-3">
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+      <p className="text-[10px] font-bold text-muted-foreground">
         Stock — {isLoading ? "..." : `${items?.length || 0} items available`}
       </p>
 
@@ -660,20 +660,20 @@ function OrdersSection() {
 
         <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-white uppercase tracking-tight">Order Detail</h2>
+            <h2 className="text-lg font-black text-white">Order Detail</h2>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
 
           <div className="space-y-3 border-b border-white/5 pb-4">
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment</p><p className="text-xs text-white">{current.paymentMethod || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Payment</p><p className="text-xs text-white">{current.paymentMethod || "—"}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment Note</p><p className="text-xs font-mono text-amber-300">{current.paymentNote}</p></div>
+              <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-amber-300">{current.paymentNote}</p></div>
             )}
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
           {current.paymentMethod === "CashApp" && (current.status === "pending" || current.status === "waiting_payment") && (
@@ -697,7 +697,7 @@ function OrdersSection() {
 
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Items Ordered</p>
+              <p className="text-[10px] text-white/40">Items Ordered</p>
               {groupedEntries.map(([key, g]) => (
                 <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
                   <div>
@@ -724,7 +724,7 @@ function OrdersSection() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Orders</h1>
+      <h1 className="text-2xl font-semibold">Orders</h1>
 
       <div className="flex gap-2 flex-wrap">
         {[
@@ -735,7 +735,7 @@ function OrdersSection() {
           <button
             key={key}
             onClick={() => setOrderFilter(key as any)}
-            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
               orderFilter === key
                 ? key === "waiting"
                   ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-400"
@@ -754,9 +754,9 @@ function OrdersSection() {
 
       <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2 border-b border-white/5 gap-2">
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">$</span>
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Note / Method</span>
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
+          <span className="text-[10px] font-bold text-white/40">$</span>
+          <span className="text-[10px] font-bold text-white/40">Note / Method</span>
+          <span className="text-[10px] font-bold text-white/40">Status</span>
           <span></span>
         </div>
         {filteredOrders.map((order: any) => {
@@ -841,7 +841,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Test Mode</h1>
+        <h1 className="text-2xl font-semibold">Test Mode</h1>
         <p className="text-sm text-muted-foreground mt-1">Create a fake order to test the delivery flow — no payment needed.</p>
       </div>
 
@@ -854,7 +854,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Product</label>
+            <label className="text-xs text-muted-foreground block mb-2">Product</label>
             <Select value={selectedProduct?.toString()} onValueChange={(v) => { setSelectedProduct(Number(v)); setSelectedVariant(null); }}>
               <SelectTrigger className="bg-black/50 border-white/10">
                 <SelectValue placeholder="Select a product" />
@@ -869,7 +869,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
 
           {product && (
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Variant</label>
+              <label className="text-xs text-muted-foreground block mb-2">Variant</label>
               <Select value={selectedVariant?.toString()} onValueChange={(v) => setSelectedVariant(Number(v))}>
                 <SelectTrigger className="bg-black/50 border-white/10">
                   <SelectValue placeholder="Select a variant" />
@@ -886,7 +886,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           )}
 
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Quantity</label>
+            <label className="text-xs text-muted-foreground block mb-2">Quantity</label>
             <Input
               type="number" min="1" value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
@@ -978,7 +978,7 @@ function UsersSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5 text-sm">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Account</p>
+              <p className="text-[10px] font-bold text-muted-foreground mb-2">Account</p>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Email</p><p className="text-xs">{selectedUser.email}</p></div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || '—'}</p></div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Role</p><p className="text-xs capitalize">{selectedUser.role}</p></div>
@@ -1009,7 +1009,7 @@ function UsersSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Users</h1>
+        <h1 className="text-2xl font-semibold">Users</h1>
         <p className="text-sm text-muted-foreground mt-1">{users?.length || 0} total</p>
       </div>
       <div className="space-y-2">
@@ -1093,7 +1093,7 @@ function IntegrationsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase flex items-center gap-2">
+        <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Link2 className="h-5 w-5 text-primary" /> Integrations
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Enable or disable payment methods and manage your bot token.</p>
@@ -1101,7 +1101,7 @@ function IntegrationsSection() {
 
       {/* Payment Method Toggles */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Payment Methods</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Payment Methods</p>
         <div className="space-y-2">
           {methodsLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
@@ -1134,7 +1134,7 @@ function IntegrationsSection() {
 
       {/* CashApp Tag */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">CashApp Settings</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">CashApp Settings</p>
         <Card className="bg-[#0f1115] border-white/5">
           <CardContent className="p-4 space-y-3">
             <div>
@@ -1164,7 +1164,7 @@ function IntegrationsSection() {
 
       {/* Telegram Bot Token Status */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Telegram Bot Token</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Telegram Bot Token</p>
         {statusLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
@@ -1188,7 +1188,7 @@ function IntegrationsSection() {
 
       <Card className="bg-[#0f1115] border-primary/20">
         <CardContent className="p-4 space-y-2">
-          <p className="text-xs font-semibold text-primary uppercase tracking-wider">How to set the token</p>
+          <p className="text-xs font-semibold text-primary">How to set the token</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Message <span className="text-white font-medium">@BotFather</span> on Telegram and create a new bot</li>
             <li>Go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
@@ -1267,18 +1267,18 @@ function CashAppSection() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <SiCashapp className="h-5 w-5 text-[#00D632]" />
-              <h2 className="text-lg font-black text-white uppercase tracking-tight">CashApp Order</h2>
+              <h2 className="text-lg font-black text-white">CashApp Order</h2>
             </div>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
           <div className="space-y-3 border-b border-white/5 pb-4">
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
+              <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
             )}
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
           </div>
           {isPending && (
             <div className="flex gap-3">
@@ -1302,7 +1302,7 @@ function CashAppSection() {
           )}
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Items Ordered</p>
+              <p className="text-[10px] text-white/40">Items Ordered</p>
               {groupedEntries.map(([key, g]) => (
                 <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
                   <div>
@@ -1327,7 +1327,7 @@ function CashAppSection() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <SiCashapp className="h-6 w-6 text-[#00D632]" />
-        <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">CashApp</h1>
+        <h1 className="text-2xl font-semibold">CashApp</h1>
         {pendingCount > 0 && (
           <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingCount} pending</Badge>
         )}

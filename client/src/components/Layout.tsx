@@ -31,49 +31,49 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-xl font-display font-black tracking-tighter italic">
-          RULF<span className="text-primary italic">.CC</span>
-        </h1>
+        <span className="text-base font-bold text-white">
+          RULF<span className="text-primary">.CC</span>
+        </span>
       </div>
 
       <div className="flex flex-col gap-4 text-left">
         <Link href="/" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">Shop</span>
+          <span className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">Shop</span>
         </Link>
 
         <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors group uppercase tracking-wider">
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium hover:text-primary transition-colors group">
             Profile <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 pt-3 space-y-3">
             <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">PROFILE</span>
+              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Profile</span>
             </Link>
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">ORDERS</span>
+              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Orders</span>
             </Link>
             <Link href="/profile?tab=settings" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-xs text-muted-foreground hover:text-primary cursor-pointer tracking-widest font-bold uppercase">SETTINGS</span>
+              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Settings</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
-          <div className="flex items-center justify-between w-full text-sm font-bold hover:text-primary transition-colors cursor-pointer uppercase tracking-wider">
-            Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-white">{cartCount}</span>}
+          <div className="flex items-center justify-between w-full text-sm font-medium hover:text-primary transition-colors cursor-pointer">
+            Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-black font-semibold">{cartCount}</span>}
           </div>
         </Link>
 
         {user?.role === 'admin' && (
           <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
-            <span className="text-sm font-bold text-destructive hover:opacity-80 transition-opacity cursor-pointer tracking-wider uppercase">Admin</span>
+            <span className="text-sm font-medium text-destructive hover:opacity-80 transition-opacity cursor-pointer">Admin</span>
           </Link>
         )}
 
         {user && (
           <button 
             onClick={() => { logout(); setIsMobileOpen(false); }}
-            className="text-sm font-bold text-muted-foreground hover:text-destructive transition-colors mt-4 uppercase text-left tracking-wider"
+            className="text-sm font-medium text-muted-foreground hover:text-destructive transition-colors mt-4 text-left"
           >
             Logout
           </button>
@@ -83,7 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="mt-auto pt-8 border-t border-white/5">
         <div className="flex items-center gap-2 px-2 py-1 rounded bg-white/5 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_theme('colors.green.500')]" />
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Best Logs 🪵</span>
+          <span className="text-[11px] text-muted-foreground">Online</span>
         </div>
       </div>
     </div>
@@ -94,9 +94,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="h-14 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
-            <h1 className="text-lg font-display font-black tracking-tighter italic text-white">
-              RULF<span className="text-primary italic">.CC</span>
-            </h1>
+            <span className="text-base font-bold text-white">
+              RULF<span className="text-primary">.CC</span>
+            </span>
           </div>
         </Link>
 

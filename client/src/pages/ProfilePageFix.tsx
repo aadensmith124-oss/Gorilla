@@ -57,24 +57,24 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Username</p>
+                <p className="text-xs text-muted-foreground">Username</p>
                 <p className="text-lg font-bold text-white">{user.username}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Email</p>
+                <p className="text-xs text-muted-foreground">Email</p>
                 <p className="text-lg font-bold text-white">{user.email}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Telegram</p>
+                <p className="text-xs text-muted-foreground">Telegram</p>
                 <p className="text-lg font-bold text-white">{user.telegramUsername || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Member Since</p>
+                <p className="text-xs text-muted-foreground">Member Since</p>
                 <p className="text-sm text-white">{new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
               <button
                 onClick={() => logout()}
-                className="w-full h-10 mt-4 bg-destructive/20 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/30 transition-colors font-bold uppercase tracking-wider text-sm"
+                className="w-full h-10 mt-4 bg-destructive/20 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/30 transition-colors font-bold text-sm"
               >
                 Logout
               </button>
@@ -87,14 +87,14 @@ export default function ProfilePage() {
             const visibleOrders = (orders || []).filter((o: any) => o.status === "fulfilled" || o.status === "delivering" || o.status === "waiting_payment" || o.status === "pending");
             return visibleOrders.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-black text-white uppercase tracking-widest mb-4">
+                <p className="text-sm text-white mb-4">
                   {visibleOrders.length} ORDER{visibleOrders.length !== 1 ? "S" : ""} FOUND
                 </p>
                 <div className="bg-[#0d0f12] rounded-xl border border-white/5 overflow-hidden">
                   <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/5">
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Amount</span>
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Date</span>
+                    <span className="text-[10px] font-bold text-white/40">Amount</span>
+                    <span className="text-[10px] font-bold text-white/40">Status</span>
+                    <span className="text-[10px] font-bold text-white/40">Date</span>
                   </div>
                   {visibleOrders.map((order: any) => (
                     <button
@@ -112,7 +112,7 @@ export default function ProfilePage() {
             ) : (
               <div className="text-center py-16 text-muted-foreground">
                 <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-bold uppercase tracking-widest">No orders yet</p>
+                <p className="text-sm font-bold">No orders yet</p>
               </div>
             );
           })()}
@@ -158,7 +158,7 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
       <Card className="bg-[#0d1017] border-white/8">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Current Balance</span>
+            <span className="text-sm font-medium text-muted-foreground">Current Balance</span>
             <span className="text-2xl font-bold text-white">${((user.balance || 0) / 100).toFixed(2)}</span>
           </div>
         </CardContent>
@@ -173,7 +173,7 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Gift Card / Redeem Code</label>
+            <label className="text-xs text-muted-foreground block mb-2">Gift Card / Redeem Code</label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -272,7 +272,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Telegram Username</label>
+            <label className="text-xs text-muted-foreground block mb-2">Telegram Username</label>
             <Input
               value={newTelegram}
               onChange={(e) => setNewTelegram(e.target.value)}
@@ -297,15 +297,15 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Current Password</label>
+            <label className="text-xs text-muted-foreground block mb-2">Current Password</label>
             <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Enter current password" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">New Password</label>
+            <label className="text-xs text-muted-foreground block mb-2">New Password</label>
             <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Enter new password" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Confirm New Password</label>
+            <label className="text-xs text-muted-foreground block mb-2">Confirm New Password</label>
             <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white/5 border-white/5 text-white" placeholder="Confirm new password" />
           </div>
           <Button

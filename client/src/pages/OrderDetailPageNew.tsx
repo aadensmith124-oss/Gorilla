@@ -46,7 +46,7 @@ export default function OrderDetailPageNew() {
   if (!order) {
     return (
       <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4 gap-4">
-        <p className="text-white font-bold uppercase tracking-widest">Order not found</p>
+        <p className="text-white font-bold">Order not found</p>
         <button onClick={() => setLocation("/profile?tab=orders")} className="text-sm text-primary hover:underline">← Back to Orders</button>
       </div>
     );
@@ -99,7 +99,7 @@ export default function OrderDetailPageNew() {
     <div className="min-h-screen bg-[#0a0a0c] flex flex-col pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 flex flex-col flex-1">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-white uppercase tracking-tight">Order Info</h1>
+          <h1 className="text-xl font-bold text-white">Order Info</h1>
           <button
             onClick={() => setLocation("/profile?tab=orders")}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
@@ -113,7 +113,7 @@ export default function OrderDetailPageNew() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+              className={`pb-3 text-sm font-bold transition-colors border-b-2 -mb-px ${
                 activeTab === tab
                   ? "text-primary border-primary"
                   : "text-white/40 border-transparent hover:text-white/70"
@@ -160,7 +160,7 @@ export default function OrderDetailPageNew() {
                       <div className="space-y-2 pt-1">
                         <button
                           onClick={() => toggleStock(item.key)}
-                          className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                         >
                           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           {isOpen ? "Hide Stock" : "View Stock"}
@@ -182,7 +182,7 @@ export default function OrderDetailPageNew() {
                         )}
                       </div>
                     ) : (
-                      <div className="w-full h-11 rounded-xl bg-white/5 border border-white/10 text-white/30 font-bold uppercase tracking-widest text-sm flex items-center justify-center">
+                      <div className="w-full h-11 rounded-xl bg-white/5 border border-white/10 text-white/30 font-bold text-sm flex items-center justify-center">
                         {isFulfilled ? "No stock data" : "Pending Delivery"}
                       </div>
                     )}

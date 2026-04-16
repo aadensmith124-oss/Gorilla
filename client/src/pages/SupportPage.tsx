@@ -79,7 +79,7 @@ export default function SupportPage() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       <div>
-        <h1 className="text-3xl font-display font-black tracking-tighter italic uppercase text-white">Support Center</h1>
+        <h1 className="text-3xl text-white">Support Center</h1>
         <p className="text-muted-foreground mt-2">Need help with an order? We're here for you.</p>
       </div>
 
@@ -96,14 +96,14 @@ export default function SupportPage() {
         <TabsContent value="new" className="mt-6">
           <Card className="bg-[#0f1115] border-white/5">
             <CardHeader>
-              <CardTitle className="text-xl italic uppercase tracking-tighter">Open a Ticket</CardTitle>
+              <CardTitle className="text-xl">Open a Ticket</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField control={form.control} name="orderId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">Product ID / Order ID</FormLabel>
+                      <FormLabel className="uppercase text-[10px] text-muted-foreground">Product ID / Order ID</FormLabel>
                       <FormControl><Input {...field} placeholder="Enter your Order ID (e.g. CARD-abc123...)" className="bg-black/50 border-white/10" /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -111,7 +111,7 @@ export default function SupportPage() {
 
                   <FormField control={form.control} name="subject" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">What you need</FormLabel>
+                      <FormLabel className="uppercase text-[10px] text-muted-foreground">What you need</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-black/50 border-white/10 text-white">
@@ -131,7 +131,7 @@ export default function SupportPage() {
 
                   <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">What happened?</FormLabel>
+                      <FormLabel className="uppercase text-[10px] text-muted-foreground">What happened?</FormLabel>
                       <FormControl><Textarea {...field} placeholder="Describe the issue in detail..." className="bg-black/50 border-white/10 min-h-[120px]" /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -139,7 +139,7 @@ export default function SupportPage() {
 
                   <FormField control={form.control} name="imageUrl" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="uppercase text-[10px] font-black tracking-widest text-muted-foreground">Proof Image</FormLabel>
+                      <FormLabel className="uppercase text-[10px] text-muted-foreground">Proof Image</FormLabel>
                       <div className="flex flex-col gap-4">
                         <div className="flex gap-4 items-center">
                           <div className="relative group flex-1">
@@ -161,7 +161,7 @@ export default function SupportPage() {
                     </FormItem>
                   )} />
 
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-black italic tracking-tighter uppercase h-12">
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white h-12">
                     Send Support Request
                   </Button>
                 </form>
@@ -177,7 +177,7 @@ export default function SupportPage() {
             ) : !tickets || tickets.length === 0 ? (
               <div className="text-center py-20 bg-[#0f1115] rounded-xl border border-white/5">
                 <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-muted-foreground font-bold italic uppercase tracking-widest">No support history found</p>
+                <p className="text-muted-foreground font-bold">No support history found</p>
               </div>
             ) : (
               tickets.map((ticket) => (
@@ -188,12 +188,12 @@ export default function SupportPage() {
                         {ticket.status === 'open' ? <Clock className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
                       </div>
                       <div>
-                        <CardTitle className="text-sm font-bold uppercase tracking-wider">{ticket.subject}</CardTitle>
-                        <p className="text-[10px] text-muted-foreground uppercase font-black">Order ID: {ticket.orderId}</p>
+                        <CardTitle className="text-sm font-bold">{ticket.subject}</CardTitle>
+                        <p className="text-[10px] text-muted-foreground">Order ID: {ticket.orderId}</p>
                       </div>
                     </div>
                     <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className={cn(
-                      "uppercase text-[10px] font-black tracking-widest",
+                      "uppercase text-[10px]",
                       ticket.status === 'open' ? "border-amber-500/50 text-amber-500" : "bg-green-500 text-white"
                     )}>
                       {ticket.status}
@@ -203,8 +203,8 @@ export default function SupportPage() {
                     <p className="text-sm text-muted-foreground">{ticket.description}</p>
                     {ticket.adminMessage && (
                       <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Admin Message</p>
-                        <p className="text-sm italic">"{ticket.adminMessage}"</p>
+                        <p className="text-[10px] text-primary">Admin Message</p>
+                        <p className="text-sm">"{ticket.adminMessage}"</p>
                       </div>
                     )}
                   </CardContent>

@@ -58,7 +58,7 @@ export function MailInboxPage() {
                 {new Date(selectedMail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-muted-foreground">
               {selectedMail.recipientId ? "Personal Message" : "Broadcast to All Sellers"}
             </p>
           </CardHeader>
@@ -72,7 +72,7 @@ export function MailInboxPage() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-display font-black tracking-tighter italic uppercase">Mailbox</h1>
+      <h1 className="text-2xl">Mailbox</h1>
 
       {isLoading && (
         <div className="flex justify-center py-12">

@@ -47,7 +47,7 @@ export default function ShopPage() {
           <div className="bg-destructive/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2">
             <ShieldX className="h-8 w-8 text-destructive" />
           </div>
-          <h2 className="text-2xl font-display font-black text-destructive uppercase tracking-tighter italic">Account Restricted</h2>
+          <h2 className="text-2xl text-destructive">Account Restricted</h2>
           <p className="text-muted-foreground leading-relaxed">
             Your account has been banned by an administrator. You may still browse our product catalog, but purchasing and other features are disabled.
             <br /><br />
@@ -66,8 +66,8 @@ export default function ShopPage() {
   return (
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">
-        <h1 className="text-5xl font-display font-black tracking-tighter text-white italic text-center">
-          RULF<span className="text-primary italic">.CC</span>
+        <h1 className="text-5xl text-white text-center">
+          RULF<span className="text-primary">.CC</span>
         </h1>
 
         <a
@@ -75,7 +75,7 @@ export default function ShopPage() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button variant="destructive" size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-[#e11d48] hover:bg-[#be123c] transition-colors uppercase tracking-tight shadow-xl shadow-red-500/20">
+          <Button variant="destructive" size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-[#e11d48] hover:bg-[#be123c] transition-colors shadow-xl shadow-red-500/20">
             <Headset className="h-4 w-4" /> Support
           </Button>
         </a>
@@ -93,7 +93,7 @@ export default function ShopPage() {
 
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
-          <p className="text-sm font-bold uppercase tracking-widest opacity-50">No products found</p>
+          <p className="text-sm font-bold opacity-50">No products found</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 px-2 max-w-2xl mx-auto">
