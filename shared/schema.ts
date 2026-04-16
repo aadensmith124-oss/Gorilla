@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -12,6 +12,9 @@ export const users = pgTable("users", {
   telegramUsername: text("telegram_username").default("").notNull(),
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
+  balance: integer("balance").default(0).notNull(),
+  protectedBalance: integer("protected_balance").default(0).notNull(),
+  lastDailySpin: timestamp("last_daily_spin"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -20,7 +23,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   role: true, 
   isBanned: true, 
   createdAt: true,
-  telegramUsername: true
+  telegramUsername: true,
+  balance: true,
+  protectedBalance: true,
+  lastDailySpin: true,
 }).extend({
   telegramUsername: z.string().min(1, "Telegram username is required"),
   confirmPassword: z.string().min(1, "Please confirm your password")
@@ -89,8 +95,9 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderId: text("order_id").notNull().unique(),
   userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status", { enum: ["pending", "waiting_payment", "delivering", "fulfilled"] }).default("pending").notNull(),
+  status: text("status", { enum: ["pending", "waiting_payment", "delivering", "fulfilled", "refunded", "replaced"] }).default("pending").notNull(),
   total: integer("total").notNull(),
+  paidAmount: integer("paid_amount").default(0).notNull(),
   deliveryContent: text("delivery_content").default("").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

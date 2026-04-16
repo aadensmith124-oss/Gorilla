@@ -60,10 +60,9 @@ export function useAuth() {
       }
       return api.auth.register.responses[201].parse(await res.json());
     },
-    onSuccess: () => {
-      // Auto login after register usually, or just redirect to login
-      // Here we might need to login explicitly, but let's assume register logs in or ask user to login
-      toast({ title: "Account created", description: "Please log in with your new account." });
+    onSuccess: (data) => {
+      queryClient.setQueryData([api.auth.me.path], data);
+      toast({ title: "Account created!", description: `Welcome, ${data.username}!` });
     },
     onError: (error: Error) => {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });

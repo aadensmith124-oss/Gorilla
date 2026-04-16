@@ -607,7 +607,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAdminLogs(): Promise<any[]> {
-    return db.select().from(transactions).where(eq(transactions.type, "admin_adjustment")).orderBy(desc(transactions.timestamp)).limit(50);
+    return db.select().from(transactions).where(eq(transactions.type, "admin_adjustment")).orderBy(desc(transactions.createdAt)).limit(50);
   }
 
   async getAnnouncements(): Promise<Announcement[]> {
