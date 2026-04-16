@@ -379,22 +379,13 @@ export default function CartPage() {
 
         {/* Proceed to Payment */}
         <button
-          className="w-full h-11 rounded-xl text-sm font-bold text-black bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 uppercase tracking-widest flex items-center justify-center gap-2"
+          className="w-full h-9 rounded-xl text-xs font-bold text-black bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 uppercase tracking-widest flex items-center justify-center gap-2"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"
         >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           Proceed to Payment
-        </button>
-
-        {/* Topup Balance */}
-        <button
-          className="w-full h-11 rounded-xl text-sm font-bold text-white bg-[#e53935] hover:bg-[#c0392b] transition-colors uppercase tracking-widest"
-          onClick={() => setLocation("/profile?tab=settings")}
-          data-testid="button-topup-balance"
-        >
-          Topup Balance
         </button>
 
         {/* Coupon */}

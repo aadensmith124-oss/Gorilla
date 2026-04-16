@@ -35,7 +35,7 @@ export default function AuthPage() {
 
       <div className="z-10 w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-white">Cashplug</h1>
+          <h1 className="text-4xl font-bold text-white">CASHPLUG.CC</h1>
           <p className="text-muted-foreground text-xs font-bold">Sign in to access the marketplace</p>
         </div>
 
