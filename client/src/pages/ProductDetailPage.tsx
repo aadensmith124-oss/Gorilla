@@ -33,16 +33,12 @@ export default function ProductDetailPage() {
     }
   }, [selectedVariantId, minQty]);
 
-  if (isLoading) return (
-    <div className="flex h-screen items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white">Product not found</div>;
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
-      toast({ title: "Select an option", description: "Please choose a variant first", variant: "destructive" });
+      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
       return;
     }
     if (quantity < minQty) {
@@ -62,85 +58,75 @@ export default function ProductDetailPage() {
     toast({ title: "Added to cart", description: `${quantity}x ${product.name} (${selectedVariant.name})` });
   };
 
-  const handleViewCart = () => {
+  const handleBuyNow = () => {
+    if (!selectedVariant) {
+      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
+      return;
+    }
+    handleAddToCart();
     setLocation("/cart");
   };
 
-  const priceDisplay = selectedVariant
-    ? `$${(selectedVariant.price / 100).toFixed(2)}`
-    : product.variants.length > 0
-    ? `$${(Math.min(...product.variants.map((v: any) => v.price)) / 100).toFixed(2)}`
-    : "$0.00";
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#0d1017] rounded-xl border border-white/8 overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-          <button onClick={() => setLocation("/")} className="text-xs text-muted-foreground hover:text-white transition-colors">
-            Add to cart
-          </button>
+    <div className="min-h-screen bg-[#090a0c] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-[#16181d] rounded-2xl border border-white/5 overflow-hidden relative shadow-2xl">
+        <div className="p-6 border-b border-white/5 flex justify-between items-start">
+          <h1 className="text-xl font-display font-black tracking-tight text-white uppercase pr-8 leading-tight">
+            {product.name}
+          </h1>
           <button
             onClick={() => setLocation("/")}
-            className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-white transition-colors"
+            className="p-1 rounded bg-white/5 text-muted-foreground hover:text-white transition-colors"
             data-testid="button-close-product"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="px-5 pt-5 pb-1">
-          <h1 className="text-xl font-bold text-white tracking-tight">{product.name}</h1>
-        </div>
-
-        <div className="px-5 py-4 space-y-5">
-          {product.description && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">About product</p>
-              <div className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap font-medium">
-                {product.description}
-              </div>
+        <div className="p-6 space-y-6">
+          {product.description ? (
+            <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">About this product</p>
+              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{product.description}</p>
             </div>
-          )}
+          ) : null}
 
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Available options</p>
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Available Options</h3>
             <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
-              <SelectTrigger className="w-full h-11 bg-[#151b26] border-white/8 text-white text-sm" data-testid="select-variant">
-                <SelectValue placeholder="Select an option..." />
+              <SelectTrigger className="w-full h-12 bg-[#1c1f26] border-white/5 text-white font-bold uppercase tracking-wide" data-testid="select-variant">
+                <SelectValue placeholder="SELECT AN OPTION" />
               </SelectTrigger>
-              <SelectContent className="bg-[#151b26] border-white/10 text-white">
+              <SelectContent className="bg-[#1c1f26] border-white/5 text-white">
                 {product.variants.map((v: any) => (
                   <SelectItem
                     key={v.id}
                     value={v.id.toString()}
-                    className="hover:bg-white/5 focus:bg-white/5 cursor-pointer text-sm"
+                    className="font-bold uppercase tracking-wide hover:bg-white/5 focus:bg-white/5 cursor-pointer"
                   >
-                    {v.name} - Price: ${(v.price / 100).toFixed(2)}
-                    {v.minQuantity > 1 ? ` (min ${v.minQuantity})` : ""}
+                    ${(v.price / 100).toFixed(2)} - {v.name}{v.minQuantity > 1 ? ` (min ${v.minQuantity})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
-              Amount to add {minQty > 1 && <span className="text-primary normal-case">(min {minQty})</span>}
-            </p>
-            <div className="flex items-center gap-3 bg-[#151b26] border border-white/8 rounded-lg px-4 py-2">
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+              Quantity {minQty > 1 && <span className="text-primary">(min {minQty})</span>}
+            </h3>
+            <div className="inline-flex items-center gap-3 p-1.5 bg-[#1c1f26] rounded-xl border border-white/5">
               <button
                 onClick={() => setQuantity(prev => Math.max(minQty, prev - 1))}
-                className="h-7 w-7 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-white transition-colors"
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary text-white transition-colors"
                 data-testid="button-qty-decrease"
               >
                 <Minus className="h-3 w-3" />
               </button>
-              <span className="flex-1 text-center text-sm font-bold text-white font-mono">{quantity}</span>
-              <div className="text-xs text-muted-foreground font-mono ml-auto pr-2">$</div>
-              <span className="text-sm font-bold text-white font-mono">{(((selectedVariant?.price || 0) * quantity) / 100).toFixed(2)}</span>
+              <span className="w-10 text-center text-sm font-bold text-white font-mono">{quantity}</span>
               <button
                 onClick={() => setQuantity(prev => prev + 1)}
-                className="h-7 w-7 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-white transition-colors"
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary text-white transition-colors"
                 data-testid="button-qty-increase"
               >
                 <Plus className="h-3 w-3" />
@@ -148,20 +134,35 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div className="space-y-2.5 pt-1">
+          <div className="space-y-3 pt-2">
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariantId}
-              className="w-full h-11 rounded-lg bg-[#1a3ecf] hover:bg-[#1e4aed] text-white font-bold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl font-black uppercase italic tracking-tighter text-sm shadow-lg hover:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+              style={{
+                background: "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))",
+                color: "#0a0a0a",
+                boxShadow: "0 8px 32px hsl(38,82%,52%,0.25)",
+                cursor: !selectedVariantId ? "not-allowed" : "pointer",
+              }}
               data-testid="button-add-to-cart"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add to cart
+              Add to Cart
             </button>
 
             <button
-              onClick={handleViewCart}
-              className="w-full h-11 rounded-lg bg-[#1a3ecf]/20 border border-[#1a3ecf]/40 text-[#5b82f5] hover:bg-[#1a3ecf]/30 font-bold text-sm transition-colors"
+              onClick={handleBuyNow}
+              disabled={!selectedVariantId}
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              data-testid="button-buy-now"
+            >
+              Buy Now
+            </button>
+
+            <button
+              onClick={() => setLocation("/cart")}
+              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white font-black uppercase italic tracking-tighter text-sm hover:bg-white/5 transition-colors"
               data-testid="button-view-cart"
             >
               View Cart
