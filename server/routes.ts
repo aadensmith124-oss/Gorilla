@@ -1158,18 +1158,18 @@ export async function registerRoutes(
     });
   });
 
-  // ── Admin: Chime tag setting ──────────────────────────────────────────────
-  app.get("/api/admin/settings/chime-tag", async (req, res) => {
+  // ── Admin: CashApp tag setting ────────────────────────────────────────────
+  app.get("/api/admin/settings/cashapp-tag", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
-    const tag = await storage.getSetting("chime_tag", "");
+    const tag = await storage.getSetting("cashapp_tag", "");
     res.json({ tag });
   });
 
-  app.post("/api/admin/settings/chime-tag", async (req, res) => {
+  app.post("/api/admin/settings/cashapp-tag", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     const { tag } = req.body;
     if (typeof tag !== "string") return res.status(400).json({ message: "Invalid tag" });
-    await storage.setSetting("chime_tag", tag.trim());
+    await storage.setSetting("cashapp_tag", tag.trim());
     res.json({ tag: tag.trim() });
   });
 
@@ -1202,29 +1202,81 @@ export async function registerRoutes(
     }
   });
 
-  // ── Chime order (manual payment) ─────────────────────────────────────────
-  app.get("/api/site-settings/chime-tag", async (req, res) => {
-    const tag = await storage.getSetting("chime_tag", "");
+  // ── CashApp order (manual payment) ───────────────────────────────────────
+  app.get("/api/site-settings/cashapp-tag", async (req, res) => {
+    const tag = await storage.getSetting("cashapp_tag", "");
     res.json({ tag });
   });
 
-  app.post("/api/orders/chime", async (req, res) => {
+  app.post("/api/orders/cashapp", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    let pendingOrderId: number | null = null;
     try {
       const userId = (req.user as any).id;
       const { items } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
-      const order = await storage.createPendingOrder(userId, productItems, []);
-      pendingOrderId = order.id;
-      const chimeTag = await storage.getSetting("chime_tag", "");
-      pendingOrderId = null;
-      res.status(201).json({ order, chimeTag });
-    } catch (e: any) {
-      console.error("Chime order creation failed:", e);
-      if (pendingOrderId) {
-        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      const noteId = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const paymentNote = `snack-${noteId}`;
+      const cashappTag = await storage.getSetting("cashapp_tag", "");
+
+      const publicOrderId = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+      let total = 0;
+      for (const item of productItems) {
+        const [v] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+        if (!v) throw new Error("Variant not found");
+        total += v.price * item.quantity;
       }
+      const [order] = await db.insert(orders).values({
+        orderId: publicOrderId,
+        userId,
+        total,
+        status: "waiting_payment",
+        paymentMethod: "CashApp",
+        paymentNote,
+      }).returning();
+
+      for (const item of productItems) {
+        const [v] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+        if (!v) continue;
+        await db.insert(orderItems).values({
+          orderId: order.id,
+          variantId: item.variantId,
+          stockItemId: null,
+          cardId: null,
+          itemType: "product",
+          price: v.price,
+          quantity: item.quantity,
+        });
+      }
+
+      res.status(201).json({ order, paymentNote, cashappTag });
+    } catch (e: any) {
+      console.error("CashApp order creation failed:", e);
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Admin: fulfill CashApp order (Paid) ──────────────────────────────────
+  app.post("/api/admin/orders/:id/cashapp-fulfill", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.fulfillCashappOrder(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Admin: mark order unpaid ──────────────────────────────────────────────
+  app.post("/api/admin/orders/:id/mark-unpaid", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.markOrderUnpaid(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
   });

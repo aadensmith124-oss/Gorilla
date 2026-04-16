@@ -99,6 +99,8 @@ export const orders = pgTable("orders", {
   total: integer("total").notNull(),
   paidAmount: integer("paid_amount").default(0).notNull(),
   deliveryContent: text("delivery_content").default("").notNull(),
+  paymentMethod: text("payment_method").default("").notNull(),
+  paymentNote: text("payment_note").default("").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

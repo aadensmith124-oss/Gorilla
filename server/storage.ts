@@ -400,6 +400,49 @@ export class DatabaseStorage implements IStorage {
     await db.update(orders).set({ status: "fulfilled" }).where(eq(orders.id, orderId));
   }
 
+  async fulfillCashappOrder(orderId: number): Promise<Order> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) throw new Error("Order not found");
+    if (order.status !== "waiting_payment" && order.status !== "pending") {
+      throw new Error("Order is not in a payable state");
+    }
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    const deliveryParts: Record<string, string[]> = {};
+
+    for (const item of items) {
+      if (!item.variantId) continue;
+      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+      if (!variant) continue;
+      const key = String(item.variantId);
+      if (!deliveryParts[key]) deliveryParts[key] = [];
+      for (let i = 0; i < (item.quantity ?? 1); i++) {
+        const stock = await this.reserveStockItem(item.variantId);
+        if (!stock) throw new Error(`Insufficient stock for ${variant.name}`);
+        await db.update(orderItems).set({ stockItemId: stock.id }).where(eq(orderItems.id, item.id));
+        await db.update(stockItems).set({ isSold: true, orderId }).where(eq(stockItems.id, stock.id));
+        deliveryParts[key].push(stock.content);
+      }
+    }
+
+    const deliveryContent = JSON.stringify(
+      Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
+    );
+    const [updated] = await db.update(orders)
+      .set({ status: "delivering", deliveryContent, paidAmount: order.total })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updated;
+  }
+
+  async markOrderUnpaid(orderId: number): Promise<Order> {
+    const [updated] = await db.update(orders)
+      .set({ status: "waiting_payment" })
+      .where(eq(orders.id, orderId))
+      .returning();
+    if (!updated) throw new Error("Order not found");
+    return updated;
+  }
+
   async cancelPendingOrder(orderId: number): Promise<void> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order || order.status !== "pending") return;

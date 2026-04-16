@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2, Star, Package } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { SiBitcoin } from "react-icons/si";
+import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -643,6 +643,42 @@ function OrdersSection() {
     }
   });
 
+  const cashappFulfillMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, {});
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "Order fulfilled — items sent to user" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  });
+
+  const markUnpaidMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/mark-unpaid`, {});
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "Order marked unpaid" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  });
+
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
@@ -751,12 +787,12 @@ function OrdersSection() {
   }
 
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.status === "fulfilled";
+    if (orderFilter === "waiting") return o.status === "waiting_payment";
     if (orderFilter === "fulfilled") return o.status === "delivering";
     return true;
   });
 
-  const waitingCount = (orders || []).filter((o: any) => o.status === "fulfilled").length;
+  const waitingCount = (orders || []).filter((o: any) => o.status === "waiting_payment").length;
 
   return (
     <div className="space-y-4">
@@ -765,16 +801,16 @@ function OrdersSection() {
       <div className="flex gap-2 flex-wrap">
         {[
           { key: "all", label: "All" },
-          { key: "waiting", label: `Waiting Order${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
+          { key: "waiting", label: `Unpaid${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
           { key: "fulfilled", label: "Delivered" },
         ].map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setOrderFilter(key as any)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${
               orderFilter === key
                 ? key === "waiting"
-                  ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                  ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-400"
                   : "bg-primary/20 border-primary/40 text-primary"
                 : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20"
             }`}
@@ -789,28 +825,56 @@ function OrdersSection() {
       )}
 
       <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 py-2.5 border-b border-white/5">
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Price</span>
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Date</span>
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto] px-3 py-2 border-b border-white/5 gap-2">
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">$</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Note / Method</span>
           <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status</span>
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Payment</span>
           <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Action</span>
+          <span></span>
         </div>
-        {filteredOrders.map((order: any) => (
-          <div key={order.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 py-3 border-b border-white/5 last:border-0 items-center hover:bg-white/5 transition-colors">
-            <span className="text-sm font-bold text-white">${(order.total / 100).toFixed(2)}</span>
-            <span className="text-xs text-white/50">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}</span>
-            <span className={`text-sm font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
-            <span className="text-xs text-white/60">{order.paymentMethod || "Crypto"}</span>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-3" onClick={() => {
-              setSelectedOrder(order);
-              setDeliveryContents(parseDeliveryContents(order.deliveryContent));
-              setActiveProductKey(null);
-            }}>
-              View
-            </Button>
-          </div>
-        ))}
+        {filteredOrders.map((order: any) => {
+          const isCashapp = order.paymentMethod === "CashApp";
+          const isUnpaid = order.status === "waiting_payment";
+          return (
+            <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
+              <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+              <div className="min-w-0">
+                <p className="text-[11px] text-white/70 truncate font-mono">{order.paymentNote || order.paymentMethod || "—"}</p>
+                <p className="text-[10px] text-white/30 truncate">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+              </div>
+              <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
+              <div className="flex gap-1">
+                {isCashapp && isUnpaid && (
+                  <>
+                    <button
+                      onClick={() => cashappFulfillMutation.mutate(order.id)}
+                      disabled={cashappFulfillMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-green-500/20 border border-green-500/30 text-green-400 text-[10px] font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                      data-testid={`button-paid-${order.id}`}
+                    >
+                      Paid
+                    </button>
+                    <button
+                      onClick={() => markUnpaidMutation.mutate(order.id)}
+                      disabled={markUnpaidMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                      data-testid={`button-unpaid-${order.id}`}
+                    >
+                      Unpaid
+                    </button>
+                  </>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                setSelectedOrder(order);
+                setDeliveryContents(parseDeliveryContents(order.deliveryContent));
+                setActiveProductKey(null);
+              }}>
+                View
+              </Button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1064,15 +1128,15 @@ function IntegrationsSection() {
     queryKey: ["/api/admin/payment-methods"],
   });
 
-  const { data: chimeTagData } = useQuery<{ tag: string }>({
-    queryKey: ["/api/admin/settings/chime-tag"],
+  const { data: cashappTagData } = useQuery<{ tag: string }>({
+    queryKey: ["/api/admin/settings/cashapp-tag"],
   });
 
   useEffect(() => {
-    if (chimeTagData?.tag !== undefined) {
-      setCashappTagInput(chimeTagData.tag);
+    if (cashappTagData?.tag !== undefined) {
+      setCashappTagInput(cashappTagData.tag);
     }
-  }, [chimeTagData]);
+  }, [cashappTagData]);
 
   const toggleMutation = useMutation({
     mutationFn: async ({ method, enabled }: { method: string; enabled: boolean }) => {
@@ -1090,12 +1154,12 @@ function IntegrationsSection() {
 
   const saveCashappTagMutation = useMutation({
     mutationFn: async (tag: string) => {
-      const res = await apiRequest("POST", "/api/admin/settings/chime-tag", { tag });
+      const res = await apiRequest("POST", "/api/admin/settings/cashapp-tag", { tag });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/chime-tag"] });
-      toast({ title: "Chime tag saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/cashapp-tag"] });
+      toast({ title: "CashApp tag saved" });
     },
     onError: () => {
       toast({ title: "Failed to save", variant: "destructive" });
@@ -1103,6 +1167,7 @@ function IntegrationsSection() {
   });
 
   const METHODS = [
+    { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
     { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-amber-500" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
@@ -1149,19 +1214,19 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      {/* Chime Tag */}
+      {/* CashApp Tag */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Chime Settings</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">CashApp Settings</p>
         <Card className="bg-[#0f1115] border-white/5">
           <CardContent className="p-4 space-y-3">
             <div>
-              <p className="font-bold text-sm text-white mb-1">Your Chime Username/Tag</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this when paying via Chime. This is the Chime $cashtag or username they send money to.</p>
+              <p className="font-bold text-sm text-white mb-1">Your CashApp $Cashtag</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this $cashtag when paying via CashApp. They will send money here with a generated note.</p>
               <div className="flex gap-2">
                 <Input
                   value={cashappTagInput}
                   onChange={(e) => setCashappTagInput(e.target.value)}
-                  placeholder="$YourChimeTag"
+                  placeholder="$YourCashTag"
                   className="flex-1 bg-white/5 border-white/8 text-white font-mono"
                   data-testid="input-cashapp-tag"
                 />

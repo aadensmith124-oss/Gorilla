@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
         <TabsContent value="orders" className="pt-6">
           {(() => {
-            const visibleOrders = (orders || []).filter((o: any) => o.status === "fulfilled" || o.status === "delivering");
+            const visibleOrders = (orders || []).filter((o: any) => o.status === "fulfilled" || o.status === "delivering" || o.status === "waiting_payment");
             return visibleOrders.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-sm font-black text-white uppercase tracking-widest mb-4">
@@ -198,12 +198,14 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
 }
 
 function statusLabel(s: string) {
+  if (s === "waiting_payment") return "Unpaid";
   if (s === "fulfilled") return "Waiting";
   if (s === "delivering") return "Delivered";
   return s;
 }
 
 function statusColor(s: string) {
+  if (s === "waiting_payment") return "text-yellow-400";
   if (s === "fulfilled") return "text-orange-400";
   if (s === "delivering") return "text-green-400";
   return "text-white/50";
