@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +44,9 @@ export default function ProfilePage() {
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Settings
+          </TabsTrigger>
+          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+            Balance
           </TabsTrigger>
         </TabsList>
 
@@ -118,7 +121,78 @@ export default function ProfilePage() {
         <TabsContent value="settings" className="pt-6">
           <SettingsTab user={user} onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/user"] })} />
         </TabsContent>
+
+        <TabsContent value="balance" className="pt-6">
+          <BalanceTab user={user} onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/user"] })} />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
+  const [code, setCode] = useState("");
+  const { toast } = useToast();
+
+  const redeemMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/wallet/redeem", { code: code.trim() });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to redeem code");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Code redeemed!", description: `+$${(data.amount / 100).toFixed(2)} added to your balance` });
+      setCode("");
+      onUpdate();
+    },
+    onError: (e: any) => {
+      toast({ title: "Invalid code", description: e.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="space-y-5">
+      <Card className="bg-[#0d1017] border-white/8">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Current Balance</span>
+            <span className="text-2xl font-bold text-white">${((user.balance || 0) / 100).toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-[#0d1017] border-white/8">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gift className="h-4 w-4 text-primary" />
+            Redeem Code
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Gift Card / Redeem Code</label>
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              className="bg-white/5 border-white/8 text-white font-mono placeholder:text-white/20 h-11"
+              data-testid="input-redeem-code"
+            />
+          </div>
+          <Button
+            className="w-full h-11"
+            onClick={() => redeemMutation.mutate()}
+            disabled={redeemMutation.isPending || !code.trim()}
+            data-testid="button-redeem"
+          >
+            {redeemMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
+            Redeem
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

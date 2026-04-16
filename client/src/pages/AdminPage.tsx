@@ -156,6 +156,7 @@ function ProductsSection() {
   const productSchema = z.object({
     name: z.string().min(1, "Name required"),
     image: z.string().optional(),
+    description: z.string().optional(),
   });
 
   const variantSchema = z.object({
@@ -166,12 +167,12 @@ function ProductsSection() {
 
   const addForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", image: "" },
+    defaultValues: { name: "", image: "", description: "" },
   });
 
   const editForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", image: "" },
+    defaultValues: { name: "", image: "", description: "" },
   });
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
@@ -181,7 +182,7 @@ function ProductsSection() {
 
   const addMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productSchema>) => {
-      const res = await apiRequest("POST", api.products.create.path, { ...data, description: "" });
+      const res = await apiRequest("POST", api.products.create.path, { ...data, description: data.description || "" });
       return res.json();
     },
     onSuccess: () => {
@@ -245,7 +246,7 @@ function ProductsSection() {
 
   const startEdit = (product: any) => {
     setEditingProduct(product);
-    editForm.reset({ name: product.name, image: product.image || "" });
+    editForm.reset({ name: product.name, image: product.image || "", description: product.description || "" });
     setShowAddForm(false);
   };
 
@@ -309,6 +310,19 @@ function ProductsSection() {
                     <FormControl><ImageUploadField field={field} /></FormControl>
                   </FormItem>
                 )} />
+                <FormField control={addForm.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Describe the product — shown on product detail page..."
+                        rows={4}
+                        className="bg-black/50 border-white/10 resize-none text-sm"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )} />
                 <Button type="submit" className="w-full" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Product
                 </Button>
@@ -339,6 +353,19 @@ function ProductsSection() {
                   <FormItem>
                     <FormLabel>Image</FormLabel>
                     <FormControl><ImageUploadField field={field} /></FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={editForm.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Describe the product — shown on product detail page..."
+                        rows={4}
+                        className="bg-black/50 border-white/10 resize-none text-sm"
+                      />
+                    </FormControl>
                   </FormItem>
                 )} />
                 <Button type="submit" className="w-full" disabled={editMutation.isPending}>
