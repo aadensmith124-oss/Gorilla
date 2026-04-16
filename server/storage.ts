@@ -277,6 +277,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(stockItems)
       .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false)))
+      .orderBy(sql`RANDOM()`)
       .limit(1);
 
     if (item) {
