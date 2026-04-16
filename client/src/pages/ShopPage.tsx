@@ -54,7 +54,7 @@ export default function ShopPage() {
             If you believe this is an error, please contact support.
           </p>
         </div>
-        <div className="flex flex-col gap-3 w-full max-w-xs mx-auto px-4 opacity-60 grayscale-[0.5]">
+        <div className="flex flex-col gap-3 mx-auto opacity-60 grayscale-[0.5]" style={{ width: "180px" }}>
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -97,7 +97,7 @@ export default function ShopPage() {
           <p className="text-sm font-bold opacity-50">No products found</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 w-full max-w-xs mx-auto px-4">
+        <div className="flex flex-col gap-3 mx-auto" style={{ width: "180px" }}>
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

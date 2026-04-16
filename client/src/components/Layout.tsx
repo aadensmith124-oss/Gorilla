@@ -92,10 +92,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#090a0c]">
-      <header className="h-14 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
+      <header className="h-20 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
-            <img src={logoImg} alt="CASHPLUG SHOP" className="h-10 w-auto max-w-[240px] object-contain" />
+            <img src={logoImg} alt="CASHPLUG SHOP" className="w-48 h-auto object-contain" />
           </div>
         </Link>
 
