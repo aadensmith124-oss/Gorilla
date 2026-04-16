@@ -13,33 +13,33 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="group cursor-pointer rounded-xl overflow-hidden border border-white/[0.08] bg-[#111318] transition-all hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 flex flex-col"
+        className="group cursor-pointer rounded-xl overflow-hidden border border-white/[0.10] bg-[#111318] transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 flex flex-col"
         data-testid={`card-product-${product.id}`}
       >
-        {/* Image — shorter 16:9 ratio */}
-        <div className="w-full bg-[#0c0e13] relative overflow-hidden" style={{ aspectRatio: '16 / 7' }}>
+        {/* Square image */}
+        <div className="w-full bg-[#0c0e13] relative overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
           {product.image && !imgError ? (
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-full object-contain px-4 py-2 transform group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain p-3 transform group-hover:scale-105 transition-transform duration-500"
               onError={() => setImgError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-[#0c0e13]">
-              <span className="text-3xl font-bold text-white/20">{product.name?.charAt(0)?.toUpperCase()}</span>
+              <span className="text-2xl font-bold text-white/20">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}
         </div>
 
         {/* Info */}
-        <div className="px-2.5 py-2 flex flex-col gap-1.5">
-          <p className="text-[11px] font-bold text-white leading-snug text-center line-clamp-1">
+        <div className="px-2 py-1.5 flex flex-col gap-1.5">
+          <p className="text-[10px] font-bold text-white leading-tight text-center line-clamp-2 min-h-[28px] flex items-center justify-center">
             {product.name}
           </p>
 
           <button
-            className="w-full h-7 rounded-lg text-[11px] font-bold text-white flex items-center justify-between px-3 transition-all hover:opacity-90 active:scale-[0.98]"
+            className="w-full h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
             style={{ background: "#c0392b" }}
           >
             <span>Buy Now</span>

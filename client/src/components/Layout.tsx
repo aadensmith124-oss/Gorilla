@@ -95,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="h-14 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
-            <img src={logoImg} alt="CASHPLUG SHOP" className="h-9 w-auto max-w-[160px] object-contain" />
+            <img src={logoImg} alt="CASHPLUG SHOP" className="h-12 w-auto max-w-[220px] object-contain" style={{ mixBlendMode: "screen" }} />
           </div>
         </Link>
 
