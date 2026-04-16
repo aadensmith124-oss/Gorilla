@@ -260,164 +260,139 @@ export default function CartPage() {
         />
       )}
 
-      <div className="max-w-lg mx-auto w-full space-y-5 pb-20">
-        <div>
-          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Your Cart Products</h2>
-          <div className="bg-[#0d1017] border border-white/8 rounded-xl overflow-hidden divide-y divide-white/5">
-            {items.map((item) => (
-              <div key={`v-${item.variantId}`} className="flex items-start gap-3 p-3" data-testid={`card-cart-item-${item.variantId}`}>
-                <div className="h-10 w-10 rounded-lg bg-[#151b26] overflow-hidden flex-shrink-0 flex items-center justify-center">
-                  {item.image ? (
-                    <img src={item.image} alt={item.productName} className="h-full w-full object-contain p-1" />
-                  ) : (
-                    <span className="text-base font-black text-white/30">{item.productName?.charAt(0)}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-bold text-white uppercase tracking-tight leading-tight">{item.productName}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{item.variantName}</p>
-                    </div>
-                    <button
-                      onClick={() => removeItem(item.variantId)}
-                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-                      data-testid={`button-remove-item-${item.variantId}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <div className="flex gap-3 mt-1.5 text-[11px] text-muted-foreground">
-                    <span>Price: <span className="text-white">${(item.price / 100).toFixed(2)}</span></span>
-                    <span>Qty: <span className="text-white">{item.quantity}</span></span>
-                    <span>Total: <span className="text-white">${((item.price * item.quantity) / 100).toFixed(2)}</span></span>
-                  </div>
-                </div>
+      <div className="max-w-lg mx-auto w-full space-y-4 pb-20">
+        <div className="bg-[#0d1017] border border-white/[0.06] rounded-xl overflow-hidden divide-y divide-white/[0.05]">
+          {items.map((item) => (
+            <div key={`v-${item.variantId}`} className="flex items-center gap-3 px-3 py-3" data-testid={`card-cart-item-${item.variantId}`}>
+              <div className="h-9 w-9 rounded-lg bg-[#151b26] overflow-hidden flex-shrink-0 flex items-center justify-center">
+                {item.image ? (
+                  <img src={item.image} alt={item.productName} className="h-full w-full object-contain p-1" />
+                ) : (
+                  <span className="text-sm font-black text-white/20">{item.productName?.charAt(0)}</span>
+                )}
               </div>
-            ))}
-          </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-white/90 leading-tight truncate">{item.productName}</p>
+                <p className="text-[11px] text-white/30 mt-0.5">{item.variantName} · {item.quantity}x · <span className="text-white/50">${((item.price * item.quantity) / 100).toFixed(2)}</span></p>
+              </div>
+              <button
+                onClick={() => removeItem(item.variantId)}
+                className="text-white/15 hover:text-white/50 transition-colors flex-shrink-0 p-1"
+                data-testid={`button-remove-item-${item.variantId}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
         </div>
 
-        <div className="h-px bg-white/5" />
-
-        <div>
-          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-2">Apply Coupon Code</h2>
-          <div className="flex bg-[#0d1017] border border-white/8 rounded-xl overflow-hidden">
-            <Input
-              placeholder="your coupon here ..."
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              className="flex-1 bg-transparent border-0 text-white placeholder:text-white/20 text-xs focus-visible:ring-0 rounded-none h-9"
-              data-testid="input-coupon"
-            />
-            <button
-              onClick={handleApplyCoupon}
-              className="px-3 text-[10px] font-bold text-muted-foreground hover:text-white transition-colors border-l border-white/8"
-              data-testid="button-apply-coupon"
-            >
-              APPLY
-            </button>
-          </div>
+        <div className="flex bg-[#0d1017] border border-white/[0.06] rounded-xl overflow-hidden">
+          <Input
+            placeholder="Coupon code"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+            className="flex-1 bg-transparent border-0 text-white placeholder:text-white/15 text-xs focus-visible:ring-0 rounded-none h-9"
+            data-testid="input-coupon"
+          />
+          <button
+            onClick={handleApplyCoupon}
+            className="px-3 text-[10px] font-bold text-white/20 hover:text-white/60 transition-colors border-l border-white/[0.06]"
+            data-testid="button-apply-coupon"
+          >
+            APPLY
+          </button>
         </div>
 
-        <div className="bg-[#0d1017] border border-white/8 rounded-xl p-3.5 space-y-2">
-          <h2 className="text-xs font-bold text-white mb-2">Order Details</h2>
+        <div className="bg-[#0d1017] border border-white/[0.06] rounded-xl p-3.5 space-y-2.5">
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span className="text-white">${(cartTotal / 100).toFixed(2)}</span>
+            <span className="text-white/40">Subtotal</span>
+            <span className="text-white/80">${(cartTotal / 100).toFixed(2)}</span>
           </div>
           {selectedMethod === "cashapp" && (
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">CashApp Fee (+{CASHAPP_FEE_PERCENT}%)</span>
-              <span className="text-green-400">+${(cashappFee / 100).toFixed(2)}</span>
+              <span className="text-white/40">Service fee (+{CASHAPP_FEE_PERCENT}%)</span>
+              <span className="text-white/60">+${(cashappFee / 100).toFixed(2)}</span>
             </div>
           )}
           {selectedMethod === "crypto" && (
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Crypto Fee (+{CRYPTO_FEE_PERCENT}%)</span>
-              <span className="text-orange-400">+${(cryptoFee / 100).toFixed(2)}</span>
+              <span className="text-white/40">Service fee (+{CRYPTO_FEE_PERCENT}%)</span>
+              <span className="text-white/60">+${(cryptoFee / 100).toFixed(2)}</span>
             </div>
           )}
+          <div className="h-px bg-white/[0.05]" />
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Discount</span>
-            <span className="text-white">$0.00</span>
-          </div>
-          <div className="h-px bg-white/5" />
-          <div className="flex justify-between text-xs font-bold">
-            <span className="text-white">Total</span>
-            <span className="text-white">${(displayTotal / 100).toFixed(2)}</span>
+            <span className="text-white font-bold">Total</span>
+            <span className="text-white font-bold">${(displayTotal / 100).toFixed(2)}</span>
           </div>
         </div>
 
         <div>
-          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-2">Payment Method</h2>
-          <div className="space-y-1.5">
-            {/* CashApp option */}
+          <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Payment Method</h2>
+          <div className="space-y-1">
             {cashappEnabled && (
               <button
                 onClick={() => setSelectedMethod("cashapp")}
                 data-testid="button-payment-cashapp"
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                   selectedMethod === "cashapp"
-                    ? "border-[#00D632]/30 bg-[#00D632]/5"
-                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                    ? "border-white/20 bg-white/[0.04]"
+                    : "border-white/[0.06] bg-[#0d1017] hover:border-white/10"
                 }`}
               >
-                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "cashapp" ? "border-[#00D632]" : "border-white/30"}`}>
-                  {selectedMethod === "cashapp" && <div className="h-2 w-2 rounded-full bg-[#00D632]" />}
+                <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "cashapp" ? "border-primary" : "border-white/20"}`}>
+                  {selectedMethod === "cashapp" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                 </div>
-                <SiCashapp className="h-5 w-5 text-[#00D632] flex-shrink-0" />
-                <span className="flex-1 text-left text-xs font-bold text-white">CashApp</span>
-                <span className="text-[11px] font-bold text-green-400">+{CASHAPP_FEE_PERCENT}% fee</span>
+                <SiCashapp className="h-4 w-4 text-[#00D632]/70 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-semibold text-white/80">CashApp</span>
+                <span className="text-[10px] text-white/25">+{CASHAPP_FEE_PERCENT}%</span>
               </button>
             )}
 
-            {/* Balance option */}
             {walletEnabled && (
               <button
                 onClick={() => setSelectedMethod("balance")}
                 data-testid="button-payment-balance"
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                   selectedMethod === "balance"
-                    ? "border-white/20 bg-white/5"
-                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                    ? "border-white/20 bg-white/[0.04]"
+                    : "border-white/[0.06] bg-[#0d1017] hover:border-white/10"
                 }`}
               >
-                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "balance" ? "border-white" : "border-white/30"}`}>
-                  {selectedMethod === "balance" && <div className="h-2 w-2 rounded-full bg-white" />}
+                <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "balance" ? "border-primary" : "border-white/20"}`}>
+                  {selectedMethod === "balance" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                 </div>
-                <Wallet className="h-4 w-4 text-white/70 flex-shrink-0" />
-                <span className="flex-1 text-left text-xs font-bold text-white">Balance</span>
-                <span className={`text-[11px] font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
+                <Wallet className="h-4 w-4 text-white/30 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-semibold text-white/80">Balance</span>
+                <span className={`text-[10px] ${hasEnoughBalance ? "text-white/40" : "text-red-400/70"}`}>
                   ${(userBalance / 100).toFixed(2)}
                 </span>
               </button>
             )}
 
-            {/* Crypto option */}
             {cryptoEnabled && (
               <button
                 onClick={() => setSelectedMethod("crypto")}
                 data-testid="button-payment-crypto"
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                   selectedMethod === "crypto"
-                    ? "border-orange-400/30 bg-orange-400/5"
-                    : "border-white/8 bg-[#0d1017] hover:border-white/15"
+                    ? "border-white/20 bg-white/[0.04]"
+                    : "border-white/[0.06] bg-[#0d1017] hover:border-white/10"
                 }`}
               >
-                <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "crypto" ? "border-orange-400" : "border-white/30"}`}>
-                  {selectedMethod === "crypto" && <div className="h-2 w-2 rounded-full bg-orange-400" />}
+                <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "crypto" ? "border-primary" : "border-white/20"}`}>
+                  {selectedMethod === "crypto" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                 </div>
-                <SiBitcoin className="h-4 w-4 text-orange-400 flex-shrink-0" />
-                <span className="flex-1 text-left text-xs font-bold text-white">Crypto</span>
-                <span className="text-[11px] font-bold text-orange-400">+{CRYPTO_FEE_PERCENT}% fee</span>
+                <SiBitcoin className="h-4 w-4 text-white/30 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-semibold text-white/80">Crypto</span>
+                <span className="text-[10px] text-white/25">+{CRYPTO_FEE_PERCENT}%</span>
               </button>
             )}
           </div>
         </div>
 
         <Button
-          className="w-full h-10 text-xs font-bold bg-[#1a3ecf] hover:bg-[#1e4aed] text-white rounded-xl"
+          className="w-full h-10 text-xs font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-black rounded-xl"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"
