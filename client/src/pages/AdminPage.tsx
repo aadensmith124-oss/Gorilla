@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -1054,6 +1054,7 @@ function UsersSection() {
 
 function IntegrationsSection() {
   const { toast } = useToast();
+  const [cashappTagInput, setCashappTagInput] = useState("");
 
   const { data: integrationStatus, isLoading: statusLoading } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/admin/integrations/status"],
@@ -1062,6 +1063,16 @@ function IntegrationsSection() {
   const { data: paymentMethods, isLoading: methodsLoading } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/admin/payment-methods"],
   });
+
+  const { data: cashappTagData } = useQuery<{ tag: string }>({
+    queryKey: ["/api/admin/settings/cashapp-tag"],
+  });
+
+  useEffect(() => {
+    if (cashappTagData?.tag !== undefined) {
+      setCashappTagInput(cashappTagData.tag);
+    }
+  }, [cashappTagData]);
 
   const toggleMutation = useMutation({
     mutationFn: async ({ method, enabled }: { method: string; enabled: boolean }) => {
@@ -1074,6 +1085,20 @@ function IntegrationsSection() {
     },
     onError: () => {
       toast({ title: "Failed to update", variant: "destructive" });
+    },
+  });
+
+  const saveCashappTagMutation = useMutation({
+    mutationFn: async (tag: string) => {
+      const res = await apiRequest("POST", "/api/admin/settings/cashapp-tag", { tag });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/cashapp-tag"] });
+      toast({ title: "CashApp tag saved" });
+    },
+    onError: () => {
+      toast({ title: "Failed to save", variant: "destructive" });
     },
   });
 
@@ -1122,6 +1147,36 @@ function IntegrationsSection() {
             );
           })}
         </div>
+      </div>
+
+      {/* CashApp Tag */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">CashApp Settings</p>
+        <Card className="bg-[#0f1115] border-white/5">
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <p className="font-bold text-sm text-white mb-1">Your CashApp Tag</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this tag when paying via CashApp. Include the $ sign (e.g. $YourTag).</p>
+              <div className="flex gap-2">
+                <Input
+                  value={cashappTagInput}
+                  onChange={(e) => setCashappTagInput(e.target.value)}
+                  placeholder="$YourCashAppTag"
+                  className="flex-1 bg-white/5 border-white/8 text-white font-mono"
+                  data-testid="input-cashapp-tag"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => saveCashappTagMutation.mutate(cashappTagInput)}
+                  disabled={saveCashappTagMutation.isPending}
+                  data-testid="button-save-cashapp-tag"
+                >
+                  {saveCashappTagMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Telegram Bot Token Status */}

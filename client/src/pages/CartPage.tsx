@@ -2,15 +2,94 @@ import { useState } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, ArrowRight, Loader2, Wallet } from "lucide-react";
-import { Link, useLocation } from "wouter";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { ShoppingCart, ArrowRight, Loader2, Trash2, Wallet, X, ExternalLink } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { SiBitcoin, SiCashapp } from "react-icons/si";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
+
+type PaymentMethod = "balance" | "crypto" | "cashapp";
+
+const PAYMENT_OPTIONS: { id: PaymentMethod; icon: React.ReactNode; label: string; desc?: string }[] = [
+  {
+    id: "balance",
+    icon: <Wallet className="h-5 w-5 text-green-400" />,
+    label: "Balance",
+    desc: "Instant delivery from stock",
+  },
+  {
+    id: "crypto",
+    icon: <SiBitcoin className="h-5 w-5 text-amber-400" />,
+    label: "Crypto",
+    desc: "Bitcoin, USDT, ETH & more",
+  },
+  {
+    id: "cashapp",
+    icon: <SiCashapp className="h-5 w-5 text-green-500" />,
+    label: "CashApp",
+    desc: "Send via CashApp",
+  },
+];
+
+interface CashAppInstructionsProps {
+  orderId: string;
+  total: number;
+  cashappTag: string;
+  onClose: () => void;
+}
+
+function CashAppInstructions({ orderId, total, cashappTag, onClose }: CashAppInstructionsProps) {
+  const [, setLocation] = useLocation();
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-[#16181d] rounded-2xl border border-white/8 p-6 space-y-5 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-black uppercase tracking-tight text-white">CashApp Payment</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-white transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center space-y-2">
+          <SiCashapp className="h-8 w-8 text-green-400 mx-auto" />
+          <p className="text-2xl font-black text-white font-mono">{cashappTag}</p>
+          <p className="text-sm text-muted-foreground">Send exactly</p>
+          <p className="text-3xl font-black text-green-400">${(total / 100).toFixed(2)}</p>
+        </div>
+
+        <div className="bg-white/5 rounded-xl p-3 space-y-1">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Reference / Note</p>
+          <p className="text-sm font-bold text-white font-mono">Order {orderId}</p>
+          <p className="text-xs text-muted-foreground">Include this in the CashApp note</p>
+        </div>
+
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          After sending payment your order will be fulfilled by an admin. Contact support if not fulfilled within 4 hours.
+        </p>
+
+        <div className="space-y-2">
+          <a
+            href={`https://cash.app/${cashappTag.replace("$", "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white transition-colors"
+          >
+            <ExternalLink className="h-4 w-4" /> Open CashApp
+          </a>
+          <button
+            onClick={() => { onClose(); setLocation("/profile?tab=orders"); }}
+            className="w-full h-11 rounded-xl font-bold text-sm border border-white/10 text-muted-foreground hover:text-white hover:border-white/20 transition-colors"
+          >
+            View My Orders
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CartPage() {
   const { items, removeItem, total, clearCart } = useCart();
@@ -18,10 +97,57 @@ export default function CartPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("balance");
+  const [cashappModal, setCashappModal] = useState<{ orderId: string; total: number; cashappTag: string } | null>(null);
 
   const cartTotal = total();
+  const discount = 0;
+  const totalDue = cartTotal - discount;
   const userBalance = user?.balance || 0;
-  const hasEnoughBalance = userBalance >= cartTotal;
+  const hasEnoughBalance = userBalance >= totalDue;
+
+  const cryptoOrderMutation = useMutation({
+    mutationFn: async () => {
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.paymentId) {
+        sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
+        sessionStorage.setItem("lastForebitPurpose", "order");
+        if (data.order?.orderId) sessionStorage.setItem("lastForebitOrderId", data.order.orderId);
+      }
+      clearCart();
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    },
+    onError: (error: any) => {
+      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    },
+  });
+
+  const cashappOrderMutation = useMutation({
+    mutationFn: async () => {
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+      const res = await apiRequest("POST", "/api/orders/cashapp", { items: cartItems });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Order failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      clearCart();
+      setCashappModal({
+        orderId: data.order?.orderId || `#${data.order?.id}`,
+        total: data.order?.total || totalDue,
+        cashappTag: data.cashappTag || "$RULFCC",
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    },
+  });
 
   const balanceOrderMutation = useMutation({
     mutationFn: async () => {
@@ -45,19 +171,21 @@ export default function CartPage() {
     },
   });
 
-  const isPending = balanceOrderMutation.isPending;
+  const isPending = cryptoOrderMutation.isPending || cashappOrderMutation.isPending || balanceOrderMutation.isPending;
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (!hasEnoughBalance) {
-      toast({
-        title: "Insufficient balance",
-        description: `You need $${(cartTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}. Top up your balance first.`,
-        variant: "destructive",
-      });
-      return;
+    if (selectedMethod === "balance") {
+      if (!hasEnoughBalance) {
+        toast({ title: "Insufficient balance", description: `You need $${(totalDue / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}. Top up your balance first.`, variant: "destructive" });
+        return;
+      }
+      balanceOrderMutation.mutate();
+    } else if (selectedMethod === "crypto") {
+      cryptoOrderMutation.mutate();
+    } else if (selectedMethod === "cashapp") {
+      cashappOrderMutation.mutate();
     }
-    balanceOrderMutation.mutate();
   };
 
   const handleApplyCoupon = () => {
@@ -66,16 +194,18 @@ export default function CartPage() {
     }
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !cashappModal) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-6">
-        <ShoppingCart className="h-16 w-16 text-muted-foreground" />
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Your cart is empty</h2>
-          <p className="text-muted-foreground">Add some products to get started</p>
+      <div className="flex flex-col items-center justify-center py-24 space-y-6 max-w-sm mx-auto text-center">
+        <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center">
+          <ShoppingCart className="h-9 w-9 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-white">Your cart is empty</h2>
+          <p className="text-sm text-muted-foreground">Add some products to get started.</p>
         </div>
         <Link href="/">
-          <Button className="gap-2" data-testid="button-browse-shop">
+          <Button size="sm" className="gap-2" data-testid="button-browse-shop">
             Browse Shop <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
@@ -84,118 +214,135 @@ export default function CartPage() {
   }
 
   return (
-    <div className="pb-20">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-bold">Cart ({items.length} item{items.length !== 1 ? "s" : ""})</h2>
-          {items.map((item) => (
-            <Card key={`v-${item.variantId}`} className="bg-[#16181d] border-white/5" data-testid={`card-cart-item-${item.variantId}`}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-16 w-16 rounded-lg overflow-hidden bg-[#0f1115] flex-shrink-0">
+    <>
+      {cashappModal && (
+        <CashAppInstructions
+          orderId={cashappModal.orderId}
+          total={cashappModal.total}
+          cashappTag={cashappModal.cashappTag}
+          onClose={() => setCashappModal(null)}
+        />
+      )}
+
+      <div className="max-w-lg mx-auto w-full space-y-5 pb-20">
+        <div>
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Your Cart Products</h2>
+          <div className="bg-[#0d1017] border border-white/8 rounded-xl overflow-hidden divide-y divide-white/5">
+            {items.map((item) => (
+              <div key={`v-${item.variantId}`} className="flex items-start gap-3 p-4" data-testid={`card-cart-item-${item.variantId}`}>
+                <div className="h-12 w-12 rounded-lg bg-[#151b26] overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {item.image ? (
-                    <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
+                    <img src={item.image} alt={item.productName} className="h-full w-full object-contain p-1" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <span className="text-2xl font-black text-white/30">{item.productName?.charAt(0)}</span>
-                    </div>
+                    <span className="text-lg font-black text-white/30">{item.productName?.charAt(0)}</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white truncate">{item.productName}</p>
-                  <p className="text-sm text-muted-foreground">{item.variantName}</p>
-                  <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                </div>
-                <div className="text-right flex items-center gap-3">
-                  <div className="font-mono font-bold text-green-500">${((item.price * item.quantity) / 100).toFixed(2)}</div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeItem(item.variantId)}
-                    className="text-destructive border-destructive/30"
-                    data-testid={`button-remove-item-${item.variantId}`}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="lg:col-span-1">
-          <Card className="sticky top-24 border-primary/20 shadow-lg shadow-primary/5 bg-[#16181d]">
-            <CardHeader>
-              <CardTitle>Checkout</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${(cartTotal / 100).toFixed(2)}</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between font-bold">
-                <span>Total Due</span>
-                <span>${(cartTotal / 100).toFixed(2)}</span>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Payment Method</p>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/50 bg-primary/10">
-                  <div className="h-6 w-6 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                    <Wallet className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm font-bold text-white">Balance</span>
-                    <p className="text-xs text-muted-foreground">Instant delivery from stock</p>
-                  </div>
-                  <span className={`text-xs font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
-                    ${(userBalance / 100).toFixed(2)}
-                  </span>
-                </div>
-                {!hasEnoughBalance && (
-                  <p className="text-xs text-red-400 text-center">
-                    Insufficient balance.{" "}
-                    <button onClick={() => setLocation("/profile?tab=balance")} className="underline hover:text-red-300">
-                      Top up here
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-white uppercase tracking-tight leading-tight">{item.productName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.variantName}</p>
+                    </div>
+                    <button
+                      onClick={() => removeItem(item.variantId)}
+                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                      data-testid={`button-remove-item-${item.variantId}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
-                  </p>
-                )}
+                  </div>
+                  <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>Price : <span className="text-white">${(item.price / 100).toFixed(2)}</span></span>
+                    <span>QTY : <span className="text-white">{item.quantity}</span></span>
+                    <span>Total : <span className="text-white">${((item.price * item.quantity) / 100).toFixed(2)}</span></span>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-            <CardFooter className="flex-col gap-3">
-              <Button
-                className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700"
-                disabled={isPending || !hasEnoughBalance}
-                onClick={handleCheckout}
-                data-testid="button-proceed-payment"
-              >
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Purchase Now
-              </Button>
-
-              <Separator className="my-2" />
-
-              <div className="flex w-full gap-2">
-                <Input
-                  placeholder="Enter coupon here"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  className="flex-1"
-                  data-testid="input-coupon"
-                />
-                <Button
-                  variant="outline"
-                  className="border-destructive text-destructive"
-                  onClick={handleApplyCoupon}
-                  data-testid="button-apply-coupon"
-                >
-                  Apply
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
+            ))}
+          </div>
         </div>
+
+        <div className="h-px bg-white/5" />
+
+        <div>
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Apply Coupon Code</h2>
+          <div className="flex gap-0 bg-[#0d1017] border border-white/8 rounded-xl overflow-hidden">
+            <Input
+              placeholder="your coupon here ..."
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              className="flex-1 bg-transparent border-0 text-white placeholder:text-white/20 text-sm focus-visible:ring-0 rounded-none h-11"
+              data-testid="input-coupon"
+            />
+            <button
+              onClick={handleApplyCoupon}
+              className="px-4 text-xs font-bold text-muted-foreground hover:text-white transition-colors border-l border-white/8"
+              data-testid="button-apply-coupon"
+            >
+              APPLY
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-[#0d1017] border border-white/8 rounded-xl p-4 space-y-2.5">
+          <h2 className="text-sm font-bold text-white mb-3">Order Details</h2>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal :</span>
+            <span className="text-white">${(cartTotal / 100).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Discount :</span>
+            <span className="text-white">$0</span>
+          </div>
+          <div className="h-px bg-white/5 my-1" />
+          <div className="flex justify-between text-sm font-bold">
+            <span className="text-white">Total :</span>
+            <span className="text-white">${(totalDue / 100).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Select Payment Processor</h2>
+          <div className="space-y-2">
+            {PAYMENT_OPTIONS.map((opt) => {
+              const isBalance = opt.id === "balance";
+              const balanceLabel = isBalance ? `$${(userBalance / 100).toFixed(2)}` : null;
+              const insufficient = isBalance && !hasEnoughBalance;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedMethod(opt.id)}
+                  data-testid={`button-payment-${opt.id}`}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-sm font-medium ${
+                    selectedMethod === opt.id
+                      ? "border-white/20 bg-white/8 text-white"
+                      : "border-white/8 bg-[#0d1017] text-muted-foreground hover:border-white/15 hover:text-white"
+                  }`}
+                >
+                  {opt.icon}
+                  <span className="flex-1 text-left">{opt.label}</span>
+                  {opt.desc && <span className="text-[10px] text-muted-foreground">{opt.desc}</span>}
+                  {isBalance && (
+                    <span className={`text-xs font-bold ${insufficient ? "text-red-400" : "text-green-400"}`}>
+                      {balanceLabel}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Button
+          className="w-full h-12 text-sm font-bold bg-[#1a3ecf] hover:bg-[#1e4aed] text-white rounded-xl"
+          disabled={isPending}
+          onClick={handleCheckout}
+          data-testid="button-proceed-payment"
+        >
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Purchase
+        </Button>
       </div>
-    </div>
+    </>
   );
 }

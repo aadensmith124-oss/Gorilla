@@ -4,8 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Package, Gift, Wallet } from "lucide-react";
-import { SiBitcoin } from "react-icons/si";
+import { Loader2, Package, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -133,8 +132,6 @@ export default function ProfilePage() {
 
 function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
   const [code, setCode] = useState("");
-  const [amount, setAmount] = useState("");
-  const [selectedMethod, setSelectedMethod] = useState<"crypto" | null>(null);
   const { toast } = useToast();
 
   const redeemMutation = useMutation({
@@ -147,7 +144,7 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
       return res.json();
     },
     onSuccess: (data) => {
-      toast({ title: "Code redeemed!", description: `+$${(data.amount / 100).toFixed(2)} added to your balance` });
+      toast({ title: "Code redeemed!", description: `+$${(data.amountAdded / 100).toFixed(2)} added to your balance` });
       setCode("");
       onUpdate();
     },
@@ -155,49 +152,6 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
       toast({ title: "Invalid code", description: e.message, variant: "destructive" });
     },
   });
-
-  const chargeMutation = useMutation({
-    mutationFn: async () => {
-      const dollars = parseFloat(amount);
-      if (isNaN(dollars) || dollars <= 0) throw new Error("Enter a valid amount");
-      if (!selectedMethod) throw new Error("Please select a payment method");
-      const res = await apiRequest("POST", "/api/payments/forebit/create", {
-        amount: dollars.toFixed(2),
-        purpose: "deposit",
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to create payment");
-      }
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.paymentId) {
-        sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
-        sessionStorage.setItem("lastForebitPurpose", "deposit");
-      }
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        toast({ title: "Payment initiated", description: "Follow the instructions to complete your deposit." });
-      }
-    },
-    onError: (e: any) => {
-      toast({ title: "Payment failed", description: e.message, variant: "destructive" });
-    },
-  });
-
-  const handleCharge = () => {
-    if (!selectedMethod) {
-      toast({ title: "Select a payment method", description: "Click a payment method before charging.", variant: "destructive" });
-      return;
-    }
-    if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: "Enter an amount", description: "Enter how much you want to add to your balance.", variant: "destructive" });
-      return;
-    }
-    chargeMutation.mutate();
-  };
 
   return (
     <div className="space-y-5">
@@ -207,64 +161,6 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Current Balance</span>
             <span className="text-2xl font-bold text-white">${((user.balance || 0) / 100).toFixed(2)}</span>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-[#0d1017] border-white/8">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" />
-            Top Up Balance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Amount (USD)</label>
-            <Input
-              type="number"
-              min="1"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="bg-white/5 border-white/8 text-white placeholder:text-white/20 h-11 font-mono"
-              data-testid="input-topup-amount"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Payment Method</label>
-            <button
-              onClick={() => setSelectedMethod("crypto")}
-              data-testid="button-method-crypto"
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                selectedMethod === "crypto"
-                  ? "border-amber-500/60 bg-amber-500/10"
-                  : "border-white/8 bg-white/3 hover:border-white/20"
-              }`}
-            >
-              <div className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
-                <SiBitcoin className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-white">Crypto</p>
-                <p className="text-xs text-muted-foreground">Bitcoin, USDT, ETH and more</p>
-              </div>
-              {selectedMethod === "crypto" && (
-                <div className="h-3 w-3 rounded-full bg-amber-500 flex-shrink-0" />
-              )}
-            </button>
-          </div>
-
-          <Button
-            className="w-full h-11 font-bold"
-            onClick={handleCharge}
-            disabled={chargeMutation.isPending}
-            data-testid="button-charge"
-          >
-            {chargeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
-            Charge
-          </Button>
         </CardContent>
       </Card>
 

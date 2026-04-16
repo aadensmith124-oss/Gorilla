@@ -1158,6 +1158,21 @@ export async function registerRoutes(
     });
   });
 
+  // ── Admin: CashApp tag setting ────────────────────────────────────────────
+  app.get("/api/admin/settings/cashapp-tag", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const tag = await storage.getSetting("cashapp_tag", "");
+    res.json({ tag });
+  });
+
+  app.post("/api/admin/settings/cashapp-tag", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { tag } = req.body;
+    if (typeof tag !== "string") return res.status(400).json({ message: "Invalid tag" });
+    await storage.setSetting("cashapp_tag", tag.trim());
+    res.json({ tag: tag.trim() });
+  });
+
   // ── Telegram Stars order ──────────────────────────────────────────────────
   app.post("/api/orders/stars", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
@@ -1180,6 +1195,33 @@ export async function registerRoutes(
       res.status(201).json({ order, invoiceLink });
     } catch (e: any) {
       console.error("Stars order creation failed:", e);
+      if (pendingOrderId) {
+        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      }
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── CashApp order (manual payment) ───────────────────────────────────────
+  app.get("/api/site-settings/cashapp-tag", async (req, res) => {
+    const tag = await storage.getSetting("cashapp_tag", "");
+    res.json({ tag });
+  });
+
+  app.post("/api/orders/cashapp", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    let pendingOrderId: number | null = null;
+    try {
+      const userId = (req.user as any).id;
+      const { items } = req.body;
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const order = await storage.createPendingOrder(userId, productItems, []);
+      pendingOrderId = order.id;
+      const cashappTag = await storage.getSetting("cashapp_tag", "$RULFCC");
+      pendingOrderId = null;
+      res.status(201).json({ order, cashappTag });
+    } catch (e: any) {
+      console.error("CashApp order creation failed:", e);
       if (pendingOrderId) {
         try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
       }
