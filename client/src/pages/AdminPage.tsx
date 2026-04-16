@@ -643,6 +643,31 @@ function OrdersSection() {
     }
   });
 
+  const cashappFulfillMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "Order fulfilled — items sent to user" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
+  const markUnpaidMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/mark-unpaid`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "Order marked unpaid" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
@@ -679,6 +704,25 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
             <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
+
+          {current.paymentMethod === "CashApp" && (current.status === "pending" || current.status === "waiting_payment") && (
+            <div className="flex gap-2 border-b border-white/5 pb-4">
+              <button
+                onClick={() => { cashappFulfillMutation.mutate(current.id); setSelectedOrder(null); }}
+                disabled={cashappFulfillMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+              >
+                {cashappFulfillMutation.isPending ? "Fulfilling…" : "✓ Paid — Deliver Stock"}
+              </button>
+              <button
+                onClick={() => { markUnpaidMutation.mutate(current.id); setSelectedOrder(null); }}
+                disabled={markUnpaidMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              >
+                ✕ Unpaid
+              </button>
+            </div>
+          )}
 
           {groupedEntries.length > 0 && (
             <div className="space-y-3">
@@ -800,6 +844,8 @@ function OrdersSection() {
           <span></span>
         </div>
         {filteredOrders.map((order: any) => {
+          const isCashapp = order.paymentMethod === "CashApp";
+          const isActionable = isCashapp && (order.status === "pending" || order.status === "waiting_payment");
           return (
             <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
               <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
@@ -808,13 +854,29 @@ function OrdersSection() {
                 <p className="text-[10px] text-white/30 truncate">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
               </div>
               <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                setSelectedOrder(order);
-                setDeliveryContents(parseDeliveryContents(order.deliveryContent));
-                setActiveProductKey(null);
-              }}>
-                View
-              </Button>
+              <div className="flex gap-1 items-center">
+                {isActionable && (
+                  <>
+                    <button
+                      onClick={() => cashappFulfillMutation.mutate(order.id)}
+                      disabled={cashappFulfillMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-green-500/20 border border-green-500/30 text-green-400 text-[10px] font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                      data-testid={`button-paid-${order.id}`}
+                    >Paid</button>
+                    <button
+                      onClick={() => markUnpaidMutation.mutate(order.id)}
+                      disabled={markUnpaidMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                      data-testid={`button-unpaid-${order.id}`}
+                    >Unpaid</button>
+                  </>
+                )}
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                  setSelectedOrder(order);
+                  setDeliveryContents(parseDeliveryContents(order.deliveryContent));
+                  setActiveProductKey(null);
+                }}>View</Button>
+              </div>
             </div>
           );
         })}

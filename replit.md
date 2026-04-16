@@ -1,90 +1,178 @@
-# Digital Items Store
+# RULF.CC — Digital Marketplace
 
-## Overview
+## What This Is
 
-This is a full-stack digital marketplace application for selling digital items with instant delivery. Users can browse products, add items to cart, purchase using wallet balance, and receive digital content immediately. The platform includes gambling-style games (dice, mines, daily spin) for users to win credits, an admin panel for managing products/stock/codes, and a wallet system with redeemable codes for top-ups.
+A dark-themed digital marketplace for selling digital items (accounts, keys, subscriptions, etc.) with stock-based instant delivery. Built with React + Express + PostgreSQL.
 
-## User Preferences
+**Live at:** rulf.cc
 
-Preferred communication style: Simple, everyday language.
+---
+
+## Features
+
+- **Shop** — product listings with variants and stock counts
+- **Cart** — add items, choose payment method, checkout
+- **Wallet** — top up balance with redeemable codes, spend on orders
+- **CashApp Payments** — user sends CashApp with a generated note (`snack-XXXX`); admin manually confirms via Paid/Unpaid buttons; stock delivered on confirmation
+- **Stock System** — admin pre-loads text items per variant; each purchase pulls one item off the stack
+- **Admin Dashboard** — manage products, variants, stock, orders, users, redeem codes, announcements
+- **Payment Method Toggles** — admin can show/hide Wallet, CashApp, Crypto, Telegram Stars per customer
+- **Games** — dice, mines, daily spin (for earning credits)
+- **Profile** — order history with delivery content, balance history
+- **Dark theme** — `#090a0c` base, primary amber/orange, CashApp green `#00D632`
+
+---
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, Wouter, TanStack Query, Zustand, Tailwind CSS, shadcn/ui |
+| Backend | Node.js, Express 5, TypeScript |
+| Database | PostgreSQL (Drizzle ORM) |
+| Auth | Passport.js (local strategy), express-session, connect-pg-simple |
+| Payments | CashApp (manual), Crypto via Forebit API, Telegram Stars |
+
+---
+
+## Setup After Remix
+
+### 1. Database
+
+The Replit PostgreSQL database is already configured. On first run the app automatically creates:
+- All schema tables via Drizzle (`npm run db:push`)
+- The `session` table (created in `server/index.ts` on startup)
+
+**Run schema push after any schema change:**
+```
+npm run db:push
+```
+
+### 2. Environment Variables
+
+Set these in the Replit **Secrets** panel:
+
+| Secret | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Auto-set | Set automatically when you create a Replit DB |
+| `SESSION_SECRET` | Recommended | Random string for signing session cookies. Defaults to a placeholder if missing. |
+| `FOREBIT_ACCESS_KEY` | Optional | API key for Forebit crypto payment processing |
+| `FOREBIT_ACCOUNT_ID` | Optional | Business ID for Forebit |
+| `TELEGRAM_BOT_TOKEN` | Optional | For Telegram Stars payment integration |
+
+### 3. Admin Account
+
+Admin accounts are granted based on email address. Open `server/auth.ts` and update the admin emails list:
+
+```typescript
+const adminEmails = ["your@email.com", "another@email.com"];
+```
+
+Register on the site with one of those emails — you'll automatically be granted admin role.
+
+### 4. CashApp Setup (Admin Panel → Integrations)
+
+1. Go to **Admin → Integrations**
+2. Under **CashApp Settings**, enter your `$CashTag` and click Save
+3. Toggle CashApp ON in the Payment Methods section
+4. Users will now see CashApp as a checkout option
+
+### 5. Adding Stock (Admin Panel → Products)
+
+1. Create a product and add variants (with prices in cents, e.g. `500` = $5.00)
+2. Click the variant to open the stock panel
+3. Paste your stock items — each item separated by a **blank line** (`\n\n`)
+4. Items are delivered one-by-one per order
+
+### 6. Creating Redeem Codes (Admin Panel → Codes)
+
+1. Go to **Admin → Codes**
+2. Enter a code and amount in cents
+3. Users can redeem codes on the Profile page to add wallet balance
+
+---
+
+## CashApp Order Flow
+
+1. Customer adds items to cart, selects CashApp, clicks Purchase
+2. A modal shows: generated note (`snack-XXXX`), your $cashtag, exact amount
+3. Customer sends CashApp with the note
+4. Admin sees the order in **Orders** tab with **Paid** (green) and **Unpaid** (red) buttons
+5. **Paid** → stock items are reserved and delivered to the user automatically
+6. **Unpaid** → order marked as unpaid (status: `waiting_payment`)
+7. Orders with CashApp payment are never auto-cancelled (they wait up to 4 hours)
+
+---
+
+## Order Status Reference
+
+| Status | Meaning |
+|---|---|
+| `pending` | CashApp order placed, awaiting admin confirmation |
+| `waiting_payment` | Admin marked as unpaid |
+| `fulfilled` | Wallet order paid, items assigned |
+| `delivering` | CashApp order confirmed by admin, stock delivered |
+| `refunded` | Order refunded to wallet |
+
+---
+
+## Key Files
+
+| File | Purpose |
+|---|---|
+| `shared/schema.ts` | Database schema (Drizzle ORM) — single source of truth |
+| `server/routes.ts` | All API routes |
+| `server/storage.ts` | Database operations (IStorage interface) |
+| `server/auth.ts` | Authentication setup, admin email list |
+| `server/index.ts` | Server startup, session table auto-creation |
+| `client/src/pages/AdminPage.tsx` | Full admin dashboard |
+| `client/src/pages/CartPage.tsx` | Checkout with CashApp + Wallet |
+| `client/src/pages/ProfilePageFix.tsx` | User profile, orders, balance |
+| `client/src/pages/ShopPage.tsx` | Product listings |
+| `client/src/App.tsx` | Routes, global polling |
+
+---
+
+## Development
+
+The workflow `Start application` runs `npm run dev` which starts both the Express backend and Vite frontend on port 5000.
+
+```
+npm run dev        # Start dev server
+npm run db:push    # Push schema changes to database
+npm run build      # Build for production
+```
+
+---
 
 ## System Architecture
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight React router)
-- **State Management**: 
-  - TanStack React Query for server state and caching
-  - Zustand for client-side cart persistence (with localStorage)
-- **Styling**: Tailwind CSS with shadcn/ui component library
-- **Animations**: Framer Motion for game animations and page transitions
-- **Forms**: React Hook Form with Zod validation
+### Frontend
+- React 18 + TypeScript, Wouter for routing
+- TanStack Query for all server state/caching
+- Zustand for cart persistence (localStorage)
+- shadcn/ui components + Tailwind CSS
+- Framer Motion for game animations
 
-### Backend Architecture
-- **Runtime**: Node.js with Express 5
-- **Language**: TypeScript (ESM modules)
-- **Authentication**: Passport.js with Local Strategy, session-based auth
-- **Session Storage**: PostgreSQL via connect-pg-simple
-- **Password Hashing**: Node crypto scrypt
-
-### Data Storage
-- **Database**: PostgreSQL
-- **ORM**: Drizzle ORM with drizzle-zod for schema validation
-- **Schema Location**: `shared/schema.ts` (shared between client/server)
-
-### Key Design Patterns
-- **Monorepo Structure**: Client (`client/`), Server (`server/`), and Shared (`shared/`) directories
-- **API Contract**: Centralized route definitions in `shared/routes.ts` with Zod schemas for type-safe API calls
-- **Storage Pattern**: `IStorage` interface in `server/storage.ts` abstracts database operations
+### Backend
+- Express 5, TypeScript (ESM modules)
+- Passport.js local strategy, session-based auth
+- PostgreSQL sessions via connect-pg-simple
+- Drizzle ORM, drizzle-zod for validation
 
 ### Data Models
-- **Users**: Authentication, balance (in cents), protectedBalance (non-decayable from purchases/deposits), roles (user/admin), ban status
-- **Products & Variants**: Products have multiple variants with different prices
-- **Stock Items**: Individual digital items tied to variants, marked as sold when purchased
-- **Orders & Order Items**: Track purchases with labeled item types (`itemType`: "product" or "card"). Product items link to variants/stock, card items link to cards table. Mixed orders (products + cards) are combined into a single order.
-- **Cards**: Credit cards with masked numbers, country (auto-detected via BIN), price, first-hand status. Country dropdown on cards page is derived from existing card data. Purchased cards are marked as sold and linked to user.
-- **Transactions**: Wallet history (top-ups, purchases, game wins/losses)
-- **Redeem Codes**: One-time codes for adding balance
-- **Announcements**: Admin-configurable site-wide messages
+- **Users** — auth, balance (cents), role (user/admin), ban status
+- **Products + Variants** — products have multiple variants with prices
+- **Stock Items** — text items per variant, pulled on purchase (`isSold: true`)
+- **Orders + OrderItems** — track purchases; orderItems link to stockItems
+- **Transactions** — wallet history (top-ups, purchases, game wins/losses)
+- **Redeem Codes** — one-time codes for wallet top-up
+- **Site Settings** — key/value store for CashApp tag, payment method toggles, announcements
+- **Crypto Payments** — Forebit payment tracking
 
 ### Build System
-- **Development**: Vite dev server with HMR, proxied through Express
-- **Production**: Vite builds client to `dist/public`, esbuild bundles server to `dist/index.cjs`
-- **Database Migrations**: Drizzle Kit with `db:push` command
+- Dev: Vite HMR proxied through Express
+- Prod: Vite builds client to `dist/public`, esbuild bundles server to `dist/index.cjs`
 
-## External Dependencies
-
-### Database
-- **PostgreSQL**: Primary database, connection via `DATABASE_URL` environment variable
-- **Session Store**: PostgreSQL table for Express sessions (auto-created)
-
-### Third-Party Services
-- **Forebit** (Crypto Payment Processing):
-  - API Base: `https://prod-payments-api.forebit.io`
-  - Auth: Bearer token via `FOREBIT_ACCESS_KEY`
-  - Business ID: `FOREBIT_ACCOUNT_ID`
-  - Endpoints:
-    - `POST /v1/businesses/{businessId}/payments` - Create payment
-    - `GET /v1/businesses/{businessId}/payments/{paymentId}` - Check status
-  - Server module: `server/forebit.ts`
-  - Webhook: `POST /api/webhooks/forebit`
-  - Payment tracking table: `crypto_payments`
-  - Deposit flow: Create payment → redirect to Forebit → balance credited via polling or webhook
-  - Order flow: `POST /api/orders/crypto` creates a pending order (stock reserved) + Forebit payment in one request → user pays on Forebit → on completion, order status changes to "fulfilled" and items are revealed; on failure/expiry, order cancelled and stock released
-  - Polling: Global `useForebitPolling` hook in App.tsx polls `/api/payments/forebit/:id/status` every 5s after user returns from Forebit (uses sessionStorage `lastForebitPaymentId`)
-  - Order statuses: pending (awaiting crypto payment), fulfilled (paid, items visible), unpaid (cancelled/failed payment, stock released)
-  - Idempotency: DB update uses atomic `WHERE status != 'completed'` guard to prevent double-credit from webhook+polling race
-  - Error rollback: If Forebit payment creation fails after order is created, pending order is cancelled and stock released automatically
-- The build script includes allowlisted packages for:
-  - OpenAI / Google Generative AI (AI features - not yet implemented)
-  - Nodemailer (email - not yet implemented)
-
-### Key NPM Packages
-- `drizzle-orm` / `drizzle-kit`: Database ORM and migrations
-- `express-session` / `connect-pg-simple`: Session management
-- `passport` / `passport-local`: Authentication
-- `zod` / `drizzle-zod`: Schema validation
-- `@tanstack/react-query`: Server state management
-- `zustand`: Client state (cart)
-- `framer-motion`: Animations
-- Full shadcn/ui component set via Radix primitives
+### User Preferences
+Preferred communication style: Simple, everyday language.

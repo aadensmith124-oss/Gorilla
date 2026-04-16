@@ -1250,12 +1250,35 @@ export async function registerRoutes(
         });
       }
 
-      // Auto-fulfill from stock immediately
-      const fulfilledOrder = await storage.fulfillCashappOrder(order.id);
-
-      res.status(201).json({ order: fulfilledOrder, paymentNote, cashappTag });
+      res.status(201).json({ order, paymentNote, cashappTag });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Admin: fulfill CashApp order (Paid) ──────────────────────────────────
+  app.post("/api/admin/orders/:id/cashapp-fulfill", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.fulfillCashappOrder(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Admin: mark order unpaid ──────────────────────────────────────────────
+  app.post("/api/admin/orders/:id/mark-unpaid", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.markOrderUnpaid(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
   });
