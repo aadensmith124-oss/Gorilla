@@ -1158,18 +1158,18 @@ export async function registerRoutes(
     });
   });
 
-  // ── Admin: CashApp tag setting ────────────────────────────────────────────
-  app.get("/api/admin/settings/cashapp-tag", async (req, res) => {
+  // ── Admin: Chime tag setting ──────────────────────────────────────────────
+  app.get("/api/admin/settings/chime-tag", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
-    const tag = await storage.getSetting("cashapp_tag", "");
+    const tag = await storage.getSetting("chime_tag", "");
     res.json({ tag });
   });
 
-  app.post("/api/admin/settings/cashapp-tag", async (req, res) => {
+  app.post("/api/admin/settings/chime-tag", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     const { tag } = req.body;
     if (typeof tag !== "string") return res.status(400).json({ message: "Invalid tag" });
-    await storage.setSetting("cashapp_tag", tag.trim());
+    await storage.setSetting("chime_tag", tag.trim());
     res.json({ tag: tag.trim() });
   });
 
@@ -1202,13 +1202,13 @@ export async function registerRoutes(
     }
   });
 
-  // ── CashApp order (manual payment) ───────────────────────────────────────
-  app.get("/api/site-settings/cashapp-tag", async (req, res) => {
-    const tag = await storage.getSetting("cashapp_tag", "");
+  // ── Chime order (manual payment) ─────────────────────────────────────────
+  app.get("/api/site-settings/chime-tag", async (req, res) => {
+    const tag = await storage.getSetting("chime_tag", "");
     res.json({ tag });
   });
 
-  app.post("/api/orders/cashapp", async (req, res) => {
+  app.post("/api/orders/chime", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     let pendingOrderId: number | null = null;
     try {
@@ -1217,11 +1217,11 @@ export async function registerRoutes(
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
       const order = await storage.createPendingOrder(userId, productItems, []);
       pendingOrderId = order.id;
-      const cashappTag = await storage.getSetting("cashapp_tag", "$RULFCC");
+      const chimeTag = await storage.getSetting("chime_tag", "");
       pendingOrderId = null;
-      res.status(201).json({ order, cashappTag });
+      res.status(201).json({ order, chimeTag });
     } catch (e: any) {
-      console.error("CashApp order creation failed:", e);
+      console.error("Chime order creation failed:", e);
       if (pendingOrderId) {
         try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
       }

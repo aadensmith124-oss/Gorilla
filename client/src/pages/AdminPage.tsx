@@ -1064,15 +1064,15 @@ function IntegrationsSection() {
     queryKey: ["/api/admin/payment-methods"],
   });
 
-  const { data: cashappTagData } = useQuery<{ tag: string }>({
-    queryKey: ["/api/admin/settings/cashapp-tag"],
+  const { data: chimeTagData } = useQuery<{ tag: string }>({
+    queryKey: ["/api/admin/settings/chime-tag"],
   });
 
   useEffect(() => {
-    if (cashappTagData?.tag !== undefined) {
-      setCashappTagInput(cashappTagData.tag);
+    if (chimeTagData?.tag !== undefined) {
+      setCashappTagInput(chimeTagData.tag);
     }
-  }, [cashappTagData]);
+  }, [chimeTagData]);
 
   const toggleMutation = useMutation({
     mutationFn: async ({ method, enabled }: { method: string; enabled: boolean }) => {
@@ -1090,12 +1090,12 @@ function IntegrationsSection() {
 
   const saveCashappTagMutation = useMutation({
     mutationFn: async (tag: string) => {
-      const res = await apiRequest("POST", "/api/admin/settings/cashapp-tag", { tag });
+      const res = await apiRequest("POST", "/api/admin/settings/chime-tag", { tag });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/cashapp-tag"] });
-      toast({ title: "CashApp tag saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/chime-tag"] });
+      toast({ title: "Chime tag saved" });
     },
     onError: () => {
       toast({ title: "Failed to save", variant: "destructive" });
@@ -1149,19 +1149,19 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      {/* CashApp Tag */}
+      {/* Chime Tag */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">CashApp Settings</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Chime Settings</p>
         <Card className="bg-[#0f1115] border-white/5">
           <CardContent className="p-4 space-y-3">
             <div>
-              <p className="font-bold text-sm text-white mb-1">Your CashApp Tag</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this tag when paying via CashApp. Include the $ sign (e.g. $YourTag).</p>
+              <p className="font-bold text-sm text-white mb-1">Your Chime Username/Tag</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this when paying via Chime. This is the Chime $cashtag or username they send money to.</p>
               <div className="flex gap-2">
                 <Input
                   value={cashappTagInput}
                   onChange={(e) => setCashappTagInput(e.target.value)}
-                  placeholder="$YourCashAppTag"
+                  placeholder="$YourChimeTag"
                   className="flex-1 bg-white/5 border-white/8 text-white font-mono"
                   data-testid="input-cashapp-tag"
                 />

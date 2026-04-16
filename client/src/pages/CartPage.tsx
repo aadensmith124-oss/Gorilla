@@ -6,64 +6,52 @@ import { Input } from "@/components/ui/input";
 import { ShoppingCart, ArrowRight, Loader2, Trash2, Wallet, X, ExternalLink } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { SiBitcoin, SiCashapp } from "react-icons/si";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
-type PaymentMethod = "balance" | "crypto" | "cashapp";
+const CHIME_FEE_PERCENT = 15;
 
-const PAYMENT_OPTIONS: { id: PaymentMethod; icon: React.ReactNode; label: string; desc?: string }[] = [
-  {
-    id: "balance",
-    icon: <Wallet className="h-5 w-5 text-green-400" />,
-    label: "Balance",
-    desc: "Instant delivery from stock",
-  },
-  {
-    id: "crypto",
-    icon: <SiBitcoin className="h-5 w-5 text-amber-400" />,
-    label: "Crypto",
-    desc: "Bitcoin, USDT, ETH & more",
-  },
-  {
-    id: "cashapp",
-    icon: <SiCashapp className="h-5 w-5 text-green-500" />,
-    label: "CashApp",
-    desc: "Send via CashApp",
-  },
-];
+type PaymentMethod = "balance" | "chime";
 
-interface CashAppInstructionsProps {
+function ChimeIcon() {
+  return (
+    <div className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#1ec677" }}>
+      <span className="text-white font-black text-base leading-none" style={{ fontFamily: "sans-serif" }}>C</span>
+    </div>
+  );
+}
+
+interface ChimeInstructionsProps {
   orderId: string;
   total: number;
-  cashappTag: string;
+  chimeTag: string;
   onClose: () => void;
 }
 
-function CashAppInstructions({ orderId, total, cashappTag, onClose }: CashAppInstructionsProps) {
+function ChimeInstructions({ orderId, total, chimeTag, onClose }: ChimeInstructionsProps) {
   const [, setLocation] = useLocation();
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-[#16181d] rounded-2xl border border-white/8 p-6 space-y-5 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-black uppercase tracking-tight text-white">CashApp Payment</h2>
+          <h2 className="text-base font-black uppercase tracking-tight text-white">Chime Payment</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-white transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center space-y-2">
-          <SiCashapp className="h-8 w-8 text-green-400 mx-auto" />
-          <p className="text-2xl font-black text-white font-mono">{cashappTag}</p>
+        <div className="rounded-xl p-4 text-center space-y-2" style={{ background: "rgba(30,198,119,0.1)", border: "1px solid rgba(30,198,119,0.25)" }}>
+          <ChimeIcon />
+          <p className="text-2xl font-black text-white font-mono mt-2">{chimeTag || "Contact Support"}</p>
           <p className="text-sm text-muted-foreground">Send exactly</p>
-          <p className="text-3xl font-black text-green-400">${(total / 100).toFixed(2)}</p>
+          <p className="text-3xl font-black" style={{ color: "#1ec677" }}>${(total / 100).toFixed(2)}</p>
         </div>
 
         <div className="bg-white/5 rounded-xl p-3 space-y-1">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Reference / Note</p>
           <p className="text-sm font-bold text-white font-mono">Order {orderId}</p>
-          <p className="text-xs text-muted-foreground">Include this in the CashApp note</p>
+          <p className="text-xs text-muted-foreground">Include this in the Chime note/memo</p>
         </div>
 
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
@@ -72,12 +60,13 @@ function CashAppInstructions({ orderId, total, cashappTag, onClose }: CashAppIns
 
         <div className="space-y-2">
           <a
-            href={`https://cash.app/${cashappTag.replace("$", "")}`}
+            href={`https://chime.com/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white transition-colors"
+            className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 text-white transition-colors"
+            style={{ background: "#1ec677" }}
           >
-            <ExternalLink className="h-4 w-4" /> Open CashApp
+            <ExternalLink className="h-4 w-4" /> Open Chime
           </a>
           <button
             onClick={() => { onClose(); setLocation("/profile?tab=orders"); }}
@@ -98,38 +87,21 @@ export default function CartPage() {
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("balance");
-  const [cashappModal, setCashappModal] = useState<{ orderId: string; total: number; cashappTag: string } | null>(null);
+  const [chimeModal, setChimeModal] = useState<{ orderId: string; total: number; chimeTag: string } | null>(null);
 
   const cartTotal = total();
-  const discount = 0;
-  const totalDue = cartTotal - discount;
   const userBalance = user?.balance || 0;
-  const hasEnoughBalance = userBalance >= totalDue;
+  const hasEnoughBalance = userBalance >= cartTotal;
 
-  const cryptoOrderMutation = useMutation({
+  const chimeFee = Math.round(cartTotal * CHIME_FEE_PERCENT / 100);
+  const chimeTotal = cartTotal + chimeFee;
+
+  const displayTotal = selectedMethod === "chime" ? chimeTotal : cartTotal;
+
+  const chimeOrderMutation = useMutation({
     mutationFn: async () => {
       const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.paymentId) {
-        sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
-        sessionStorage.setItem("lastForebitPurpose", "order");
-        if (data.order?.orderId) sessionStorage.setItem("lastForebitOrderId", data.order.orderId);
-      }
-      clearCart();
-      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
-    },
-    onError: (error: any) => {
-      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
-    },
-  });
-
-  const cashappOrderMutation = useMutation({
-    mutationFn: async () => {
-      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", "/api/orders/cashapp", { items: cartItems });
+      const res = await apiRequest("POST", "/api/orders/chime", { items: cartItems });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Order failed");
@@ -138,10 +110,10 @@ export default function CartPage() {
     },
     onSuccess: (data) => {
       clearCart();
-      setCashappModal({
+      setChimeModal({
         orderId: data.order?.orderId || `#${data.order?.id}`,
-        total: data.order?.total || totalDue,
-        cashappTag: data.cashappTag || "$RULFCC",
+        total: chimeTotal,
+        chimeTag: data.chimeTag || "",
       });
     },
     onError: (error: any) => {
@@ -171,20 +143,18 @@ export default function CartPage() {
     },
   });
 
-  const isPending = cryptoOrderMutation.isPending || cashappOrderMutation.isPending || balanceOrderMutation.isPending;
+  const isPending = chimeOrderMutation.isPending || balanceOrderMutation.isPending;
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
     if (selectedMethod === "balance") {
       if (!hasEnoughBalance) {
-        toast({ title: "Insufficient balance", description: `You need $${(totalDue / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}. Top up your balance first.`, variant: "destructive" });
+        toast({ title: "Insufficient balance", description: `You need $${(cartTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });
         return;
       }
       balanceOrderMutation.mutate();
-    } else if (selectedMethod === "crypto") {
-      cryptoOrderMutation.mutate();
-    } else if (selectedMethod === "cashapp") {
-      cashappOrderMutation.mutate();
+    } else if (selectedMethod === "chime") {
+      chimeOrderMutation.mutate();
     }
   };
 
@@ -194,7 +164,7 @@ export default function CartPage() {
     }
   };
 
-  if (items.length === 0 && !cashappModal) {
+  if (items.length === 0 && !chimeModal) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-6 max-w-sm mx-auto text-center">
         <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center">
@@ -215,12 +185,12 @@ export default function CartPage() {
 
   return (
     <>
-      {cashappModal && (
-        <CashAppInstructions
-          orderId={cashappModal.orderId}
-          total={cashappModal.total}
-          cashappTag={cashappModal.cashappTag}
-          onClose={() => setCashappModal(null)}
+      {chimeModal && (
+        <ChimeInstructions
+          orderId={chimeModal.orderId}
+          total={chimeModal.total}
+          chimeTag={chimeModal.chimeTag}
+          onClose={() => setChimeModal(null)}
         />
       )}
 
@@ -290,6 +260,12 @@ export default function CartPage() {
             <span className="text-muted-foreground">Subtotal :</span>
             <span className="text-white">${(cartTotal / 100).toFixed(2)}</span>
           </div>
+          {selectedMethod === "chime" && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Chime Fee (+{CHIME_FEE_PERCENT}%) :</span>
+              <span className="text-red-400">${(chimeFee / 100).toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Discount :</span>
             <span className="text-white">$0</span>
@@ -297,39 +273,52 @@ export default function CartPage() {
           <div className="h-px bg-white/5 my-1" />
           <div className="flex justify-between text-sm font-bold">
             <span className="text-white">Total :</span>
-            <span className="text-white">${(totalDue / 100).toFixed(2)}</span>
+            <span className="text-white">${(displayTotal / 100).toFixed(2)}</span>
           </div>
         </div>
 
         <div>
           <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Select Payment Processor</h2>
           <div className="space-y-2">
-            {PAYMENT_OPTIONS.map((opt) => {
-              const isBalance = opt.id === "balance";
-              const balanceLabel = isBalance ? `$${(userBalance / 100).toFixed(2)}` : null;
-              const insufficient = isBalance && !hasEnoughBalance;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedMethod(opt.id)}
-                  data-testid={`button-payment-${opt.id}`}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-sm font-medium ${
-                    selectedMethod === opt.id
-                      ? "border-white/20 bg-white/8 text-white"
-                      : "border-white/8 bg-[#0d1017] text-muted-foreground hover:border-white/15 hover:text-white"
-                  }`}
-                >
-                  {opt.icon}
-                  <span className="flex-1 text-left">{opt.label}</span>
-                  {opt.desc && <span className="text-[10px] text-muted-foreground">{opt.desc}</span>}
-                  {isBalance && (
-                    <span className={`text-xs font-bold ${insufficient ? "text-red-400" : "text-green-400"}`}>
-                      {balanceLabel}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            {/* Chime option */}
+            <button
+              onClick={() => setSelectedMethod("chime")}
+              data-testid="button-payment-chime"
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all ${
+                selectedMethod === "chime"
+                  ? "border-white/20 bg-white/8"
+                  : "border-white/8 bg-[#0d1017] hover:border-white/15"
+              }`}
+            >
+              <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "chime" ? "border-white" : "border-white/30"}`}>
+                {selectedMethod === "chime" && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
+              </div>
+              <ChimeIcon />
+              <span className="flex-1 text-left text-sm font-bold text-white">Chime</span>
+              <span className="text-sm font-bold text-red-400">+{CHIME_FEE_PERCENT}% fee</span>
+            </button>
+
+            {/* Balance option */}
+            <button
+              onClick={() => setSelectedMethod("balance")}
+              data-testid="button-payment-balance"
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all ${
+                selectedMethod === "balance"
+                  ? "border-white/20 bg-white/8"
+                  : "border-white/8 bg-[#0d1017] hover:border-white/15"
+              }`}
+            >
+              <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedMethod === "balance" ? "border-white" : "border-white/30"}`}>
+                {selectedMethod === "balance" && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
+              </div>
+              <div className="h-8 w-8 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Wallet className="h-4 w-4 text-white" />
+              </div>
+              <span className="flex-1 text-left text-sm font-bold text-white">Balance</span>
+              <span className={`text-sm font-bold ${hasEnoughBalance ? "text-green-400" : "text-red-400"}`}>
+                You have ${(userBalance / 100).toFixed(2)}
+              </span>
+            </button>
           </div>
         </div>
 
