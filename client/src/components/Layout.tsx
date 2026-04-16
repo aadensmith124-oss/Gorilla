@@ -38,42 +38,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-col gap-4 text-left">
         <Link href="/" onClick={() => setIsMobileOpen(false)}>
-          <span className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">Shop</span>
+          <span className="text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors cursor-pointer">Shop</span>
         </Link>
 
         <Collapsible>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium hover:text-primary transition-colors group">
-            Profile <ChevronDown className="h-4 w-4 group-data-[state=open]:rotate-180 transition-transform" />
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors group">
+            Profile <ChevronDown className="h-3.5 w-3.5 group-data-[state=open]:rotate-180 transition-transform" />
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 pt-3 space-y-3">
             <Link href="/profile" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Profile</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-primary cursor-pointer">Profile</span>
             </Link>
             <Link href="/profile?tab=orders" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Orders</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-primary cursor-pointer">Orders</span>
             </Link>
             <Link href="/profile?tab=settings" onClick={() => setIsMobileOpen(false)}>
-              <span className="block text-sm text-muted-foreground hover:text-primary cursor-pointer">Settings</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-primary cursor-pointer">Settings</span>
             </Link>
           </CollapsibleContent>
         </Collapsible>
 
         <Link href="/cart" onClick={() => setIsMobileOpen(false)}>
-          <div className="flex items-center justify-between w-full text-sm font-medium hover:text-primary transition-colors cursor-pointer">
-            Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-black font-semibold">{cartCount}</span>}
+          <div className="flex items-center justify-between w-full text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors cursor-pointer">
+            Cart {cartCount > 0 && <span className="text-[10px] bg-primary px-1.5 py-0.5 rounded-full text-black font-bold">{cartCount}</span>}
           </div>
         </Link>
 
         {user?.role === 'admin' && (
           <Link href="/admin" onClick={() => setIsMobileOpen(false)}>
-            <span className="text-sm font-medium text-destructive hover:opacity-80 transition-opacity cursor-pointer">Admin</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-destructive hover:opacity-80 transition-opacity cursor-pointer">Admin</span>
           </Link>
         )}
 
         {user && (
           <button 
             onClick={() => { logout(); setIsMobileOpen(false); }}
-            className="text-sm font-medium text-muted-foreground hover:text-destructive transition-colors mt-4 text-left"
+            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors mt-4 text-left"
           >
             Logout
           </button>

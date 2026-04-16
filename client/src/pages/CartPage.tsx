@@ -11,8 +11,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
-const CASHAPP_FEE_PERCENT = 3;
-const CRYPTO_FEE_PERCENT = 10;
+const CASHAPP_FEE_PERCENT = 0;
+const CRYPTO_FEE_PERCENT = 3;
 
 type PaymentMethod = "balance" | "cashapp" | "crypto";
 
@@ -308,12 +308,6 @@ export default function CartPage() {
             <span className="text-white/40">Subtotal</span>
             <span className="text-white/80">${(cartTotal / 100).toFixed(2)}</span>
           </div>
-          {selectedMethod === "cashapp" && (
-            <div className="flex justify-between text-xs">
-              <span className="text-white/40">Service fee (+{CASHAPP_FEE_PERCENT}%)</span>
-              <span className="text-white/60">+${(cashappFee / 100).toFixed(2)}</span>
-            </div>
-          )}
           {selectedMethod === "crypto" && (
             <div className="flex justify-between text-xs">
               <span className="text-white/40">Service fee (+{CRYPTO_FEE_PERCENT}%)</span>
@@ -322,13 +316,13 @@ export default function CartPage() {
           )}
           <div className="h-px bg-white/[0.05]" />
           <div className="flex justify-between text-xs">
-            <span className="text-white font-bold">Total</span>
-            <span className="text-white font-bold">${(displayTotal / 100).toFixed(2)}</span>
+            <span className="text-white font-bold text-sm">Total</span>
+            <span className="text-white font-bold text-sm">${(displayTotal / 100).toFixed(2)}</span>
           </div>
         </div>
 
         <div>
-          <h2 className="text-xs font-bold text-white/50 mb-2">Payment Method</h2>
+          <h2 className="text-xs font-bold text-white/70 mb-2 uppercase tracking-widest">Payment Method</h2>
           <div className="space-y-1">
             {cashappEnabled && (
               <button
@@ -345,7 +339,25 @@ export default function CartPage() {
                 </div>
                 <SiCashapp className="h-4 w-4 text-[#00D632]/70 flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-semibold text-white/80">CashApp</span>
-                <span className="text-[10px] text-white/25">+{CASHAPP_FEE_PERCENT}%</span>
+              </button>
+            )}
+
+            {cryptoEnabled && (
+              <button
+                onClick={() => setSelectedMethod("crypto")}
+                data-testid="button-payment-crypto"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                  selectedMethod === "crypto"
+                    ? "border-white/20 bg-white/[0.04]"
+                    : "border-white/[0.06] bg-[#0d1017] hover:border-white/10"
+                }`}
+              >
+                <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "crypto" ? "border-primary" : "border-white/20"}`}>
+                  {selectedMethod === "crypto" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                </div>
+                <SiBitcoin className="h-4 w-4 text-white/30 flex-shrink-0" />
+                <span className="flex-1 text-left text-xs font-semibold text-white/80">Crypto</span>
+                <span className="text-[10px] text-white/25">+{CRYPTO_FEE_PERCENT}%</span>
               </button>
             )}
 
@@ -369,35 +381,16 @@ export default function CartPage() {
                 </span>
               </button>
             )}
-
-            {cryptoEnabled && (
-              <button
-                onClick={() => setSelectedMethod("crypto")}
-                data-testid="button-payment-crypto"
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
-                  selectedMethod === "crypto"
-                    ? "border-white/20 bg-white/[0.04]"
-                    : "border-white/[0.06] bg-[#0d1017] hover:border-white/10"
-                }`}
-              >
-                <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "crypto" ? "border-primary" : "border-white/20"}`}>
-                  {selectedMethod === "crypto" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                </div>
-                <SiBitcoin className="h-4 w-4 text-white/30 flex-shrink-0" />
-                <span className="flex-1 text-left text-xs font-semibold text-white/80">Crypto</span>
-                <span className="text-[10px] text-white/25">+{CRYPTO_FEE_PERCENT}%</span>
-              </button>
-            )}
           </div>
         </div>
 
         <Button
-          className="w-full h-10 text-xs bg-primary hover:bg-primary/90 text-black rounded-xl"
+          className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-black rounded-xl uppercase tracking-widest"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"
         >
-          {isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Purchase
         </Button>
       </div>
