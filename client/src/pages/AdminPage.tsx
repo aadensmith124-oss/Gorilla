@@ -704,13 +704,35 @@ function OrdersSection() {
           </div>
 
           <div className="space-y-3 border-b border-white/5 pb-4">
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Creation date</p><p className="text-sm text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-sm text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment method</p><p className="text-sm text-white">{current.paymentMethod || "Crypto"}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Expected amount</p><p className="text-sm text-white">${(current.total / 100).toFixed(2)}</p></div>
-            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-sm font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment</p><p className="text-xs text-white">{current.paymentMethod || "—"}</p></div>
+            {current.paymentNote && (
+              <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Payment Note</p><p className="text-xs font-mono text-amber-300">{current.paymentNote}</p></div>
+            )}
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
+
+          {current.paymentMethod === "CashApp" && (current.status === "pending" || current.status === "waiting_payment") && (
+            <div className="flex gap-2 border-b border-white/5 pb-4">
+              <button
+                onClick={() => { cashappFulfillMutation.mutate(current.id); setSelectedOrder(null); }}
+                disabled={cashappFulfillMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+              >
+                {cashappFulfillMutation.isPending ? "Fulfilling…" : "✓ Paid — Push Order"}
+              </button>
+              <button
+                onClick={() => { markUnpaidMutation.mutate(current.id); setSelectedOrder(null); }}
+                disabled={markUnpaidMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              >
+                ✕ Unpaid
+              </button>
+            </div>
+          )}
 
           {groupedEntries.length > 0 && (
             <div className="space-y-3">
@@ -787,12 +809,12 @@ function OrdersSection() {
   }
 
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.status === "waiting_payment";
+    if (orderFilter === "waiting") return o.status === "pending" || o.status === "waiting_payment";
     if (orderFilter === "fulfilled") return o.status === "delivering";
     return true;
   });
 
-  const waitingCount = (orders || []).filter((o: any) => o.status === "waiting_payment").length;
+  const waitingCount = (orders || []).filter((o: any) => o.status === "pending" || o.status === "waiting_payment").length;
 
   return (
     <div className="space-y-4">
@@ -834,7 +856,7 @@ function OrdersSection() {
         </div>
         {filteredOrders.map((order: any) => {
           const isCashapp = order.paymentMethod === "CashApp";
-          const isUnpaid = order.status === "waiting_payment";
+          const isActionable = isCashapp && (order.status === "pending" || order.status === "waiting_payment");
           return (
             <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
               <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
@@ -844,7 +866,7 @@ function OrdersSection() {
               </div>
               <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
               <div className="flex gap-1">
-                {isCashapp && isUnpaid && (
+                {isActionable && (
                   <>
                     <button
                       onClick={() => cashappFulfillMutation.mutate(order.id)}

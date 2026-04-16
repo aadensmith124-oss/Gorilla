@@ -1229,7 +1229,7 @@ export async function registerRoutes(
         orderId: publicOrderId,
         userId,
         total,
-        status: "waiting_payment",
+        status: "pending",
         paymentMethod: "CashApp",
         paymentNote,
       }).returning();

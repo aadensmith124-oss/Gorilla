@@ -456,6 +456,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(orders.status, "pending"), lt(orders.createdAt, cutoff)));
     let cancelled = 0;
     for (const order of staleOrders) {
+      // Never auto-cancel CashApp orders — they need up to 4 hours
+      if (order.paymentMethod === "CashApp") continue;
       await this.cancelPendingOrder(order.id);
       cancelled++;
     }
