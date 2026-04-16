@@ -3,17 +3,24 @@ import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { ShoppingCart, ArrowRight, Loader2, Trash2, Wallet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { SiBitcoin } from "react-icons/si";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Star } from "lucide-react";
+import { api } from "@shared/routes";
 
-type PaymentMethod = "crypto" | "stars";
+type PaymentMethod = "crypto" | "stars" | "balance";
 
-const PAYMENT_OPTIONS: { id: PaymentMethod; icon: React.ReactNode; label: string }[] = [
+const PAYMENT_OPTIONS: { id: PaymentMethod; icon: React.ReactNode; label: string; desc?: string }[] = [
+  {
+    id: "balance",
+    icon: <Wallet className="h-5 w-5 text-green-400" />,
+    label: "Balance",
+    desc: "Instant delivery from stock",
+  },
   {
     id: "crypto",
     icon: <SiBitcoin className="h-5 w-5 text-amber-400" />,
@@ -32,7 +39,7 @@ export default function CartPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("crypto");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("balance");
 
   const { data: paymentConfig } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/payment-methods"],
@@ -86,11 +93,41 @@ export default function CartPage() {
     },
   });
 
-  const isPending = cryptoOrderMutation.isPending || starsOrderMutation.isPending;
+  const balanceOrderMutation = useMutation({
+    mutationFn: async () => {
+      const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
+      const res = await apiRequest("POST", api.orders.create.path, { items: cartItems });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Order failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      clearCart();
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Order placed!", description: "Your items are ready. Check your orders." });
+      if (data.orderId) setLocation(`/order/${data.orderId}`);
+      else setLocation("/profile?tab=orders");
+    },
+    onError: (error: any) => {
+      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    },
+  });
+
+  const isPending = cryptoOrderMutation.isPending || starsOrderMutation.isPending || balanceOrderMutation.isPending;
+  const userBalance = user?.balance || 0;
+  const hasEnoughBalance = userBalance >= totalDue;
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (selectedMethod === "crypto") cryptoOrderMutation.mutate();
+    if (selectedMethod === "balance") {
+      if (!hasEnoughBalance) {
+        toast({ title: "Insufficient balance", description: `You need $${(totalDue / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}`, variant: "destructive" });
+        return;
+      }
+      balanceOrderMutation.mutate();
+    } else if (selectedMethod === "crypto") cryptoOrderMutation.mutate();
     else if (selectedMethod === "stars") starsOrderMutation.mutate();
   };
 
@@ -200,21 +237,32 @@ export default function CartPage() {
       <div>
         <h2 className="text-xs font-bold text-white uppercase tracking-widest mb-3">Select Payment Processor</h2>
         <div className="space-y-2">
-          {enabledOptions.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => setSelectedMethod(opt.id)}
-              data-testid={`button-payment-${opt.id}`}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-sm font-medium ${
-                selectedMethod === opt.id
-                  ? "border-white/20 bg-white/8 text-white"
-                  : "border-white/8 bg-[#0d1017] text-muted-foreground hover:border-white/15 hover:text-white"
-              }`}
-            >
-              {opt.icon}
-              <span>{opt.label}</span>
-            </button>
-          ))}
+          {enabledOptions.map((opt) => {
+            const isBalance = opt.id === "balance";
+            const balanceLabel = isBalance ? `$${(userBalance / 100).toFixed(2)}` : null;
+            const insufficient = isBalance && !hasEnoughBalance;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setSelectedMethod(opt.id)}
+                data-testid={`button-payment-${opt.id}`}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-sm font-medium ${
+                  selectedMethod === opt.id
+                    ? "border-white/20 bg-white/8 text-white"
+                    : "border-white/8 bg-[#0d1017] text-muted-foreground hover:border-white/15 hover:text-white"
+                }`}
+              >
+                {opt.icon}
+                <span className="flex-1 text-left">{opt.label}</span>
+                {opt.desc && <span className="text-[10px] text-muted-foreground">{opt.desc}</span>}
+                {isBalance && (
+                  <span className={`text-xs font-bold ${insufficient ? "text-red-400" : "text-green-400"}`}>
+                    {balanceLabel}
+                  </span>
+                )}
+              </button>
+            );
+          })}
           {enabledOptions.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-4">No payment methods available</p>
           )}

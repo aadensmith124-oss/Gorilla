@@ -11,11 +11,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2, Star } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, Send, ChevronDown, ChevronUp, Check, Link2, Star, Package } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -151,6 +151,7 @@ function ProductsSection() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
+  const [managingStock, setManagingStock] = useState<number | null>(null);
   const { data: products, isLoading } = useProducts();
 
   const productSchema = z.object({
@@ -414,16 +415,30 @@ function ProductsSection() {
                 {product.variants?.length > 0 ? (
                   <div className="space-y-2">
                     {product.variants.map((v: any) => (
-                      <div key={v.id} className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2 border border-white/5">
-                        <div>
-                          <span className="text-sm font-medium">{v.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">${(v.price / 100).toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground ml-2">Min qty: {v.minQuantity || 1}</span>
+                      <div key={v.id}>
+                        <div className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2 border border-white/5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium truncate">{v.name}</span>
+                            <span className="text-xs text-muted-foreground">${(v.price / 100).toFixed(2)}</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${v.stockCount > 0 ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                              {v.stockCount || 0} in stock
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => setManagingStock(managingStock === v.id ? null : v.id)}
+                              title="Manage stock"
+                            >
+                              <Package className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                              onClick={() => { if (confirm("Delete variant?")) deleteVariantMutation.mutate(v.id); }}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          onClick={() => { if (confirm("Delete variant?")) deleteVariantMutation.mutate(v.id); }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {managingStock === v.id && <VariantStockPanel variantId={v.id} />}
                       </div>
                     ))}
                   </div>
@@ -469,6 +484,101 @@ function ProductsSection() {
           <div className="text-center py-12 text-muted-foreground text-sm">No products yet. Add one above.</div>
         )}
       </div>
+    </div>
+  );
+}
+
+function VariantStockPanel({ variantId }: { variantId: number }) {
+  const [input, setInput] = useState("");
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const { data: items, isLoading } = useQuery({
+    queryKey: ["/api/admin/stock", variantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/stock/${variantId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch stock");
+      return res.json();
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const lines = input.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 0) throw new Error("No items to add");
+      const rawContent = lines.join("\n\n");
+      const res = await apiRequest("POST", "/api/admin/stock/bulk", { variantId, rawContent });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: `Added ${data.addedCount} stock item${data.addedCount !== 1 ? "s" : ""}` });
+      setInput("");
+      qc.invalidateQueries({ queryKey: ["/api/admin/stock", variantId] });
+      qc.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/stock/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/stock", variantId] });
+      qc.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Item removed" });
+    },
+  });
+
+  return (
+    <div className="mt-1 mb-2 bg-black/50 rounded-lg border border-white/8 p-3 space-y-3">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+        Stock — {isLoading ? "..." : `${items?.length || 0} items available`}
+      </p>
+
+      <div className="space-y-1.5">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={"One item per line:\nstock1\nstock2\nstock3"}
+          rows={4}
+          className="bg-black/60 border-white/10 text-xs font-mono resize-none placeholder:text-white/20"
+        />
+        <Button
+          size="sm"
+          className="w-full h-7 text-xs gap-1"
+          disabled={!input.trim() || addMutation.isPending}
+          onClick={() => addMutation.mutate()}
+        >
+          {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+          Add Stock Items
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+      ) : items?.length > 0 ? (
+        <div className="space-y-1 max-h-52 overflow-y-auto">
+          {items.map((item: any) => (
+            <div key={item.id} className="flex items-center gap-2 bg-black/30 rounded px-2 py-1.5 border border-white/5">
+              <span className="text-[11px] font-mono text-white/60 flex-1 truncate">
+                {item.content.length > 50 ? item.content.slice(0, 50) + "…" : item.content}
+              </span>
+              <button
+                onClick={() => deleteMutation.mutate(item.id)}
+                disabled={deleteMutation.isPending}
+                className="text-destructive/70 hover:text-destructive transition-colors flex-shrink-0"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground italic text-center py-1">No stock items yet</p>
+      )}
     </div>
   );
 }
