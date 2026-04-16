@@ -355,7 +355,7 @@ export default function CartPage() {
                 <div className={`h-3.5 w-3.5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedMethod === "crypto" ? "border-primary" : "border-white/20"}`}>
                   {selectedMethod === "crypto" && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                 </div>
-                <SiBitcoin className="h-4 w-4 text-white/30 flex-shrink-0" />
+                <SiBitcoin className="h-4 w-4 text-[#f7931a] flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-semibold text-white/80">Crypto</span>
                 <span className="text-[10px] text-white/25">+{CRYPTO_FEE_PERCENT}%</span>
               </button>
@@ -385,12 +385,12 @@ export default function CartPage() {
         </div>
 
         <Button
-          className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-black rounded-xl uppercase tracking-widest"
+          className="w-full h-9 text-xs font-bold bg-primary hover:bg-primary/90 text-black rounded-xl uppercase tracking-widest"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"
         >
-          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
           Purchase
         </Button>
       </div>

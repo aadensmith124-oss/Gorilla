@@ -285,8 +285,8 @@ function ProductsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Products</h1>
-        <Button onClick={() => { setShowAddForm(!showAddForm); setEditingProduct(null); }} className="gap-2">
-          <Plus className="h-4 w-4" />Add Product
+        <Button size="sm" onClick={() => { setShowAddForm(!showAddForm); setEditingProduct(null); }} className="gap-1.5 text-xs">
+          <Plus className="h-3.5 w-3.5" />Add Product
         </Button>
       </div>
 
@@ -326,8 +326,8 @@ function ProductsSection() {
                     </FormControl>
                   </FormItem>
                 )} />
-                <Button type="submit" className="w-full" disabled={addMutation.isPending}>
-                  {addMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Product
+                <Button type="submit" size="sm" className="w-full text-xs" disabled={addMutation.isPending}>
+                  {addMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}Save Product
                 </Button>
               </form>
             </Form>
@@ -371,8 +371,8 @@ function ProductsSection() {
                     </FormControl>
                   </FormItem>
                 )} />
-                <Button type="submit" className="w-full" disabled={editMutation.isPending}>
-                  {editMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Update Product
+                <Button type="submit" size="sm" className="w-full text-xs" disabled={editMutation.isPending}>
+                  {editMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}Update Product
                 </Button>
               </form>
             </Form>
@@ -895,11 +895,12 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           </div>
 
           <Button
+            size="sm"
             onClick={() => testOrderMutation.mutate()}
             disabled={testOrderMutation.isPending || !selectedProduct || !selectedVariant}
-            className="w-full"
+            className="w-full text-xs"
           >
-            {testOrderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {testOrderMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
             Create Test Order
           </Button>
         </CardContent>

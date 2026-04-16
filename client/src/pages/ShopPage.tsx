@@ -66,7 +66,7 @@ export default function ShopPage() {
   return (
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">
-        <h1 className="text-5xl text-white text-center">
+        <h1 className="text-5xl font-bold text-white text-center">
           RULF<span className="text-primary">.CC</span>
         </h1>
 
