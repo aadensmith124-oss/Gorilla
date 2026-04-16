@@ -4,7 +4,7 @@ import {
   Menu,
   ChevronDown,
 } from "lucide-react";
-import logoImg from "@assets/IMG_6987_1776367750874.png";
+import logoImg from "@assets/IMG_6988_1776371058121.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
