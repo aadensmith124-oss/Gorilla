@@ -32,7 +32,7 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "r3pl1t_s3cr3t_k3y",
     resave: false,
     saveUninitialized: false,
-    store: new PGStore({ pool, createTableIfMissing: true }),
+    store: new PGStore({ pool, createTableIfMissing: false }),
     cookie: {
       secure: app.get("env") === "production",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
