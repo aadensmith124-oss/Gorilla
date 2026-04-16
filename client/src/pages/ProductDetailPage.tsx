@@ -142,8 +142,8 @@ export default function ProductDetailPage() {
               disabled={!selectedVariantId}
               className="flex-1 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
               style={{
-                background: "#c0392b",
-                color: "#fff",
+                background: "hsl(84, 81%, 44%)",
+                color: "#000",
               }}
               data-testid="button-add-to-cart"
             >

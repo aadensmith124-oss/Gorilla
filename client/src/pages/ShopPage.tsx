@@ -5,6 +5,7 @@ import { Loader2, Headset, ShieldX } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import logoImg from "@assets/IMG_6987_1776367750874.png";
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const result = [...arr];
@@ -66,9 +67,7 @@ export default function ShopPage() {
   return (
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">
-        <h1 className="text-5xl font-bold text-white text-center">
-          CASHPLUG.CC
-        </h1>
+        <img src={logoImg} alt="CASHPLUG SHOP" className="w-64 max-w-full object-contain" />
 
         <a
           href="https://t.me/m/iP8zL2axM2Rh"
