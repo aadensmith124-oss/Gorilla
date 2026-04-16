@@ -33,12 +33,12 @@ export default function ProductDetailPage() {
     }
   }, [selectedVariantId, minQty]);
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  if (!product) return <div className="p-8 text-center text-white">Product not found</div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!product) return <div className="p-8 text-center text-white/50 text-sm">Product not found</div>;
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
-      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
+      toast({ title: "Select an option first", variant: "destructive" });
       return;
     }
     if (quantity < minQty) {
@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     if (!selectedVariant) {
-      toast({ title: "Error", description: "Please select an option", variant: "destructive" });
+      toast({ title: "Select an option first", variant: "destructive" });
       return;
     }
     handleAddToCart();
@@ -69,92 +69,86 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#090a0c] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#16181d] rounded-2xl border border-white/5 overflow-hidden relative shadow-2xl">
-        <div className="p-6 border-b border-white/5 flex justify-between items-start">
-          <h1 className="text-xl text-white pr-8 leading-tight">
-            {product.name}
-          </h1>
+      <div className="w-full max-w-sm bg-[#0d1017] rounded-xl border border-white/[0.06] overflow-hidden shadow-xl">
+
+        <div className="flex items-center justify-between px-3.5 py-3 border-b border-white/[0.05]">
+          <span className="text-sm font-semibold text-white leading-tight pr-6 truncate">{product.name}</span>
           <button
             onClick={() => setLocation("/")}
-            className="p-1 rounded bg-white/5 text-muted-foreground hover:text-white transition-colors"
+            className="flex-shrink-0 text-white/30 hover:text-white transition-colors"
             data-testid="button-close-product"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-3.5 space-y-3">
           {product.description ? (
-            <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-              <p className="text-xs font-bold text-muted-foreground mb-2">About this product</p>
-              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+            <div className="bg-white/[0.03] border border-white/[0.05] px-3 py-2.5 rounded-lg">
+              <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-wrap">{product.description}</p>
             </div>
           ) : null}
 
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-bold text-muted-foreground">Available Options</h3>
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Option</p>
             <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
-              <SelectTrigger className="w-full h-12 bg-[#1c1f26] border-white/5 text-white font-bold" data-testid="select-variant">
-                <SelectValue placeholder="SELECT AN OPTION" />
+              <SelectTrigger className="w-full h-9 bg-[#151b26] border-white/[0.06] text-white text-xs" data-testid="select-variant">
+                <SelectValue placeholder="Select an option" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1c1f26] border-white/5 text-white">
+              <SelectContent className="bg-[#151b26] border-white/[0.08] text-white">
                 {product.variants.map((v: any) => (
                   <SelectItem
                     key={v.id}
                     value={v.id.toString()}
-                    className="font-bold hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                    className="text-xs hover:bg-white/5 focus:bg-white/5 cursor-pointer"
                   >
-                    ${(v.price / 100).toFixed(2)} - {v.name}{v.minQuantity > 1 ? ` (min ${v.minQuantity})` : ""}
+                    ${(v.price / 100).toFixed(2)} — {v.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-bold text-muted-foreground">
-              Quantity {minQty > 1 && <span className="text-primary">(min {minQty})</span>}
-            </h3>
-            <div className="inline-flex items-center gap-3 p-1.5 bg-[#1c1f26] rounded-xl border border-white/5">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Quantity</p>
+            <div className="inline-flex items-center gap-2.5 p-1 bg-[#151b26] rounded-lg border border-white/[0.06]">
               <button
                 onClick={() => setQuantity(prev => Math.max(minQty, prev - 1))}
-                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary text-white transition-colors"
+                className="h-6 w-6 flex items-center justify-center rounded bg-white/5 hover:bg-primary/20 hover:text-primary text-white/60 transition-colors"
                 data-testid="button-qty-decrease"
               >
-                <Minus className="h-3 w-3" />
+                <Minus className="h-2.5 w-2.5" />
               </button>
-              <span className="w-10 text-center text-sm font-bold text-white font-mono">{quantity}</span>
+              <span className="w-6 text-center text-xs font-bold text-white font-mono">{quantity}</span>
               <button
                 onClick={() => setQuantity(prev => prev + 1)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary text-white transition-colors"
+                className="h-6 w-6 flex items-center justify-center rounded bg-white/5 hover:bg-primary/20 hover:text-primary text-white/60 transition-colors"
                 data-testid="button-qty-increase"
               >
-                <Plus className="h-3 w-3" />
+                <Plus className="h-2.5 w-2.5" />
               </button>
             </div>
           </div>
 
-          <div className="space-y-3 pt-2">
+          <div className="space-y-1.5 pt-1">
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariantId}
-              className="w-full h-12 rounded-xl text-sm shadow-lg hover:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+              className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
               style={{
                 background: "linear-gradient(135deg, hsl(38,82%,52%), hsl(30,90%,40%))",
                 color: "#0a0a0a",
-                boxShadow: "0 8px 32px hsl(38,82%,52%,0.25)",
-                cursor: !selectedVariantId ? "not-allowed" : "pointer",
               }}
               data-testid="button-add-to-cart"
             >
-              <ShoppingCart className="h-4 w-4" />
+              <ShoppingCart className="h-3.5 w-3.5" />
               Add to Cart
             </button>
 
             <button
               onClick={handleBuyNow}
               disabled={!selectedVariantId}
-              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white text-sm hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full h-9 rounded-lg bg-transparent border border-white/[0.08] text-white/70 text-xs hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               data-testid="button-buy-now"
             >
               Buy Now
@@ -162,7 +156,7 @@ export default function ProductDetailPage() {
 
             <button
               onClick={() => setLocation("/cart")}
-              className="w-full h-12 rounded-xl bg-transparent border border-white/10 text-white text-sm hover:bg-white/5 transition-colors"
+              className="w-full h-9 rounded-lg bg-transparent text-white/30 text-xs hover:text-white/60 transition-colors"
               data-testid="button-view-cart"
             >
               View Cart
