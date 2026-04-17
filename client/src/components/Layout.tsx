@@ -31,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
-        <img src="/rulf-logo.png" alt="RULF SHOP" className="h-14 w-auto object-contain" />
+        <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-14 w-auto object-contain" />
       </div>
 
       <div className="flex flex-col gap-4 text-left">
@@ -92,7 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="h-20 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
-            <img src="/rulf-logo.png" alt="RULF SHOP" className="h-12 w-auto object-contain" />
+            <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-12 w-auto object-contain" />
           </div>
         </Link>
 

@@ -35,7 +35,7 @@ export default function AuthPage() {
 
       <div className="z-10 w-full max-w-md space-y-8">
         <div className="text-center space-y-4">
-          <img src="/rulf-logo.png" alt="RULF SHOP" className="h-36 w-auto object-contain mx-auto" />
+          <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-44 w-auto object-contain mx-auto" />
           <p className="text-muted-foreground text-xs font-bold">Sign in to access the marketplace</p>
         </div>
 
