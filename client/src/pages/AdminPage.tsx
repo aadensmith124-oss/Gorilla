@@ -641,6 +641,34 @@ function OrdersSection() {
     onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   });
 
+  const refundMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Order refunded — balance returned to user" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
+  const replaceMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/replace`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Replacement stock sent to user" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
@@ -691,6 +719,27 @@ function OrdersSection() {
                 className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
               >
                 ✕ Unpaid
+              </button>
+            </div>
+          )}
+
+          {(current.status === "delivering" || current.status === "fulfilled" || current.status === "replaced") && (
+            <div className="flex gap-2 border-b border-white/5 pb-4">
+              <button
+                onClick={() => replaceMutation.mutate(current.id)}
+                disabled={replaceMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
+                data-testid={`button-replace-${current.id}`}
+              >
+                {replaceMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "↺ Replace (new stock)"}
+              </button>
+              <button
+                onClick={() => refundMutation.mutate(current.id)}
+                disabled={refundMutation.isPending || current.status === "refunded"}
+                className="flex-1 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-black hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                data-testid={`button-refund-${current.id}`}
+              >
+                {refundMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "$ Refund to Balance"}
               </button>
             </div>
           )}
@@ -762,6 +811,7 @@ function OrdersSection() {
         {filteredOrders.map((order: any) => {
           const isCashapp = order.paymentMethod === "CashApp";
           const isActionable = isCashapp && (order.status === "pending" || order.status === "waiting_payment");
+          const isDelivered = order.status === "delivering" || order.status === "fulfilled" || order.status === "replaced";
           return (
             <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
               <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
@@ -785,6 +835,22 @@ function OrdersSection() {
                       className="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
                       data-testid={`button-unpaid-${order.id}`}
                     >Unpaid</button>
+                  </>
+                )}
+                {isDelivered && (
+                  <>
+                    <button
+                      onClick={() => replaceMutation.mutate(order.id)}
+                      disabled={replaceMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
+                      data-testid={`button-replace-row-${order.id}`}
+                    >Replace</button>
+                    <button
+                      onClick={() => refundMutation.mutate(order.id)}
+                      disabled={refundMutation.isPending}
+                      className="px-2 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                      data-testid={`button-refund-row-${order.id}`}
+                    >Refund</button>
                   </>
                 )}
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
@@ -1248,24 +1314,6 @@ function CashAppSection() {
     ...mutationOpts("Order marked unpaid"),
   });
 
-  const refundMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
-      return res.json();
-    },
-    ...mutationOpts("Order refunded — balance returned to user"),
-  });
-
-  const replaceMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/replace`, {});
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
-      return res.json();
-    },
-    ...mutationOpts("Replacement stock sent to user"),
-  });
-
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
@@ -1323,26 +1371,6 @@ function CashAppSection() {
             </div>
           )}
 
-          {isFulfilled && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => replaceMutation.mutate(current.id)}
-                disabled={replaceMutation.isPending}
-                className="flex-1 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
-                data-testid={`button-replace-${current.id}`}
-              >
-                {replaceMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "↺ Replace (new stock)"}
-              </button>
-              <button
-                onClick={() => refundMutation.mutate(current.id)}
-                disabled={refundMutation.isPending || current.status === "refunded"}
-                className="flex-1 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-black hover:bg-orange-500/20 transition-colors disabled:opacity-50"
-                data-testid={`button-refund-${current.id}`}
-              >
-                {refundMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "$ Refund to Balance"}
-              </button>
-            </div>
-          )}
 
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
@@ -1416,20 +1444,6 @@ function CashAppSection() {
                         className="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
                         data-testid={`button-cashapp-unpaid-row-${order.id}`}
                       >Unpaid</button>
-                    </>
-                  )}
-                  {isFulfilled && (
-                    <>
-                      <button
-                        onClick={() => replaceMutation.mutate(order.id)}
-                        disabled={replaceMutation.isPending}
-                        className="px-2.5 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
-                      >Replace</button>
-                      <button
-                        onClick={() => refundMutation.mutate(order.id)}
-                        disabled={refundMutation.isPending || order.status === "refunded"}
-                        className="px-2.5 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold hover:bg-orange-500/20 transition-colors disabled:opacity-50"
-                      >Refund</button>
                     </>
                   )}
                   <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
