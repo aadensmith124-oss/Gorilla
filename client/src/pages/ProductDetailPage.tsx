@@ -92,15 +92,22 @@ export default function ProductDetailPage() {
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent className="bg-[#1a1d24] border-white/[0.08] text-white">
-                {product.variants.map((v: any) => (
-                  <SelectItem
-                    key={v.id}
-                    value={v.id.toString()}
-                    className="text-xs hover:bg-white/5 focus:bg-white/5 cursor-pointer"
-                  >
-                    ${(v.price / 100).toFixed(2)} - {v.name}
-                  </SelectItem>
-                ))}
+                {product.variants.map((v: any) => {
+                  const outOfStock = v.stockCount === 0;
+                  return (
+                    <SelectItem
+                      key={v.id}
+                      value={v.id.toString()}
+                      disabled={outOfStock}
+                      className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5"
+                    >
+                      <span className={`font-bold ${outOfStock ? "text-white/30" : "text-white"}`}>
+                        ${(v.price / 100).toFixed(2)} — {v.name}
+                        {outOfStock && <span className="ml-2 text-red-400 font-normal">(not in stock)</span>}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

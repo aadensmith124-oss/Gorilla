@@ -242,7 +242,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addStockItems(variantId: number, content: string): Promise<number> {
-    const items = content.split(/\n\s*\n/).map(block => block.trim()).filter(block => block.length > 0);
+    const items = content.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
     if (items.length === 0) return 0;
 
     const values = items.map(itemContent => ({
