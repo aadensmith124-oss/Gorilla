@@ -575,10 +575,8 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const lines = input.split("\n").map((l) => l.trim()).filter(Boolean);
-      if (lines.length === 0) throw new Error("No items to add");
-      const rawContent = lines.join("\n\n");
-      const res = await apiRequest("POST", "/api/admin/stock/bulk", { variantId, rawContent });
+      if (!input.trim()) throw new Error("No items to add");
+      const res = await apiRequest("POST", "/api/admin/stock/bulk", { variantId, rawContent: input });
       return res.json();
     },
     onSuccess: (data) => {
@@ -613,7 +611,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={"One item per line:\nstock1\nstock2\nstock3"}
+          placeholder={"Blank line separates items:\nstock1\n\nstock2\n\nstock3"}
           rows={4}
           className="bg-black/60 border-white/10 text-xs font-mono resize-none placeholder:text-white/20"
         />
