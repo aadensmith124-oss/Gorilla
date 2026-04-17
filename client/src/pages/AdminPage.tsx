@@ -708,20 +708,6 @@ function OrdersSection() {
     onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   });
 
-  const pushStockMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/push-stock`, {});
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setSelectedOrder(null);
-      toast({ title: "Stock pushed — order delivered to user" });
-    },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-  });
-
   const refundMutation = useMutation({
     mutationFn: async (orderId: number) => {
       const res = await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
@@ -785,33 +771,23 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
-          {(current.status === "pending" || current.status === "waiting_payment") && (
-            <div className="flex gap-2 border-b border-white/5 pb-4">
-              {current.paymentMethod === "CashApp" && (
-                <>
-                  <button
-                    onClick={() => { cashappFulfillMutation.mutate(current.id); setSelectedOrder(null); }}
-                    disabled={cashappFulfillMutation.isPending}
-                    className="flex-1 h-9 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
-                  >
-                    {cashappFulfillMutation.isPending ? "Fulfilling…" : "✓ Paid — Deliver Stock"}
-                  </button>
-                  <button
-                    onClick={() => { markUnpaidMutation.mutate(current.id); setSelectedOrder(null); }}
-                    disabled={markUnpaidMutation.isPending}
-                    className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                  >
-                    ✕ Unpaid
-                  </button>
-                </>
-              )}
+          {(current.status === "pending" || current.status === "waiting_payment") && current.paymentMethod === "CashApp" && (
+            <div className="flex gap-3 border-b border-white/5 pb-4">
               <button
-                onClick={() => pushStockMutation.mutate(current.id)}
-                disabled={pushStockMutation.isPending}
-                className="flex-1 h-9 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
-                data-testid={`button-push-stock-${current.id}`}
+                onClick={() => { cashappFulfillMutation.mutate(current.id); }}
+                disabled={cashappFulfillMutation.isPending}
+                className="flex-1 h-11 rounded-xl bg-[#00D632]/20 border border-[#00D632]/40 text-[#00D632] text-sm font-black hover:bg-[#00D632]/30 transition-colors disabled:opacity-50"
+                data-testid={`button-cashapp-paid-detail-${current.id}`}
               >
-                {pushStockMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "⚡ Push Stock"}
+                {cashappFulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "✓ Paid — Deliver Stock"}
+              </button>
+              <button
+                onClick={() => { markUnpaidMutation.mutate(current.id); }}
+                disabled={markUnpaidMutation.isPending}
+                className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                data-testid={`button-cashapp-unpaid-detail-${current.id}`}
+              >
+                ✕ Unpaid
               </button>
             </div>
           )}
@@ -901,65 +877,17 @@ function OrdersSection() {
           <span className="text-[10px] font-bold text-white/40">Status</span>
           <span></span>
         </div>
-        {filteredOrders.map((order: any) => {
-          const isCashapp = order.paymentMethod === "CashApp";
-          const isPendingOrder = order.status === "pending" || order.status === "waiting_payment";
-          const isActionable = isCashapp && isPendingOrder;
-          const isDelivered = order.status === "delivering" || order.status === "fulfilled" || order.status === "replaced";
-          return (
-            <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
-              <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
-              <div className="min-w-0">
-                <p className="text-[11px] text-white/70 truncate font-mono">{order.paymentNote || order.paymentMethod || "—"}</p>
-                <p className="text-[10px] text-white/30 truncate">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-              </div>
-              <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
-              <div className="flex gap-1 items-center">
-                {isActionable && (
-                  <>
-                    <button
-                      onClick={() => cashappFulfillMutation.mutate(order.id)}
-                      disabled={cashappFulfillMutation.isPending}
-                      className="px-2 py-1 rounded-md bg-green-500/20 border border-green-500/30 text-green-400 text-[10px] font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
-                      data-testid={`button-paid-${order.id}`}
-                    >Paid</button>
-                    <button
-                      onClick={() => markUnpaidMutation.mutate(order.id)}
-                      disabled={markUnpaidMutation.isPending}
-                      className="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                      data-testid={`button-unpaid-${order.id}`}
-                    >Unpaid</button>
-                  </>
-                )}
-                {isPendingOrder && (
-                  <button
-                    onClick={() => pushStockMutation.mutate(order.id)}
-                    disabled={pushStockMutation.isPending}
-                    className="px-2 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
-                    data-testid={`button-push-row-${order.id}`}
-                  >⚡ Push</button>
-                )}
-                {isDelivered && (
-                  <>
-                    <button
-                      onClick={() => replaceMutation.mutate(order.id)}
-                      disabled={replaceMutation.isPending}
-                      className="px-2 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
-                      data-testid={`button-replace-row-${order.id}`}
-                    >Replace</button>
-                    <button
-                      onClick={() => refundMutation.mutate(order.id)}
-                      disabled={refundMutation.isPending}
-                      className="px-2 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold hover:bg-orange-500/20 transition-colors disabled:opacity-50"
-                      data-testid={`button-refund-row-${order.id}`}
-                    >Refund</button>
-                  </>
-                )}
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
-              </div>
+        {filteredOrders.map((order: any) => (
+          <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
+            <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+            <div className="min-w-0">
+              <p className="text-[11px] text-white/70 truncate font-mono">{order.paymentNote || order.paymentMethod || "—"}</p>
+              <p className="text-[10px] text-white/30 truncate">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
             </div>
-          );
-        })}
+            <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
+            <ChevronRight className="h-3.5 w-3.5 text-white/20" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1517,42 +1445,24 @@ function CashAppSection() {
         </div>
       ) : (
         <div className="space-y-2">
-          {displayedOrders.map((order: any) => {
-            const isPending = order.status === "pending" || order.status === "waiting_payment";
-            const isFulfilled = order.status === "delivering" || order.status === "fulfilled" || order.status === "replaced";
-            return (
-              <div key={order.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-mono text-white/50 truncate">{order.orderId}</p>
-                    <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
-                  </div>
-                  <p className="text-sm font-black text-white mt-0.5">${(order.total / 100).toFixed(2)}</p>
-                  {order.paymentNote && <p className="text-[10px] font-mono text-[#00D632]/70 mt-0.5">{order.paymentNote}</p>}
-                  <p className="text-[10px] text-white/30 mt-0.5">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
+          {displayedOrders.map((order: any) => (
+            <div
+              key={order.id}
+              className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              onClick={() => setSelectedOrder(order)}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-mono text-white/50 truncate">{order.orderId}</p>
+                  <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {isPending && (
-                    <>
-                      <button
-                        onClick={() => cashappFulfillMutation.mutate(order.id)}
-                        disabled={cashappFulfillMutation.isPending}
-                        className="px-2.5 py-1 rounded-md bg-[#00D632]/20 border border-[#00D632]/30 text-[#00D632] text-[10px] font-bold hover:bg-[#00D632]/30 transition-colors disabled:opacity-50"
-                        data-testid={`button-cashapp-paid-row-${order.id}`}
-                      >Paid</button>
-                      <button
-                        onClick={() => markUnpaidMutation.mutate(order.id)}
-                        disabled={markUnpaidMutation.isPending}
-                        className="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                        data-testid={`button-cashapp-unpaid-row-${order.id}`}
-                      >Unpaid</button>
-                    </>
-                  )}
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>
-                </div>
+                <p className="text-sm font-black text-white mt-0.5">${(order.total / 100).toFixed(2)}</p>
+                {order.paymentNote && <p className="text-[10px] font-mono text-[#00D632]/70 mt-0.5">{order.paymentNote}</p>}
+                <p className="text-[10px] text-white/30 mt-0.5">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
               </div>
-            );
-          })}
+              <ChevronRight className="h-4 w-4 text-white/20 flex-shrink-0" />
+            </div>
+          ))}
         </div>
       )}
     </div>
