@@ -653,17 +653,21 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
 }
 
 function statusLabel(s: string) {
-  if (s === "pending") return "Unconfirmed";
+  if (s === "pending") return "Pending";
   if (s === "waiting_payment") return "Unpaid";
-  if (s === "fulfilled") return "Waiting Order";
-  if (s === "delivering") return "Delivered";
+  if (s === "delivering") return "Fulfilled";
+  if (s === "fulfilled") return "Fulfilled";
+  if (s === "refunded") return "Refunded";
+  if (s === "replaced") return "Replaced";
   return s;
 }
 
 function statusBadgeClass(s: string) {
-  if (s === "fulfilled") return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-  if (s === "delivering") return "bg-green-500/20 text-green-400 border-green-500/30";
-  if (s === "waiting_payment") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+  if (s === "pending") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+  if (s === "waiting_payment") return "bg-red-500/20 text-red-400 border-red-500/30";
+  if (s === "delivering" || s === "fulfilled") return "bg-green-500/20 text-green-400 border-green-500/30";
+  if (s === "refunded") return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+  if (s === "replaced") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
   return "bg-white/10 text-white/60";
 }
 
@@ -771,7 +775,7 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
-          {(current.status === "pending" || current.status === "waiting_payment") && current.paymentMethod === "CashApp" && (
+          {current.status === "pending" && current.paymentMethod === "CashApp" && (
             <div className="flex gap-3 border-b border-white/5 pb-4">
               <button
                 onClick={() => { cashappFulfillMutation.mutate(current.id); }}
@@ -833,12 +837,12 @@ function OrdersSection() {
   }
 
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.paymentMethod === "CashApp" && (o.status === "pending" || o.status === "waiting_payment");
+    if (orderFilter === "waiting") return o.paymentMethod === "CashApp" && o.status === "pending";
     if (orderFilter === "fulfilled") return o.status === "delivering" || o.status === "fulfilled" || o.status === "replaced";
     return true;
   });
 
-  const waitingCount = (orders || []).filter((o: any) => o.paymentMethod === "CashApp" && (o.status === "pending" || o.status === "waiting_payment")).length;
+  const waitingCount = (orders || []).filter((o: any) => o.paymentMethod === "CashApp" && o.status === "pending").length;
 
   return (
     <div className="space-y-4">
@@ -894,9 +898,11 @@ function OrdersSection() {
 }
 
 function statusTextColor(s: string) {
-  if (s === "fulfilled") return "text-orange-400";
-  if (s === "delivering") return "text-green-400";
-  if (s === "waiting_payment") return "text-yellow-400";
+  if (s === "pending") return "text-yellow-400";
+  if (s === "waiting_payment") return "text-red-400";
+  if (s === "delivering" || s === "fulfilled") return "text-green-400";
+  if (s === "refunded") return "text-orange-400";
+  if (s === "replaced") return "text-blue-400";
   return "text-white/50";
 }
 
@@ -1314,7 +1320,7 @@ function CashAppSection() {
   });
 
   const cashappOrders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
-  const pendingOrders = cashappOrders.filter((o: any) => o.status === "pending" || o.status === "waiting_payment");
+  const pendingOrders = cashappOrders.filter((o: any) => o.status === "pending");
   const displayedOrders = showHistory ? cashappOrders : pendingOrders;
 
   const mutationOpts = (successMsg: string) => ({
@@ -1356,7 +1362,7 @@ function CashAppSection() {
       grouped[key].qty += (item.quantity ?? 1);
     }
     const groupedEntries = Object.entries(grouped);
-    const isPending = current.status === "pending" || current.status === "waiting_payment";
+    const isPending = current.status === "pending";
     const isFulfilled = current.status === "delivering" || current.status === "fulfilled" || current.status === "replaced";
 
     return (
