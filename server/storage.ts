@@ -36,6 +36,8 @@ export interface IStorage {
   getStockItems(variantId: number): Promise<StockItem[]>;
   deleteStockItem(id: number): Promise<void>;
   reserveStockItem(variantId: number): Promise<StockItem | undefined>;
+  holdStockItem(variantId: number, orderId: number): Promise<StockItem | undefined>;
+  releaseHeldStock(orderId: number): Promise<void>;
   
   // Orders
   createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds?: number[]): Promise<Order>;
@@ -178,7 +180,7 @@ export class DatabaseStorage implements IStorage {
         const [count] = await db
           .select({ count: sql<number>`count(*)` })
           .from(stockItems)
-          .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false)));
+          .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
         
         variantsWithStock.push({ ...v, stockCount: Number(count.count) });
       }
@@ -198,7 +200,7 @@ export class DatabaseStorage implements IStorage {
       const [count] = await db
         .select({ count: sql<number>`count(*)` })
         .from(stockItems)
-        .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false)));
+        .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
       
       variantsWithStock.push({ ...v, stockCount: Number(count.count) });
     }
@@ -265,18 +267,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStockItems(variantId: number): Promise<StockItem[]> {
-    return db.select().from(stockItems).where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false))).orderBy(desc(stockItems.createdAt));
+    return db.select().from(stockItems)
+      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)))
+      .orderBy(desc(stockItems.createdAt));
   }
 
   async deleteStockItem(id: number): Promise<void> {
     await db.delete(stockItems).where(eq(stockItems.id, id));
   }
 
+  // Reserve stock for immediate (wallet) purchase — marks as sold right away
   async reserveStockItem(variantId: number): Promise<StockItem | undefined> {
     const [item] = await db
       .select()
       .from(stockItems)
-      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false)))
+      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)))
       .orderBy(sql`RANDOM()`)
       .limit(1);
 
@@ -289,6 +294,34 @@ export class DatabaseStorage implements IStorage {
       return updated;
     }
     return undefined;
+  }
+
+  // Hold stock for a pending order (CashApp/Crypto) — marks as reserved but not sold yet
+  async holdStockItem(variantId: number, orderId: number): Promise<StockItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(stockItems)
+      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)))
+      .orderBy(sql`RANDOM()`)
+      .limit(1);
+
+    if (item) {
+      const [updated] = await db
+        .update(stockItems)
+        .set({ isReserved: true, orderId })
+        .where(eq(stockItems.id, item.id))
+        .returning();
+      return updated;
+    }
+    return undefined;
+  }
+
+  // Release held stock back to available (e.g. when order marked unpaid or cancelled)
+  async releaseHeldStock(orderId: number): Promise<void> {
+    await db
+      .update(stockItems)
+      .set({ isReserved: false, orderId: null })
+      .where(and(eq(stockItems.orderId, orderId), eq(stockItems.isReserved, true), eq(stockItems.isSold, false)));
   }
 
   async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
@@ -363,11 +396,20 @@ export class DatabaseStorage implements IStorage {
 
   async createPendingOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
     let total = 0;
+    const heldItems: { variantId: number; stockItemId: number; price: number; quantity: number }[] = [];
 
+    // Calculate total and check stock availability first
     for (const item of items) {
       const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
       if (!variant) throw new Error("Variant not found");
       total += variant.price * item.quantity;
+
+      // Check there is enough stock before creating the order
+      const [avail] = await db.select({ count: sql<number>`count(*)` }).from(stockItems)
+        .where(and(eq(stockItems.variantId, item.variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
+      if (Number(avail.count) < item.quantity) {
+        throw new Error(`Insufficient stock for ${variant.name}`);
+      }
     }
 
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -378,17 +420,28 @@ export class DatabaseStorage implements IStorage {
       status: "pending"
     }).returning();
 
+    // Hold one stock item per unit ordered
     for (const item of items) {
       const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
       if (!variant) continue;
+
+      for (let i = 0; i < item.quantity; i++) {
+        const held = await this.holdStockItem(item.variantId, order.id);
+        if (!held) throw new Error(`Could not reserve stock for ${variant.name}`);
+        heldItems.push({ variantId: item.variantId, stockItemId: held.id, price: variant.price, quantity: 1 });
+      }
+    }
+
+    // Create one order item per held stock item (each unit gets its own row)
+    for (const h of heldItems) {
       await db.insert(orderItems).values({
         orderId: order.id,
-        variantId: item.variantId,
-        stockItemId: null,
+        variantId: h.variantId,
+        stockItemId: h.stockItemId,
         cardId: null,
         itemType: "product",
-        price: variant.price,
-        quantity: item.quantity,
+        price: h.price,
+        quantity: 1,
       });
     }
 
@@ -404,24 +457,36 @@ export class DatabaseStorage implements IStorage {
   async fulfillCashappOrder(orderId: number): Promise<Order> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) throw new Error("Order not found");
-    if (order.status !== "waiting_payment" && order.status !== "pending") {
+    if (order.status !== "pending") {
       throw new Error("Order is not in a payable state");
     }
+
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
     const deliveryParts: Record<string, string[]> = {};
 
     for (const item of items) {
       if (!item.variantId) continue;
-      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
-      if (!variant) continue;
       const key = String(item.variantId);
       if (!deliveryParts[key]) deliveryParts[key] = [];
-      for (let i = 0; i < (item.quantity ?? 1); i++) {
-        const stock = await this.reserveStockItem(item.variantId);
-        if (!stock) throw new Error(`Insufficient stock for ${variant.name}`);
-        await db.update(orderItems).set({ stockItemId: stock.id }).where(eq(orderItems.id, item.id));
-        await db.update(stockItems).set({ isSold: true, orderId }).where(eq(stockItems.id, stock.id));
+
+      if (item.stockItemId) {
+        // Stock was already held at order time — use it
+        const [stock] = await db.select().from(stockItems).where(eq(stockItems.id, item.stockItemId));
+        if (!stock) throw new Error(`Reserved stock item missing for order item ${item.id}`);
+        // Mark as sold, clear reservation flag
+        await db.update(stockItems)
+          .set({ isSold: true, isReserved: false })
+          .where(eq(stockItems.id, stock.id));
         deliveryParts[key].push(stock.content);
+      } else {
+        // Fallback: try to grab stock now (for legacy orders without pre-reservation)
+        const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+        for (let i = 0; i < (item.quantity ?? 1); i++) {
+          const stock = await this.reserveStockItem(item.variantId);
+          if (!stock) throw new Error(`Insufficient stock for ${variant?.name ?? item.variantId}`);
+          await db.update(orderItems).set({ stockItemId: stock.id }).where(eq(orderItems.id, item.id));
+          deliveryParts[key].push(stock.content);
+        }
       }
     }
 
@@ -486,6 +551,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markOrderUnpaid(orderId: number): Promise<Order> {
+    // Release held stock back to available
+    await this.releaseHeldStock(orderId);
     const [updated] = await db.update(orders)
       .set({ status: "waiting_payment" })
       .where(eq(orders.id, orderId))
@@ -497,6 +564,8 @@ export class DatabaseStorage implements IStorage {
   async cancelPendingOrder(orderId: number): Promise<void> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order || order.status !== "pending") return;
+    // Release held stock before cancelling
+    await this.releaseHeldStock(orderId);
     await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
     await db.update(orders).set({ status: "waiting_payment" as any }).where(eq(orders.id, orderId));
   }
@@ -669,7 +738,7 @@ export class DatabaseStorage implements IStorage {
   async getDashboardStats() {
     const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
     const [salesSum] = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders).where(eq(orders.status, 'fulfilled'));
-    const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, false));
+    const [stockCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(and(eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
     const [ordersCount] = await db.select({ count: sql<number>`count(*)` }).from(orders);
     const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'waiting_payment'));

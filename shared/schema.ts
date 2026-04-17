@@ -77,7 +77,8 @@ export const stockItems = pgTable("stock_items", {
   variantId: integer("variant_id").notNull().references(() => variants.id),
   content: text("content").notNull(),
   isSold: boolean("is_sold").default(false).notNull(),
-  orderId: integer("order_id"), // Filled when sold
+  isReserved: boolean("is_reserved").default(false).notNull(),
+  orderId: integer("order_id"), // Filled when reserved or sold
   replacementForId: integer("replacement_for_id"), // If this is a replacement
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
