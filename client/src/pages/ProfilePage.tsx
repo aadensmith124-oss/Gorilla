@@ -372,11 +372,16 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
 
             <div className="flex-1 flex flex-col gap-4">
               <div
-                className="bg-black border border-white/10 text-white rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap cursor-pointer min-h-[120px]"
+                className="bg-black border border-white/10 text-white rounded-lg p-4 text-sm font-mono break-all cursor-pointer min-h-[120px] space-y-3"
                 onClick={() => copyToClipboard(content)}
                 data-testid="stock-content-box"
               >
-                {content}
+                {content.split(/\n\n+/).filter(Boolean).map((chunk, ci, arr) => (
+                  <div key={ci}>
+                    <span className="whitespace-pre-wrap">{chunk.trim()}</span>
+                    {ci < arr.length - 1 && <div className="mt-3 border-t border-white/10" />}
+                  </div>
+                ))}
               </div>
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"

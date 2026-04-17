@@ -168,9 +168,16 @@ export default function OrderDetailPageNew() {
 
                         {isOpen && (
                           <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
-                            <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed">
-                              {stockContent}
-                            </p>
+                            {stockContent.split(/\n\n+/).filter(Boolean).map((chunk, ci, arr) => (
+                              <div key={ci}>
+                                <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed break-all">
+                                  {chunk.trim()}
+                                </p>
+                                {ci < arr.length - 1 && (
+                                  <div className="my-3 border-t border-white/10" />
+                                )}
+                              </div>
+                            ))}
                             <button
                               onClick={() => handleCopy(item.key, stockContent)}
                               className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-bold transition-colors"

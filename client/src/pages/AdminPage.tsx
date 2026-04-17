@@ -1396,7 +1396,7 @@ function CashAppSection() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <SiCashapp className="h-6 w-6 text-[#00D632]" />
-          <h1 className="text-2xl font-semibold">CashApp</h1>
+          <h1 className="text-2xl font-semibold">{showHistory ? "CashApp History" : "Unconfirmed CashApp"}</h1>
           {pendingOrders.length > 0 && (
             <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingOrders.length} pending</Badge>
           )}
