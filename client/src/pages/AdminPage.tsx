@@ -154,6 +154,7 @@ function ProductsSection() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
   const [managingStock, setManagingStock] = useState<number | null>(null);
+  const [editingVariant, setEditingVariant] = useState<number | null>(null);
   const { data: products, isLoading } = useProducts();
 
   const productSchema = z.object({
@@ -179,6 +180,11 @@ function ProductsSection() {
   });
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
+    resolver: zodResolver(variantSchema),
+    defaultValues: { name: "", price: "", minQuantity: "1" },
+  });
+
+  const editVariantForm = useForm<z.infer<typeof variantSchema>>({
     resolver: zodResolver(variantSchema),
     defaultValues: { name: "", price: "", minQuantity: "1" },
   });
@@ -233,6 +239,23 @@ function ProductsSection() {
       variantForm.reset({ name: "", price: "", minQuantity: "1" });
       toast({ title: "Variant added" });
     }
+  });
+
+  const updateVariantMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof variantSchema> }) => {
+      const res = await apiRequest("PATCH", `/api/admin/variants/${id}`, {
+        name: data.name,
+        price: Math.round(parseFloat(data.price) * 100),
+        minQuantity: parseInt(data.minQuantity) || 1,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      setEditingVariant(null);
+      toast({ title: "Variant updated" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   });
 
   const deleteVariantMutation = useMutation({
@@ -429,6 +452,17 @@ function ProductsSection() {
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <Button
                               variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => {
+                                if (editingVariant === v.id) { setEditingVariant(null); return; }
+                                setEditingVariant(v.id);
+                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), minQuantity: String(v.minQuantity ?? 1) });
+                              }}
+                              title="Edit variant"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
                               onClick={() => setManagingStock(managingStock === v.id ? null : v.id)}
                               title="Manage stock"
                             >
@@ -440,6 +474,41 @@ function ProductsSection() {
                             </Button>
                           </div>
                         </div>
+                        {editingVariant === v.id && (
+                          <div className="mt-1 bg-black/40 border border-primary/20 rounded-lg p-3">
+                            <Form {...editVariantForm}>
+                              <form onSubmit={editVariantForm.handleSubmit((d) => updateVariantMutation.mutate({ id: v.id, data: d }))}
+                                className="grid grid-cols-3 gap-2 items-end">
+                                <FormField control={editVariantForm.control} name="name" render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Name</FormLabel>
+                                    <FormControl><Input {...field} className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                                  </FormItem>
+                                )} />
+                                <FormField control={editVariantForm.control} name="price" render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Price ($)</FormLabel>
+                                    <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                                  </FormItem>
+                                )} />
+                                <FormField control={editVariantForm.control} name="minQuantity" render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Min Qty</FormLabel>
+                                    <FormControl><Input {...field} type="number" min="1" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                                  </FormItem>
+                                )} />
+                                <div className="col-span-3 flex gap-2">
+                                  <Button type="submit" size="sm" className="flex-1 h-8 text-xs" disabled={updateVariantMutation.isPending}>
+                                    {updateVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setEditingVariant(null)}>
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </form>
+                            </Form>
+                          </div>
+                        )}
                         {managingStock === v.id && <VariantStockPanel variantId={v.id} />}
                       </div>
                     ))}
