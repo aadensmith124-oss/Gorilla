@@ -9,7 +9,7 @@ import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Redirect } from "wouter";
-import { Loader2, Gamepad2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // Separate login schema not in DB schema
 const loginSchema = z.object({
@@ -34,8 +34,8 @@ export default function AuthPage() {
       </div>
 
       <div className="z-10 w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-white">CASHPLUG.CC</h1>
+        <div className="text-center space-y-4">
+          <img src="/rulf-logo.png" alt="RULF SHOP" className="h-36 w-auto object-contain mx-auto" />
           <p className="text-muted-foreground text-xs font-bold">Sign in to access the marketplace</p>
         </div>
 
