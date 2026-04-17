@@ -833,12 +833,12 @@ function OrdersSection() {
   }
 
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.status === "pending" || o.status === "waiting_payment";
-    if (orderFilter === "fulfilled") return o.status === "delivering";
+    if (orderFilter === "waiting") return o.paymentMethod === "CashApp" && (o.status === "pending" || o.status === "waiting_payment");
+    if (orderFilter === "fulfilled") return o.status === "delivering" || o.status === "fulfilled" || o.status === "replaced";
     return true;
   });
 
-  const waitingCount = (orders || []).filter((o: any) => o.status === "pending" || o.status === "waiting_payment").length;
+  const waitingCount = (orders || []).filter((o: any) => o.paymentMethod === "CashApp" && (o.status === "pending" || o.status === "waiting_payment")).length;
 
   return (
     <div className="space-y-4">
@@ -847,7 +847,7 @@ function OrdersSection() {
       <div className="flex gap-2 flex-wrap">
         {[
           { key: "all", label: "All" },
-          { key: "waiting", label: `Unpaid${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
+          { key: "waiting", label: `Unconfirmed CashApp${waitingCount > 0 ? ` (${waitingCount})` : ""}` },
           { key: "fulfilled", label: "Delivered" },
         ].map(({ key, label }) => (
           <button
