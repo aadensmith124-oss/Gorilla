@@ -43,7 +43,7 @@ export interface IStorage {
   getOrder(id: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] }) | undefined>;
   getAllOrders(): Promise<any[]>;
   refundOrder(orderId: number): Promise<Order>;
-  replaceOrderItem(orderId: number): Promise<Order>;
+  replaceOrder(orderId: number): Promise<Order>;
   
   // Wallet
   createTransaction(userId: number, amount: number, type: string, description: string): Promise<Transaction>;
@@ -435,6 +435,56 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async refundOrder(orderId: number): Promise<Order> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) throw new Error("Order not found");
+    if (order.status === "refunded") throw new Error("Order already refunded");
+    // Add total back to user balance
+    await db.update(users).set({ balance: sql`balance + ${order.total}` }).where(eq(users.id, order.userId));
+    // Record transaction
+    await db.insert(transactions).values({
+      userId: order.userId,
+      amount: order.total,
+      type: "refund",
+      description: `Refund for order ${order.orderId}`,
+    });
+    const [updated] = await db.update(orders).set({ status: "refunded" }).where(eq(orders.id, orderId)).returning();
+    return updated;
+  }
+
+  async replaceOrder(orderId: number): Promise<Order> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) throw new Error("Order not found");
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    const replacementParts: Record<string, string[]> = {};
+
+    for (const item of items) {
+      if (!item.variantId) continue;
+      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+      if (!variant) continue;
+      const key = String(item.variantId);
+      if (!replacementParts[key]) replacementParts[key] = [];
+      for (let i = 0; i < (item.quantity ?? 1); i++) {
+        const stock = await this.reserveStockItem(item.variantId);
+        if (!stock) throw new Error(`No replacement stock available for ${variant.name}`);
+        replacementParts[key].push(stock.content);
+      }
+    }
+
+    // Append replacement content to existing delivery
+    let existing: Record<string, string> = {};
+    try { existing = JSON.parse(order.deliveryContent || "{}"); } catch {}
+    const merged = { ...existing };
+    for (const [k, v] of Object.entries(replacementParts)) {
+      merged[k] = [merged[k], ...v].filter(Boolean).join("\n\n--- REPLACEMENT ---\n\n");
+    }
+    const [updated] = await db.update(orders)
+      .set({ status: "replaced", deliveryContent: JSON.stringify(merged) })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updated;
+  }
+
   async markOrderUnpaid(orderId: number): Promise<Order> {
     const [updated] = await db.update(orders)
       .set({ status: "waiting_payment" })
@@ -571,27 +621,6 @@ export class DatabaseStorage implements IStorage {
       status: "fulfilled" as any
     }).where(eq(orders.id, orderId)).returning();
     return order;
-  }
-
-  async replaceOrderItem(orderId: number): Promise<Order> {
-    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-    if (!order) throw new Error("Order not found");
-
-    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-    const productItems = items.filter(i => i.itemType === 'product' && i.variantId);
-    if (productItems.length === 0) throw new Error("No product items to replace");
-    
-    for (const item of productItems) {
-      if (!item.variantId) continue;
-      const newStock = await this.reserveStockItem(item.variantId);
-      if (!newStock) throw new Error("No stock available for replacement");
-      
-      await db.update(orderItems).set({ stockItemId: newStock.id }).where(eq(orderItems.id, item.id));
-      await db.update(stockItems).set({ orderId, replacementForId: item.stockItemId }).where(eq(stockItems.id, newStock.id));
-    }
-    
-    const [updated] = await db.update(orders).set({ status: 'replaced' as const }).where(eq(orders.id, orderId)).returning();
-    return updated;
   }
 
   async createTransaction(userId: number, amount: number, type: string, description: string): Promise<Transaction> {

@@ -11,7 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
 const CASHAPP_FEE_PERCENT = 0;
-const CRYPTO_FEE_PERCENT = 3;
+const CRYPTO_FEE_PERCENT = 0;
 
 type PaymentMethod = "balance" | "cashapp" | "crypto";
 
@@ -294,20 +294,8 @@ export default function CartPage() {
 
           <div className="space-y-0 divide-y divide-white/[0.04]">
             <div className="flex justify-between py-2.5 text-xs">
-              <span className="text-white/60">Original Price</span>
-              <span className="text-white">${(cartTotal / 100).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between py-2.5 text-xs">
               <span className="text-white/60">Total</span>
-              <span className="text-white">${(cartTotal / 100).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between py-2.5 text-xs">
-              <span className="text-white/60">Processor Fee</span>
-              <span className="text-white">${(processorFee / 100).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between py-2.5 text-xs">
-              <span className="text-white/60">Due with processor</span>
-              <span className="text-white font-bold">${(dueTotal / 100).toFixed(2)}</span>
+              <span className="text-white font-bold">${(cartTotal / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -331,7 +319,6 @@ export default function CartPage() {
                 </div>
                 <SiCashapp className="h-4 w-4 text-[#00D632] flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-bold text-white">CashApp</span>
-                {CASHAPP_FEE_PERCENT > 0 && <span className="text-[11px] text-red-400">+{CASHAPP_FEE_PERCENT}% fee</span>}
               </button>
             )}
 
@@ -350,7 +337,6 @@ export default function CartPage() {
                 </div>
                 <SiBitcoin className="h-4 w-4 text-[#f7931a] flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-bold text-white">Crypto</span>
-                <span className="text-[11px] text-red-400">+{CRYPTO_FEE_PERCENT}% fee</span>
               </button>
             )}
 

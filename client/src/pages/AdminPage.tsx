@@ -1205,7 +1205,7 @@ function IntegrationsSection() {
 function CashAppSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [filter, setFilter] = useState<"all" | "pending" | "waiting_payment" | "delivering">("all");
+  const [showHistory, setShowHistory] = useState(false);
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -1217,7 +1217,18 @@ function CashAppSection() {
     refetchInterval: 6000,
   });
 
-  const orders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
+  const cashappOrders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
+  const pendingOrders = cashappOrders.filter((o: any) => o.status === "pending" || o.status === "waiting_payment");
+  const displayedOrders = showHistory ? cashappOrders : pendingOrders;
+
+  const mutationOpts = (successMsg: string) => ({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: successMsg });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
 
   const cashappFulfillMutation = useMutation({
     mutationFn: async (orderId: number) => {
@@ -1225,12 +1236,7 @@ function CashAppSection() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setSelectedOrder(null);
-      toast({ title: "Order fulfilled — items sent to user" });
-    },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    ...mutationOpts("Order fulfilled — stock delivered to user"),
   });
 
   const markUnpaidMutation = useMutation({
@@ -1239,18 +1245,31 @@ function CashAppSection() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setSelectedOrder(null);
-      toast({ title: "Order marked unpaid" });
+    ...mutationOpts("Order marked unpaid"),
+  });
+
+  const refundMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
     },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    ...mutationOpts("Order refunded — balance returned to user"),
+  });
+
+  const replaceMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/replace`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    ...mutationOpts("Replacement stock sent to user"),
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
-    const current = orders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
+    const current = cashappOrders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
     const productItems = current.items?.filter((i: any) => !i.itemType || i.itemType === "product") || [];
     const grouped: Record<string, { productName: string; variantName: string; qty: number; unitPrice: number }> = {};
     for (const item of productItems) {
@@ -1260,6 +1279,7 @@ function CashAppSection() {
     }
     const groupedEntries = Object.entries(grouped);
     const isPending = current.status === "pending" || current.status === "waiting_payment";
+    const isFulfilled = current.status === "delivering" || current.status === "fulfilled" || current.status === "replaced";
 
     return (
       <div className="space-y-4">
@@ -1275,12 +1295,13 @@ function CashAppSection() {
           <div className="space-y-3 border-b border-white/5 pb-4">
             <div><p className="text-[10px] text-white/40 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
             <div><p className="text-[10px] text-white/40 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId}</p></div>
             {current.paymentNote && (
               <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
             )}
             <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
           </div>
+
           {isPending && (
             <div className="flex gap-3">
               <button
@@ -1301,6 +1322,28 @@ function CashAppSection() {
               </button>
             </div>
           )}
+
+          {isFulfilled && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => replaceMutation.mutate(current.id)}
+                disabled={replaceMutation.isPending}
+                className="flex-1 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
+                data-testid={`button-replace-${current.id}`}
+              >
+                {replaceMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "↺ Replace (new stock)"}
+              </button>
+              <button
+                onClick={() => refundMutation.mutate(current.id)}
+                disabled={refundMutation.isPending || current.status === "refunded"}
+                className="flex-1 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-black hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                data-testid={`button-refund-${current.id}`}
+              >
+                {refundMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "$ Refund to Balance"}
+              </button>
+            </div>
+          )}
+
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] text-white/40">Items Ordered</p>
@@ -1320,36 +1363,33 @@ function CashAppSection() {
     );
   }
 
-  const filterLabels: Record<string, string> = { all: "All", pending: "Pending", waiting_payment: "Unpaid", delivering: "Fulfilled" };
-  const filteredOrders = orders.filter((o: any) => filter === "all" || o.status === filter);
-  const pendingCount = orders.filter((o: any) => o.status === "pending" || o.status === "waiting_payment").length;
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <SiCashapp className="h-6 w-6 text-[#00D632]" />
-        <h1 className="text-2xl font-semibold">CashApp</h1>
-        {pendingCount > 0 && (
-          <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingCount} pending</Badge>
-        )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SiCashapp className="h-6 w-6 text-[#00D632]" />
+          <h1 className="text-2xl font-semibold">CashApp</h1>
+          {pendingOrders.length > 0 && (
+            <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingOrders.length} pending</Badge>
+          )}
+        </div>
+        <button
+          onClick={() => setShowHistory(h => !h)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-black" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+        >
+          {showHistory ? "← Pending" : "History"}
+        </button>
       </div>
-      <div className="flex gap-2 flex-wrap">
-        {Object.entries(filterLabels).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key as any)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === key ? "bg-primary text-black" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {filteredOrders.length === 0 ? (
-        <div className="text-center py-20 text-white/20 text-sm">No CashApp orders</div>
+
+      {displayedOrders.length === 0 ? (
+        <div className="text-center py-20 text-white/20 text-sm">
+          {showHistory ? "No CashApp orders" : "No pending CashApp orders"}
+        </div>
       ) : (
         <div className="space-y-2">
-          {filteredOrders.map((order: any) => {
+          {displayedOrders.map((order: any) => {
             const isPending = order.status === "pending" || order.status === "waiting_payment";
+            const isFulfilled = order.status === "delivering" || order.status === "fulfilled" || order.status === "replaced";
             return (
               <div key={order.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -1376,6 +1416,20 @@ function CashAppSection() {
                         className="px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
                         data-testid={`button-cashapp-unpaid-row-${order.id}`}
                       >Unpaid</button>
+                    </>
+                  )}
+                  {isFulfilled && (
+                    <>
+                      <button
+                        onClick={() => replaceMutation.mutate(order.id)}
+                        disabled={replaceMutation.isPending}
+                        className="px-2.5 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
+                      >Replace</button>
+                      <button
+                        onClick={() => refundMutation.mutate(order.id)}
+                        disabled={refundMutation.isPending || order.status === "refunded"}
+                        className="px-2.5 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                      >Refund</button>
                     </>
                   )}
                   <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedOrder(order)}>View</Button>

@@ -1270,6 +1270,32 @@ export async function registerRoutes(
     }
   });
 
+  // ── Admin: refund order ───────────────────────────────────────────────────
+  app.post("/api/admin/orders/:id/refund", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.refundOrder(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Admin: replace order (grab new stock item) ────────────────────────────
+  app.post("/api/admin/orders/:id/replace", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.replaceOrder(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // ── Admin: mark order unpaid ──────────────────────────────────────────────
   app.post("/api/admin/orders/:id/mark-unpaid", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
