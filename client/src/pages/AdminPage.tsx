@@ -641,6 +641,20 @@ function OrdersSection() {
     onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   });
 
+  const pushStockMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/push-stock`, {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Stock pushed — order delivered to user" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  });
+
   const refundMutation = useMutation({
     mutationFn: async (orderId: number) => {
       const res = await apiRequest("POST", `/api/admin/orders/${orderId}/refund`, {});
@@ -704,21 +718,33 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/40 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
-          {current.paymentMethod === "CashApp" && (current.status === "pending" || current.status === "waiting_payment") && (
+          {(current.status === "pending" || current.status === "waiting_payment") && (
             <div className="flex gap-2 border-b border-white/5 pb-4">
+              {current.paymentMethod === "CashApp" && (
+                <>
+                  <button
+                    onClick={() => { cashappFulfillMutation.mutate(current.id); setSelectedOrder(null); }}
+                    disabled={cashappFulfillMutation.isPending}
+                    className="flex-1 h-9 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                  >
+                    {cashappFulfillMutation.isPending ? "Fulfilling…" : "✓ Paid — Deliver Stock"}
+                  </button>
+                  <button
+                    onClick={() => { markUnpaidMutation.mutate(current.id); setSelectedOrder(null); }}
+                    disabled={markUnpaidMutation.isPending}
+                    className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  >
+                    ✕ Unpaid
+                  </button>
+                </>
+              )}
               <button
-                onClick={() => { cashappFulfillMutation.mutate(current.id); setSelectedOrder(null); }}
-                disabled={cashappFulfillMutation.isPending}
-                className="flex-1 h-9 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                onClick={() => pushStockMutation.mutate(current.id)}
+                disabled={pushStockMutation.isPending}
+                className="flex-1 h-9 rounded-xl bg-primary/20 border border-primary/40 text-primary text-xs font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
+                data-testid={`button-push-stock-${current.id}`}
               >
-                {cashappFulfillMutation.isPending ? "Fulfilling…" : "✓ Paid — Deliver Stock"}
-              </button>
-              <button
-                onClick={() => { markUnpaidMutation.mutate(current.id); setSelectedOrder(null); }}
-                disabled={markUnpaidMutation.isPending}
-                className="flex-1 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors disabled:opacity-50"
-              >
-                ✕ Unpaid
+                {pushStockMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "⚡ Push Stock"}
               </button>
             </div>
           )}
@@ -810,7 +836,8 @@ function OrdersSection() {
         </div>
         {filteredOrders.map((order: any) => {
           const isCashapp = order.paymentMethod === "CashApp";
-          const isActionable = isCashapp && (order.status === "pending" || order.status === "waiting_payment");
+          const isPendingOrder = order.status === "pending" || order.status === "waiting_payment";
+          const isActionable = isCashapp && isPendingOrder;
           const isDelivered = order.status === "delivering" || order.status === "fulfilled" || order.status === "replaced";
           return (
             <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors">
@@ -836,6 +863,14 @@ function OrdersSection() {
                       data-testid={`button-unpaid-${order.id}`}
                     >Unpaid</button>
                   </>
+                )}
+                {isPendingOrder && (
+                  <button
+                    onClick={() => pushStockMutation.mutate(order.id)}
+                    disabled={pushStockMutation.isPending}
+                    className="px-2 py-1 rounded-md bg-primary/20 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/30 transition-colors disabled:opacity-50"
+                    data-testid={`button-push-row-${order.id}`}
+                  >⚡ Push</button>
                 )}
                 {isDelivered && (
                   <>

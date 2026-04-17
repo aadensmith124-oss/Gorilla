@@ -1270,6 +1270,19 @@ export async function registerRoutes(
     }
   });
 
+  // ── Admin: push stock to any pending order ────────────────────────────────
+  app.post("/api/admin/orders/:id/push-stock", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const order = await storage.fulfillCashappOrder(Number(req.params.id));
+      res.json(order);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // ── Admin: refund order ───────────────────────────────────────────────────
   app.post("/api/admin/orders/:id/refund", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
