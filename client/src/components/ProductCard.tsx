@@ -22,6 +22,8 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
             <img
               src={product.image}
               alt={product.name}
+              width={2048}
+              height={2048}
               className="w-full h-full object-contain p-3 transform group-hover:scale-105 transition-transform duration-500"
               onError={() => setImgError(true)}
             />
