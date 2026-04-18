@@ -451,7 +451,43 @@ export class DatabaseStorage implements IStorage {
   async fulfillPendingOrder(orderId: number): Promise<void> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) throw new Error("Order not found");
-    await db.update(orders).set({ status: "fulfilled" }).where(eq(orders.id, orderId));
+    if (order.status !== "pending") return; // Already handled
+
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    const deliveryParts: Record<string, string[]> = {};
+
+    for (const item of items) {
+      if (!item.variantId) continue;
+      const key = String(item.variantId);
+      if (!deliveryParts[key]) deliveryParts[key] = [];
+
+      if (item.stockItemId) {
+        // Stock was held at order time — mark it sold now
+        const [stock] = await db.select().from(stockItems).where(eq(stockItems.id, item.stockItemId));
+        if (stock) {
+          await db.update(stockItems)
+            .set({ isSold: true, isReserved: false })
+            .where(eq(stockItems.id, stock.id));
+          deliveryParts[key].push(stock.content);
+        }
+      } else {
+        // Fallback: grab from available stock
+        for (let i = 0; i < (item.quantity ?? 1); i++) {
+          const stock = await this.reserveStockItem(item.variantId);
+          if (stock) {
+            await db.update(orderItems).set({ stockItemId: stock.id }).where(eq(orderItems.id, item.id));
+            deliveryParts[key].push(stock.content);
+          }
+        }
+      }
+    }
+
+    const deliveryContent = JSON.stringify(
+      Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
+    );
+    await db.update(orders)
+      .set({ status: "delivering", deliveryContent, paidAmount: order.total })
+      .where(eq(orders.id, orderId));
   }
 
   async fulfillCashappOrder(orderId: number): Promise<Order> {

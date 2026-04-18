@@ -72,7 +72,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         <DialogHeader>
           <DialogTitle className="text-white flex items-center justify-between">
             <span>Crypto Payment</span>
-            <span className="bg-lime-500 text-black font-bold px-3 py-1 rounded text-sm">
+            <span className="bg-primary text-black font-bold px-3 py-1 rounded text-sm">
               ${(total / 100).toFixed(2)}
             </span>
           </DialogTitle>
@@ -81,7 +81,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
         <div className="space-y-4 mt-4">
           {createPaymentMutation.isPending ? (
             <div className="text-center space-y-3 py-4">
-              <Loader2 className="h-10 w-10 animate-spin text-lime-500 mx-auto" />
+              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
               <p className="font-medium text-white">Creating Payment...</p>
               <p className="text-sm text-muted-foreground">
                 Opening checkout page in a new tab...
@@ -130,7 +130,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
               {createPaymentMutation.isError && (
                 <Button
                   onClick={() => createPaymentMutation.mutate()}
-                  className="w-full bg-lime-500 hover:bg-lime-600 text-black font-bold"
+                  className="w-full bg-primary hover:bg-primary/90 text-black font-bold"
                   data-testid="button-retry-crypto"
                 >
                   Retry Payment

@@ -207,7 +207,19 @@ export async function registerRoutes(
     });
   });
 
-  // User - Update Telegram
+  // User - Update Email
+  app.patch("/api/user/email", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const { email } = req.body;
+      if (!email || !email.includes("@")) return res.status(400).json({ message: "Valid email required" });
+      const user = await storage.updateUser((req.user as any).id, { email });
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.patch("/api/user/telegram", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     try {
@@ -644,15 +656,6 @@ export async function registerRoutes(
     }
   });
 
-  // Admin Users
-  app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const users = await storage.getAllUsers();
-    res.json(users);
-  });
-
   app.patch("/api/admin/users/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
@@ -848,7 +851,7 @@ export async function registerRoutes(
       } else if (action === "replace") {
         const order = await db.select().from(orders).where(eq(orders.orderId, ticket.orderId)).limit(1);
         if (order.length > 0) {
-          await storage.replaceOrderItem(order[0].id);
+          await storage.replaceOrder(order[0].id);
         }
       }
     } catch (e: any) {
@@ -874,8 +877,7 @@ export async function registerRoutes(
       const order = await storage.createPendingOrder(userId, productItems, cardIdList);
       pendingOrderId = order.id;
 
-      const CRYPTO_FEE_PERCENT = 10;
-      const totalWithFee = order.total + Math.round(order.total * CRYPTO_FEE_PERCENT / 100);
+      const totalWithFee = order.total;
       const amountUsd = totalWithFee / 100;
 
       const origin = (req.headers.origin as string) || `https://${req.headers.host}`;
@@ -1210,6 +1212,7 @@ export async function registerRoutes(
 
   app.post("/api/orders/cashapp", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    let pendingOrderId: number | null = null;
     try {
       const userId = (req.user as any).id;
       const { items } = req.body;
@@ -1218,41 +1221,22 @@ export async function registerRoutes(
       const paymentNote = `snack-${noteId}`;
       const cashappTag = await storage.getSetting("cashapp_tag", "");
 
-      const publicOrderId = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
-      let total = 0;
-      for (const item of productItems) {
-        const [v] = await db.select().from(variants).where(eq(variants.id, item.variantId));
-        if (!v) throw new Error("Variant not found");
-        total += v.price * item.quantity;
-      }
+      // Use createPendingOrder to reserve stock immediately
+      const order = await storage.createPendingOrder(userId, productItems, []);
+      pendingOrderId = order.id;
 
-      // Create order as pending first
-      const [order] = await db.insert(orders).values({
-        orderId: publicOrderId,
-        userId,
-        total,
-        status: "pending",
-        paymentMethod: "CashApp",
-        paymentNote,
-      }).returning();
+      // Attach CashApp-specific fields
+      await db.update(orders)
+        .set({ paymentMethod: "CashApp", paymentNote })
+        .where(eq(orders.id, order.id));
 
-      for (const item of productItems) {
-        const [v] = await db.select().from(variants).where(eq(variants.id, item.variantId));
-        if (!v) continue;
-        await db.insert(orderItems).values({
-          orderId: order.id,
-          variantId: item.variantId,
-          stockItemId: null,
-          cardId: null,
-          itemType: "product",
-          price: v.price,
-          quantity: item.quantity,
-        });
-      }
-
-      res.status(201).json({ order, paymentNote, cashappTag });
+      pendingOrderId = null;
+      res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
+      if (pendingOrderId) {
+        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      }
       res.status(400).json({ message: e.message });
     }
   });
@@ -1277,32 +1261,6 @@ export async function registerRoutes(
     }
     try {
       const order = await storage.fulfillCashappOrder(Number(req.params.id));
-      res.json(order);
-    } catch (e: any) {
-      res.status(400).json({ message: e.message });
-    }
-  });
-
-  // ── Admin: refund order ───────────────────────────────────────────────────
-  app.post("/api/admin/orders/:id/refund", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const order = await storage.refundOrder(Number(req.params.id));
-      res.json(order);
-    } catch (e: any) {
-      res.status(400).json({ message: e.message });
-    }
-  });
-
-  // ── Admin: replace order (grab new stock item) ────────────────────────────
-  app.post("/api/admin/orders/:id/replace", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const order = await storage.replaceOrder(Number(req.params.id));
       res.json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });

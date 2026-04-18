@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
         <TabsContent value="orders" className="pt-6">
           {(() => {
-            const visibleOrders = (orders || []).filter((o: any) => o.status === "fulfilled" || o.status === "delivering" || o.status === "waiting_payment" || o.status === "pending");
+            const visibleOrders = (orders || []);
             return visibleOrders.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-sm text-white mb-4">
@@ -200,16 +200,19 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
 function statusLabel(s: string) {
   if (s === "pending") return "Pending";
   if (s === "waiting_payment") return "Unpaid";
-  if (s === "fulfilled") return "Waiting";
+  if (s === "fulfilled") return "Delivered";
   if (s === "delivering") return "Delivered";
+  if (s === "refunded") return "Refunded";
+  if (s === "replaced") return "Replaced";
   return s;
 }
 
 function statusColor(s: string) {
   if (s === "pending") return "text-blue-400";
   if (s === "waiting_payment") return "text-yellow-400";
-  if (s === "fulfilled") return "text-orange-400";
-  if (s === "delivering") return "text-green-400";
+  if (s === "fulfilled" || s === "delivering") return "text-green-400";
+  if (s === "refunded") return "text-orange-400";
+  if (s === "replaced") return "text-blue-400";
   return "text-white/50";
 }
 
@@ -219,10 +222,34 @@ function formatDate(d: string) {
 
 function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
   const [newTelegram, setNewTelegram] = useState(user.telegramUsername || "");
+  const [newEmail, setNewEmail] = useState(user.email || "");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
+
+  const emailMutation = useMutation({
+    mutationFn: async () => {
+      if (!newEmail.trim()) throw new Error("Email is required");
+      if (newEmail !== confirmEmail) throw new Error("Emails do not match");
+      if (!newEmail.includes("@")) throw new Error("Invalid email");
+      const res = await apiRequest("PATCH", "/api/user/email", { email: newEmail });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Email updated" });
+      setConfirmEmail("");
+      onUpdate();
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  });
 
   const telegramMutation = useMutation({
     mutationFn: async () => {
@@ -266,6 +293,43 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
 
   return (
     <div className="space-y-6">
+      <Card className="bg-card/40 border-white/5">
+        <CardHeader>
+          <CardTitle>Update Email</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">New Email</label>
+            <Input
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="name@example.com"
+              className="bg-white/5 border-white/5 text-white"
+              data-testid="input-new-email"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-2">Confirm Email</label>
+            <Input
+              value={confirmEmail}
+              onChange={(e) => setConfirmEmail(e.target.value)}
+              placeholder="name@example.com"
+              className="bg-white/5 border-white/5 text-white"
+              data-testid="input-confirm-email"
+            />
+          </div>
+          <Button
+            onClick={() => emailMutation.mutate()}
+            disabled={emailMutation.isPending || !newEmail.trim() || !confirmEmail.trim()}
+            className="w-full"
+            data-testid="button-update-email"
+          >
+            {emailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Email
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card className="bg-card/40 border-white/5">
         <CardHeader>
           <CardTitle>Update Telegram</CardTitle>

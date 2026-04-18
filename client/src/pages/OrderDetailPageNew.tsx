@@ -7,15 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 function statusLabel(s: string) {
   if (s === "pending") return "pending";
   if (s === "waiting_payment") return "unpaid";
-  if (s === "delivering") return "processing";
-  if (s === "fulfilled") return "fulfilled";
+  if (s === "delivering") return "delivered";
+  if (s === "fulfilled") return "delivered";
+  if (s === "refunded") return "refunded";
+  if (s === "replaced") return "replaced";
   return s;
 }
 
 function statusColor(s: string) {
-  if (s === "fulfilled") return "text-green-400";
-  if (s === "delivering") return "text-blue-400";
+  if (s === "fulfilled" || s === "delivering") return "text-green-400";
+  if (s === "replaced") return "text-blue-400";
   if (s === "waiting_payment") return "text-orange-400";
+  if (s === "refunded") return "text-orange-400";
   return "text-white/50";
 }
 
@@ -52,7 +55,7 @@ export default function OrderDetailPageNew() {
     );
   }
 
-  const paid = order.status === "fulfilled" ? order.total : 0;
+  const paid = (order.status === "fulfilled" || order.status === "delivering" || order.status === "replaced") ? order.total : 0;
   const expected = order.total;
 
   const productItems = (order.items || []).filter((i: any) => !i.itemType || i.itemType === "product");
@@ -75,7 +78,7 @@ export default function OrderDetailPageNew() {
   }
 
   const deliveryMap = parseDeliveryMap(order.deliveryContent);
-  const isFulfilled = order.status === "fulfilled";
+  const isFulfilled = order.status === "fulfilled" || order.status === "delivering" || order.status === "replaced";
 
   const getStockForKey = (key: string): string | null => {
     if (!isFulfilled) return null;

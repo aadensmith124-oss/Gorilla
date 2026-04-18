@@ -61,8 +61,11 @@ export default function ProfilePage() {
           <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium text-destructive">
+          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Orders
+          </TabsTrigger>
+          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+            Balance
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Settings
@@ -75,6 +78,10 @@ export default function ProfilePage() {
 
         <TabsContent value="orders" className="pt-6">
           <OrdersTab />
+        </TabsContent>
+
+        <TabsContent value="balance" className="pt-6">
+          <BalanceTab user={user} />
         </TabsContent>
 
         <TabsContent value="settings" className="pt-6">
@@ -120,21 +127,67 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
 }
 
 function SettingsTab({ user }: { user: any }) {
-  const [newTelegram, setNewTelegram] = useState(user.telegramUsername);
+  const { logout } = useAuth();
+  const [newTelegram, setNewTelegram] = useState(user.telegramUsername || "");
+  const [newEmail, setNewEmail] = useState(user.email || "");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const { toast } = useToast();
 
-  const handleUpdateTelegram = () => {
-    toast({ title: "Telegram Updated", description: "Your telegram username has been updated successfully" });
+  const handleUpdateTelegram = async () => {
+    try {
+      const res = await fetch("/api/user/telegram", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramUsername: newTelegram }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      toast({ title: "Telegram Updated" });
+    } catch {
+      toast({ title: "Error", description: "Failed to update telegram", variant: "destructive" });
+    }
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdateEmail = async () => {
+    if (!newEmail.trim()) return toast({ title: "Error", description: "Email is required", variant: "destructive" });
+    if (newEmail !== confirmEmail) return toast({ title: "Error", description: "Emails do not match", variant: "destructive" });
+    try {
+      const res = await fetch("/api/user/email", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmail }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      toast({ title: "Email Updated" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to update email", variant: "destructive" });
+    }
+  };
+
+  const handleUpdatePassword = async () => {
     if (newPassword !== confirmPassword) {
       toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
       return;
     }
-    toast({ title: "Password Updated", description: "Your password has been updated successfully" });
+    try {
+      const res = await fetch("/api/user/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      toast({ title: "Password Updated" });
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to update password", variant: "destructive" });
+    }
   };
 
   return (
@@ -154,7 +207,7 @@ function SettingsTab({ user }: { user: any }) {
           <div className="flex items-center gap-3 text-sm">
             <Mail className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Email:</span>
-            <span className="text-destructive">{user.email || user.username}</span>
+            <span className="text-white">{user.email || user.username}</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Link2 className="h-4 w-4 text-muted-foreground" />
@@ -177,7 +230,7 @@ function SettingsTab({ user }: { user: any }) {
 
       <Card className="bg-[#16181d] border-white/5">
         <CardHeader>
-          <CardTitle className="text-destructive text-lg">Change Email</CardTitle>
+          <CardTitle className="text-white text-lg">Change Email</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -200,7 +253,7 @@ function SettingsTab({ user }: { user: any }) {
               data-testid="input-confirm-email"
             />
           </div>
-          <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleUpdateEmail} data-testid="button-update-email">
+          <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={handleUpdateEmail} data-testid="button-update-email">
             <Mail className="h-4 w-4 mr-2" /> Update Email
           </Button>
         </CardContent>
@@ -208,9 +261,20 @@ function SettingsTab({ user }: { user: any }) {
 
       <Card className="bg-[#16181d] border-white/5">
         <CardHeader>
-          <CardTitle className="text-destructive text-lg">Change Password</CardTitle>
+          <CardTitle className="text-white text-lg">Change Password</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Current Password</label>
+            <Input 
+              type="password"
+              placeholder="Current password" 
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="bg-[#1c1f26] border-white/5"
+              data-testid="input-current-password"
+            />
+          </div>
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">New Password</label>
             <Input 
@@ -233,7 +297,7 @@ function SettingsTab({ user }: { user: any }) {
               data-testid="input-confirm-password"
             />
           </div>
-          <Button variant="outline" className="border-destructive/30 text-destructive" onClick={handleUpdatePassword} data-testid="button-update-password">
+          <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={handleUpdatePassword} data-testid="button-update-password">
             <Key className="h-4 w-4 mr-2" /> Update Password
           </Button>
         </CardContent>
@@ -302,22 +366,24 @@ function OrdersTab() {
                       <td className="p-4 text-green-500">${(order.total / 100).toFixed(2)}</td>
                       <td className="p-4">
                         <span className={`flex items-center gap-2 ${
-                          order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500' 
-                          : order.status === 'unpaid' ? 'text-red-500'
-                          : 'text-lime-500'
+                          order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced' ? 'text-green-500' 
+                          : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'text-red-500'
+                          : order.status === 'refunded' ? 'text-orange-400'
+                          : 'text-primary'
                         }`}>
                           <span className={`w-2 h-2 rounded-full ${
-                            order.status === 'fulfilled' || order.status === 'paid' ? 'bg-green-500'
-                            : order.status === 'unpaid' ? 'bg-red-500'
-                            : 'bg-lime-500'
+                            order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced' ? 'bg-green-500'
+                            : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'bg-red-500'
+                            : order.status === 'refunded' ? 'bg-orange-400'
+                            : 'bg-primary'
                           }`} />
-                          {order.status === 'fulfilled' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
+                          {order.status === 'fulfilled' || order.status === 'delivering' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'replaced' ? 'Replaced' : order.status === 'refunded' ? 'Refunded' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'Unpaid' : order.status}
                           <br />
                           <span className="text-xs text-muted-foreground">on {new Date(order.createdAt).toLocaleDateString()}</span>
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <Button size="icon" variant="ghost" className="text-lime-500" data-testid={`button-view-order-${order.id}`}>
+                        <Button size="icon" variant="ghost" className="text-primary" data-testid={`button-view-order-${order.id}`}>
                           <Package className="h-4 w-4" />
                         </Button>
                       </td>
@@ -443,11 +509,12 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
                 <p className={`text-xs font-bold ${
-                  order.status === 'fulfilled' || order.status === 'paid' ? 'text-green-500'
-                  : order.status === 'unpaid' ? 'text-red-500'
-                  : 'text-lime-500'
+                  order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced' ? 'text-green-500'
+                  : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'text-red-500'
+                  : order.status === 'refunded' ? 'text-orange-400'
+                  : 'text-primary'
                 }`}>
-                  {order.status === 'fulfilled' || order.status === 'paid' ? 'Fulfilled' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' ? 'Cancelled' : order.status}
+                  {order.status === 'fulfilled' || order.status === 'delivering' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'replaced' ? 'Replaced' : order.status === 'refunded' ? 'Refunded' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'Unpaid' : order.status}
                 </p>
               </div>
             </TabsContent>
@@ -498,7 +565,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     <p className="text-xs font-bold">${((item.price * item.quantity) / 100).toFixed(2)}</p>
                   </div>
 
-                  {(order.status === 'fulfilled' || order.status === 'paid') && (item.stockItem || (item.itemType === 'card' && item.card)) && (
+                  {(order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced') && (item.stockItem || (item.itemType === 'card' && item.card)) && (
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-tighter text-xs h-10"
                       onClick={() => setViewingStockIdx(idx)}
@@ -508,7 +575,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                     </Button>
                   )}
                   {order.status === 'pending' && (
-                    <p className="text-xs text-lime-500 text-center font-medium">Awaiting payment confirmation</p>
+                    <p className="text-xs text-primary text-center font-medium">Awaiting payment confirmation</p>
                   )}
                   {order.status === 'unpaid' && (
                     <p className="text-xs text-red-500 text-center font-medium">Order cancelled</p>
@@ -545,7 +612,7 @@ function BalanceTab({ user }: { user: any }) {
       <Card className="bg-[#16181d] border-white/5">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <span className="text-destructive font-medium">Current Balance</span>
+            <span className="text-muted-foreground font-medium">Current Balance</span>
             <span className="text-green-500 font-bold text-xl">${(user.balance / 100).toFixed(2)}</span>
           </div>
         </CardContent>
@@ -573,7 +640,7 @@ function BalanceTab({ user }: { user: any }) {
           </div>
 
           <Button 
-            className="w-full h-12 bg-lime-600 hover:bg-lime-700 text-white font-bold"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-bold"
             onClick={() => {
               if (!amount || parseFloat(amount) < 0.50) {
                 toast({ title: "Error", description: "Minimum top-up is $0.50", variant: "destructive" });
@@ -591,7 +658,7 @@ function BalanceTab({ user }: { user: any }) {
 
       <Card className="bg-[#16181d] border-white/5">
         <CardHeader>
-          <CardTitle className="text-destructive text-lg">Redeem Gift Card</CardTitle>
+          <CardTitle className="text-white text-lg">Redeem Gift Card</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
