@@ -637,7 +637,7 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const order = await storage.replaceOrderItem(Number(req.params.id));
+      const order = await storage.replaceOrder(Number(req.params.id));
       res.json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
