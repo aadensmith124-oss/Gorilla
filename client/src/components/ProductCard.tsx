@@ -17,7 +17,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
         data-testid={`card-product-${product.id}`}
       >
         {/* Square image */}
-        <div className="w-full bg-[#0c0e13] relative overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
+        <div className="w-full bg-[#0c0e13] relative overflow-hidden rounded-xl m-2" style={{ aspectRatio: '1 / 1', width: 'calc(100% - 16px)' }}>
           {product.image && !imgError ? (
             <img
               src={product.image}
