@@ -17,18 +17,16 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
         data-testid={`card-product-${product.id}`}
       >
         {/* Square image */}
-        <div className="w-full bg-[#0c0e13] relative overflow-hidden rounded-xl m-2" style={{ aspectRatio: '1 / 1', width: 'calc(100% - 16px)' }}>
+        <div className="w-full bg-[#0c0e13] relative m-2" style={{ aspectRatio: '1 / 1', width: 'calc(100% - 16px)' }}>
           {product.image && !imgError ? (
             <img
               src={product.image}
               alt={product.name}
-              width={2048}
-              height={2048}
-              className="w-full h-full object-contain p-3 transform group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain p-3 rounded-2xl transform group-hover:scale-105 transition-transform duration-500"
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[#0c0e13]">
+            <div className="w-full h-full flex items-center justify-center bg-[#0c0e13] rounded-2xl">
               <span className="text-2xl font-bold text-white/20">{product.name?.charAt(0)?.toUpperCase()}</span>
             </div>
           )}
