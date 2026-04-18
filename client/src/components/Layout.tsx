@@ -89,18 +89,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#090a0c]">
-      <header className="h-20 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
+      <header className="h-24 border-b border-white/5 bg-[#090a0c]/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
-            <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-12 w-auto object-contain" />
+            <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-20 w-auto object-contain drop-shadow-[0_0_16px_rgba(212,175,55,0.45)]" />
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative text-white/70 hover:text-white hover:bg-white/5">
-                <Menu className="h-5 w-5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 relative text-white/80 hover:text-white hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-200"
+              >
+                <Menu className="h-7 w-7" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] p-0 border-l border-white/5 bg-[#0f1115]">
