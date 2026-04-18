@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -225,6 +225,16 @@ function ProductsSection() {
     }
   });
 
+  const pinMutation = useMutation({
+    mutationFn: async ({ id, pinned }: { id: number; pinned: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/products/${id}`, { pinned });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+    }
+  });
+
   const addVariantMutation = useMutation({
     mutationFn: async ({ productId, data }: { productId: number; data: z.infer<typeof variantSchema> }) => {
       const res = await apiRequest("POST", api.variants.create.path, {
@@ -418,6 +428,15 @@ function ProductsSection() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost" size="icon"
+                  className={`h-8 w-8 ${product.pinned ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                  title={product.pinned ? "Unpin product" : "Pin to top (max 4)"}
+                  disabled={pinMutation.isPending || (!product.pinned && (products?.filter((p: any) => p.pinned).length ?? 0) >= 4)}
+                  onClick={() => pinMutation.mutate({ id: product.id, pinned: !product.pinned })}
+                >
+                  <Pin className={`h-4 w-4 ${product.pinned ? "fill-primary" : ""}`} />
+                </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
                   onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}>
                   <ChevronDown className={`h-4 w-4 transition-transform ${expandedProduct === product.id ? "rotate-180" : ""}`} />

@@ -51,6 +51,7 @@ export const products = pgTable("products", {
   description: text("description").default("").notNull(),
   image: text("image").default(""),
   active: boolean("active").default(true).notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

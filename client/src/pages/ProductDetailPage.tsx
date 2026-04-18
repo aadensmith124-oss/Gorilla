@@ -147,11 +147,7 @@ export default function ProductDetailPage() {
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariantId}
-              className="flex-1 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
-              style={{
-                background: "hsl(84, 81%, 44%)",
-                color: "#000",
-              }}
+              className="flex-1 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-black"
               data-testid="button-add-to-cart"
             >
               <ShoppingCart className="h-3.5 w-3.5" />

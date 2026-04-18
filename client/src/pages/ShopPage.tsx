@@ -26,10 +26,12 @@ export default function ShopPage() {
   const [search, setSearch] = useState("");
   const [shuffleSeed] = useState(() => Math.random() * 233280);
 
-  const shuffledProducts = useMemo(
-    () => (products ? seededShuffle(products, shuffleSeed) : []),
-    [products, shuffleSeed]
-  );
+  const shuffledProducts = useMemo(() => {
+    if (!products) return [];
+    const pinned = products.filter((p: any) => p.pinned).slice(0, 4);
+    const rest = seededShuffle(products.filter((p: any) => !p.pinned), shuffleSeed);
+    return [...pinned, ...rest];
+  }, [products, shuffleSeed]);
 
   const filtered = shuffledProducts.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -67,7 +69,7 @@ export default function ShopPage() {
     <div className="space-y-12 pb-20 pt-4">
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
-          <h1 className="text-3xl font-black text-white tracking-tight">CASHPLUG <span className="text-primary">SHOP</span></h1>
+          <h1 className="text-3xl font-black text-white tracking-tight">RULF <span className="text-primary">SHOP</span></h1>
           <p className="text-sm text-white/40 mt-1">Best in the game.</p>
         </div>
 
