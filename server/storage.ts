@@ -57,7 +57,7 @@ export interface IStorage {
   getAllRedeemCodes(): Promise<RedeemCode[]>;
   
   // Admin
-  getDashboardStats(): Promise<{ totalUsers: number; totalSales: number; storeBalance: number; itemsInStock: number; itemsSold: number; totalOrders: number; pendingOrders: number; totalRevenue: number }>;
+  getDashboardStats(): Promise<{ totalUsers: number; totalSales: number; storeBalance: number; itemsInStock: number; itemsSold: number; totalOrders: number; pendingOrders: number; totalRevenue: number; stockWorth: number }>;
   getAdminLogs(): Promise<any[]>;
   updateOrderDelivery(orderId: number, deliveryContent: string): Promise<Order>;
   banUser(userId: number): Promise<User>;
@@ -778,6 +778,11 @@ export class DatabaseStorage implements IStorage {
     const [soldCount] = await db.select({ count: sql<number>`count(*)` }).from(stockItems).where(eq(stockItems.isSold, true));
     const [ordersCount] = await db.select({ count: sql<number>`count(*)` }).from(orders);
     const [pendingCount] = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.status, 'waiting_payment'));
+    const [stockWorthRow] = await db
+      .select({ worth: sql<number>`coalesce(sum(${variants.price}), 0)` })
+      .from(stockItems)
+      .innerJoin(variants, eq(stockItems.variantId, variants.id))
+      .where(and(eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
 
     return {
       totalUsers: Number(usersCount.count),
@@ -787,7 +792,8 @@ export class DatabaseStorage implements IStorage {
       itemsInStock: Number(stockCount.count),
       itemsSold: Number(soldCount.count),
       totalOrders: Number(ordersCount.count),
-      pendingOrders: Number(pendingCount.count)
+      pendingOrders: Number(pendingCount.count),
+      stockWorth: Number(stockWorthRow?.worth || 0),
     };
   }
 

@@ -224,6 +224,7 @@ export const api = {
           storeBalance: z.number(),
           itemsInStock: z.number(),
           itemsSold: z.number(),
+          stockWorth: z.number(),
         }),
         401: errorSchemas.unauthorized,
       },

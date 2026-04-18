@@ -128,6 +128,7 @@ function DashboardSection() {
         <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={ShoppingBag} />
         <StatCard title="Total Sales" value={`$${((stats?.totalSales || 0) / 100).toFixed(2)}`} icon={DollarSign} color="green" />
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
+        <StatCard title="Stock Worth" value={`$${((stats?.stockWorth || 0) / 100).toFixed(2)}`} icon={Package} color="gold" />
       </div>
     </div>
   );

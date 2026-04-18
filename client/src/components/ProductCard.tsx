@@ -39,8 +39,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
           </p>
 
           <button
-            className="w-full h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
-            style={{ background: "#c0392b" }}
+            className="w-full h-7 rounded-lg text-[10px] font-bold text-black flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98] bg-primary"
           >
             <span>Buy Now</span>
             {lowestPrice > 0 && <span>${(lowestPrice / 100).toFixed(2)}</span>}

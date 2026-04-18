@@ -54,7 +54,7 @@ export default function ShopPage() {
             If you believe this is an error, please contact support.
           </p>
         </div>
-        <div className="flex flex-col gap-3 mx-auto opacity-60 grayscale-[0.5]" style={{ width: "180px" }}>
+        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto w-full opacity-60 grayscale-[0.5]">
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -76,7 +76,7 @@ export default function ShopPage() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button variant="destructive" size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-[#e11d48] hover:bg-[#be123c] transition-colors shadow-xl shadow-red-500/20">
+          <Button size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-primary hover:bg-primary/90 text-black transition-colors shadow-xl shadow-primary/20">
             <Headset className="h-4 w-4" /> Support
           </Button>
         </a>
@@ -97,7 +97,7 @@ export default function ShopPage() {
           <p className="text-sm font-bold opacity-50">No products found</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 mx-auto" style={{ width: "180px" }}>
+        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto w-full">
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
