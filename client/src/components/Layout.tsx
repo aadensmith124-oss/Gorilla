@@ -31,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0f1115] text-[#e1e1e1] py-8 px-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
-        <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-14 w-auto object-contain" />
+        <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-20 w-auto object-contain drop-shadow-[0_0_16px_rgba(212,175,55,0.45)]" />
       </div>
 
       <div className="flex flex-col gap-4 text-left">
