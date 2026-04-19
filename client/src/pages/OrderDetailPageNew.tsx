@@ -193,7 +193,7 @@ export default function OrderDetailPageNew() {
                       </div>
                     ) : (
                       <div className="w-full h-11 rounded-xl bg-white/5 border border-white/10 text-white/30 font-bold text-sm flex items-center justify-center">
-                        {isFulfilled ? "No stock data" : "Pending Delivery"}
+                        {isFulfilled ? "No stock data" : "Pending Order"}
                       </div>
                     )}
                   </div>
