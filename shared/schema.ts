@@ -147,6 +147,20 @@ export const insertRedeemCodeSchema = createInsertSchema(redeemCodes).omit({
   createdAt: true 
 });
 
+// === DISCOUNT CODES ===
+export const discountCodes = pgTable("discount_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  type: text("type").notNull(), // 'percent' | 'fixed'
+  value: integer("value").notNull(), // percent: 1-100, fixed: cents
+  minOrder: integer("min_order").default(0), // minimum cart total in cents
+  maxUses: integer("max_uses"), // null = unlimited
+  usedCount: integer("used_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // === ANNOUNCEMENTS ===
 export const announcements = pgTable("announcements", {
   id: serial("id").primaryKey(),

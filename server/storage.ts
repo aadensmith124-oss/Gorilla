@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard
@@ -324,7 +324,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(stockItems.orderId, orderId), eq(stockItems.isReserved, true), eq(stockItems.isSold, false)));
   }
 
-  async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
+  async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = [], discountCodeId?: number | null): Promise<Order> {
     let total = 0;
     const reservedStockItems: { variantId: number, stockItemId: number, price: number }[] = [];
     const cardPurchases: { cardId: number, price: number }[] = [];
@@ -348,6 +348,20 @@ export class DatabaseStorage implements IStorage {
       if (card.isSold) throw new Error("Card already sold");
       total += card.price;
       cardPurchases.push({ cardId: card.id, price: card.price });
+    }
+
+    // Apply discount code if provided
+    let discountAmount = 0;
+    if (discountCodeId) {
+      const [dc] = await db.select().from(discountCodes).where(eq(discountCodes.id, discountCodeId));
+      if (dc && dc.isActive && !(dc.maxUses !== null && dc.usedCount >= dc.maxUses) && !(dc.expiresAt && new Date(dc.expiresAt) < new Date())) {
+        discountAmount = dc.type === "percent"
+          ? Math.round(total * dc.value / 100)
+          : Math.min(dc.value, total);
+        total = Math.max(0, total - discountAmount);
+        // Increment usage count
+        await db.update(discountCodes).set({ usedCount: dc.usedCount + 1 }).where(eq(discountCodes.id, dc.id));
+      }
     }
 
     if (total < 100) throw new Error("Order total must be at least $1.00");

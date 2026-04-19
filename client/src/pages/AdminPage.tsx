@@ -29,6 +29,7 @@ const adminSections = [
   { id: "cashapp", label: "CashApp" },
   { id: "users", label: "Users" },
   { id: "codes", label: "Redeem Codes" },
+  { id: "discount-codes", label: "Discount Codes" },
   { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
 ];
@@ -102,6 +103,7 @@ export default function AdminPage() {
           {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "codes" && <CodesSection />}
+          {activeSection === "discount-codes" && <DiscountCodesSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
@@ -1299,6 +1301,161 @@ function CodesSection() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DiscountCodesSection() {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
+
+  const { data: codes = [] } = useQuery<any[]>({ queryKey: ["/api/admin/discount-codes"] });
+
+  const createMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/discount-codes", form),
+    onSuccess: () => {
+      toast({ title: "Discount code created" });
+      setForm({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      apiRequest("PATCH", `/api/admin/discount-codes/${id}`, { isActive }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/discount-codes/${id}`, {}),
+    onSuccess: () => {
+      toast({ title: "Code deleted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Discount Codes</h1>
+
+      {/* Create form */}
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Create Discount Code</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Code</p>
+              <Input
+                placeholder="SAVE20"
+                value={form.code}
+                onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                className="bg-black/50 border-white/10 h-9 text-sm font-mono"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Type</p>
+              <select
+                value={form.type}
+                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                className="w-full h-9 rounded-md bg-black/50 border border-white/10 text-sm text-white px-2 focus:outline-none"
+              >
+                <option value="percent">Percent (%)</option>
+                <option value="fixed">Fixed ($)</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">{form.type === "percent" ? "Discount %" : "Discount $ Amount"}</p>
+              <Input
+                type="number" min="0" step={form.type === "percent" ? "1" : "0.01"} placeholder={form.type === "percent" ? "20" : "5.00"}
+                value={form.value}
+                onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Min. Order $ (optional)</p>
+              <Input
+                type="number" min="0" step="0.01" placeholder="0.00"
+                value={form.minOrder}
+                onChange={e => setForm(f => ({ ...f, minOrder: e.target.value }))}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Max Uses (optional)</p>
+              <Input
+                type="number" min="1" placeholder="Unlimited"
+                value={form.maxUses}
+                onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Expires At (optional)</p>
+              <Input
+                type="datetime-local"
+                value={form.expiresAt}
+                onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+          </div>
+          <Button className="w-full gap-2" onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Create Code
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing codes */}
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">All Discount Codes ({codes.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {codes.length === 0 ? (
+            <p className="text-sm text-white/30 text-center py-6">No codes yet</p>
+          ) : (
+            <div className="space-y-2">
+              {codes.map((dc: any) => (
+                <div key={dc.id} className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg px-3 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-bold text-white font-mono">{dc.code}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
+                        {dc.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white/40">
+                      {dc.type === "percent" ? `${dc.value}% off` : `$${(dc.value / 100).toFixed(2)} off`}
+                      {dc.minOrder > 0 && ` · min $${(dc.minOrder / 100).toFixed(2)}`}
+                      {` · ${dc.usedCount}/${dc.maxUses ?? "∞"} uses`}
+                      {dc.expiresAt && ` · expires ${new Date(dc.expiresAt).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => toggleMutation.mutate({ id: dc.id, isActive: !dc.isActive })}
+                      className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${dc.isActive ? "border-white/20 text-white/60 hover:bg-white/5" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                    >
+                      {dc.isActive ? "Disable" : "Enable"}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(dc.id)}
+                      className="px-2 py-1 rounded text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

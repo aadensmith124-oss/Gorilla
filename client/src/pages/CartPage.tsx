@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, ArrowRight, Loader2, Wallet, Copy, X, Clock } from "lucide-react";
+import { ShoppingCart, ArrowRight, Loader2, Wallet, Copy, X, Clock, Tag, Check } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { SiCashapp, SiBitcoin } from "react-icons/si";
@@ -14,6 +14,14 @@ const CASHAPP_FEE_PERCENT = 0;
 const CRYPTO_FEE_PERCENT = 0;
 
 type PaymentMethod = "balance" | "cashapp" | "crypto";
+
+interface AppliedDiscount {
+  id: number;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  discountAmount: number;
+}
 
 function CashAppModal({ orderId, total, paymentNote, cashappTag, onClose }: {
   orderId: string;
@@ -99,12 +107,15 @@ export default function CartPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("cashapp");
   const [cashappModal, setCashappModal] = useState<{ orderId: string; total: number; paymentNote: string; cashappTag: string } | null>(null);
 
   const cartTotal = total();
+  const discountAmount = appliedDiscount?.discountAmount ?? 0;
+  const discountedTotal = Math.max(0, cartTotal - discountAmount);
   const userBalance = user?.balance || 0;
-  const hasEnoughBalance = userBalance >= cartTotal;
+  const hasEnoughBalance = userBalance >= discountedTotal;
 
   const { data: enabledMethods } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/payment-methods"],
@@ -125,14 +136,42 @@ export default function CartPage() {
     }
   }, [cashappEnabled, walletEnabled, cryptoEnabled, selectedMethod]);
 
+  // Clear discount if cart changes
+  useEffect(() => {
+    if (appliedDiscount) setAppliedDiscount(null);
+  }, [cartTotal]);
+
+  const validateDiscountMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/discount/validate", { code, cartTotal });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Invalid code");
+      }
+      return res.json();
+    },
+    onSuccess: (data: AppliedDiscount) => {
+      setAppliedDiscount(data);
+      setCouponCode("");
+      const label = data.type === "percent" ? `${data.value}% off` : `$${(data.value / 100).toFixed(2)} off`;
+      toast({ title: `Discount applied — ${label}`, description: `You save $${(data.discountAmount / 100).toFixed(2)}` });
+    },
+    onError: (e: any) => {
+      toast({ title: "Code not valid", description: e.message, variant: "destructive" });
+    },
+  });
+
   const processorFeePercent = selectedMethod === "crypto" ? CRYPTO_FEE_PERCENT : CASHAPP_FEE_PERCENT;
-  const processorFee = Math.round(cartTotal * processorFeePercent / 100);
-  const dueTotal = cartTotal + processorFee;
+  const processorFee = Math.round(discountedTotal * processorFeePercent / 100);
+  const dueTotal = discountedTotal + processorFee;
 
   const cashappOrderMutation = useMutation({
     mutationFn: async () => {
       const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", "/api/orders/cashapp", { items: cartItems });
+      const res = await apiRequest("POST", "/api/orders/cashapp", {
+        items: cartItems,
+        discountCodeId: appliedDiscount?.id ?? null,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Order failed");
@@ -142,43 +181,47 @@ export default function CartPage() {
     onSuccess: (data) => {
       clearCart();
       setCashappModal({
-        orderId: data.order?.orderId || "",
-        total: data.order?.total || cartTotal,
-        paymentNote: data.paymentNote || "",
-        cashappTag: data.cashappTag || "",
+        orderId: data.order?.orderId || data.orderId || "N/A",
+        total: dueTotal,
+        paymentNote: data.paymentNote || data.order?.orderId || "",
+        cashappTag: data.cashappTag || "$RulfShop",
       });
     },
-    onError: (error: any) => {
-      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    onError: (e: any) => {
+      toast({ title: "Checkout failed", description: e.message || "Could not create order.", variant: "destructive" });
     },
   });
 
   const balanceOrderMutation = useMutation({
     mutationFn: async () => {
       const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", api.orders.create.path, { items: cartItems });
+      const res = await apiRequest("POST", api.orders.create.path, {
+        items: cartItems,
+        discountCodeId: appliedDiscount?.id ?? null,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Order failed");
       }
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       clearCart();
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "Order placed!", description: "Your items are ready. Check your orders." });
-      if (data.orderId) setLocation(`/order/${data.orderId}`);
-      else setLocation("/profile?tab=orders");
+      toast({ title: "Order placed!", description: "Your order has been placed and will be fulfilled soon." });
+      setLocation("/profile?tab=orders");
     },
-    onError: (error: any) => {
-      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    onError: (e: any) => {
+      toast({ title: "Checkout failed", description: e.message || "Could not create order.", variant: "destructive" });
     },
   });
 
   const cryptoOrderMutation = useMutation({
     mutationFn: async () => {
       const cartItems = items.map(i => ({ variantId: i.variantId, quantity: i.quantity }));
-      const res = await apiRequest("POST", "/api/orders/crypto", { items: cartItems });
+      const res = await apiRequest("POST", "/api/orders/crypto", {
+        items: cartItems,
+        discountCodeId: appliedDiscount?.id ?? null,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Order failed");
@@ -189,13 +232,10 @@ export default function CartPage() {
       clearCart();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
-      } else {
-        toast({ title: "Order placed!", description: "Your crypto order is pending." });
-        setLocation("/profile?tab=orders");
       }
     },
-    onError: (error: any) => {
-      toast({ title: "Checkout failed", description: error.message || "Could not create order.", variant: "destructive" });
+    onError: (e: any) => {
+      toast({ title: "Checkout failed", description: e.message || "Could not create order.", variant: "destructive" });
     },
   });
 
@@ -203,13 +243,13 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (cartTotal < 100) {
+    if (discountedTotal < 100) {
       toast({ title: "Minimum order not met", description: "Your cart must be at least $1.00 to checkout.", variant: "destructive" });
       return;
     }
     if (selectedMethod === "balance") {
       if (!hasEnoughBalance) {
-        toast({ title: "Insufficient balance", description: `You need $${(cartTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });
+        toast({ title: "Insufficient balance", description: `You need $${(discountedTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });
         return;
       }
       balanceOrderMutation.mutate();
@@ -221,9 +261,10 @@ export default function CartPage() {
   };
 
   const handleApplyCoupon = () => {
-    if (couponCode.trim()) {
-      toast({ title: "Invalid coupon", description: "This coupon code is not valid or has expired.", variant: "destructive" });
-    }
+    const trimmed = couponCode.trim();
+    if (!trimmed) return;
+    if (!user) { toast({ title: "Sign in to apply a discount code", variant: "destructive" }); return; }
+    validateDiscountMutation.mutate(trimmed);
   };
 
   if (items.length === 0 && !cashappModal) {
@@ -292,14 +333,67 @@ export default function CartPage() {
           ))}
         </div>
 
+        {/* Coupon input */}
+        <div className="space-y-2">
+          {appliedDiscount ? (
+            <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-xl px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-xs font-bold text-primary">{appliedDiscount.code}</p>
+                  <p className="text-[10px] text-primary/60">
+                    {appliedDiscount.type === "percent" ? `${appliedDiscount.value}% off` : `$${(appliedDiscount.value / 100).toFixed(2)} off`}
+                    {" · "}saves ${(appliedDiscount.discountAmount / 100).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setAppliedDiscount(null)} className="text-white/30 hover:text-white transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter discount code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                className="flex-1 bg-[#0d1017] border-white/[0.06] text-white placeholder:text-white/20 text-xs h-10 focus-visible:ring-primary/30"
+                data-testid="input-coupon"
+              />
+              <button
+                onClick={handleApplyCoupon}
+                disabled={validateDiscountMutation.isPending || !couponCode.trim()}
+                className="px-4 h-10 rounded-lg bg-primary hover:bg-primary/90 text-black text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                data-testid="button-apply-coupon"
+              >
+                {validateDiscountMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Tag className="h-3.5 w-3.5" />}
+                Apply
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Checkout summary */}
         <div className="bg-[#0d1017] border border-white/[0.06] rounded-xl p-4 space-y-0">
           <h3 className="text-base font-bold text-white mb-3">User Checkout</h3>
 
           <div className="space-y-0 divide-y divide-white/[0.04]">
             <div className="flex justify-between py-2.5 text-xs">
-              <span className="text-white/60">Total</span>
+              <span className="text-white/60">Subtotal</span>
               <span className="text-white font-bold">${(cartTotal / 100).toFixed(2)}</span>
+            </div>
+            {appliedDiscount && (
+              <div className="flex justify-between py-2.5 text-xs">
+                <span className="text-primary/80 flex items-center gap-1">
+                  <Tag className="h-3 w-3" /> Discount ({appliedDiscount.code})
+                </span>
+                <span className="text-primary font-bold">-${(discountAmount / 100).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between py-2.5 text-xs font-bold">
+              <span className="text-white">Total</span>
+              <span className="text-white">${(discountedTotal / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -377,24 +471,6 @@ export default function CartPage() {
           {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           Proceed to Payment
         </button>
-
-        {/* Coupon */}
-        <div className="flex gap-2">
-          <Input
-            placeholder="Enter coupon here"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-            className="flex-1 bg-[#0d1017] border-white/[0.06] text-white placeholder:text-white/20 text-xs h-10 focus-visible:ring-primary/30"
-            data-testid="input-coupon"
-          />
-          <button
-            onClick={handleApplyCoupon}
-            className="px-4 h-10 rounded-lg bg-[#e53935] hover:bg-[#c0392b] text-white text-xs font-bold transition-colors"
-            data-testid="button-apply-coupon"
-          >
-            Apply Coupon
-          </button>
-        </div>
 
       </div>
     </>

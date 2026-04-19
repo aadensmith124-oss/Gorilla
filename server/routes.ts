@@ -9,7 +9,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 
@@ -97,11 +97,11 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     try {
       const userId = (req.user as any).id;
-      const { items, cardIds } = req.body;
+      const { items, cardIds, discountCodeId } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
       const cardIdList: number[] = cardIds || [];
 
-      const order = await storage.createOrder(userId, productItems, cardIdList);
+      const order = await storage.createOrder(userId, productItems, cardIdList, discountCodeId ?? null);
       res.status(201).json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -710,13 +710,86 @@ export async function registerRoutes(
     res.json(user);
   });
 
-  // Admin Codes (list)
+  // Admin Balance Codes (list)
   app.get("/api/admin/codes", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const codes = await storage.getAllRedeemCodes();
     res.json(codes);
+  });
+
+  // === DISCOUNT CODES ===
+
+  // Validate a discount code (authenticated users)
+  app.post("/api/discount/validate", walletLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const { code, cartTotal } = req.body;
+      if (!code || typeof code !== "string") return res.status(400).json({ message: "Code required" });
+
+      const [dc] = await db.select().from(discountCodes)
+        .where(eq(discountCodes.code, code.toUpperCase().trim()));
+
+      if (!dc || !dc.isActive) return res.status(404).json({ message: "Invalid or inactive code" });
+      if (dc.expiresAt && new Date(dc.expiresAt) < new Date()) return res.status(400).json({ message: "This code has expired" });
+      if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) return res.status(400).json({ message: "This code has reached its usage limit" });
+      if (dc.minOrder && cartTotal < dc.minOrder) {
+        return res.status(400).json({ message: `Minimum order of $${(dc.minOrder / 100).toFixed(2)} required` });
+      }
+
+      const discountAmount = dc.type === "percent"
+        ? Math.round(cartTotal * dc.value / 100)
+        : Math.min(dc.value, cartTotal);
+
+      res.json({ id: dc.id, code: dc.code, type: dc.type, value: dc.value, discountAmount });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // Admin: list discount codes
+  app.get("/api/admin/discount-codes", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const all = await db.select().from(discountCodes).orderBy(desc(discountCodes.createdAt));
+    res.json(all);
+  });
+
+  // Admin: create discount code
+  app.post("/api/admin/discount-codes", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const { code, type, value, minOrder, maxUses, expiresAt } = req.body;
+      if (!code || !type || !value) return res.status(400).json({ message: "Code, type, and value required" });
+      if (!["percent", "fixed"].includes(type)) return res.status(400).json({ message: "Type must be percent or fixed" });
+      if (type === "percent" && (value < 1 || value > 100)) return res.status(400).json({ message: "Percent must be 1–100" });
+
+      const [dc] = await db.insert(discountCodes).values({
+        code: code.toUpperCase().trim(),
+        type,
+        value: type === "fixed" ? Math.round(parseFloat(value) * 100) : parseInt(value),
+        minOrder: minOrder ? Math.round(parseFloat(minOrder) * 100) : 0,
+        maxUses: maxUses ? parseInt(maxUses) : null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      }).returning();
+      res.status(201).json(dc);
+    } catch (e: any) {
+      if (e.code === "23505") return res.status(400).json({ message: "A code with that name already exists" });
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // Admin: toggle active / delete discount code
+  app.patch("/api/admin/discount-codes/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    const [dc] = await db.update(discountCodes).set({ isActive: req.body.isActive }).where(eq(discountCodes.id, Number(req.params.id))).returning();
+    res.json(dc);
+  });
+
+  app.delete("/api/admin/discount-codes/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') return res.status(401).json({ message: "Unauthorized" });
+    await db.delete(discountCodes).where(eq(discountCodes.id, Number(req.params.id)));
+    res.json({ success: true });
   });
 
   // Admin Announcements
