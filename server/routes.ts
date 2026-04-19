@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { api } from "@shared/routes";
@@ -12,13 +13,39 @@ import { cryptoPayments, orders, orderItems, verifications, variants, userIps, u
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 
+const gameLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { message: "Too many game requests. Slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const walletLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { message: "Too many wallet requests. Slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  message: { message: "Too many requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !req.path.startsWith("/api"),
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
   app.set('etag', false);
+  app.use('/api', apiLimiter);
   app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     next();
@@ -97,7 +124,7 @@ export async function registerRoutes(
   });
 
   // Wallet & Redeem
-  app.post(api.wallet.redeem.path, async (req, res) => {
+  app.post(api.wallet.redeem.path, walletLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const code = await storage.getRedeemCode(req.body.code);
     
@@ -119,11 +146,17 @@ export async function registerRoutes(
   });
 
   // Games
-  app.post(api.games.dice.path, async (req, res) => {
+  app.post(api.games.dice.path, gameLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as any;
-    const bet = req.body.betAmount;
+    const bet = Number(req.body.betAmount);
 
+    if (!Number.isFinite(bet) || bet <= 0) {
+      return res.status(400).json({ message: "Invalid bet amount." });
+    }
+    if (bet > 100000) {
+      return res.status(400).json({ message: "Bet amount exceeds maximum allowed." });
+    }
     if (user.balance < bet) return res.status(400).json({ message: "Insufficient balance" });
 
     // Deduct bet
@@ -160,7 +193,7 @@ export async function registerRoutes(
     });
   });
 
-  app.post(api.games.spin.path, async (req, res) => {
+  app.post(api.games.spin.path, gameLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as any;
 

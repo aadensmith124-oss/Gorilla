@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import rateLimit from "express-rate-limit";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -26,16 +27,41 @@ export async function comparePassword(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many login attempts. Try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many accounts created from this IP. Try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export function setupAuth(app: Express) {
   const PGStore = pgSession(session);
+
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    console.warn("[SECURITY] SESSION_SECRET env var is not set — using insecure fallback. Set it in production.");
+  }
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "r3pl1t_s3cr3t_k3y",
+    secret: sessionSecret || "rulf_fallback_dev_secret_change_in_prod",
     resave: false,
     saveUninitialized: false,
     store: new PGStore({ pool, createTableIfMissing: false }),
     cookie: {
       secure: app.get("env") === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     }
   };
 
@@ -71,7 +97,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", loginLimiter, (req, res, next) => {
     passport.authenticate("local", (err: any, user: User, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -86,14 +112,29 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", registerLimiter, async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const { username, password, email } = req.body;
+
+      if (!username || typeof username !== "string" || username.length < 3 || username.length > 32) {
+        return res.status(400).json({ message: "Username must be 3–32 characters." });
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return res.status(400).json({ message: "Username can only contain letters, numbers, and underscores." });
+      }
+      if (!password || typeof password !== "string" || password.length < 6 || password.length > 128) {
+        return res.status(400).json({ message: "Password must be 6–128 characters." });
+      }
+      if (email && (typeof email !== "string" || email.length > 254)) {
+        return res.status(400).json({ message: "Invalid email address." });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const hashedPassword = await hashPassword(req.body.password);
+      const hashedPassword = await hashPassword(password);
       
       const adminEmails = ["lifeanime886@gmail.com", "erizl9521@gmail.com"];
       const isAdminEmail = adminEmails.includes(req.body.email?.toLowerCase());
