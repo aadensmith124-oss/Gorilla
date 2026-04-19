@@ -363,7 +363,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    if (total < 100) throw new Error("Order total must be at least $1.00");
+    if (rawTotal < 100) throw new Error("Order total must be at least $1.00");
 
     // Check balance BEFORE consuming any stock
     const [user] = await db.select().from(users).where(eq(users.id, userId));

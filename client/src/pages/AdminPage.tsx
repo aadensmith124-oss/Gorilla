@@ -712,6 +712,7 @@ function OrdersSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderFilter, setOrderFilter] = useState<"all" | "waiting" | "fulfilled" | "pending">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -873,10 +874,17 @@ function OrdersSection() {
     );
   }
 
+  const q = searchQuery.trim().toLowerCase();
   const filteredOrders = (orders || []).filter((o: any) => {
-    if (orderFilter === "waiting") return o.paymentMethod === "CashApp" && o.status === "pending";
-    if (orderFilter === "fulfilled") return o.status === "delivering" || o.status === "fulfilled" || o.status === "replaced";
-    return true;
+    if (orderFilter === "waiting") { if (!(o.paymentMethod === "CashApp" && o.status === "pending")) return false; }
+    else if (orderFilter === "fulfilled") { if (!(o.status === "delivering" || o.status === "fulfilled" || o.status === "replaced")) return false; }
+    if (!q) return true;
+    return (
+      o.orderId?.toLowerCase().includes(q) ||
+      o.user?.username?.toLowerCase().includes(q) ||
+      o.paymentNote?.toLowerCase().includes(q) ||
+      o.paymentMethod?.toLowerCase().includes(q)
+    );
   });
 
   const waitingCount = (orders || []).filter((o: any) => o.paymentMethod === "CashApp" && o.status === "pending").length;
@@ -884,6 +892,22 @@ function OrdersSection() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Orders</h1>
+
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by order ID, username, payment note..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="w-full h-9 bg-white/5 border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/40"
+          data-testid="input-order-search"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
 
       <div className="flex gap-2 flex-wrap">
         {[
@@ -922,8 +946,8 @@ function OrdersSection() {
           <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/5 last:border-0 items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
             <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
             <div className="min-w-0">
-              <p className="text-[11px] text-white/70 truncate font-mono">{order.paymentNote || order.paymentMethod || "—"}</p>
-              <p className="text-[10px] text-white/30 truncate">{new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+              <p className="text-[11px] text-white/70 truncate font-mono">{order.user?.username ? `@${order.user.username}` : ""} <span className="text-white/40">{order.orderId?.slice(0, 10)}</span></p>
+              <p className="text-[10px] text-white/30 truncate">{order.paymentNote || order.paymentMethod || "—"} · {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
             </div>
             <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
             <ChevronRight className="h-3.5 w-3.5 text-white/20" />
@@ -1650,6 +1674,7 @@ function CashAppSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -1663,7 +1688,13 @@ function CashAppSection() {
 
   const cashappOrders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
   const pendingOrders = cashappOrders.filter((o: any) => o.status === "pending");
-  const displayedOrders = showHistory ? cashappOrders : pendingOrders;
+  const cq = searchQuery.trim().toLowerCase();
+  const displayedOrders = (showHistory ? cashappOrders : pendingOrders).filter((o: any) =>
+    !cq ||
+    o.orderId?.toLowerCase().includes(cq) ||
+    o.user?.username?.toLowerCase().includes(cq) ||
+    o.paymentNote?.toLowerCase().includes(cq)
+  );
 
   const mutationOpts = (successMsg: string) => ({
     onSuccess: () => {
@@ -1785,6 +1816,22 @@ function CashAppSection() {
         >
           {showHistory ? "← Pending" : "History"}
         </button>
+      </div>
+
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by order ID, username, payment note..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="w-full h-9 bg-white/5 border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#00D632]/40"
+          data-testid="input-cashapp-order-search"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {displayedOrders.length === 0 ? (
