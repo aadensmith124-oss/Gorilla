@@ -203,6 +203,10 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
+    if (cartTotal < 100) {
+      toast({ title: "Minimum order not met", description: "Your cart must be at least $1.00 to checkout.", variant: "destructive" });
+      return;
+    }
     if (selectedMethod === "balance") {
       if (!hasEnoughBalance) {
         toast({ title: "Insufficient balance", description: `You need $${(cartTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });

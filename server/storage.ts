@@ -350,6 +350,8 @@ export class DatabaseStorage implements IStorage {
       cardPurchases.push({ cardId: card.id, price: card.price });
     }
 
+    if (total < 100) throw new Error("Order total must be at least $1.00");
+
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user || user.balance < total) throw new Error("Insufficient balance");
 
