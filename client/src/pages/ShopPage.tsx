@@ -74,7 +74,7 @@ export default function ShopPage() {
         </div>
 
         <a
-          href="https://t.me/m/iP8zL2axM2Rh"
+          href="https://t.me/RULFSUPPORT_BOT"
           target="_blank"
           rel="noopener noreferrer"
         >
