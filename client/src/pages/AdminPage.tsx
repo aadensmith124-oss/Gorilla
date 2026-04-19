@@ -28,6 +28,7 @@ const adminSections = [
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "users", label: "Users" },
+  { id: "codes", label: "Redeem Codes" },
   { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
 ];
@@ -100,6 +101,7 @@ export default function AdminPage() {
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}
+          {activeSection === "codes" && <CodesSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
@@ -167,6 +169,7 @@ function ProductsSection() {
   const variantSchema = z.object({
     name: z.string().min(1, "Name required"),
     price: z.string().min(1, "Price required"),
+    comparePrice: z.string().optional(),
     minQuantity: z.string().default("1"),
   });
 
@@ -182,12 +185,12 @@ function ProductsSection() {
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
     resolver: zodResolver(variantSchema),
-    defaultValues: { name: "", price: "", minQuantity: "1" },
+    defaultValues: { name: "", price: "", comparePrice: "", minQuantity: "1" },
   });
 
   const editVariantForm = useForm<z.infer<typeof variantSchema>>({
     resolver: zodResolver(variantSchema),
-    defaultValues: { name: "", price: "", minQuantity: "1" },
+    defaultValues: { name: "", price: "", comparePrice: "", minQuantity: "1" },
   });
 
   const addMutation = useMutation({
@@ -241,13 +244,14 @@ function ProductsSection() {
         productId,
         name: data.name,
         price: Math.round(parseFloat(data.price) * 100),
+        comparePrice: data.comparePrice ? Math.round(parseFloat(data.comparePrice) * 100) : null,
         minQuantity: parseInt(data.minQuantity) || 1,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      variantForm.reset({ name: "", price: "", minQuantity: "1" });
+      variantForm.reset({ name: "", price: "", comparePrice: "", minQuantity: "1" });
       toast({ title: "Variant added" });
     }
   });
@@ -257,6 +261,7 @@ function ProductsSection() {
       const res = await apiRequest("PATCH", `/api/admin/variants/${id}`, {
         name: data.name,
         price: Math.round(parseFloat(data.price) * 100),
+        comparePrice: data.comparePrice ? Math.round(parseFloat(data.comparePrice) * 100) : null,
         minQuantity: parseInt(data.minQuantity) || 1,
       });
       return res.json();
@@ -475,7 +480,7 @@ function ProductsSection() {
                               onClick={() => {
                                 if (editingVariant === v.id) { setEditingVariant(null); return; }
                                 setEditingVariant(v.id);
-                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), minQuantity: String(v.minQuantity ?? 1) });
+                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), comparePrice: v.comparePrice ? (v.comparePrice / 100).toFixed(2) : "", minQuantity: String(v.minQuantity ?? 1) });
                               }}
                               title="Edit variant"
                             >
@@ -498,17 +503,11 @@ function ProductsSection() {
                           <div className="mt-1 bg-black/40 border border-primary/20 rounded-lg p-3">
                             <Form {...editVariantForm}>
                               <form onSubmit={editVariantForm.handleSubmit((d) => updateVariantMutation.mutate({ id: v.id, data: d }))}
-                                className="grid grid-cols-3 gap-2 items-end">
+                                className="grid grid-cols-2 gap-2 items-end">
                                 <FormField control={editVariantForm.control} name="name" render={({ field }) => (
                                   <FormItem>
                                     <FormLabel className="text-xs">Name</FormLabel>
                                     <FormControl><Input {...field} className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                                  </FormItem>
-                                )} />
-                                <FormField control={editVariantForm.control} name="price" render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-xs">Price ($)</FormLabel>
-                                    <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                                   </FormItem>
                                 )} />
                                 <FormField control={editVariantForm.control} name="minQuantity" render={({ field }) => (
@@ -517,7 +516,19 @@ function ProductsSection() {
                                     <FormControl><Input {...field} type="number" min="1" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                                   </FormItem>
                                 )} />
-                                <div className="col-span-3 flex gap-2">
+                                <FormField control={editVariantForm.control} name="price" render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Sale Price ($)</FormLabel>
+                                    <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                                  </FormItem>
+                                )} />
+                                <FormField control={editVariantForm.control} name="comparePrice" render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Original Price ($) <span className="text-white/30">(optional)</span></FormLabel>
+                                    <FormControl><Input {...field} type="number" step="0.01" placeholder="e.g. 19.99" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                                  </FormItem>
+                                )} />
+                                <div className="col-span-2 flex gap-2">
                                   <Button type="submit" size="sm" className="flex-1 h-8 text-xs" disabled={updateVariantMutation.isPending}>
                                     {updateVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
                                   </Button>
@@ -539,17 +550,11 @@ function ProductsSection() {
 
                 <Form {...variantForm}>
                   <form onSubmit={variantForm.handleSubmit((d) => addVariantMutation.mutate({ productId: product.id, data: d }))}
-                    className="grid grid-cols-3 gap-2 items-end">
+                    className="grid grid-cols-2 gap-2 items-end">
                     <FormField control={variantForm.control} name="name" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs">Name</FormLabel>
                         <FormControl><Input {...field} placeholder="e.g. 1 Month" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={variantForm.control} name="price" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Price ($)</FormLabel>
-                        <FormControl><Input {...field} placeholder="9.99" type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={variantForm.control} name="minQuantity" render={({ field }) => (
@@ -558,7 +563,19 @@ function ProductsSection() {
                         <FormControl><Input {...field} placeholder="1" type="number" min="1" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
-                    <div className="col-span-3">
+                    <FormField control={variantForm.control} name="price" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Sale Price ($)</FormLabel>
+                        <FormControl><Input {...field} placeholder="9.99" type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={variantForm.control} name="comparePrice" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Original Price ($) <span className="text-white/30">(optional)</span></FormLabel>
+                        <FormControl><Input {...field} placeholder="19.99" type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+                      </FormItem>
+                    )} />
+                    <div className="col-span-2">
                       <Button type="submit" size="sm" className="w-full h-8 text-xs gap-1" disabled={addVariantMutation.isPending}>
                         {addVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
                         Add Variant
@@ -1152,6 +1169,140 @@ function UsersSection() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CodesSection() {
+  const { toast } = useToast();
+  const [amount, setAmount] = useState("");
+  const [count, setCount] = useState("1");
+  const [generated, setGenerated] = useState<string[]>([]);
+  const qc = useQueryClient();
+
+  const { data: codes, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/codes"],
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const amountCents = Math.round(parseFloat(amount) * 100);
+      if (isNaN(amountCents) || amountCents <= 0) throw new Error("Enter a valid amount");
+      const qty = parseInt(count) || 1;
+      if (qty < 1 || qty > 100) throw new Error("Quantity must be 1–100");
+      const res = await apiRequest("POST", "/api/admin/codes", { amount: amountCents, count: qty });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setGenerated(data.codes || []);
+      qc.invalidateQueries({ queryKey: ["/api/admin/codes"] });
+      toast({ title: `${data.codes?.length || 0} code(s) generated` });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const copyAll = () => {
+    navigator.clipboard.writeText(generated.join("\n"));
+    toast({ title: "Copied all codes" });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Redeem Codes</h1>
+
+      {/* Generate */}
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Generate Codes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Balance Amount ($)</p>
+              <Input
+                type="number" step="0.01" min="0.01" placeholder="5.00"
+                value={amount} onChange={e => setAmount(e.target.value)}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50">Quantity (max 100)</p>
+              <Input
+                type="number" min="1" max="100" placeholder="1"
+                value={count} onChange={e => setCount(e.target.value)}
+                className="bg-black/50 border-white/10 h-9 text-sm"
+              />
+            </div>
+          </div>
+          <Button className="w-full gap-2" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+            {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Generate
+          </Button>
+
+          {generated.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-white/50">Generated codes</p>
+                <button onClick={copyAll} className="text-xs text-primary hover:opacity-80 transition-opacity">Copy All</button>
+              </div>
+              <div className="bg-black/40 border border-white/10 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
+                {generated.map((c) => (
+                  <div key={c} className="flex items-center justify-between group">
+                    <span className="text-xs font-mono text-green-400">{c}</span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(c); toast({ title: "Copied" }); }}
+                      className="text-[10px] text-white/30 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                    >Copy</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Code list */}
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">All Codes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : !codes?.length ? (
+            <p className="text-xs text-white/40 text-center py-8">No codes generated yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/5">
+                    <TableHead className="text-xs text-white/40">Code</TableHead>
+                    <TableHead className="text-xs text-white/40">Amount</TableHead>
+                    <TableHead className="text-xs text-white/40">Status</TableHead>
+                    <TableHead className="text-xs text-white/40">Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {codes.map((c: any) => (
+                    <TableRow key={c.id} className="border-white/5">
+                      <TableCell className="font-mono text-xs">{c.code}</TableCell>
+                      <TableCell className="text-xs text-green-400 font-bold">${(c.amount / 100).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.isUsed ? "bg-white/5 text-white/30" : "bg-green-500/20 text-green-400"}`}>
+                          {c.isUsed ? "Used" : "Available"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-white/30">
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -7,7 +7,11 @@ interface ProductWithVariants extends Product {
 }
 
 export function ProductCard({ product }: { product: ProductWithVariants }) {
-  const lowestPrice = product.variants.length > 0 ? Math.min(...product.variants.map(v => v.price)) : 0;
+  const lowestPriceVariant = product.variants.length > 0
+    ? product.variants.reduce((a, b) => a.price < b.price ? a : b)
+    : null;
+  const lowestPrice = lowestPriceVariant?.price ?? 0;
+  const comparePrice = lowestPriceVariant?.comparePrice ?? null;
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -42,7 +46,12 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
             className="w-full h-7 rounded-lg text-[10px] font-bold text-black flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98] bg-primary"
           >
             <span>Buy Now</span>
-            {lowestPrice > 0 && <span>${(lowestPrice / 100).toFixed(2)}</span>}
+            <span className="flex items-center gap-1">
+              {comparePrice && comparePrice > lowestPrice && (
+                <span className="line-through opacity-60 text-[9px]">${(comparePrice / 100).toFixed(2)}</span>
+              )}
+              {lowestPrice > 0 && <span>${(lowestPrice / 100).toFixed(2)}</span>}
+            </span>
           </button>
         </div>
       </div>

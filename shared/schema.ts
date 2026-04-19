@@ -66,6 +66,7 @@ export const variants = pgTable("variants", {
   productId: integer("product_id").notNull().references(() => products.id),
   name: text("name").notNull(),
   price: integer("price").notNull(), // in cents
+  comparePrice: integer("compare_price"), // original/crossed-out price in cents (optional)
   minQuantity: integer("min_quantity").default(1).notNull(),
 });
 

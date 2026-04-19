@@ -102,6 +102,9 @@ export default function ProductDetailPage() {
                       className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5"
                     >
                       <span className={`font-bold ${outOfStock ? "text-white/30" : "text-white"}`}>
+                        {v.comparePrice && v.comparePrice > v.price && (
+                          <span className="line-through text-white/40 font-normal mr-1">${(v.comparePrice / 100).toFixed(2)}</span>
+                        )}
                         ${(v.price / 100).toFixed(2)} — {v.name}
                         {outOfStock && <span className="ml-2 text-red-400 font-normal">(not in stock)</span>}
                       </span>
