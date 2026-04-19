@@ -276,44 +276,44 @@ export class DatabaseStorage implements IStorage {
     await db.delete(stockItems).where(eq(stockItems.id, id));
   }
 
-  // Reserve stock for immediate (wallet) purchase — marks as sold right away
+  // Reserve stock for immediate (wallet) purchase — marks as sold right away.
+  // Uses a single atomic UPDATE with subquery to avoid race conditions.
   async reserveStockItem(variantId: number): Promise<StockItem | undefined> {
-    const [item] = await db
-      .select()
-      .from(stockItems)
-      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)))
-      .orderBy(sql`RANDOM()`)
-      .limit(1);
-
-    if (item) {
-      const [updated] = await db
-        .update(stockItems)
-        .set({ isSold: true })
-        .where(eq(stockItems.id, item.id))
-        .returning();
-      return updated;
-    }
-    return undefined;
+    const result = await db.execute(sql`
+      UPDATE stock_items
+      SET is_sold = true
+      WHERE id = (
+        SELECT id FROM stock_items
+        WHERE variant_id = ${variantId}
+          AND is_sold = false
+          AND is_reserved = false
+        ORDER BY id
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING *
+    `);
+    return result.rows[0] as StockItem | undefined;
   }
 
-  // Hold stock for a pending order (CashApp/Crypto) — marks as reserved but not sold yet
+  // Hold stock for a pending order (CashApp/Crypto) — marks as reserved but not sold yet.
+  // Uses a single atomic UPDATE with subquery to avoid race conditions.
   async holdStockItem(variantId: number, orderId: number): Promise<StockItem | undefined> {
-    const [item] = await db
-      .select()
-      .from(stockItems)
-      .where(and(eq(stockItems.variantId, variantId), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)))
-      .orderBy(sql`RANDOM()`)
-      .limit(1);
-
-    if (item) {
-      const [updated] = await db
-        .update(stockItems)
-        .set({ isReserved: true, orderId })
-        .where(eq(stockItems.id, item.id))
-        .returning();
-      return updated;
-    }
-    return undefined;
+    const result = await db.execute(sql`
+      UPDATE stock_items
+      SET is_reserved = true, order_id = ${orderId}
+      WHERE id = (
+        SELECT id FROM stock_items
+        WHERE variant_id = ${variantId}
+          AND is_sold = false
+          AND is_reserved = false
+        ORDER BY id
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING *
+    `);
+    return result.rows[0] as StockItem | undefined;
   }
 
   // Release held stock back to available (e.g. when order marked unpaid or cancelled)
@@ -325,52 +325,96 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = [], discountCodeId?: number | null): Promise<Order> {
-    let total = 0;
-    const reservedStockItems: { variantId: number, stockItemId: number, price: number }[] = [];
-    const cardPurchases: { cardId: number, price: number }[] = [];
+    // ── Step 1: Calculate totals and validate BEFORE touching any stock ──
+    let rawTotal = 0;
+    const variantMap: Record<number, typeof variants.$inferSelect> = {};
 
     for (const item of items) {
       const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
       if (!variant) throw new Error("Variant not found");
-      
-      total += variant.price * item.quantity;
-
-      for (let i = 0; i < item.quantity; i++) {
-        const stockItem = await this.reserveStockItem(item.variantId);
-        if (!stockItem) throw new Error(`Insufficient stock for ${variant.name}`);
-        reservedStockItems.push({ variantId: item.variantId, stockItemId: stockItem.id, price: variant.price });
-      }
+      variantMap[item.variantId] = variant;
+      rawTotal += variant.price * item.quantity;
     }
 
+    const cardMap: Record<number, typeof cards.$inferSelect> = {};
     for (const cardId of cardIds) {
       const [card] = await db.select().from(cards).where(eq(cards.id, cardId));
       if (!card) throw new Error("Card not found");
       if (card.isSold) throw new Error("Card already sold");
-      total += card.price;
-      cardPurchases.push({ cardId: card.id, price: card.price });
+      cardMap[cardId] = card;
+      rawTotal += card.price;
     }
 
-    // Apply discount code if provided
-    let discountAmount = 0;
+    // Apply discount code
+    let total = rawTotal;
+    let discountApplied = false;
+    let activeDiscount: typeof discountCodes.$inferSelect | null = null;
     if (discountCodeId) {
       const [dc] = await db.select().from(discountCodes).where(eq(discountCodes.id, discountCodeId));
       if (dc && dc.isActive && !(dc.maxUses !== null && dc.usedCount >= dc.maxUses) && !(dc.expiresAt && new Date(dc.expiresAt) < new Date())) {
-        discountAmount = dc.type === "percent"
-          ? Math.round(total * dc.value / 100)
-          : Math.min(dc.value, total);
-        total = Math.max(0, total - discountAmount);
-        // Increment usage count
-        await db.update(discountCodes).set({ usedCount: dc.usedCount + 1 }).where(eq(discountCodes.id, dc.id));
+        const discountAmount = dc.type === "percent"
+          ? Math.round(rawTotal * dc.value / 100)
+          : Math.min(dc.value, rawTotal);
+        total = Math.max(0, rawTotal - discountAmount);
+        activeDiscount = dc;
+        discountApplied = true;
       }
     }
 
     if (total < 100) throw new Error("Order total must be at least $1.00");
 
+    // Check balance BEFORE consuming any stock
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user || user.balance < total) throw new Error("Insufficient balance");
 
+    // ── Step 2: Reserve stock atomically ──
+    const reservedStockItems: { variantId: number, stockItemId: number, price: number, content: string }[] = [];
+
+    try {
+      for (const item of items) {
+        const variant = variantMap[item.variantId];
+        for (let i = 0; i < item.quantity; i++) {
+          const stockItem = await this.reserveStockItem(item.variantId);
+          if (!stockItem) {
+            throw new Error(`Out of stock: ${variant.name}`);
+          }
+          reservedStockItems.push({
+            variantId: item.variantId,
+            stockItemId: stockItem.id,
+            price: variant.price,
+            content: (stockItem as any).content ?? "",
+          });
+        }
+      }
+    } catch (err) {
+      // Release any stock we already reserved before re-throwing
+      for (const res of reservedStockItems) {
+        await db.update(stockItems)
+          .set({ isSold: false })
+          .where(eq(stockItems.id, res.stockItemId));
+      }
+      throw err;
+    }
+
+    // ── Step 3: Deduct balance and create the order ──
     await this.updateUserBalance(userId, -total);
     await this.createTransaction(userId, -total, "purchase", `Order purchase`);
+
+    // Increment discount code usage
+    if (discountApplied && activeDiscount) {
+      await db.update(discountCodes).set({ usedCount: activeDiscount.usedCount + 1 }).where(eq(discountCodes.id, activeDiscount.id));
+    }
+
+    // Build delivery content from reserved stock
+    const deliveryParts: Record<string, string[]> = {};
+    for (const res of reservedStockItems) {
+      const key = String(res.variantId);
+      if (!deliveryParts[key]) deliveryParts[key] = [];
+      deliveryParts[key].push(res.content);
+    }
+    const deliveryContent = JSON.stringify(
+      Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
+    );
 
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
@@ -378,7 +422,8 @@ export class DatabaseStorage implements IStorage {
       orderId: publicOrderId,
       total,
       paidAmount: total,
-      status: "fulfilled"
+      status: "delivering",
+      deliveryContent,
     }).returning();
 
     for (const res of reservedStockItems) {
@@ -391,7 +436,6 @@ export class DatabaseStorage implements IStorage {
         price: res.price,
         quantity: 1
       });
-      
       await db.update(stockItems).set({ orderId: order.id }).where(eq(stockItems.id, res.stockItemId));
     }
 
@@ -436,16 +480,25 @@ export class DatabaseStorage implements IStorage {
       status: "pending"
     }).returning();
 
-    // Hold one stock item per unit ordered
-    for (const item of items) {
-      const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
-      if (!variant) continue;
+    // Hold one stock item per unit ordered — release everything and cancel the order if any hold fails
+    const variantCache: Record<number, typeof variants.$inferSelect> = {};
+    try {
+      for (const item of items) {
+        const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
+        if (!variant) throw new Error("Variant not found");
+        variantCache[item.variantId] = variant;
 
-      for (let i = 0; i < item.quantity; i++) {
-        const held = await this.holdStockItem(item.variantId, order.id);
-        if (!held) throw new Error(`Could not reserve stock for ${variant.name}`);
-        heldItems.push({ variantId: item.variantId, stockItemId: held.id, price: variant.price, quantity: 1 });
+        for (let i = 0; i < item.quantity; i++) {
+          const held = await this.holdStockItem(item.variantId, order.id);
+          if (!held) throw new Error(`Out of stock: ${variant.name}`);
+          heldItems.push({ variantId: item.variantId, stockItemId: held.id, price: variant.price, quantity: 1 });
+        }
       }
+    } catch (err) {
+      // Release any stock we already held and delete the skeleton order
+      await this.releaseHeldStock(order.id);
+      await db.delete(orders).where(eq(orders.id, order.id));
+      throw err;
     }
 
     // Create one order item per held stock item (each unit gets its own row)
