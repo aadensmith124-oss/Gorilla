@@ -337,12 +337,14 @@ export class DatabaseStorage implements IStorage {
     }
 
     const cardMap: Record<number, typeof cards.$inferSelect> = {};
+    const cardPurchases: { cardId: number; price: number }[] = [];
     for (const cardId of cardIds) {
       const [card] = await db.select().from(cards).where(eq(cards.id, cardId));
       if (!card) throw new Error("Card not found");
       if (card.isSold) throw new Error("Card already sold");
       cardMap[cardId] = card;
       rawTotal += card.price;
+      cardPurchases.push({ cardId, price: card.price });
     }
 
     // Apply discount code
@@ -415,7 +417,6 @@ export class DatabaseStorage implements IStorage {
     const deliveryContent = JSON.stringify(
       Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
     );
-
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
       userId,
