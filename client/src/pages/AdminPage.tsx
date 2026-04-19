@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,8 +28,7 @@ const adminSections = [
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "users", label: "Users" },
-  { id: "codes", label: "Redeem Codes" },
-  { id: "discount-codes", label: "Discount Codes" },
+  { id: "codes", label: "Codes" },
   { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
 ];
@@ -103,7 +102,6 @@ export default function AdminPage() {
           {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "codes" && <CodesSection />}
-          {activeSection === "discount-codes" && <DiscountCodesSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
@@ -1177,12 +1175,15 @@ function UsersSection() {
 
 function CodesSection() {
   const { toast } = useToast();
+  const [tab, setTab] = useState<"balance" | "discount">("balance");
+
+  // Balance codes state
   const [amount, setAmount] = useState("");
   const [count, setCount] = useState("1");
   const [generated, setGenerated] = useState<string[]>([]);
   const qc = useQueryClient();
 
-  const { data: codes, isLoading } = useQuery<any[]>({
+  const { data: balanceCodes, isLoading: balanceLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/codes"],
   });
 
@@ -1208,130 +1209,27 @@ function CodesSection() {
     toast({ title: "Copied all codes" });
   };
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Redeem Codes</h1>
+  // Discount codes state
+  const [dForm, setDForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
+  const { data: discountList = [] } = useQuery<any[]>({ queryKey: ["/api/admin/discount-codes"] });
 
-      {/* Generate */}
-      <Card className="bg-[#0f1115] border-white/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Generate Codes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Balance Amount ($)</p>
-              <Input
-                type="number" step="0.01" min="0.01" placeholder="5.00"
-                value={amount} onChange={e => setAmount(e.target.value)}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Quantity (max 100)</p>
-              <Input
-                type="number" min="1" max="100" placeholder="1"
-                value={count} onChange={e => setCount(e.target.value)}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-          </div>
-          <Button className="w-full gap-2" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
-            {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Generate
-          </Button>
-
-          {generated.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-white/50">Generated codes</p>
-                <button onClick={copyAll} className="text-xs text-primary hover:opacity-80 transition-opacity">Copy All</button>
-              </div>
-              <div className="bg-black/40 border border-white/10 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
-                {generated.map((c) => (
-                  <div key={c} className="flex items-center justify-between group">
-                    <span className="text-xs font-mono text-green-400">{c}</span>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(c); toast({ title: "Copied" }); }}
-                      className="text-[10px] text-white/30 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
-                    >Copy</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Code list */}
-      <Card className="bg-[#0f1115] border-white/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">All Codes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-          ) : !codes?.length ? (
-            <p className="text-xs text-white/40 text-center py-8">No codes generated yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/5">
-                    <TableHead className="text-xs text-white/40">Code</TableHead>
-                    <TableHead className="text-xs text-white/40">Amount</TableHead>
-                    <TableHead className="text-xs text-white/40">Status</TableHead>
-                    <TableHead className="text-xs text-white/40">Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {codes.map((c: any) => (
-                    <TableRow key={c.id} className="border-white/5">
-                      <TableCell className="font-mono text-xs">{c.code}</TableCell>
-                      <TableCell className="text-xs text-green-400 font-bold">${(c.amount / 100).toFixed(2)}</TableCell>
-                      <TableCell>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.isUsed ? "bg-white/5 text-white/30" : "bg-green-500/20 text-green-400"}`}>
-                          {c.isUsed ? "Used" : "Available"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-white/30">
-                        {new Date(c.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function DiscountCodesSection() {
-  const { toast } = useToast();
-  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
-
-  const { data: codes = [] } = useQuery<any[]>({ queryKey: ["/api/admin/discount-codes"] });
-
-  const createMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/admin/discount-codes", form),
+  const createDiscountMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/discount-codes", dForm),
     onSuccess: () => {
       toast({ title: "Discount code created" });
-      setForm({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
+      setDForm({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expiresAt: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const toggleMutation = useMutation({
+  const toggleDiscountMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
       apiRequest("PATCH", `/api/admin/discount-codes/${id}`, { isActive }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] }),
   });
 
-  const deleteMutation = useMutation({
+  const deleteDiscountMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/discount-codes/${id}`, {}),
     onSuccess: () => {
       toast({ title: "Code deleted" });
@@ -1340,126 +1238,242 @@ function DiscountCodesSection() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Discount Codes</h1>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-semibold">Codes</h1>
 
-      {/* Create form */}
-      <Card className="bg-[#0f1115] border-white/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Create Discount Code</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Code</p>
-              <Input
-                placeholder="SAVE20"
-                value={form.code}
-                onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                className="bg-black/50 border-white/10 h-9 text-sm font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Type</p>
-              <select
-                value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                className="w-full h-9 rounded-md bg-black/50 border border-white/10 text-sm text-white px-2 focus:outline-none"
-              >
-                <option value="percent">Percent (%)</option>
-                <option value="fixed">Fixed ($)</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">{form.type === "percent" ? "Discount %" : "Discount $ Amount"}</p>
-              <Input
-                type="number" min="0" step={form.type === "percent" ? "1" : "0.01"} placeholder={form.type === "percent" ? "20" : "5.00"}
-                value={form.value}
-                onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Min. Order $ (optional)</p>
-              <Input
-                type="number" min="0" step="0.01" placeholder="0.00"
-                value={form.minOrder}
-                onChange={e => setForm(f => ({ ...f, minOrder: e.target.value }))}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Max Uses (optional)</p>
-              <Input
-                type="number" min="1" placeholder="Unlimited"
-                value={form.maxUses}
-                onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-white/50">Expires At (optional)</p>
-              <Input
-                type="datetime-local"
-                value={form.expiresAt}
-                onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
-                className="bg-black/50 border-white/10 h-9 text-sm"
-              />
-            </div>
-          </div>
-          <Button className="w-full gap-2" onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Create Code
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Tab toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("balance")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            tab === "balance"
+              ? "bg-primary text-black"
+              : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+          data-testid="tab-balance-codes"
+        >
+          <Gift className="h-4 w-4" />
+          Balance Codes
+        </button>
+        <button
+          onClick={() => setTab("discount")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            tab === "discount"
+              ? "bg-primary text-black"
+              : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+          data-testid="tab-discount-codes"
+        >
+          <Tag className="h-4 w-4" />
+          Discount Codes
+        </button>
+      </div>
 
-      {/* Existing codes */}
-      <Card className="bg-[#0f1115] border-white/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">All Discount Codes ({codes.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {codes.length === 0 ? (
-            <p className="text-sm text-white/30 text-center py-6">No codes yet</p>
-          ) : (
-            <div className="space-y-2">
-              {codes.map((dc: any) => (
-                <div key={dc.id} className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg px-3 py-2.5">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-bold text-white font-mono">{dc.code}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
-                        {dc.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-white/40">
-                      {dc.type === "percent" ? `${dc.value}% off` : `$${(dc.value / 100).toFixed(2)} off`}
-                      {dc.minOrder > 0 && ` · min $${(dc.minOrder / 100).toFixed(2)}`}
-                      {` · ${dc.usedCount}/${dc.maxUses ?? "∞"} uses`}
-                      {dc.expiresAt && ` · expires ${new Date(dc.expiresAt).toLocaleDateString()}`}
-                    </p>
+      {/* ── BALANCE CODES TAB ── */}
+      {tab === "balance" && (
+        <>
+          <Card className="bg-[#0f1115] border-white/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Create Balance Code</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Amount ($)</p>
+                  <Input
+                    type="number" step="0.01" min="0.01" placeholder="e.g. 10.00"
+                    value={amount} onChange={e => setAmount(e.target.value)}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Quantity (max 100)</p>
+                  <Input
+                    type="number" min="1" max="100" placeholder="1"
+                    value={count} onChange={e => setCount(e.target.value)}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <Button className="w-full gap-2" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+                {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Create Code
+              </Button>
+
+              {generated.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-white/50">Generated codes</p>
+                    <button onClick={copyAll} className="text-xs text-primary hover:opacity-80 transition-opacity">Copy All</button>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => toggleMutation.mutate({ id: dc.id, isActive: !dc.isActive })}
-                      className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${dc.isActive ? "border-white/20 text-white/60 hover:bg-white/5" : "border-primary/30 text-primary hover:bg-primary/10"}`}
-                    >
-                      {dc.isActive ? "Disable" : "Enable"}
-                    </button>
-                    <button
-                      onClick={() => deleteMutation.mutate(dc.id)}
-                      className="px-2 py-1 rounded text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                    >
-                      Delete
-                    </button>
+                  <div className="bg-black/40 border border-white/10 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
+                    {generated.map((c) => (
+                      <div key={c} className="flex items-center justify-between group">
+                        <span className="text-xs font-mono text-green-400">{c}</span>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(c); toast({ title: "Copied" }); }}
+                          className="text-[10px] text-white/30 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                        >Copy</button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#0f1115] border-white/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Balance Codes ({balanceCodes?.length ?? 0})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {balanceLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+              ) : !balanceCodes?.length ? (
+                <p className="text-xs text-white/40 text-center py-8">No codes generated yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {balanceCodes.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between bg-black/40 border border-white/5 rounded-lg px-3 py-2.5">
+                      <div>
+                        <p className="text-sm font-bold text-white font-mono">{c.code}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs font-bold text-green-400">${(c.amount / 100).toFixed(2)}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-white/5 text-white/30" : "bg-green-500/20 text-green-400"}`}>
+                            {c.isUsed ? "Used" : "Available"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-white/30">{new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* ── DISCOUNT CODES TAB ── */}
+      {tab === "discount" && (
+        <>
+          <Card className="bg-[#0f1115] border-white/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Create Discount Code</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Code</p>
+                  <Input
+                    placeholder="SAVE20"
+                    value={dForm.code}
+                    onChange={e => setDForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                    className="bg-black/50 border-white/10 h-9 text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Type</p>
+                  <select
+                    value={dForm.type}
+                    onChange={e => setDForm(f => ({ ...f, type: e.target.value }))}
+                    className="w-full h-9 rounded-md bg-black/50 border border-white/10 text-sm text-white px-2 focus:outline-none"
+                  >
+                    <option value="percent">Percent (%)</option>
+                    <option value="fixed">Fixed ($)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">{dForm.type === "percent" ? "Discount %" : "Discount $ Amount"}</p>
+                  <Input
+                    type="number" min="0" step={dForm.type === "percent" ? "1" : "0.01"} placeholder={dForm.type === "percent" ? "20" : "5.00"}
+                    value={dForm.value}
+                    onChange={e => setDForm(f => ({ ...f, value: e.target.value }))}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Min. Order $ (optional)</p>
+                  <Input
+                    type="number" min="0" step="0.01" placeholder="0.00"
+                    value={dForm.minOrder}
+                    onChange={e => setDForm(f => ({ ...f, minOrder: e.target.value }))}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Max Uses (optional)</p>
+                  <Input
+                    type="number" min="1" placeholder="Unlimited"
+                    value={dForm.maxUses}
+                    onChange={e => setDForm(f => ({ ...f, maxUses: e.target.value }))}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-white/50">Expires At (optional)</p>
+                  <Input
+                    type="datetime-local"
+                    value={dForm.expiresAt}
+                    onChange={e => setDForm(f => ({ ...f, expiresAt: e.target.value }))}
+                    className="bg-black/50 border-white/10 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <Button className="w-full gap-2" onClick={() => createDiscountMutation.mutate()} disabled={createDiscountMutation.isPending}>
+                {createDiscountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Create Code
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#0f1115] border-white/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Discount Codes ({discountList.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {discountList.length === 0 ? (
+                <p className="text-sm text-white/30 text-center py-6">No codes yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {discountList.map((dc: any) => (
+                    <div key={dc.id} className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-bold text-white font-mono">{dc.code}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
+                            {dc.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/40">
+                          {dc.type === "percent" ? `${dc.value}% off` : `$${(dc.value / 100).toFixed(2)} off`}
+                          {dc.minOrder > 0 && ` · min $${(dc.minOrder / 100).toFixed(2)}`}
+                          {` · ${dc.usedCount}/${dc.maxUses ?? "∞"} uses`}
+                          {dc.expiresAt && ` · expires ${new Date(dc.expiresAt).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => toggleDiscountMutation.mutate({ id: dc.id, isActive: !dc.isActive })}
+                          className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${dc.isActive ? "border-white/20 text-white/60 hover:bg-white/5" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                        >
+                          {dc.isActive ? "Disable" : "Enable"}
+                        </button>
+                        <button
+                          onClick={() => deleteDiscountMutation.mutate(dc.id)}
+                          className="px-2 py-1 rounded text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
