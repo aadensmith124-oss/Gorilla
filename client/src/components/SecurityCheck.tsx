@@ -1,17 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface SecurityCheckProps {
   onVerified: () => void;
 }
 
 export function SecurityCheck({ onVerified }: SecurityCheckProps) {
+  const [clicked, setClicked] = useState(false);
   const [dots, setDots] = useState(0);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const rayId = useRef(Math.random().toString(36).substring(2, 18).toUpperCase());
+
+  const DOT_COUNT = 8;
 
   useEffect(() => {
+    if (!clicked) return;
+
     const dotInterval = setInterval(() => {
-      setDots((d) => (d + 1) % 8);
+      setDots((d) => (d + 1) % DOT_COUNT);
     }, 200);
 
     const progressInterval = setInterval(() => {
@@ -37,9 +43,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
       clearTimeout(completeTimer);
       clearTimeout(exitTimer);
     };
-  }, [onVerified]);
-
-  const DOT_COUNT = 8;
+  }, [clicked, onVerified]);
 
   return (
     <div
@@ -52,11 +56,13 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
         </p>
 
         <h1 className="text-white text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
-          Performing security<br />verification
+          {clicked ? <>Performing security<br />verification</> : <>Security<br />verification</>}
         </h1>
 
         <p className="text-white/50 text-sm leading-relaxed mb-10 max-w-sm">
-          This website uses a security service to protect against malicious bots and unauthorized access. Please wait while we verify your browser.
+          {clicked
+            ? "This website uses a security service to protect against malicious bots and unauthorized access. Please wait while we verify your browser."
+            : "This website uses a security service to protect against malicious bots. Please verify you are human to continue."}
         </p>
 
         <div
@@ -64,32 +70,60 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
           style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
         >
           <div className="flex items-center gap-4">
-            <div className="relative w-9 h-9 flex-shrink-0">
-              {Array.from({ length: DOT_COUNT }).map((_, i) => {
-                const angle = (i / DOT_COUNT) * 2 * Math.PI;
-                const x = 50 + 38 * Math.cos(angle);
-                const y = 50 + 38 * Math.sin(angle);
-                const isActive = done || i === dots || i === (dots + 1) % DOT_COUNT || i === (dots + 2) % DOT_COUNT;
-                return (
+            {!clicked ? (
+              <button
+                onClick={() => setClicked(true)}
+                className="flex items-center gap-3 group cursor-pointer select-none"
+              >
+                <div
+                  className="w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150 group-hover:border-white/60"
+                  style={{ borderColor: "#444", background: "#111" }}
+                >
+                  <div className="w-2.5 h-2.5 rounded-sm opacity-0 group-hover:opacity-30 transition-opacity" style={{ background: "#d4af37" }} />
+                </div>
+                <span className="text-white/80 text-sm font-medium">I am human</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                {done ? (
                   <div
-                    key={i}
-                    className="absolute rounded-full transition-opacity duration-200"
-                    style={{
-                      width: 5,
-                      height: 5,
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      transform: "translate(-50%, -50%)",
-                      background: done ? "#d4af37" : "#4a9eff",
-                      opacity: done ? 1 : isActive ? 1 : 0.2,
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <span className="text-white text-sm font-medium">
-              {done ? "Verification complete" : "Verifying..."}
-            </span>
+                    className="w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0"
+                    style={{ borderColor: "#d4af37", background: "#d4af3722" }}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="#d4af37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="relative w-6 h-6 flex-shrink-0">
+                    {Array.from({ length: DOT_COUNT }).map((_, i) => {
+                      const angle = (i / DOT_COUNT) * 2 * Math.PI;
+                      const x = 50 + 38 * Math.cos(angle);
+                      const y = 50 + 38 * Math.sin(angle);
+                      const isActive = i === dots || i === (dots + 1) % DOT_COUNT || i === (dots + 2) % DOT_COUNT;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute rounded-full transition-opacity duration-200"
+                          style={{
+                            width: 4,
+                            height: 4,
+                            left: `${x}%`,
+                            top: `${y}%`,
+                            transform: "translate(-50%, -50%)",
+                            background: "#4a9eff",
+                            opacity: isActive ? 1 : 0.2,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                <span className="text-white text-sm font-medium">
+                  {done ? "Verification complete" : "Verifying..."}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="text-right flex-shrink-0">
@@ -113,7 +147,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-white/20 text-[11px]">
-          Ray ID: {Math.random().toString(36).substring(2, 18).toUpperCase()} · Protected by RULFSHOP Security
+          Ray ID: {rayId.current} · Protected by RULFSHOP Security
         </p>
       </div>
     </div>
