@@ -169,7 +169,6 @@ function ProductsSection() {
   const variantSchema = z.object({
     name: z.string().min(1, "Name required"),
     price: z.string().min(1, "Price required"),
-    comparePrice: z.string().optional(),
     minQuantity: z.string().default("1"),
   });
 
@@ -185,12 +184,12 @@ function ProductsSection() {
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
     resolver: zodResolver(variantSchema),
-    defaultValues: { name: "", price: "", comparePrice: "", minQuantity: "1" },
+    defaultValues: { name: "", price: "", minQuantity: "1" },
   });
 
   const editVariantForm = useForm<z.infer<typeof variantSchema>>({
     resolver: zodResolver(variantSchema),
-    defaultValues: { name: "", price: "", comparePrice: "", minQuantity: "1" },
+    defaultValues: { name: "", price: "", minQuantity: "1" },
   });
 
   const addMutation = useMutation({
@@ -244,14 +243,13 @@ function ProductsSection() {
         productId,
         name: data.name,
         price: Math.round(parseFloat(data.price) * 100),
-        comparePrice: data.comparePrice ? Math.round(parseFloat(data.comparePrice) * 100) : null,
         minQuantity: parseInt(data.minQuantity) || 1,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      variantForm.reset({ name: "", price: "", comparePrice: "", minQuantity: "1" });
+      variantForm.reset({ name: "", price: "", minQuantity: "1" });
       toast({ title: "Variant added" });
     }
   });
@@ -261,7 +259,6 @@ function ProductsSection() {
       const res = await apiRequest("PATCH", `/api/admin/variants/${id}`, {
         name: data.name,
         price: Math.round(parseFloat(data.price) * 100),
-        comparePrice: data.comparePrice ? Math.round(parseFloat(data.comparePrice) * 100) : null,
         minQuantity: parseInt(data.minQuantity) || 1,
       });
       return res.json();
@@ -480,7 +477,7 @@ function ProductsSection() {
                               onClick={() => {
                                 if (editingVariant === v.id) { setEditingVariant(null); return; }
                                 setEditingVariant(v.id);
-                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), comparePrice: v.comparePrice ? (v.comparePrice / 100).toFixed(2) : "", minQuantity: String(v.minQuantity ?? 1) });
+                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), minQuantity: String(v.minQuantity ?? 1) });
                               }}
                               title="Edit variant"
                             >
@@ -518,14 +515,8 @@ function ProductsSection() {
                                 )} />
                                 <FormField control={editVariantForm.control} name="price" render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel className="text-xs">Sale Price ($)</FormLabel>
+                                    <FormLabel className="text-xs">Price ($)</FormLabel>
                                     <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                                  </FormItem>
-                                )} />
-                                <FormField control={editVariantForm.control} name="comparePrice" render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-xs">Original Price ($) <span className="text-white/30">(optional)</span></FormLabel>
-                                    <FormControl><Input {...field} type="number" step="0.01" placeholder="e.g. 19.99" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                                   </FormItem>
                                 )} />
                                 <div className="col-span-2 flex gap-2">
@@ -565,14 +556,8 @@ function ProductsSection() {
                     )} />
                     <FormField control={variantForm.control} name="price" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Sale Price ($)</FormLabel>
+                        <FormLabel className="text-xs">Price ($)</FormLabel>
                         <FormControl><Input {...field} placeholder="9.99" type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={variantForm.control} name="comparePrice" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Original Price ($) <span className="text-white/30">(optional)</span></FormLabel>
-                        <FormControl><Input {...field} placeholder="19.99" type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
                     <div className="col-span-2">
