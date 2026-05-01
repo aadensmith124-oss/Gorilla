@@ -1,0 +1,212 @@
+TRENT CITY – FULL WEBSITE TEXT STRUCTURE
+GLOBAL (ALL PAGES)
+Top Bar
+Menu (☰)
+Balance: $0.00 [+]
+Cart (icon + item count)
+Profile (dropdown)
+Side Menu
+Main
+Home
+Deposit
+Orders
+Shop
+Logs
+Cards
+Support
+Tickets
+Telegram Channel
+Logout
+1. HOME PAGE
+Header
+TRENT CITY (logo)
+Tagline: “Premium marketplace”
+Main Actions
+Browse Logs
+Browse Cards
+Sections
+Featured Logs
+Featured Cards
+How It Works
+Deposit funds
+Browse products
+Checkout
+2. DEPOSIT PAGE
+Notice Banner
+“Payment issues? Click here”
+Balance Display
+Current Balance: $0.00
+Deposit Form
+Select Method:
+Crypto (5%)
+Chime (15%)
+Select Coin
+Select Network
+Enter Amount (+ / - controls)
+Fee Section
+You send: $XX
+Fee included
+Action
+Create Deposit Invoice
+Deposit History
+Amount
+Method
+Status
+Date
+3. SHOP – LOGS PAGE
+Top Section
+Search bar: “Search logs…”
+Dropdown:
+All Logs
+Filters:
+Price range
+Type
+Availability
+Product Listings
+Each item block:
+LOG TITLE
+Type
+Short description
+Details
+Quality
+Source / Location
+Stock
+Price
+$XX.XX
+Actions
+Add
+Buy $XX.XX
+Expand (▼)
+Expanded View
+Full description
+Additional details
+Preview (if applicable)
+4. SHOP – CARDS PAGE
+Top Section
+Search bar: “Search cards…”
+Dropdown:
+All Cards
+Filters:
+Price
+Format (Digital)
+Product Listings
+Each item block:
+CARD TITLE
+Type: Digital
+Short description
+Details
+Format: Digital
+Availability
+Stock
+Price
+$XX.XX
+Actions
+Add
+Buy $XX.XX
+Expand (▼)
+Expanded View
+Full description
+Delivery info (shown after purchase)
+Bottom Section
+Become Seller (link/button)
+5. BECOME SELLER PAGE
+Title
+Become a Seller
+Requirements
+Have a Clean Background
+We Keep 20% of all your sales
+$10 Monthly
+Action
+Become Seller
+6. CART PAGE
+Cart Items
+Product name
+Quantity
+Price
+Summary
+Subtotal
+Total
+Action
+Checkout
+7. CHECKOUT FLOW
+Review Order
+Items
+Total cost
+Confirm Purchase Button
+On Success
+Deduct balance
+Create order
+Deliver product (if digital)
+8. ORDERS PAGE
+Orders List
+Order ID
+Items
+Total
+Status
+Date
+Statuses
+Pending
+Completed
+Cancelled
+Order Details
+Full item info
+Delivery content (for digital products)
+Timestamp
+9. SUPPORT PAGE
+Tickets List
+Ticket ID
+Subject
+Status
+Date
+Create Ticket
+Subject
+Message
+Submit
+Ticket View
+Conversation thread
+Reply box
+Close ticket
+10. PROFILE PAGE
+User Info
+Username
+Balance
+Settings
+Change password
+Security options
+11. SELLER SYSTEM (USER SIDE)
+Seller Dashboard (after approval)
+Stats
+Seller Balance
+Total Sales
+Total Paid Out
+Seller Products
+Product List
+Title
+Price
+Stock
+Actions
+Add Product
+Edit
+Delete
+Add Product Form
+Title
+Category (Logs / Cards)
+Description
+Price
+Stock
+Upload (for digital products)
+Seller Orders
+Orders for seller products
+Status
+Payout Info
+Current Seller Balance
+Note: “Payouts are processed by admin”
+CORE SYSTEM FLOW (IMPORTANT)
+User deposits → balance updates
+User buys → balance deducted
+Seller earns → goes to Seller Balance
+Platform takes 20% automatically
+Admin handles payouts manually
+When paid:
+Seller balance reduced
+Payout recorded

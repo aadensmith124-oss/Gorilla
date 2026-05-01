@@ -34,9 +34,9 @@ export default function AuthPage() {
       </div>
 
       <div className="z-10 w-full max-w-md space-y-8">
-        <div className="text-center">
-          <img src="/rulf-logo-nobg.png" alt="RULF SHOP" className="h-44 w-auto object-contain mx-auto -mb-12" />
-          <p className="text-muted-foreground text-xs font-bold">Sign in to access the marketplace</p>
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">TRENT <span className="text-primary">HQ</span></h1>
+          <p className="text-muted-foreground text-xs">Sign in to access the marketplace</p>
         </div>
 
         <Card className="border-border bg-card/60 backdrop-blur-xl shadow-2xl">

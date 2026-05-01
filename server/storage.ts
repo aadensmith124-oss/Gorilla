@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
-  type Card, type InsertCard
+  type Card, type InsertCard, type SellerApplication
 } from "@shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
 
@@ -91,6 +91,13 @@ export interface IStorage {
   getPaymentMethodsConfig(): Promise<Record<string, boolean>>;
   getUserCards(userId: number): Promise<Card[]>;
   deleteCard(id: number): Promise<void>;
+
+  // Seller Applications
+  createSellerApplication(userId: number, sellerCode: string): Promise<SellerApplication>;
+  getSellerApplication(userId: number): Promise<SellerApplication | undefined>;
+  getAllSellerApplications(): Promise<(SellerApplication & { username: string })[]>;
+  approveSellerApplication(id: number): Promise<void>;
+  rejectSellerApplication(id: number): Promise<void>;
 
 }
 
@@ -959,6 +966,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async createSellerApplication(userId: number, sellerCode: string): Promise<SellerApplication> {
+    const [app] = await db.insert(sellerApplications).values({ userId, sellerCode, status: "pending" }).returning();
+    return app;
+  }
+
+  async getSellerApplication(userId: number): Promise<SellerApplication | undefined> {
+    const [app] = await db.select().from(sellerApplications).where(eq(sellerApplications.userId, userId));
+    return app;
+  }
+
+  async getAllSellerApplications(): Promise<(SellerApplication & { username: string })[]> {
+    const rows = await db
+      .select({ app: sellerApplications, username: users.username })
+      .from(sellerApplications)
+      .leftJoin(users, eq(sellerApplications.userId, users.id))
+      .orderBy(desc(sellerApplications.createdAt));
+    return rows.map(r => ({ ...r.app, username: r.username ?? "" }));
+  }
+
+  async approveSellerApplication(id: number): Promise<void> {
+    const [app] = await db.select().from(sellerApplications).where(eq(sellerApplications.id, id));
+    if (!app) return;
+    await db.update(sellerApplications).set({ status: "approved" }).where(eq(sellerApplications.id, id));
+    await db.update(users).set({ isSeller: true }).where(eq(users.id, app.userId));
+  }
+
+  async rejectSellerApplication(id: number): Promise<void> {
+    await db.update(sellerApplications).set({ status: "rejected" }).where(eq(sellerApplications.id, id));
   }
 
   async getSetting(key: string, defaultValue: string = ""): Promise<string> {

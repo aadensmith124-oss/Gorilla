@@ -1414,6 +1414,65 @@ export async function registerRoutes(
     }
   });
 
+  // ── Seller Application Routes ─────────────────────────────────────────────
+  app.post("/api/seller/apply", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const existing = await storage.getSellerApplication(userId);
+    if (existing) return res.status(400).json({ error: "Application already submitted", application: existing });
+    const sellerCode = `TRENT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const app = await storage.createSellerApplication(userId, sellerCode);
+    res.json(app);
+  });
+
+  app.get("/api/seller/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    const application = await storage.getSellerApplication(userId);
+    res.json({ isSeller: user?.isSeller ?? false, sellerBalance: user?.sellerBalance ?? 0, totalEarned: user?.totalSellerEarned ?? 0, application });
+  });
+
+  app.get("/api/admin/seller-applications", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const apps = await storage.getAllSellerApplications();
+    res.json(apps);
+  });
+
+  app.post("/api/admin/seller-applications/:id/approve", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    await storage.approveSellerApplication(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.post("/api/admin/seller-applications/:id/reject", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    await storage.rejectSellerApplication(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ── BIN Lookup ───────────────────────────────────────────────────────────
+  app.get("/api/bin/:bin", async (req, res) => {
+    const { bin } = req.params;
+    if (!/^\d{6,8}$/.test(bin)) return res.status(400).json({ error: "Invalid BIN" });
+    try {
+      const r = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
+      if (!r.ok) return res.json({ bin });
+      const data = await r.json() as any;
+      res.json({
+        bin,
+        bank: data.bank?.name ?? null,
+        scheme: data.scheme ?? null,
+        type: data.type ?? null,
+        brand: data.brand ?? null,
+        country: data.country?.name ?? null,
+        countryCode: data.country?.alpha2 ?? null,
+      });
+    } catch {
+      res.json({ bin });
+    }
+  });
+
   // ── Register Telegram webhook on server start ─────────────────────────────
   (async () => {
     const domain = process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();

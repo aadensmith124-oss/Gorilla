@@ -1,9 +1,8 @@
 import { useProducts } from "@/hooks/use-products";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
-import { Loader2, Headset, ShieldX } from "lucide-react";
+import { Loader2, ShieldX } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
@@ -66,40 +65,28 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="space-y-12 pb-20 pt-4">
-      <div className="flex flex-col items-center gap-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-white tracking-tight">RULF <span className="text-primary">SHOP</span></h1>
-          <p className="text-sm text-white/40 mt-1">Best in the game.</p>
-        </div>
+    <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
+      <div className="space-y-1 mb-4">
+        <h1 className="text-xl font-bold text-white">TRENT <span className="text-primary">HQ</span></h1>
+        <p className="text-xs text-white/30">Premium marketplace</p>
+      </div>
 
-        <a
-          href="https://t.me/RULFSUPPORT_BOT"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button size="sm" className="h-10 px-6 font-bold gap-2 rounded-lg bg-primary hover:bg-primary/90 text-black transition-colors shadow-xl shadow-primary/20">
-            <Headset className="h-4 w-4" /> Support
-          </Button>
-        </a>
-
-        <div className="relative w-full max-w-lg px-4">
-          <Input
-            placeholder="Find products..."
-            className="h-12 bg-white/5 border-white/5 text-white placeholder:text-white/20 pl-6 rounded-xl focus-visible:ring-primary/20 text-sm font-medium"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            data-testid="input-search"
-          />
-        </div>
+      <div className="relative">
+        <Input
+          placeholder="Search logs..."
+          className="bg-[#111] border-white/5 text-white placeholder:text-white/25 focus-visible:ring-0 focus-visible:border-white/10"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          data-testid="input-search"
+        />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <p className="text-sm font-bold opacity-50">No products found</p>
+        <div className="text-center py-20 text-white/20 text-sm">
+          No products found
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto w-full">
+        <div className="grid grid-cols-2 gap-2">
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

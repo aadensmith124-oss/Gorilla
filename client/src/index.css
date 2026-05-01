@@ -1,32 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 7%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 7%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 43 89% 50%;
-  --primary-foreground: 0 0% 5%;
-  --secondary: 240 5% 15%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 5% 15%;
-  --muted-foreground: 240 5% 65%;
-  --accent: 43 89% 50%;
-  --accent-foreground: 0 0% 5%;
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 0 72% 45%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 95%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 50%;
+  --accent: 0 72% 45%;
+  --accent-foreground: 0 0% 98%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5% 15%;
-  --input: 240 5% 15%;
-  --ring: 43 89% 50%;
-  --radius: 0.75rem;
+  --border: 0 0% 14%;
+  --input: 0 0% 12%;
+  --ring: 0 72% 45%;
+  --radius: 0.5rem;
   --font-display: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 @layer base {
@@ -37,10 +38,13 @@
 
 @layer components {
   .btn-pro { @apply h-9 px-4 text-xs font-semibold transition-all hover:scale-[0.98] active:scale-[0.95]; }
+  .btn-buy { @apply bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
+  .mono { font-family: var(--font-mono); }
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { @apply bg-transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors; }
 .glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl; }
-.pro-card { @apply bg-[#16181d] border border-white/5 rounded-2xl shadow-2xl; }
+.pro-card { @apply bg-[#111111] border border-white/5 rounded shadow-xl; }
+.item-row { @apply border border-white/5 bg-[#111111] rounded p-3 hover:bg-[#161616] transition-colors; }

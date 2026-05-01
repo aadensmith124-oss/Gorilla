@@ -48,11 +48,11 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex flex-col justify-center px-8 md:px-16"
-      style={{ background: "#000" }}
+      style={{ background: "#0c0c0c" }}
     >
       <div className="max-w-lg">
         <p className="text-white text-2xl font-bold mb-6 tracking-tight opacity-90">
-          rulfshop.com
+          trenthq.com
         </p>
 
         <h1 className="text-white text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
@@ -66,8 +66,8 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
         </p>
 
         <div
-          className="rounded-lg px-5 py-4 flex items-center justify-between"
-          style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
+          className="rounded px-5 py-4 flex items-center justify-between"
+          style={{ background: "#111", border: "1px solid #1e1e1e" }}
         >
           <div className="flex items-center gap-4">
             {!clicked ? (
@@ -77,9 +77,9 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
               >
                 <div
                   className="w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150 group-hover:border-white/60"
-                  style={{ borderColor: "#444", background: "#111" }}
+                  style={{ borderColor: "#333", background: "#0c0c0c" }}
                 >
-                  <div className="w-2.5 h-2.5 rounded-sm opacity-0 group-hover:opacity-30 transition-opacity" style={{ background: "#d4af37" }} />
+                  <div className="w-2.5 h-2.5 rounded-sm opacity-0 group-hover:opacity-30 transition-opacity" style={{ background: "#cc2222" }} />
                 </div>
                 <span className="text-white/80 text-sm font-medium">I am human</span>
               </button>
@@ -88,10 +88,10 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
                 {done ? (
                   <div
                     className="w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0"
-                    style={{ borderColor: "#d4af37", background: "#d4af3722" }}
+                    style={{ borderColor: "#cc2222", background: "#cc222222" }}
                   >
                     <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke="#d4af37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M2 6l3 3 5-5" stroke="#cc2222" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 ) : (
@@ -111,7 +111,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
                             left: `${x}%`,
                             top: `${y}%`,
                             transform: "translate(-50%, -50%)",
-                            background: "#4a9eff",
+                            background: "#cc2222",
                             opacity: isActive ? 1 : 0.2,
                           }}
                         />
@@ -128,7 +128,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
           <div className="text-right flex-shrink-0">
             <p className="text-white/80 text-xs font-bold tracking-widest uppercase">
-              RULF<span className="text-[#d4af37]">SHOP</span>
+              TRENT<span style={{ color: "#cc2222" }}>HQ</span>
             </p>
             <p className="text-white/30 text-[10px] mt-0.5">Security · Protected</p>
           </div>
@@ -139,7 +139,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
             className="h-full rounded-full transition-all duration-300"
             style={{
               width: `${progress}%`,
-              background: done ? "#d4af37" : "#4a9eff",
+              background: done ? "#cc2222" : "#cc2222",
             }}
           />
         </div>
@@ -147,7 +147,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-white/20 text-[11px]">
-          Ray ID: {rayId.current} · Protected by RULFSHOP Security
+          Ray ID: {rayId.current} · Protected by TRENTHQ Security
         </p>
       </div>
     </div>

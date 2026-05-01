@@ -1,10 +1,10 @@
-# RULF.CC — Digital Marketplace
+# TRENT HQ — Digital Marketplace
 
 ## What This Is
 
-A dark-themed digital marketplace for selling digital items (accounts, keys, subscriptions, etc.) with stock-based instant delivery. Built with React + Express + PostgreSQL.
+A dark-themed digital marketplace for selling digital items (logs, cards, accounts) with stock-based instant delivery. Built with React + Express + PostgreSQL.
 
-**Live at:** rulf.cc
+**Live at:** trenthq.com
 
 ---
 

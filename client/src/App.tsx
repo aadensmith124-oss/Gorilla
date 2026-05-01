@@ -12,18 +12,18 @@ import { SecurityCheck } from "@/components/SecurityCheck";
 // Pages
 import AuthPage from "@/pages/AuthPage";
 import ShopPage from "@/pages/ShopPage";
+import CardsPage from "@/pages/CardsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
 import ProfilePage from "@/pages/ProfilePageFix";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
-import GamesPage from "@/pages/GamesPage";
-import DiceGamePage from "@/pages/DiceGamePage";
-import MinesGamePage from "@/pages/MinesGamePage";
-import DailySpinPage from "@/pages/DailySpinPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
-
 import SupportPage from "@/pages/SupportPage";
+import DepositPage from "@/pages/DepositPage";
+import BecomeSellerPage from "@/pages/BecomeSellerPage";
+import SellerDashboardPage from "@/pages/SellerDashboardPage";
+import OrdersPage from "@/pages/OrdersPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -31,7 +31,7 @@ function Router() {
   useForebitPolling();
 
   useEffect(() => {
-    if (!isLoading && !user && location !== "/auth" && location !== "/admin") {
+    if (!isLoading && !user && location !== "/auth") {
       setLocation("/auth");
     }
   }, [user, isLoading, location, setLocation]);
@@ -44,16 +44,18 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/auth" component={AuthPage} />
-        <Route path="/" component={ShopPage} />
+        <Route path="/" component={DepositPage} />
+        <Route path="/deposit" component={DepositPage} />
+        <Route path="/shop" component={ShopPage} />
+        <Route path="/cards" component={CardsPage} />
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
+        <Route path="/orders" component={OrdersPage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
-        <Route path="/games" component={GamesPage} />
-        <Route path="/games/dice" component={DiceGamePage} />
-        <Route path="/games/mines" component={MinesGamePage} />
-        <Route path="/daily-spin" component={DailySpinPage} />
         <Route path="/support" component={SupportPage} />
+        <Route path="/become-seller" component={BecomeSellerPage} />
+        <Route path="/seller" component={SellerDashboardPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

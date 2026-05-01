@@ -15,6 +15,9 @@ export const users = pgTable("users", {
   balance: integer("balance").default(0).notNull(),
   protectedBalance: integer("protected_balance").default(0).notNull(),
   lastDailySpin: timestamp("last_daily_spin"),
+  isSeller: boolean("is_seller").default(false).notNull(),
+  sellerBalance: integer("seller_balance").default(0).notNull(),
+  totalSellerEarned: integer("total_seller_earned").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -358,6 +361,19 @@ export type InsertRedeemCode = z.infer<typeof insertRedeemCodeSchema>;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+
+// === SELLER APPLICATIONS ===
+export const sellerApplications = pgTable("seller_applications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).default("pending").notNull(),
+  sellerCode: text("seller_code").notNull().unique(),
+  note: text("note").default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSellerApplicationSchema = createInsertSchema(sellerApplications).omit({ id: true, status: true, createdAt: true });
+export type SellerApplication = typeof sellerApplications.$inferSelect;
 
 // === SITE SETTINGS ===
 export const siteSettings = pgTable("site_settings", {
