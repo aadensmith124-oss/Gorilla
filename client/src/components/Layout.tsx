@@ -1,10 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, ShoppingCart, Plus, ChevronDown, LogOut, User, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, User, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCart } from "@/hooks/use-cart";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
@@ -15,23 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout, isLoading: isUserLoading } = useAuth();
-  const { items, setUserId } = useCart();
+  const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isUserLoading) {
-      setUserId(user?.id ?? null);
-    }
-  }, [user?.id, isUserLoading]);
 
   const { data: sellerStatus } = useQuery<{ isSeller: boolean; sellerBalance: number; application?: any }>({
     queryKey: ["/api/seller/status"],
     enabled: !!user,
   });
 
-  const cartCount = items.length;
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
 
   const navSections = [
@@ -95,17 +86,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 rounded text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                      className="flex items-center gap-3 px-3 py-2 rounded text-xs text-white/60 hover:text-white hover:bg-white/5 transition-all"
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-3.5 w-3.5" />
                       {item.label}
                     </a>
                   );
                 }
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
-                    <div className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-all cursor-pointer ${isActive ? "bg-primary/20 text-primary font-medium" : "text-white/60 hover:text-white hover:bg-white/5"}`}>
-                      <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                    <div className={`flex items-center gap-3 px-3 py-2 rounded text-xs transition-all cursor-pointer ${isActive ? "bg-primary/20 text-primary font-medium" : "text-white/60 hover:text-white hover:bg-white/5"}`}>
+                      <item.icon className={`h-3.5 w-3.5 ${isActive ? "text-primary" : ""}`} />
                       {item.label}
                     </div>
                   </Link>
@@ -120,10 +111,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-white/5">
           <button
             onClick={() => { logout(); setIsMobileOpen(false); }}
-            className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors w-full"
+            className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors w-full"
           >
-            <LogOut className="h-4 w-4" />
-            log out
+            <LogOut className="h-3.5 w-3.5" />
+            Log out
           </button>
         </div>
       )}
@@ -133,66 +124,60 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#0c0c0c]">
       {/* Top Bar */}
-      <header className="h-12 border-b border-white/5 bg-[#0c0c0c] sticky top-0 z-40 px-3 flex items-center justify-between">
+      <header className="h-11 border-b border-white/5 bg-[#0c0c0c] sticky top-0 z-40 px-3 flex items-center justify-between">
         {/* Left: Hamburger */}
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10 rounded" data-testid="btn-menu">
+            <button className="h-7 w-7 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 rounded transition-colors" data-testid="btn-menu">
               <Menu className="h-4 w-4" />
-            </Button>
+            </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[260px] p-0 border-r border-white/5 bg-[#0e0e0e]">
+          <SheetContent side="left" className="w-[240px] p-0 border-r border-white/5 bg-[#0e0e0e]">
             <NavContent />
           </SheetContent>
         </Sheet>
 
-        {/* Center/Right: Balance + Cart + User */}
+        {/* Right: Balance + User */}
         <div className="flex items-center gap-2">
           {user && (
             <>
               <Link href="/">
-                <button className="flex items-center gap-1.5 border border-white/10 rounded px-2.5 py-1 text-sm font-mono text-white hover:border-white/20 transition-colors" data-testid="btn-balance">
+                <button
+                  className="flex items-center gap-1 border border-white/10 rounded px-2 py-1 text-xs font-mono text-white/80 hover:border-white/20 hover:text-white transition-colors"
+                  data-testid="btn-balance"
+                >
                   <span>${balanceDollars}</span>
-                  <Plus className="h-3 w-3 text-white/50" />
-                </button>
-              </Link>
-
-              <Link href="/cart">
-                <button className="relative flex items-center border border-white/10 rounded px-2.5 py-1.5 text-white/70 hover:border-white/20 hover:text-white transition-colors" data-testid="btn-cart">
-                  <ShoppingCart className="h-4 w-4" />
-                  {cartCount > 0 && (
-                    <span className="ml-1.5 text-xs font-bold text-white">({cartCount})</span>
-                  )}
+                  <Plus className="h-2.5 w-2.5 text-white/40" />
                 </button>
               </Link>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors" data-testid="btn-user-dropdown">
-                    <span className="max-w-[100px] truncate">{user.username}</span>
+                  <button className="flex items-center gap-1 text-xs text-white/60 hover:text-white transition-colors" data-testid="btn-user-dropdown">
+                    <span className="max-w-[80px] truncate">{user.username}</span>
                     <ChevronDown className="h-3 w-3" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#111] border-white/10 text-white" align="end">
+                <DropdownMenuContent className="bg-[#111] border-white/10 text-white text-xs" align="end">
                   <DropdownMenuItem asChild>
                     <Link href="/profile">
-                      <div className="flex items-center gap-2 cursor-pointer w-full">
-                        <User className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs">
+                        <User className="h-3 w-3" />
                         Profile
                       </div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/orders">
-                      <div className="flex items-center gap-2 cursor-pointer w-full">
-                        <Package className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs">
+                        <Package className="h-3 w-3" />
                         Orders
                       </div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={logout} className="text-white/50 hover:text-white cursor-pointer">
-                    <LogOut className="h-3.5 w-3.5 mr-2" />
+                  <DropdownMenuItem onClick={logout} className="text-white/50 hover:text-white cursor-pointer text-xs">
+                    <LogOut className="h-3 w-3 mr-2" />
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>

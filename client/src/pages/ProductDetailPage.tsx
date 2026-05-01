@@ -1,9 +1,10 @@
 import { useProducts } from "@/hooks/use-products";
 import { useRoute, useLocation } from "wouter";
-import { Loader2, Minus, Plus, X, ShoppingCart } from "lucide-react";
+import { Loader2, Minus, Plus, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useCart } from "@/hooks/use-cart";
+import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,6 @@ export default function ProductDetailPage() {
   const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const { addItem } = useCart();
   const { toast } = useToast();
 
   const selectedVariant = product?.variants.find((v: any) => v.id.toString() === selectedVariantId);
@@ -37,27 +37,30 @@ export default function ProductDetailPage() {
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white/50 text-sm">Product not found</div>;
 
-  const handleAddToCart = () => {
-    if (!selectedVariant) {
-      toast({ title: "Select an option first", variant: "destructive" });
-      return;
-    }
-    if (quantity < minQty) {
-      toast({ title: "Minimum quantity", description: `Minimum order is ${minQty}`, variant: "destructive" });
-      return;
-    }
-    addItem({
-      variantId: selectedVariant.id,
-      productId: product.id,
-      productName: product.name,
-      variantName: selectedVariant.name,
-      price: selectedVariant.price,
-      quantity,
-      image: product.image ?? "",
-      minQuantity: minQty,
-    });
-    toast({ title: "Added to cart", description: `${quantity}x ${product.name} (${selectedVariant.name})` });
-  };
+  const purchaseMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedVariant) throw new Error("Select an option first");
+      if (quantity < minQty) throw new Error(`Minimum order is ${minQty}`);
+      const res = await apiRequest("POST", "/api/orders", {
+        items: [{ variantId: selectedVariant.id, quantity }],
+        cardIds: [],
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Purchase failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Purchase complete", description: "Delivered to your orders" });
+      setLocation("/orders");
+    },
+    onError: (e: Error) => {
+      toast({ title: "Purchase failed", description: e.message, variant: "destructive" });
+    },
+  });
 
   return (
     <div className="min-h-screen bg-[#090a0c] flex items-start justify-center p-4 pt-8">
@@ -146,25 +149,14 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Bottom actions */}
-          <div className="flex items-center gap-3 pt-1">
-            <button
-              onClick={handleAddToCart}
-              disabled={!selectedVariantId}
-              className="flex-1 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-black"
-              data-testid="button-add-to-cart"
-            >
-              <ShoppingCart className="h-3.5 w-3.5" />
-              Add To Cart
-            </button>
-
-            <button
-              onClick={() => setLocation("/cart")}
-              className="text-xs text-white/50 hover:text-white transition-colors whitespace-nowrap"
-              data-testid="button-view-cart"
-            >
-              View cart
-            </button>
-          </div>
+          <button
+            onClick={() => purchaseMutation.mutate()}
+            disabled={!selectedVariantId || purchaseMutation.isPending}
+            className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-white"
+            data-testid="button-purchase"
+          >
+            {purchaseMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `Purchase ${totalAmount > 0 ? `$${(totalAmount / 100).toFixed(2)}` : ""}`}
+          </button>
         </div>
       </div>
     </div>

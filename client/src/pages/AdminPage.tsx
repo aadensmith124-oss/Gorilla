@@ -1856,25 +1856,24 @@ function CashAppSection() {
 function AdminCardsSection() {
   const { toast } = useToast();
   const qc = queryClient;
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
+  const [cardContent, setCardContent] = useState("");
   const [price, setPrice] = useState("");
-  const [extras, setExtras] = useState("");
   const [isFirstHand, setIsFirstHand] = useState(false);
 
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
 
+  const extractBin = (num: string) => num.replace(/\D/g, "").substring(0, 6);
+
   const addMutation = useMutation({
     mutationFn: async () => {
-      const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
-      const masked = cardNumber.replace(/\d(?=\d{4})/g, "*");
+      const digits = cardContent.replace(/\D/g, "");
+      const masked = digits.replace(/\d(?=\d{4})/g, "*");
       const res = await apiRequest("POST", "/api/cards", {
-        cardNumber: cardNumber.trim(),
-        maskedCard: masked,
-        expiry: expiry.trim(),
-        cvv: cvv.trim(),
-        extras: extras.trim(),
+        cardNumber: cardContent.trim(),
+        maskedCard: masked || cardContent.substring(0, 4) + "********",
+        expiry: "",
+        cvv: "",
+        extras: "",
         price: Math.round(parseFloat(price) * 100),
         isFirstHand,
       });
@@ -1882,7 +1881,7 @@ function AdminCardsSection() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      setCardNumber(""); setExpiry(""); setCvv(""); setPrice(""); setExtras("");
+      setCardContent(""); setPrice("");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -1899,8 +1898,6 @@ function AdminCardsSection() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const extractBin = (num: string) => num.replace(/\D/g, "").substring(0, 6);
-
   return (
     <div className="space-y-5">
       <h2 className="text-base font-bold text-white">Cards Management</h2>
@@ -1908,41 +1905,24 @@ function AdminCardsSection() {
       {/* Add Card Form */}
       <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
-        <p className="text-xs text-white/30">Enter the full card number — BIN is tracked automatically.</p>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Card Number (full digital content)</label>
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Card Number</label>
           <Input
-            value={cardNumber}
-            onChange={e => setCardNumber(e.target.value)}
+            value={cardContent}
+            onChange={e => setCardContent(e.target.value)}
             placeholder="4111111111111111"
             className="bg-black/50 border-white/10 font-mono"
             data-testid="input-card-number"
           />
-          {cardNumber.length >= 6 && (
-            <p className="text-[10px] text-white/30 font-mono">BIN: {extractBin(cardNumber)}</p>
+          {cardContent.length >= 6 && (
+            <p className="text-[10px] text-white/30 font-mono">BIN: {extractBin(cardContent)}</p>
           )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Expiry</label>
-            <Input value={expiry} onChange={e => setExpiry(e.target.value)} placeholder="MM/YY" className="bg-black/50 border-white/10 font-mono" data-testid="input-card-expiry" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">CVV</label>
-            <Input value={cvv} onChange={e => setCvv(e.target.value)} placeholder="123" className="bg-black/50 border-white/10 font-mono" data-testid="input-card-cvv" />
-          </div>
         </div>
 
         <div className="space-y-1">
           <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
           <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-black/50 border-white/10" data-testid="input-card-price" />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Extras (optional)</label>
-          <Input value={extras} onChange={e => setExtras(e.target.value)} placeholder="DEBIT PREPAID CLASSIC, bank name, etc." className="bg-black/50 border-white/10" data-testid="input-card-extras" />
         </div>
 
         <div className="flex items-center gap-2">
@@ -1952,8 +1932,9 @@ function AdminCardsSection() {
 
         <Button
           onClick={() => addMutation.mutate()}
-          disabled={addMutation.isPending || !cardNumber || !price}
-          className="w-full"
+          disabled={addMutation.isPending || !cardContent || !price}
+          size="sm"
+          className="w-full h-8 text-xs"
           data-testid="btn-add-card"
         >
           {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Card"}

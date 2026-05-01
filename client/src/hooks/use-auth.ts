@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertUser, User } from "@shared/schema";
+import type { User } from "@shared/schema";
 import { z } from "zod";
 
 export function useAuth() {
@@ -26,16 +26,15 @@ export function useAuth() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
-
       if (!res.ok) {
-        if (res.status === 401) throw new Error("Invalid username or password");
-        throw new Error("Login failed");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Invalid email or login code");
       }
       return api.auth.login.responses[200].parse(await res.json());
     },
     onSuccess: (data) => {
       queryClient.setQueryData([api.auth.me.path], data);
-      toast({ title: "Welcome back!", description: `Logged in as ${data.username}` });
+      toast({ title: "Welcome back!" });
     },
     onError: (error: Error) => {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -43,26 +42,20 @@ export function useAuth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: InsertUser) => {
+    mutationFn: async (data: { email: string }) => {
       const res = await fetch(api.auth.register.path, {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       if (!res.ok) {
-        if (res.status === 400) {
-           // Try to parse validation error
-           const err = await res.json();
-           throw new Error(err.message || "Registration failed");
-        }
-        throw new Error("Registration failed");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Registration failed");
       }
-      return api.auth.register.responses[201].parse(await res.json());
+      return res.json() as Promise<User & { loginCode: string }>;
     },
     onSuccess: (data) => {
       queryClient.setQueryData([api.auth.me.path], data);
-      toast({ title: "Account created!", description: `Welcome, ${data.username}!` });
     },
     onError: (error: Error) => {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });
@@ -76,7 +69,7 @@ export function useAuth() {
     },
     onSuccess: () => {
       queryClient.setQueryData([api.auth.me.path], null);
-      queryClient.clear(); // Clear all data
+      queryClient.clear();
       toast({ title: "Logged out" });
     },
   });

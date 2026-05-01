@@ -14,7 +14,6 @@ import AuthPage from "@/pages/AuthPage";
 import ShopPage from "@/pages/ShopPage";
 import CardsPage from "@/pages/CardsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
-import CartPage from "@/pages/CartPage";
 import ProfilePage from "@/pages/ProfilePageFix";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import AdminPage from "@/pages/AdminPage";
@@ -51,7 +50,6 @@ function Router() {
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
-        <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/become-seller" component={BecomeSellerPage} />

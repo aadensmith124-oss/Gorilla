@@ -12,19 +12,28 @@ import { pool, db } from "./db";
 
 const scryptAsync = promisify(scrypt);
 
-// Helper to hash password
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
 
-// Helper to compare password
 export async function comparePassword(supplied: string, stored: string) {
+  if (!stored || !stored.includes(".")) return false;
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+function generateLoginCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  const bytes = randomBytes(12);
+  for (let i = 0; i < 12; i++) {
+    code += chars[bytes[i] % chars.length];
+  }
+  return code;
 }
 
 const loginLimiter = rateLimit({
@@ -74,17 +83,22 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePassword(password, user.password))) {
-          return done(null, false, { message: "Invalid username or password" });
+    new LocalStrategy(
+      { usernameField: "email", passwordField: "loginCode" },
+      async (email, loginCode, done) => {
+        try {
+          const user = await storage.getUserByEmail(email.toLowerCase().trim());
+          if (!user) return done(null, false, { message: "No account found with that email" });
+          if (user.isBanned) return done(null, false, { message: "This account has been suspended" });
+          if (user.loginCode !== loginCode.trim()) {
+            return done(null, false, { message: "Invalid login code" });
+          }
+          return done(null, user);
+        } catch (err) {
+          return done(err);
         }
-        return done(null, user);
-      } catch (err) {
-        return done(err);
       }
-    })
+    )
   );
 
   passport.serializeUser((user, done) => done(null, (user as User).id));
@@ -100,7 +114,7 @@ export function setupAuth(app: Express) {
   app.post("/api/login", loginLimiter, (req, res, next) => {
     passport.authenticate("local", (err: any, user: User, info: any) => {
       if (err) return next(err);
-      if (!user) return res.status(401).json({ message: "Invalid credentials" });
+      if (!user) return res.status(401).json({ message: info?.message || "Invalid credentials" });
       req.login(user, async (err) => {
         if (err) return next(err);
         try {
@@ -114,42 +128,39 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", registerLimiter, async (req, res, next) => {
     try {
-      const { username, password, email } = req.body;
+      const { email } = req.body;
 
-      if (!username || typeof username !== "string" || username.length < 3 || username.length > 32) {
-        return res.status(400).json({ message: "Username must be 3–32 characters." });
+      if (!email || typeof email !== "string" || email.length > 254) {
+        return res.status(400).json({ message: "Valid email is required." });
       }
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        return res.status(400).json({ message: "Username can only contain letters, numbers, and underscores." });
-      }
-      if (!password || typeof password !== "string" || password.length < 6 || password.length > 128) {
-        return res.status(400).json({ message: "Password must be 6–128 characters." });
-      }
-      if (email && (typeof email !== "string" || email.length > 254)) {
-        return res.status(400).json({ message: "Invalid email address." });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: "Invalid email format." });
       }
 
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+      const existing = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (existing) {
+        return res.status(400).json({ message: "An account with this email already exists." });
       }
 
-      const hashedPassword = await hashPassword(password);
-      
+      const loginCode = generateLoginCode();
+      const baseUsername = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").substring(0, 16) || "user";
+      const username = baseUsername + randomBytes(3).toString("hex");
+
       const adminEmails = ["lifeanime886@gmail.com", "erizl9521@gmail.com"];
-      const isAdminEmail = adminEmails.includes(req.body.email?.toLowerCase());
-      
+      const isAdminEmail = adminEmails.includes(email.toLowerCase().trim());
+
       const user = await storage.createUser({
-        username: req.body.username,
-        email: req.body.email,
-        password: hashedPassword,
-        telegramUsername: req.body.telegramUsername || "",
+        username,
+        email: email.toLowerCase().trim(),
+        password: "",
+        loginCode,
+        telegramUsername: "",
         role: isAdminEmail ? "admin" : "user",
       } as any);
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        res.status(201).json({ ...user, loginCode });
       });
     } catch (err) {
       next(err);

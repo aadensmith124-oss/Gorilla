@@ -7,7 +7,8 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password").default("").notNull(),
+  loginCode: text("login_code").default("").notNull(),
   email: text("email").notNull().unique(),
   telegramUsername: text("telegram_username").default("").notNull(),
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
@@ -30,12 +31,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   balance: true,
   protectedBalance: true,
   lastDailySpin: true,
+  password: true,
+  loginCode: true,
 }).extend({
-  telegramUsername: z.string().min(1, "Telegram username is required"),
-  confirmPassword: z.string().min(1, "Please confirm your password")
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+  email: z.string().email("Valid email required"),
 });
 
 // === UPLOADED IMAGES ===
