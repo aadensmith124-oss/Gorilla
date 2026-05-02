@@ -9,7 +9,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 
@@ -845,8 +845,22 @@ export async function registerRoutes(
   // Cards
   app.get("/api/cards", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const cards = await storage.getCards();
-    res.json(cards);
+    const { rows } = await db.execute(sql`
+      SELECT c.id, c.card_number, c.masked_card, c.expiry, c.cvv, c.country, c.extras,
+             c.price, c.is_sold, c.is_first_hand, c.user_id, c.created_at,
+             u.seller_type, u.seller_display_name, u.username as seller_username
+      FROM cards c
+      LEFT JOIN users u ON u.id = c.user_id
+      WHERE c.is_sold = false
+      ORDER BY c.created_at DESC
+    `) as any;
+    res.json(rows.map((r: any) => ({
+      id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
+      expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
+      price: r.price, isSold: r.is_sold, isFirstHand: r.is_first_hand,
+      userId: r.user_id, createdAt: r.created_at,
+      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name, sellerUsername: r.seller_username,
+    })));
   });
 
   app.post("/api/cards", async (req, res) => {
@@ -1430,7 +1444,7 @@ export async function registerRoutes(
     const userId = (req.user as any).id;
     const user = await storage.getUser(userId);
     const application = await storage.getSellerApplication(userId);
-    res.json({ isSeller: user?.isSeller ?? false, sellerBalance: user?.sellerBalance ?? 0, totalEarned: user?.totalSellerEarned ?? 0, application });
+    res.json({ isSeller: user?.isSeller ?? false, sellerBalance: user?.sellerBalance ?? 0, totalEarned: user?.totalSellerEarned ?? 0, sellerType: user?.sellerType ?? "bronze", sellerDisplayName: user?.sellerDisplayName ?? "", application });
   });
 
   app.get("/api/admin/seller-applications", async (req, res) => {
@@ -1449,6 +1463,150 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
     await storage.rejectSellerApplication(Number(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ── Admin Seller Management ───────────────────────────────────────────────
+
+  // Get all active sellers
+  app.get("/api/admin/active-sellers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const { rows } = await db.execute(sql`
+      SELECT u.id, u.username, u.email, u.seller_balance, u.total_seller_earned,
+             u.seller_type, u.seller_display_name, u.created_at,
+             sa.seller_code, sa.id as app_id
+      FROM users u
+      LEFT JOIN seller_applications sa ON sa.user_id = u.id
+      WHERE u.is_seller = true
+      ORDER BY u.total_seller_earned DESC
+    `) as any;
+    res.json(rows.map((r: any) => ({
+      id: r.id, username: r.username, email: r.email,
+      sellerBalance: r.seller_balance, totalEarned: r.total_seller_earned,
+      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name,
+      sellerCode: r.seller_code, appId: r.app_id, createdAt: r.created_at,
+    })));
+  });
+
+  // Get seller detail (cards, stock, transactions)
+  app.get("/api/admin/active-sellers/:userId/detail", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = Number(req.params.userId);
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const [cardsRes, txRes] = await Promise.all([
+      db.execute(sql`SELECT id, masked_card, price, is_sold, created_at FROM cards WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 50`) as any,
+      db.execute(sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 50`) as any,
+    ]);
+    const stockRes = await db.execute(sql`
+      SELECT si.id, si.variant_id, si.is_sold, si.created_at, v.name as variant_name, p.name as product_name
+      FROM stock_items si
+      JOIN variants v ON v.id = si.variant_id
+      JOIN products p ON p.id = v.product_id
+      WHERE si.seller_id = ${userId}
+      ORDER BY si.created_at DESC LIMIT 50
+    `) as any;
+    res.json({
+      user: { id: user.id, username: user.username, sellerBalance: user.sellerBalance, totalEarned: user.totalSellerEarned, sellerType: user.sellerType, sellerDisplayName: user.sellerDisplayName },
+      cards: cardsRes.rows,
+      transactions: txRes.rows,
+      stock: stockRes.rows,
+    });
+  });
+
+  // Set seller type + display name
+  app.patch("/api/admin/active-sellers/:userId/type", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = Number(req.params.userId);
+    const { sellerType, sellerDisplayName } = req.body;
+    await db.update(users).set({ sellerType: sellerType || "bronze", sellerDisplayName: sellerDisplayName || "" }).where(eq(users.id, userId));
+    res.json({ ok: true });
+  });
+
+  // Remove seller
+  app.delete("/api/admin/active-sellers/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = Number(req.params.userId);
+    await db.update(users).set({ isSeller: false } as any).where(eq(users.id, userId));
+    res.json({ ok: true });
+  });
+
+  // Payout seller
+  app.post("/api/admin/active-sellers/:userId/payout", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = Number(req.params.userId);
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (user.sellerBalance <= 0) return res.status(400).json({ error: "No balance to payout" });
+    const amount = user.sellerBalance;
+    await db.update(users).set({ sellerBalance: 0 } as any).where(eq(users.id, userId));
+    await db.insert(transactions).values({ userId, type: "seller_payout", amount, paymentMethod: "manual", status: "completed", reference: `PAYOUT-${Date.now()}` } as any);
+    res.json({ ok: true, amount });
+  });
+
+  // ── Seller Stock / Card Routes ────────────────────────────────────────────
+
+  // Seller add card
+  app.post("/api/seller/cards", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const user = await storage.getUser((req.user as any).id);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const { cardNumber, price } = req.body;
+    if (!cardNumber || !price) return res.status(400).json({ error: "Card number and price required" });
+    const digits = cardNumber.replace(/\D/g, "");
+    const bin = digits.substring(0, 6);
+    let country = "Unknown";
+    try {
+      const r = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
+      if (r.ok) { const d = await r.json() as any; country = d.country?.name || "Unknown"; }
+    } catch {}
+    const masked = digits.replace(/\d(?=\d{4})/g, "*");
+    const card = await storage.createCard({
+      cardNumber: cardNumber.trim(), maskedCard: masked || cardNumber.substring(0, 4) + "****",
+      expiry: "", cvv: "", country, extras: req.body.extras || "", price: Math.round(parseFloat(price) * 100),
+      isFirstHand: req.body.isFirstHand || false, userId: user.id,
+    } as any);
+    res.status(201).json(card);
+  });
+
+  // Seller get their cards
+  app.get("/api/seller/cards", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const { rows } = await db.execute(sql`SELECT * FROM cards WHERE user_id = ${userId} ORDER BY created_at DESC`) as any;
+    res.json(rows);
+  });
+
+  // Seller add stock to existing variant
+  app.post("/api/seller/stock", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const user = await storage.getUser((req.user as any).id);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const { variantId, content } = req.body;
+    if (!variantId || !content) return res.status(400).json({ error: "variantId and content required" });
+    const lines = content.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    let count = 0;
+    for (const line of lines) {
+      await db.insert(stockItems).values({ variantId: Number(variantId), content: line, sellerId: user.id } as any);
+      count++;
+    }
+    res.json({ ok: true, added: count });
+  });
+
+  // Seller get transactions
+  app.get("/api/seller/transactions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const { rows } = await db.execute(sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 100`) as any;
+    res.json(rows);
+  });
+
+  // Get all active products/variants for seller stock adding
+  app.get("/api/seller/products", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const user = await storage.getUser((req.user as any).id);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const prods = await storage.getAllProducts();
+    res.json(prods);
   });
 
   // ── BIN Lookup ───────────────────────────────────────────────────────────

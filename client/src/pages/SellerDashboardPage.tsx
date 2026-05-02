@@ -1,84 +1,283 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Loader2, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { Loader2, Copy, Check, CreditCard, Package, ReceiptText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+type Tab = "overview" | "cards" | "logs" | "transactions";
+
+const SELLER_BADGES: Record<string, string> = {
+  bronze: "🍟",
+  fresh: "🍺",
+  top: "🔥",
+};
 
 export default function SellerDashboardPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const [tab, setTab] = useState<Tab>("overview");
 
   const { data: sellerStatus, isLoading } = useQuery<{
     isSeller: boolean;
     sellerBalance: number;
     totalEarned: number;
-  }>({
-    queryKey: ["/api/seller/status"],
-    enabled: !!user,
-  });
+    application?: any;
+  }>({ queryKey: ["/api/seller/status"], enabled: !!user });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+  if (!sellerStatus?.isSeller) { setLocation("/become-seller"); return null; }
 
-  if (!sellerStatus?.isSeller) {
-    setLocation("/become-seller");
-    return null;
-  }
-
-  const pendingPayout = (sellerStatus.sellerBalance / 100).toFixed(2);
-  const totalEarned = (sellerStatus.totalEarned / 100).toFixed(2);
+  const sellerCode = sellerStatus.application?.sellerCode ?? "—";
+  const sellerType = (sellerStatus as any).sellerType ?? "bronze";
+  const sellerDisplayName = (sellerStatus as any).sellerDisplayName?.trim() || user?.username?.toUpperCase() || "SELLER";
+  const badge = SELLER_BADGES[sellerType] ?? "🍟";
+  const label = `${badge} ${sellerDisplayName} ${badge}`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold text-white">Seller Dashboard</h1>
-        <p className="text-sm text-white/40">Manage your products and track earnings</p>
+    <div className="max-w-xl mx-auto px-3 py-4 space-y-3">
+      {/* Header */}
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-white">{label}</p>
+            <p className="text-[10px] text-white/30 font-mono mt-0.5">Seller Dashboard</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-mono text-white">${(sellerStatus.sellerBalance / 100).toFixed(2)}</p>
+            <p className="text-[10px] text-white/30">pending payout</p>
+          </div>
+        </div>
+        <SellerCodeDisplay code={sellerCode} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-[#111] border border-white/5 rounded p-4 space-y-2">
-          <div className="flex items-center gap-2 text-white/40">
-            <Clock className="h-4 w-4" />
-            <span className="text-[10px] uppercase tracking-widest font-medium">Pending Payout</span>
-          </div>
-          <p className="text-2xl font-mono font-bold text-white">${pendingPayout}</p>
-          <p className="text-[11px] text-white/30">Awaiting admin payout</p>
-        </div>
-        <div className="bg-[#111] border border-white/5 rounded p-4 space-y-2">
-          <div className="flex items-center gap-2 text-white/40">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-[10px] uppercase tracking-widest font-medium">Total Earned</span>
-          </div>
-          <p className="text-2xl font-mono font-bold text-white">${totalEarned}</p>
-          <p className="text-[11px] text-white/30">All time (80% of sales)</p>
-        </div>
+      {/* Tabs */}
+      <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5">
+        {(["overview", "cards", "logs", "transactions"] as Tab[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 text-[10px] font-medium py-1.5 rounded transition-colors capitalize ${tab === t ? "bg-white/10 text-white" : "text-white/30 hover:text-white/60"}`}
+          >
+            {t}
+          </button>
+        ))}
       </div>
 
-      {/* Platform cut info */}
-      <div className="bg-[#111] border border-white/5 rounded p-4 space-y-2">
-        <div className="flex items-center gap-2 text-white/40">
-          <DollarSign className="h-4 w-4" />
-          <span className="text-[10px] uppercase tracking-widest font-medium">Payout Info</span>
-        </div>
-        <p className="text-sm text-white/60 leading-relaxed">
-          You earn <strong className="text-white">80%</strong> of every sale. TRENT HQ keeps 20% as platform fee. 
-          Payouts are processed manually by the admin. Contact <strong className="text-white">@Omzrii</strong> on Telegram to request a payout.
+      {tab === "overview" && <OverviewTab sellerStatus={sellerStatus} />}
+      {tab === "cards" && <AddCardsTab />}
+      {tab === "logs" && <AddLogsTab />}
+      {tab === "transactions" && <TransactionsTab />}
+    </div>
+  );
+}
+
+function SellerCodeDisplay({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-white/30 uppercase tracking-widest">Your Code</span>
+      <span className="font-mono text-xs text-white/80 bg-black/40 border border-white/10 px-2 py-0.5 rounded">{code}</span>
+      <button onClick={copy} className="text-white/30 hover:text-primary transition-colors" data-testid="btn-copy-code">
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </button>
+    </div>
+  );
+}
+
+function OverviewTab({ sellerStatus }: { sellerStatus: any }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest">Pending Payout</p>
+        <p className="text-xl font-mono font-bold text-white mt-1">${(sellerStatus.sellerBalance / 100).toFixed(2)}</p>
+        <p className="text-[10px] text-white/20 mt-0.5">Admin pays out manually</p>
+      </div>
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest">Total Earned</p>
+        <p className="text-xl font-mono font-bold text-white mt-1">${(sellerStatus.totalEarned / 100).toFixed(2)}</p>
+        <p className="text-[10px] text-white/20 mt-0.5">80% of all sales</p>
+      </div>
+      <div className="col-span-2 bg-[#111] border border-white/5 rounded-xl p-3">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1">Payout Info</p>
+        <p className="text-xs text-white/50 leading-relaxed">
+          You earn <span className="text-white font-bold">80%</span> of every sale. Contact <span className="text-primary">@Omzrii</span> on Telegram to request your payout.
         </p>
       </div>
+    </div>
+  );
+}
 
-      {/* Products section - coming soon / placeholder */}
-      <div className="space-y-3">
-        <p className="text-xs font-bold text-white/30 uppercase tracking-widest">Your Products</p>
-        <div className="bg-[#111] border border-white/5 rounded p-8 text-center space-y-2">
-          <p className="text-white/40 text-sm">No products yet.</p>
-          <p className="text-[11px] text-white/20">Contact @Omzrii on Telegram to get your products listed.</p>
+function AddCardsTab() {
+  const { toast } = useToast();
+  const [cardNumber, setCardNumber] = useState("");
+  const [price, setPrice] = useState("");
+  const [extras, setExtras] = useState("");
+  const { data: myCards, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/cards"] });
+
+  const extractBin = (n: string) => n.replace(/\D/g, "").substring(0, 6);
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/seller/cards", { cardNumber: cardNumber.trim(), price, extras });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/cards"] });
+      setCardNumber(""); setPrice(""); setExtras("");
+      toast({ title: "Card added" });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest">Add Card</p>
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Card Number</label>
+          <Input value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="4111111111111111" className="h-8 text-xs bg-black/50 border-white/10 font-mono" data-testid="input-card-number" />
+          {cardNumber.length >= 6 && <p className="text-[9px] text-white/20 font-mono">BIN: {extractBin(cardNumber)}</p>}
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[9px] text-white/30 uppercase tracking-widest">Price ($)</label>
+            <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="h-8 text-xs bg-black/50 border-white/10" data-testid="input-card-price" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] text-white/30 uppercase tracking-widest">Card Type</label>
+            <Input value={extras} onChange={e => setExtras(e.target.value)} placeholder="DEBIT PREPAID" className="h-8 text-xs bg-black/50 border-white/10" data-testid="input-card-extras" />
+          </div>
+        </div>
+        <button
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending || !cardNumber || !price}
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          data-testid="btn-add-card"
+        >
+          {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CreditCard className="h-3 w-3" />Add Card</>}
+        </button>
       </div>
+
+      {/* My Cards */}
+      <p className="text-[9px] text-white/20 uppercase tracking-widest">{(myCards ?? []).length} cards uploaded</p>
+      {isLoading ? <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div> : (
+        <div className="space-y-1">
+          {(myCards ?? []).map((c: any) => (
+            <div key={c.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-mono text-white">{c.masked_card || c.maskedCard}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-mono bg-black/40 border border-white/10 px-1 py-0.5 rounded text-white/40">{extractBin(c.card_number || c.cardNumber || "")}</span>
+                  {(c.country) && <span className="text-[9px] text-white/25">{c.country}</span>}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-mono text-white">${((c.price || 0) / 100).toFixed(2)}</p>
+                <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "available"}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddLogsTab() {
+  const { toast } = useToast();
+  const [variantId, setVariantId] = useState("");
+  const [content, setContent] = useState("");
+  const { data: products, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/products"] });
+
+  const allVariants = (products ?? []).flatMap((p: any) => (p.variants ?? []).map((v: any) => ({ ...v, productName: p.name })));
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/seller/stock", { variantId: Number(variantId), content });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setContent("");
+      toast({ title: `Added ${data.added} stock items` });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest">Add Log Stock</p>
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Select Product Option</label>
+          {isLoading ? <div className="text-xs text-white/30">Loading...</div> : (
+            <Select value={variantId} onValueChange={setVariantId}>
+              <SelectTrigger className="h-8 text-xs bg-black/50 border-white/10" data-testid="select-variant">
+                <SelectValue placeholder="Pick a product option..." />
+              </SelectTrigger>
+              <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
+                {allVariants.map((v: any) => (
+                  <SelectItem key={v.id} value={String(v.id)} className="text-xs">{v.productName} — {v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Stock Content (one item per line)</label>
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            placeholder={"item1\nitem2\nitem3"}
+            rows={6}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none"
+            data-testid="input-stock-content"
+          />
+          <p className="text-[9px] text-white/20">{content.split("\n").filter(l => l.trim()).length} items</p>
+        </div>
+        <button
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending || !variantId || !content.trim()}
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          data-testid="btn-add-stock"
+        >
+          {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Package className="h-3 w-3" />Add Stock</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TransactionsTab() {
+  const { data: txs, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/transactions"] });
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>;
+
+  const list = txs ?? [];
+  return (
+    <div className="space-y-2">
+      <p className="text-[9px] text-white/20 uppercase tracking-widest">{list.length} transactions</p>
+      {list.length === 0 ? (
+        <div className="py-12 text-center text-white/20 text-xs">No transactions yet</div>
+      ) : (
+        list.map((t: any) => (
+          <div key={t.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-white capitalize">{(t.type || "").replace("_", " ")}</p>
+              <p className="text-[9px] text-white/30 font-mono">{new Date(t.created_at || t.createdAt).toLocaleDateString()}</p>
+            </div>
+            <span className={`text-xs font-mono font-bold ${t.type === "seller_payout" ? "text-yellow-400" : "text-green-400"}`}>
+              {t.type === "seller_payout" ? "−" : "+"}${((t.amount || 0) / 100).toFixed(2)}
+            </span>
+          </div>
+        ))
+      )}
     </div>
   );
 }

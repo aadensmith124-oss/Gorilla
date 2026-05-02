@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   isSeller: boolean("is_seller").default(false).notNull(),
   sellerBalance: integer("seller_balance").default(0).notNull(),
   totalSellerEarned: integer("total_seller_earned").default(0).notNull(),
+  sellerType: text("seller_type").default("bronze").notNull(),
+  sellerDisplayName: text("seller_display_name").default("").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card as CardType } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, ChevronDown, ChevronUp, Loader2, Store } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+const SELLER_BADGE: Record<string, string> = {
+  bronze: "🍟",
+  fresh: "🍺",
+  top: "🔥",
+};
+
+function getSellerLabel(card: any): string | null {
+  if (!card.userId) return null;
+  const emoji = SELLER_BADGE[card.sellerType] ?? "🍟";
+  const name = card.sellerDisplayName?.trim() || card.sellerUsername?.toUpperCase() || "SELLER";
+  return `${emoji} ${name} ${emoji}`;
+}
 
 function extractBin(cardNumber: string): string {
   return cardNumber.replace(/\D/g, "").substring(0, 6);
@@ -21,19 +33,22 @@ function BinBadge({ bin }: { bin: string }) {
   });
 
   return (
-    <div className="flex items-center gap-2 text-[11px] text-white/40 font-mono">
+    <div className="flex items-center gap-2 text-[11px] text-white/40 font-mono flex-wrap">
       <span className="bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/60">{bin}</span>
       {binData?.bank && <span>{binData.bank}</span>}
-      {binData?.country && <span className="text-white/30">{binData.country}</span>}
+      {binData?.scheme && <span className="uppercase text-white/25">{binData.scheme}</span>}
+      {binData?.type && <span className="uppercase text-white/25">{binData.type}</span>}
+      {binData?.country && <span className="text-white/25">{binData.country}</span>}
     </div>
   );
 }
 
-function CardRow({ card }: { card: CardType }) {
+function CardRow({ card }: { card: any }) {
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const bin = extractBin(card.cardNumber);
+  const sellerLabel = getSellerLabel(card);
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
@@ -44,7 +59,7 @@ function CardRow({ card }: { card: CardType }) {
       }
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({ title: "Purchase complete", description: "Card delivered to your orders" });
@@ -58,12 +73,17 @@ function CardRow({ card }: { card: CardType }) {
   return (
     <div className="border border-white/5 bg-[#111] rounded mb-2 overflow-hidden">
       <div className="p-3 space-y-2">
+        {/* Seller label (top) */}
+        {sellerLabel && (
+          <p className="text-[10px] font-bold text-white/70 uppercase tracking-wide font-mono">{sellerLabel}</p>
+        )}
+
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-0.5 min-w-0">
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-bold text-white uppercase leading-tight truncate font-mono">{card.maskedCard}</p>
               {card.isFirstHand && (
-                <span className="text-[9px] text-primary font-bold border border-primary/30 px-1 rounded">N</span>
+                <span className="text-[9px] text-primary font-bold border border-primary/30 px-1 rounded flex-shrink-0">N</span>
               )}
             </div>
             {card.extras && <p className="text-[11px] text-white/40 uppercase">{card.extras}</p>}
@@ -72,7 +92,6 @@ function CardRow({ card }: { card: CardType }) {
         </div>
 
         {bin && <BinBadge bin={bin} />}
-        {card.country && <p className="text-[11px] text-white/30">{card.country}</p>}
 
         <div className="flex gap-1.5 mt-2">
           <button
@@ -107,27 +126,35 @@ function CardRow({ card }: { card: CardType }) {
 export default function CardsPage() {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("all");
+  const [sellerFilter, setSellerFilter] = useState("all");
 
-  const { data: cards, isLoading } = useQuery<CardType[]>({
+  const { data: cards, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cards"],
   });
 
   const countries = useMemo(() => {
     if (!cards) return [];
-    return Array.from(new Set(cards.map(c => c.country).filter(Boolean))).sort();
+    return Array.from(new Set(cards.map((c: any) => c.country).filter(Boolean))).sort() as string[];
+  }, [cards]);
+
+  const sellerTypes = useMemo(() => {
+    if (!cards) return [];
+    return Array.from(new Set(cards.filter((c: any) => c.userId).map((c: any) => c.sellerType).filter(Boolean))).sort() as string[];
   }, [cards]);
 
   const filteredCards = useMemo(() => {
     if (!cards) return [];
-    return cards.filter(card => {
+    return cards.filter((card: any) => {
       const matchCountry = countryFilter === "all" || card.country === countryFilter;
+      const matchSeller = sellerFilter === "all" || card.sellerType === sellerFilter;
       const matchSearch = !search
-        || card.maskedCard.toLowerCase().includes(search.toLowerCase())
+        || card.maskedCard?.toLowerCase().includes(search.toLowerCase())
         || card.country?.toLowerCase().includes(search.toLowerCase())
-        || card.cardNumber.startsWith(search);
-      return matchCountry && matchSearch;
+        || card.cardNumber?.startsWith(search)
+        || (card.sellerDisplayName || "").toLowerCase().includes(search.toLowerCase());
+      return matchCountry && matchSearch && matchSeller;
     });
-  }, [cards, countryFilter, search]);
+  }, [cards, countryFilter, search, sellerFilter]);
 
   if (isLoading) {
     return (
@@ -149,7 +176,7 @@ export default function CardsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
         <input
           type="text"
-          placeholder="Search by BIN, country..."
+          placeholder="Search by BIN, country, seller..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-[#111] border border-white/5 rounded py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
@@ -157,25 +184,39 @@ export default function CardsPage() {
         />
       </div>
 
-      {/* Country filter */}
-      <Select value={countryFilter} onValueChange={setCountryFilter}>
-        <SelectTrigger className="w-full bg-[#111] border-white/5 text-white/60 h-9 text-xs" data-testid="select-country">
-          <SelectValue placeholder="All Countries" />
-        </SelectTrigger>
-        <SelectContent className="bg-[#111] border-white/10 text-white">
-          <SelectItem value="all">All Countries</SelectItem>
-          {countries.map(c => (
-            <SelectItem key={c} value={c}>{c}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Filters row */}
+      <div className="flex gap-2">
+        <Select value={countryFilter} onValueChange={setCountryFilter}>
+          <SelectTrigger className="flex-1 bg-[#111] border-white/5 text-white/60 h-8 text-xs" data-testid="select-country">
+            <SelectValue placeholder="All Countries" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
+            <SelectItem value="all">All Countries</SelectItem>
+            {countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {sellerTypes.length > 0 && (
+          <Select value={sellerFilter} onValueChange={setSellerFilter}>
+            <SelectTrigger className="flex-1 bg-[#111] border-white/5 text-white/60 h-8 text-xs" data-testid="select-seller-type">
+              <SelectValue placeholder="All Sellers" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
+              <SelectItem value="all">All Sellers</SelectItem>
+              {sellerTypes.map(s => (
+                <SelectItem key={s} value={s}>{SELLER_BADGE[s] ?? "🍟"} {s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {/* Cards list */}
       <div>
         {filteredCards.length === 0 ? (
           <div className="py-16 text-center text-white/25 text-sm">No cards available</div>
         ) : (
-          filteredCards.map(card => (
+          filteredCards.map((card: any) => (
             <CardRow key={card.id} card={card} />
           ))
         )}
