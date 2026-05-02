@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
-import { z } from "zod";
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -20,7 +19,7 @@ export function useAuth() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: z.infer<typeof api.auth.login.input>) => {
+    mutationFn: async (credentials: { loginCode: string }) => {
       const res = await fetch(api.auth.login.path, {
         method: api.auth.login.method,
         headers: { "Content-Type": "application/json" },
@@ -28,7 +27,7 @@ export function useAuth() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Invalid email or login code");
+        throw new Error(err.message || "Invalid login code");
       }
       return api.auth.login.responses[200].parse(await res.json());
     },
@@ -42,11 +41,11 @@ export function useAuth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { email: string }) => {
+    mutationFn: async (_data: Record<string, never> | {}) => {
       const res = await fetch(api.auth.register.path, {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

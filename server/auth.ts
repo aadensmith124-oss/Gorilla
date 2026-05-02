@@ -6,9 +6,10 @@ import rateLimit from "express-rate-limit";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User, userIps } from "@shared/schema";
+import { User, userIps, users } from "@shared/schema";
 import pgSession from "connect-pg-simple";
 import { pool, db } from "./db";
+import { eq } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
@@ -36,9 +37,13 @@ function generateLoginCode(): string {
   return code;
 }
 
+function generateAnonUsername(): string {
+  return "anon_" + randomBytes(5).toString("hex");
+}
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   message: { message: "Too many login attempts. Try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -47,7 +52,7 @@ const loginLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: { message: "Too many accounts created from this IP. Try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -82,25 +87,6 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    new LocalStrategy(
-      { usernameField: "email", passwordField: "loginCode" },
-      async (email, loginCode, done) => {
-        try {
-          const user = await storage.getUserByEmail(email.toLowerCase().trim());
-          if (!user) return done(null, false, { message: "No account found with that email" });
-          if (user.isBanned) return done(null, false, { message: "This account has been suspended" });
-          if (user.loginCode !== loginCode.trim()) {
-            return done(null, false, { message: "Invalid login code" });
-          }
-          return done(null, user);
-        } catch (err) {
-          return done(err);
-        }
-      }
-    )
-  );
-
   passport.serializeUser((user, done) => done(null, (user as User).id));
   passport.deserializeUser(async (id: number, done) => {
     try {
@@ -111,51 +97,51 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", loginLimiter, (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User, info: any) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info?.message || "Invalid credentials" });
+  // Login with loginCode only
+  app.post("/api/login", loginLimiter, async (req, res, next) => {
+    try {
+      const { loginCode } = req.body;
+      if (!loginCode || typeof loginCode !== "string") {
+        return res.status(400).json({ message: "Login code required" });
+      }
+      const code = loginCode.trim().toUpperCase();
+      if (code.length !== 12) {
+        return res.status(400).json({ message: "Login code must be 12 characters" });
+      }
+
+      // Look up user by loginCode
+      const [user] = await db.select().from(users).where(eq(users.loginCode, code));
+      if (!user) return res.status(401).json({ message: "Invalid login code" });
+      if (user.isBanned) return res.status(401).json({ message: "This account has been suspended" });
+
       req.login(user, async (err) => {
         if (err) return next(err);
         try {
           const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
-          await db.insert(userIps).values({ userId: (user as any).id, ip });
+          await db.insert(userIps).values({ userId: user.id, ip });
         } catch {}
         res.status(200).json(user);
       });
-    })(req, res, next);
+    } catch (err) {
+      next(err);
+    }
   });
 
+  // Register — no email required, auto-generate everything
   app.post("/api/register", registerLimiter, async (req, res, next) => {
     try {
-      const { email } = req.body;
-
-      if (!email || typeof email !== "string" || email.length > 254) {
-        return res.status(400).json({ message: "Valid email is required." });
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ message: "Invalid email format." });
-      }
-
-      const existing = await storage.getUserByEmail(email.toLowerCase().trim());
-      if (existing) {
-        return res.status(400).json({ message: "An account with this email already exists." });
-      }
-
       const loginCode = generateLoginCode();
-      const baseUsername = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").substring(0, 16) || "user";
-      const username = baseUsername + randomBytes(3).toString("hex");
-
-      const adminEmails = ["lifeanime886@gmail.com", "erizl9521@gmail.com"];
-      const isAdminEmail = adminEmails.includes(email.toLowerCase().trim());
+      const username = generateAnonUsername();
+      // Generate a unique internal email so the unique constraint doesn't fail
+      const internalEmail = `${username}@usauhq.fo`;
 
       const user = await storage.createUser({
         username,
-        email: email.toLowerCase().trim(),
+        email: internalEmail,
         password: "",
         loginCode,
         telegramUsername: "",
-        role: isAdminEmail ? "admin" : "user",
+        role: "user",
       } as any);
 
       req.login(user, (err) => {

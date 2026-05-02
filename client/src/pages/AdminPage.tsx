@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag, Copy, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1078,6 +1078,29 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
 }
 
 
+function CopyLoginCode({ code, userId }: { code: string; userId: number }) {
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: "Login code copied!" });
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 font-mono text-xs text-primary/80 hover:text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded px-2 py-0.5 transition-colors"
+      data-testid={`btn-copy-code-${userId}`}
+      title="Copy login code"
+    >
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied!" : code}
+    </button>
+  );
+}
+
 function UsersSection() {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -1132,7 +1155,12 @@ function UsersSection() {
           <CardContent className="space-y-4">
             <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5 text-sm">
               <p className="text-[10px] font-bold text-muted-foreground mb-2">Account</p>
-              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Email</p><p className="text-xs">{selectedUser.email}</p></div>
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">Login Code</p>
+                {selectedUser.loginCode
+                  ? <CopyLoginCode code={selectedUser.loginCode} userId={selectedUser.id} />
+                  : <p className="text-xs text-white/30">—</p>}
+              </div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || '—'}</p></div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Role</p><p className="text-xs capitalize">{selectedUser.role}</p></div>
               <div className="flex justify-between"><p className="text-xs text-muted-foreground">Joined</p><p className="text-xs">{new Date(selectedUser.createdAt).toLocaleDateString()}</p></div>
@@ -1169,15 +1197,18 @@ function UsersSection() {
         {users?.map((user: any) => (
           <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
             onClick={() => setSelectedUser(user)}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-4 flex items-center justify-between gap-3">
+              <div className="space-y-0.5 min-w-0 flex-1" onClick={() => setSelectedUser(user)}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-bold text-sm text-white">{user.username}</p>
                   {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground">{user.email} · @{user.telegramUsername || '—'}</p>
+                <p className="text-xs text-muted-foreground truncate">@{user.telegramUsername || '—'} · {user.role}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+              <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                {user.loginCode && <CopyLoginCode code={user.loginCode} userId={user.id} />}
+                <ChevronRight className="h-4 w-4 text-muted-foreground cursor-pointer" onClick={() => setSelectedUser(user)} />
+              </div>
             </CardContent>
           </Card>
         ))}
