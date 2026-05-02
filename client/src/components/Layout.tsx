@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Zap } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Mail } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -42,7 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "BOT",
       items: [
-        { href: "/email-bomber", icon: Zap, label: "Email Bomber" },
+        { href: "/email-bomber", icon: Mail, label: "Email Bomber" },
       ],
     },
     {
