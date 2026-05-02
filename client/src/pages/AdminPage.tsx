@@ -2314,3 +2314,117 @@ function SellerApplicationsSection() {
     </div>
   );
 }
+
+function SmtpSection() {
+  const { toast } = useToast();
+  const [host, setHost] = useState("smtp.gmail.com");
+  const [port, setPort] = useState("587");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  const { data: smtpData, isLoading } = useQuery({
+    queryKey: ["/api/admin/smtp"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/smtp");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  if (smtpData && !loaded) {
+    setHost(smtpData.smtp_host || "smtp.gmail.com");
+    setPort(smtpData.smtp_port || "587");
+    setEmail(smtpData.smtp_email || "");
+    setLoaded(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const body: any = { smtp_host: host, smtp_port: port, smtp_email: email };
+      if (password) body.smtp_password = password;
+      const res = await apiRequest("POST", "/api/admin/smtp", body);
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "SMTP settings saved!" });
+      setPassword("");
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Email (SMTP)</h1>
+        <p className="text-sm text-muted-foreground mt-1">Configure the sending email for the Email Bomber tool</p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+      ) : (
+        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4 max-w-md">
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">SMTP Host</label>
+            <Input
+              value={host}
+              onChange={e => setHost(e.target.value)}
+              placeholder="smtp.gmail.com"
+              className="bg-black/50 border-white/10"
+              data-testid="input-smtp-host"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">SMTP Port</label>
+            <Input
+              value={port}
+              onChange={e => setPort(e.target.value)}
+              placeholder="587"
+              className="bg-black/50 border-white/10"
+              data-testid="input-smtp-port"
+            />
+            <p className="text-[10px] text-white/20">587 for TLS, 465 for SSL, 25 for plain</p>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">Sender Email</label>
+            <Input
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="youremail@gmail.com"
+              type="email"
+              className="bg-black/50 border-white/10"
+              data-testid="input-smtp-email"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">
+              App Password {smtpData?.has_password && <span className="text-green-400 normal-case">(saved)</span>}
+            </label>
+            <Input
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder={smtpData?.has_password ? "Leave blank to keep current password" : "App password or SMTP password"}
+              type="password"
+              className="bg-black/50 border-white/10"
+              data-testid="input-smtp-password"
+            />
+            <p className="text-[10px] text-white/20">For Gmail: use an App Password, not your account password</p>
+          </div>
+
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !host || !port || !email}
+            className="w-full h-9 text-xs"
+            data-testid="btn-save-smtp"
+          >
+            {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save SMTP Settings"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
