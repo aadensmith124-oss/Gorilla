@@ -23,6 +23,8 @@ import DepositPage from "@/pages/DepositPage";
 import BecomeSellerPage from "@/pages/BecomeSellerPage";
 import SellerDashboardPage from "@/pages/SellerDashboardPage";
 import OrdersPage from "@/pages/OrdersPage";
+import EmailBomberPage from "@/pages/EmailBomberPage";
+import MyCodePage from "@/pages/MyCodePage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -51,9 +53,11 @@ function Router() {
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/my-code" component={MyCodePage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/become-seller" component={BecomeSellerPage} />
         <Route path="/seller" component={SellerDashboardPage} />
+        <Route path="/email-bomber" component={EmailBomberPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

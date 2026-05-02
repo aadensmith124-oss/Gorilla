@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Zap } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +37,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/shop", icon: FileText, label: "Logs" },
         { href: "/cards", icon: CreditCard, label: "Cards" },
+      ],
+    },
+    {
+      label: "BOT",
+      items: [
+        { href: "/email-bomber", icon: Zap, label: "Email Bomber" },
       ],
     },
     {
@@ -159,13 +165,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-[#111] border-white/10 text-white text-xs min-w-[200px]" align="end">
                   <div className="px-3 py-2 border-b border-white/10">
-                    <p className="text-[10px] text-white/30 truncate">{user.email || `${user.username}@usauhq.fo`}</p>
+                    <p className="text-[10px] text-white/30 truncate">{user.username}</p>
                   </div>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
+                    <Link href="/my-code">
                       <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
                         <KeyRound className="h-3 w-3" />
-                        change password
+                        Login Code
                       </div>
                     </Link>
                   </DropdownMenuItem>

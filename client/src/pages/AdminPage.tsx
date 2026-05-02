@@ -33,6 +33,7 @@ const adminSections = [
   { id: "codes", label: "Codes" },
   { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
+  { id: "smtp", label: "Email (SMTP)" },
 ];
 
 export default function AdminPage() {
@@ -108,6 +109,7 @@ export default function AdminPage() {
           {activeSection === "sellers" && <SellerApplicationsSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
+          {activeSection === "smtp" && <SmtpSection />}
         </main>
       </div>
     </div>
@@ -1887,7 +1889,11 @@ function CashAppSection() {
 function AdminCardsSection() {
   const { toast } = useToast();
   const qc = queryClient;
-  const [cardContent, setCardContent] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [country, setCountry] = useState("");
+  const [extras, setExtras] = useState("");
   const [price, setPrice] = useState("");
   const [isFirstHand, setIsFirstHand] = useState(false);
 
@@ -1897,22 +1903,29 @@ function AdminCardsSection() {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const digits = cardContent.replace(/\D/g, "");
-      const masked = digits.replace(/\d(?=\d{4})/g, "*");
+      const digits = cardNumber.replace(/\D/g, "");
+      const masked = digits.length >= 4
+        ? digits.substring(0, 4) + "*".repeat(Math.max(0, digits.length - 8)) + digits.slice(-4)
+        : cardNumber;
       const res = await apiRequest("POST", "/api/cards", {
-        cardNumber: cardContent.trim(),
-        maskedCard: masked || cardContent.substring(0, 4) + "********",
-        expiry: "",
-        cvv: "",
-        extras: "",
+        cardNumber: cardNumber.trim(),
+        maskedCard: masked,
+        expiry: expiry.trim(),
+        cvv: cvv.trim(),
+        country: country.trim().toUpperCase(),
+        extras: extras.trim(),
         price: Math.round(parseFloat(price) * 100),
         isFirstHand,
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to add card");
+      }
       return res.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      setCardContent(""); setPrice("");
+      setCardNumber(""); setExpiry(""); setCvv(""); setCountry(""); setExtras(""); setPrice("");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -1940,20 +1953,77 @@ function AdminCardsSection() {
         <div className="space-y-1">
           <label className="text-[10px] text-white/40 uppercase tracking-widest">Card Number</label>
           <Input
-            value={cardContent}
-            onChange={e => setCardContent(e.target.value)}
+            value={cardNumber}
+            onChange={e => setCardNumber(e.target.value)}
             placeholder="4111111111111111"
             className="bg-black/50 border-white/10 font-mono"
             data-testid="input-card-number"
           />
-          {cardContent.length >= 6 && (
-            <p className="text-[10px] text-white/30 font-mono">BIN: {extractBin(cardContent)}</p>
+          {cardNumber.length >= 6 && (
+            <p className="text-[10px] text-white/30 font-mono">BIN: {extractBin(cardNumber)}</p>
           )}
         </div>
 
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">Expiry (MM/YY)</label>
+            <Input
+              value={expiry}
+              onChange={e => setExpiry(e.target.value)}
+              placeholder="12/26"
+              maxLength={5}
+              className="bg-black/50 border-white/10 font-mono"
+              data-testid="input-card-expiry"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">CVV</label>
+            <Input
+              value={cvv}
+              onChange={e => setCvv(e.target.value)}
+              placeholder="123"
+              maxLength={4}
+              className="bg-black/50 border-white/10 font-mono"
+              data-testid="input-card-cvv"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">Country Code</label>
+            <Input
+              value={country}
+              onChange={e => setCountry(e.target.value.toUpperCase())}
+              placeholder="US"
+              maxLength={3}
+              className="bg-black/50 border-white/10 font-mono"
+              data-testid="input-card-country"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+            <Input
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              placeholder="5.00"
+              type="number"
+              step="0.01"
+              className="bg-black/50 border-white/10"
+              data-testid="input-card-price"
+            />
+          </div>
+        </div>
+
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-black/50 border-white/10" data-testid="input-card-price" />
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Extras (zip, name, address…)</label>
+          <Input
+            value={extras}
+            onChange={e => setExtras(e.target.value)}
+            placeholder="Optional extra info"
+            className="bg-black/50 border-white/10"
+            data-testid="input-card-extras"
+          />
         </div>
 
         <div className="flex items-center gap-2">
@@ -1963,7 +2033,7 @@ function AdminCardsSection() {
 
         <Button
           onClick={() => addMutation.mutate()}
-          disabled={addMutation.isPending || !cardContent || !price}
+          disabled={addMutation.isPending || !cardNumber || !price}
           size="sm"
           className="w-full h-8 text-xs"
           data-testid="btn-add-card"
@@ -1980,15 +2050,18 @@ function AdminCardsSection() {
         ) : (
           (cards ?? []).map((card: any) => (
             <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 min-w-0 flex-1">
                 <p className="text-sm font-mono text-white">{card.maskedCard}</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{extractBin(card.cardNumber)}</span>
+                  {card.expiry && <span className="text-[10px] text-white/30 font-mono">{card.expiry}</span>}
+                  {card.cvv && <span className="text-[10px] text-white/30 font-mono">CVV:{card.cvv}</span>}
                   {card.country && <span className="text-[10px] text-white/30">{card.country}</span>}
-                  {card.isFirstHand && <span className="text-[10px] text-primary">N</span>}
+                  {card.isFirstHand && <span className="text-[10px] text-primary font-bold">1H</span>}
                 </div>
+                {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras}</p>}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0 ml-2">
                 <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
                 <button
                   onClick={() => deleteMutation.mutate(card.id)}
@@ -2174,6 +2247,7 @@ function SellerApplicationsSection() {
                     data-testid={`btn-payout-${selectedSeller.id}`}>
                     {payoutMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Payout"}
                   </button>
+
 
                   {/* Set Type */}
                   <div className="space-y-1.5 pt-1 border-t border-white/5">
