@@ -1,17 +1,32 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ChevronDown, ChevronUp, Loader2, Store } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+const SELLER_DEFAULT_LABEL: Record<string, string> = {
+  bronze: "🍟 BRONZE SELLER 🍟",
+  fresh: "🍺 FRESH SELLER 🍺",
+  top: "🔥 TOP SELLER SPECIAL 🔥",
+};
 const SELLER_BADGE: Record<string, string> = {
   bronze: "🍟",
   fresh: "🍺",
   top: "🔥",
 };
+
+function getSellerLabel(card: any): string | null {
+  if (!card.userId) return null;
+  const type = card.sellerType ?? "bronze";
+  const name = card.sellerDisplayName?.trim();
+  if (name) {
+    const emoji = SELLER_BADGE[type] ?? "🍟";
+    return `${emoji} ${name} ${emoji}`;
+  }
+  return SELLER_DEFAULT_LABEL[type] ?? "🍟 SELLER 🍟";
+}
 
 function extractBin(cardNumber: string): string {
   return (cardNumber ?? "").replace(/\D/g, "").substring(0, 6);
@@ -39,12 +54,7 @@ function CardRow({ card }: { card: any }) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const bin = extractBin(card.cardNumber);
-
-  const emoji = SELLER_BADGE[card.sellerType] ?? null;
-  const displayName = card.sellerDisplayName?.trim() || null;
-  const sellerLabel = card.userId && emoji && displayName
-    ? `${emoji} ${displayName} ${emoji}`
-    : null;
+  const sellerLabel = getSellerLabel(card);
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
@@ -69,14 +79,12 @@ function CardRow({ card }: { card: any }) {
   return (
     <div className="border border-white/8 bg-[#0f0f0f] rounded mb-2 overflow-hidden">
       <div className="px-4 py-3 space-y-1.5">
-        {/* Row 1: Title + price */}
+        {/* Row 1: Seller label + N badge + price */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            {sellerLabel ? (
-              <p className="text-sm font-bold text-white tracking-wide leading-tight font-mono uppercase">{sellerLabel}</p>
-            ) : (
-              <p className="text-sm font-bold text-white font-mono uppercase truncate">{card.maskedCard}</p>
-            )}
+            <p className="text-sm font-bold text-white tracking-wide leading-tight font-mono uppercase">
+              {sellerLabel ?? card.maskedCard}
+            </p>
             {card.isFirstHand && (
               <span className="text-[10px] text-primary font-bold border border-primary/40 px-1 rounded flex-shrink-0">N</span>
             )}
@@ -84,15 +92,10 @@ function CardRow({ card }: { card: any }) {
           <p className="text-sm font-mono font-bold text-white flex-shrink-0">${(card.price / 100).toFixed(2)}</p>
         </div>
 
-        {/* Row 2: Card type / extras */}
-        {card.extras && (
-          <p className="text-[11px] text-white/35 uppercase tracking-wide">{card.extras}</p>
-        )}
-
-        {/* Row 3: BIN info */}
+        {/* Row 2: BIN info */}
         {bin && <BinInfo bin={bin} />}
 
-        {/* Row 4: Buttons */}
+        {/* Row 3: Buttons */}
         <div className="flex gap-1.5 pt-0.5">
           <button
             onClick={() => purchaseMutation.mutate()}
@@ -113,9 +116,8 @@ function CardRow({ card }: { card: any }) {
 
         {expanded && (
           <div className="pt-2 border-t border-white/5 space-y-1">
-            <p className="text-[11px] text-white/40">Format: Digital</p>
             <p className="text-[11px] text-white/40">Delivery: Instant after purchase</p>
-            <p className="text-[11px] text-white/20 mt-1">Full card content delivered to your orders instantly.</p>
+            <p className="text-[11px] text-white/20">Full card content delivered to your orders.</p>
           </div>
         )}
       </div>
@@ -141,7 +143,6 @@ export default function CardsPage() {
     return cards.filter((card: any) => {
       const matchCountry = countryFilter === "all" || card.country === countryFilter;
       const matchSearch = !search
-        || card.maskedCard?.toLowerCase().includes(search.toLowerCase())
         || card.country?.toLowerCase().includes(search.toLowerCase())
         || card.cardNumber?.startsWith(search)
         || (card.sellerDisplayName || "").toLowerCase().includes(search.toLowerCase());

@@ -132,6 +132,7 @@ function BinResult({ bin }: { bin: string }) {
 function AddCardsTab() {
   const { toast } = useToast();
   const [cardNumber, setCardNumber] = useState("");
+  const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
   const { data: myCards, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/cards"] });
 
@@ -139,13 +140,13 @@ function AddCardsTab() {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/seller/cards", { cardNumber: cardNumber.trim(), price });
+      const res = await apiRequest("POST", "/api/seller/cards", { cardNumber: cardNumber.trim(), extras: fullItem.trim(), price });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/seller/cards"] });
-      setCardNumber(""); setPrice("");
+      setCardNumber(""); setFullItem(""); setPrice("");
       toast({ title: "Card added" });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -160,6 +161,19 @@ function AddCardsTab() {
           <label className="text-[9px] text-white/30 uppercase tracking-widest">Card Number</label>
           <Input value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="4111111111111111" className="h-9 text-xs bg-black/50 border-white/10 font-mono" data-testid="input-card-number" />
           <BinResult bin={bin} />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Full Item</label>
+          <textarea
+            value={fullItem}
+            onChange={e => setFullItem(e.target.value)}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St"}
+            rows={3}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
+            data-testid="input-full-item"
+          />
+          <p className="text-[9px] text-white/20">only shown to buyer after purchase</p>
         </div>
 
         <div className="space-y-1">
@@ -190,7 +204,7 @@ function AddCardsTab() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-mono text-white">${((c.price || 0) / 100).toFixed(2)}</p>
-                  <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "available"}</p>
+                  <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "avail"}</p>
                 </div>
               </div>
             );

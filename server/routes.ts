@@ -1640,8 +1640,8 @@ export async function registerRoutes(
   })();
 
   // Seed Data (if empty)
-  const users = await storage.getDashboardStats();
-  if (users.totalUsers === 0) {
+  const seedStats = await storage.getDashboardStats();
+  if (seedStats.totalUsers === 0) {
     console.log("Seeding database...");
     const { hashPassword } = await import("./auth");
     const adminPass = await hashPassword("admin123");
