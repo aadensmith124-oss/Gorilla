@@ -112,24 +112,40 @@ function OverviewTab({ sellerStatus }: { sellerStatus: any }) {
   );
 }
 
+function BinResult({ bin }: { bin: string }) {
+  const { data, isLoading } = useQuery<{ bin: string; bank?: string; scheme?: string; type?: string; country?: string; countryCode?: string }>({
+    queryKey: [`/api/bin/${bin}`],
+    enabled: bin.length === 6,
+    staleTime: 1000 * 60 * 60,
+  });
+  if (!bin || bin.length < 6) return null;
+  if (isLoading) return <p className="text-[9px] text-white/30 font-mono">looking up BIN...</p>;
+  return (
+    <div className="flex items-center gap-2 font-mono text-[9px] text-white/40">
+      <span className="border border-white/20 px-1.5 py-0.5 rounded text-white/60">{bin}</span>
+      {data?.bank && <span>{data.bank}</span>}
+      {data?.country && <span>{data.country}</span>}
+    </div>
+  );
+}
+
 function AddCardsTab() {
   const { toast } = useToast();
   const [cardNumber, setCardNumber] = useState("");
   const [price, setPrice] = useState("");
-  const [extras, setExtras] = useState("");
   const { data: myCards, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/cards"] });
 
-  const extractBin = (n: string) => n.replace(/\D/g, "").substring(0, 6);
+  const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/seller/cards", { cardNumber: cardNumber.trim(), price, extras });
+      const res = await apiRequest("POST", "/api/seller/cards", { cardNumber: cardNumber.trim(), price });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/seller/cards"] });
-      setCardNumber(""); setPrice(""); setExtras("");
+      setCardNumber(""); setPrice("");
       toast({ title: "Card added" });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -137,23 +153,20 @@ function AddCardsTab() {
 
   return (
     <div className="space-y-3">
-      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2">
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2.5">
         <p className="text-[9px] text-white/30 uppercase tracking-widest">Add Card</p>
+
         <div className="space-y-1">
           <label className="text-[9px] text-white/30 uppercase tracking-widest">Card Number</label>
-          <Input value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="4111111111111111" className="h-8 text-xs bg-black/50 border-white/10 font-mono" data-testid="input-card-number" />
-          {cardNumber.length >= 6 && <p className="text-[9px] text-white/20 font-mono">BIN: {extractBin(cardNumber)}</p>}
+          <Input value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="4111111111111111" className="h-9 text-xs bg-black/50 border-white/10 font-mono" data-testid="input-card-number" />
+          <BinResult bin={bin} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] text-white/30 uppercase tracking-widest">Price ($)</label>
-            <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="h-8 text-xs bg-black/50 border-white/10" data-testid="input-card-price" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[9px] text-white/30 uppercase tracking-widest">Card Type</label>
-            <Input value={extras} onChange={e => setExtras(e.target.value)} placeholder="DEBIT PREPAID" className="h-8 text-xs bg-black/50 border-white/10" data-testid="input-card-extras" />
-          </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="h-9 text-xs bg-black/50 border-white/10" data-testid="input-card-price" />
         </div>
+
         <button
           onClick={() => addMutation.mutate()}
           disabled={addMutation.isPending || !cardNumber || !price}
@@ -164,25 +177,24 @@ function AddCardsTab() {
         </button>
       </div>
 
-      {/* My Cards */}
       <p className="text-[9px] text-white/20 uppercase tracking-widest">{(myCards ?? []).length} cards uploaded</p>
       {isLoading ? <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div> : (
         <div className="space-y-1">
-          {(myCards ?? []).map((c: any) => (
-            <div key={c.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-mono text-white">{c.masked_card || c.maskedCard}</p>
+          {(myCards ?? []).map((c: any) => {
+            const cBin = (c.card_number || c.cardNumber || "").replace(/\D/g, "").substring(0, 6);
+            return (
+              <div key={c.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-mono bg-black/40 border border-white/10 px-1 py-0.5 rounded text-white/40">{extractBin(c.card_number || c.cardNumber || "")}</span>
-                  {(c.country) && <span className="text-[9px] text-white/25">{c.country}</span>}
+                  <span className="text-[9px] font-mono border border-white/15 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
+                  {c.country && <span className="text-[9px] text-white/25">{c.country}</span>}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-mono text-white">${((c.price || 0) / 100).toFixed(2)}</p>
+                  <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "available"}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs font-mono text-white">${((c.price || 0) / 100).toFixed(2)}</p>
-                <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "available"}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
