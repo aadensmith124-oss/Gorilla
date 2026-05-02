@@ -462,7 +462,20 @@ export class DatabaseStorage implements IStorage {
         price: cp.price,
         quantity: 1
       });
+      const originalCard = cardMap[cp.cardId];
+      const originalSellerId = originalCard?.userId;
       await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cp.cardId));
+
+      // Credit seller 80% of sale
+      if (originalSellerId && originalSellerId !== userId) {
+        const sellerCut = Math.floor(cp.price * 0.8);
+        await db.update(users)
+          .set({
+            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
+            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
+          })
+          .where(eq(users.id, originalSellerId));
+      }
     }
 
     return order;

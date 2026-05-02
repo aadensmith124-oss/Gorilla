@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, User, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -154,31 +153,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1 text-xs text-white/60 hover:text-white transition-colors" data-testid="btn-user-dropdown">
-                    <span className="max-w-[80px] truncate">{user.username}</span>
+                    <span className="max-w-[90px] truncate">{user.username}</span>
                     <ChevronDown className="h-3 w-3" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#111] border-white/10 text-white text-xs" align="end">
+                <DropdownMenuContent className="bg-[#111] border-white/10 text-white text-xs min-w-[200px]" align="end">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <p className="text-[10px] text-white/30 truncate">{user.email || `${user.username}@usauhq.fo`}</p>
+                  </div>
                   <DropdownMenuItem asChild>
                     <Link href="/profile">
-                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs">
-                        <User className="h-3 w-3" />
-                        Profile
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders">
-                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs">
-                        <Package className="h-3 w-3" />
-                        Orders
+                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
+                        <KeyRound className="h-3 w-3" />
+                        change password
                       </div>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={logout} className="text-white/50 hover:text-white cursor-pointer text-xs">
+                  <DropdownMenuItem onClick={logout} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
                     <LogOut className="h-3 w-3 mr-2" />
-                    Logout
+                    log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

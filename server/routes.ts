@@ -912,7 +912,21 @@ export async function registerRoutes(
 
       await storage.updateUserBalance(userId, -card.price);
       await storage.createTransaction(userId, -card.price, "purchase", `Purchased card ${card.maskedCard}`);
+
+      // Credit seller 80% of the sale price (if card belongs to a seller)
+      const originalSellerId = card.userId;
       const updatedCard = await storage.purchaseCard(cardId, userId);
+
+      if (originalSellerId && originalSellerId !== userId) {
+        const sellerCut = Math.floor(card.price * 0.8);
+        await db.update(users)
+          .set({
+            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
+            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
+          })
+          .where(eq(users.id, originalSellerId));
+      }
+
       res.json(updatedCard);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
