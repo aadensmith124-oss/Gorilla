@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Loader2, Copy, Check, CreditCard, Package, ReceiptText } from "lucide-react";
+import { Loader2, Copy, Check, CreditCard, Package, ReceiptText, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-type Tab = "overview" | "cards" | "logs" | "transactions";
+type Tab = "overview" | "cards" | "ach" | "logs" | "transactions";
 
 const SELLER_BADGES: Record<string, string> = {
   bronze: "🍟",
@@ -55,8 +55,8 @@ export default function SellerDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5">
-        {(["overview", "cards", "logs", "transactions"] as Tab[]).map(t => (
+      <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5 flex-wrap">
+        {(["overview", "cards", "ach", "logs", "transactions"] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -69,6 +69,7 @@ export default function SellerDashboardPage() {
 
       {tab === "overview" && <OverviewTab sellerStatus={sellerStatus} />}
       {tab === "cards" && <AddCardsTab />}
+      {tab === "ach" && <AddAchTab />}
       {tab === "logs" && <AddLogsTab />}
       {tab === "transactions" && <TransactionsTab />}
     </div>
@@ -215,6 +216,92 @@ function AddCardsTab() {
   );
 }
 
+function AddAchTab() {
+  const { toast } = useToast();
+  const [bankName, setBankName] = useState("");
+  const [balance, setBalance] = useState("");
+  const [fullItem, setFullItem] = useState("");
+  const [price, setPrice] = useState("");
+  const { data: myAchs, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/ach"] });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/seller/ach", { bankName, balance, fullItem, price });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/ach"] });
+      setBankName(""); setBalance(""); setFullItem(""); setPrice("");
+      toast({ title: "ACH added" });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2.5">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest">Add ACH</p>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Bank</label>
+          <Input value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Chase, Wells Fargo..." className="h-9 text-xs bg-black/50 border-white/10" data-testid="input-ach-bank" />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Balance</label>
+          <Input value={balance} onChange={e => setBalance(e.target.value)} placeholder="$5,000 - $10,000" className="h-9 text-xs bg-black/50 border-white/10 font-mono" data-testid="input-ach-balance" />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Full Item</label>
+          <textarea
+            value={fullItem}
+            onChange={e => setFullItem(e.target.value)}
+            placeholder={"routing|account|name|address"}
+            rows={3}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
+            data-testid="input-ach-full-item"
+          />
+          <p className="text-[9px] text-white/20">only shown to buyer after purchase</p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" type="number" step="0.01" className="h-9 text-xs bg-black/50 border-white/10" data-testid="input-ach-price" />
+        </div>
+
+        <button
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending || !bankName || !balance || !fullItem || !price}
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          data-testid="btn-add-ach"
+        >
+          {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Building2 className="h-3 w-3" />Add ACH</>}
+        </button>
+      </div>
+
+      <p className="text-[9px] text-white/20 uppercase tracking-widest">{(myAchs ?? []).length} ACH uploaded</p>
+      {isLoading ? <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div> : (
+        <div className="space-y-1">
+          {(myAchs ?? []).map((a: any) => (
+            <div key={a.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-white">{a.bankName}</p>
+                <p className="text-[9px] text-white/30 font-mono">{a.balance}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-mono text-white">${((a.price || 0) / 100).toFixed(2)}</p>
+                <p className={`text-[9px] ${a.isSold ? "text-green-400" : "text-white/20"}`}>{a.isSold ? "sold" : "avail"}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AddLogsTab() {
   const { toast } = useToast();
   const [variantId, setVariantId] = useState("");
@@ -236,6 +323,8 @@ function AddLogsTab() {
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const itemCount = content.split("\n\n").filter(s => s.trim()).length;
+
   return (
     <div className="space-y-3">
       <div className="bg-[#111] border border-white/5 rounded-xl p-3 space-y-2">
@@ -256,16 +345,16 @@ function AddLogsTab() {
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-[9px] text-white/30 uppercase tracking-widest">Stock Content (one item per line)</label>
+          <label className="text-[9px] text-white/30 uppercase tracking-widest">Stock Content (blank line between items)</label>
           <textarea
             value={content}
             onChange={e => setContent(e.target.value)}
-            placeholder={"item1\nitem2\nitem3"}
-            rows={6}
+            placeholder={"stock1\nD\n\nstock2\n\nstock3"}
+            rows={8}
             className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none"
             data-testid="input-stock-content"
           />
-          <p className="text-[9px] text-white/20">{content.split("\n").filter(l => l.trim()).length} items</p>
+          <p className="text-[9px] text-white/20">{itemCount} item{itemCount !== 1 ? "s" : ""}</p>
         </div>
         <button
           onClick={() => addMutation.mutate()}

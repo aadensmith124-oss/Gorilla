@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
-  type Card, type InsertCard, type SellerApplication
+  type Card, type InsertCard, type SellerApplication, type Ach, type InsertAch
 } from "@shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
 
@@ -85,6 +85,14 @@ export interface IStorage {
   createCard(card: InsertCard): Promise<Card>;
   updateCard(id: number, data: Partial<Card>): Promise<Card>;
   purchaseCard(cardId: number, userId: number): Promise<Card>;
+
+  // ACH
+  getAchs(): Promise<Ach[]>;
+  getAch(id: number): Promise<Ach | undefined>;
+  createAch(ach: InsertAch & { sellerId?: number }): Promise<Ach>;
+  purchaseAch(achId: number): Promise<Ach>;
+  deleteAch(id: number): Promise<void>;
+  getSellerAchs(sellerId: number): Promise<Ach[]>;
 
   // Settings
   getSetting(key: string, defaultValue?: string): Promise<string>;
@@ -1015,6 +1023,33 @@ export class DatabaseStorage implements IStorage {
 
   async rejectSellerApplication(id: number): Promise<void> {
     await db.update(sellerApplications).set({ status: "rejected" }).where(eq(sellerApplications.id, id));
+  }
+
+  async getAchs(): Promise<Ach[]> {
+    return db.select().from(achs).where(eq(achs.isSold, false)).orderBy(desc(achs.createdAt));
+  }
+
+  async getAch(id: number): Promise<Ach | undefined> {
+    const [ach] = await db.select().from(achs).where(eq(achs.id, id));
+    return ach;
+  }
+
+  async createAch(data: InsertAch & { sellerId?: number }): Promise<Ach> {
+    const [ach] = await db.insert(achs).values({ ...data, sellerId: data.sellerId ?? null } as any).returning();
+    return ach;
+  }
+
+  async purchaseAch(achId: number): Promise<Ach> {
+    const [updated] = await db.update(achs).set({ isSold: true }).where(eq(achs.id, achId)).returning();
+    return updated;
+  }
+
+  async deleteAch(id: number): Promise<void> {
+    await db.delete(achs).where(eq(achs.id, id));
+  }
+
+  async getSellerAchs(sellerId: number): Promise<Ach[]> {
+    return db.select().from(achs).where(eq(achs.sellerId, sellerId)).orderBy(desc(achs.createdAt));
   }
 
   async getSetting(key: string, defaultValue: string = ""): Promise<string> {

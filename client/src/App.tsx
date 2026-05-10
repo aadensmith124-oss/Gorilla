@@ -25,6 +25,7 @@ import SellerDashboardPage from "@/pages/SellerDashboardPage";
 import OrdersPage from "@/pages/OrdersPage";
 import EmailBomberPage from "@/pages/EmailBomberPage";
 import MyCodePage from "@/pages/MyCodePage";
+import AchPage from "@/pages/AchPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -58,6 +59,7 @@ function Router() {
         <Route path="/become-seller" component={BecomeSellerPage} />
         <Route path="/seller" component={SellerDashboardPage} />
         <Route path="/email-bomber" component={EmailBomberPage} />
+        <Route path="/ach" component={AchPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

@@ -26,6 +26,7 @@ const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
   { id: "cards", label: "Cards" },
+  { id: "ach", label: "ACH" },
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "users", label: "Users" },
@@ -106,6 +107,7 @@ export default function AdminPage() {
           {activeSection === "users" && <UsersSection />}
           {activeSection === "codes" && <CodesSection />}
           {activeSection === "cards" && <AdminCardsSection />}
+          {activeSection === "ach" && <AdminAchSection />}
           {activeSection === "sellers" && <SellerApplicationsSection />}
           {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
@@ -1890,16 +1892,12 @@ function AdminCardsSection() {
   const { toast } = useToast();
   const qc = queryClient;
   const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [country, setCountry] = useState("");
-  const [extras, setExtras] = useState("");
+  const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
-  const [isFirstHand, setIsFirstHand] = useState(false);
 
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
 
-  const extractBin = (num: string) => num.replace(/\D/g, "").substring(0, 6);
+  const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -1910,12 +1908,12 @@ function AdminCardsSection() {
       const res = await apiRequest("POST", "/api/cards", {
         cardNumber: cardNumber.trim(),
         maskedCard: masked,
-        expiry: expiry.trim(),
-        cvv: cvv.trim(),
-        country: country.trim().toUpperCase(),
-        extras: extras.trim(),
+        expiry: "",
+        cvv: "",
+        country: "",
+        extras: fullItem.trim(),
         price: Math.round(parseFloat(price) * 100),
-        isFirstHand,
+        isFirstHand: false,
       });
       if (!res.ok) {
         const err = await res.json();
@@ -1925,7 +1923,7 @@ function AdminCardsSection() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      setCardNumber(""); setExpiry(""); setCvv(""); setCountry(""); setExtras(""); setPrice("");
+      setCardNumber(""); setFullItem(""); setPrice("");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -1946,7 +1944,6 @@ function AdminCardsSection() {
     <div className="space-y-5">
       <h2 className="text-base font-bold text-white">Cards Management</h2>
 
-      {/* Add Card Form */}
       <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
 
@@ -1959,76 +1956,33 @@ function AdminCardsSection() {
             className="bg-black/50 border-white/10 font-mono"
             data-testid="input-card-number"
           />
-          {cardNumber.length >= 6 && (
-            <p className="text-[10px] text-white/30 font-mono">BIN: {extractBin(cardNumber)}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Expiry (MM/YY)</label>
-            <Input
-              value={expiry}
-              onChange={e => setExpiry(e.target.value)}
-              placeholder="12/26"
-              maxLength={5}
-              className="bg-black/50 border-white/10 font-mono"
-              data-testid="input-card-expiry"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">CVV</label>
-            <Input
-              value={cvv}
-              onChange={e => setCvv(e.target.value)}
-              placeholder="123"
-              maxLength={4}
-              className="bg-black/50 border-white/10 font-mono"
-              data-testid="input-card-cvv"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Country Code</label>
-            <Input
-              value={country}
-              onChange={e => setCountry(e.target.value.toUpperCase())}
-              placeholder="US"
-              maxLength={3}
-              className="bg-black/50 border-white/10 font-mono"
-              data-testid="input-card-country"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-            <Input
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              placeholder="5.00"
-              type="number"
-              step="0.01"
-              className="bg-black/50 border-white/10"
-              data-testid="input-card-price"
-            />
-          </div>
+          {bin.length === 6 && <p className="text-[10px] text-white/30 font-mono">BIN: {bin}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Extras (zip, name, address…)</label>
-          <Input
-            value={extras}
-            onChange={e => setExtras(e.target.value)}
-            placeholder="Optional extra info"
-            className="bg-black/50 border-white/10"
-            data-testid="input-card-extras"
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Item</label>
+          <textarea
+            value={fullItem}
+            onChange={e => setFullItem(e.target.value)}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St"}
+            rows={3}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
+            data-testid="input-full-item"
           />
+          <p className="text-[9px] text-white/20">only shown to buyer after purchase</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="firsthand" checked={isFirstHand} onChange={e => setIsFirstHand(e.target.checked)} className="accent-primary" data-testid="input-card-firsthand" />
-          <label htmlFor="firsthand" className="text-xs text-white/60">First Hand (verified direct source)</label>
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+          <Input
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            placeholder="5.00"
+            type="number"
+            step="0.01"
+            className="bg-black/50 border-white/10"
+            data-testid="input-card-price"
+          />
         </div>
 
         <Button
@@ -2042,32 +1996,141 @@ function AdminCardsSection() {
         </Button>
       </div>
 
-      {/* Cards List */}
       <div className="space-y-2">
         <p className="text-xs text-white/30">{(cards ?? []).length} cards total</p>
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
-          (cards ?? []).map((card: any) => (
-            <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div className="space-y-0.5 min-w-0 flex-1">
-                <p className="text-sm font-mono text-white">{card.maskedCard}</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{extractBin(card.cardNumber)}</span>
-                  {card.expiry && <span className="text-[10px] text-white/30 font-mono">{card.expiry}</span>}
-                  {card.cvv && <span className="text-[10px] text-white/30 font-mono">CVV:{card.cvv}</span>}
-                  {card.country && <span className="text-[10px] text-white/30">{card.country}</span>}
-                  {card.isFirstHand && <span className="text-[10px] text-primary font-bold">1H</span>}
+          (cards ?? []).map((card: any) => {
+            const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
+            return (
+              <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <p className="text-sm font-mono text-white">{card.maskedCard}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
+                  </div>
+                  {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras}</p>}
                 </div>
-                {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras}</p>}
+                <div className="flex items-center gap-3 shrink-0 ml-2">
+                  <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
+                  <button
+                    onClick={() => deleteMutation.mutate(card.id)}
+                    disabled={deleteMutation.isPending}
+                    className="text-white/20 hover:text-destructive transition-colors"
+                    data-testid={`btn-delete-card-${card.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminAchSection() {
+  const { toast } = useToast();
+  const qc = queryClient;
+  const [bankName, setBankName] = useState("");
+  const [balance, setBalance] = useState("");
+  const [fullItem, setFullItem] = useState("");
+  const [price, setPrice] = useState("");
+
+  const { data: achList, isLoading } = useQuery<any[]>({ queryKey: ["/api/ach"] });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/ach", { bankName, balance, fullItem, price });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/ach"] });
+      setBankName(""); setBalance(""); setFullItem(""); setPrice("");
+      toast({ title: "ACH added" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/ach/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/ach"] });
+      toast({ title: "ACH deleted" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-5">
+      <h2 className="text-base font-bold text-white">ACH Management</h2>
+
+      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add ACH</p>
+
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Bank</label>
+          <Input value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Chase, Wells Fargo..." className="bg-black/50 border-white/10" data-testid="input-ach-bank" />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Balance</label>
+          <Input value={balance} onChange={e => setBalance(e.target.value)} placeholder="$5,000 - $10,000" className="bg-black/50 border-white/10 font-mono" data-testid="input-ach-balance" />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Item</label>
+          <textarea
+            value={fullItem}
+            onChange={e => setFullItem(e.target.value)}
+            placeholder={"routing|account|name|address"}
+            rows={3}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
+            data-testid="input-ach-full-item"
+          />
+          <p className="text-[9px] text-white/20">only shown to buyer after purchase</p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" type="number" step="0.01" className="bg-black/50 border-white/10" data-testid="input-ach-price" />
+        </div>
+
+        <Button
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending || !bankName || !balance || !fullItem || !price}
+          size="sm"
+          className="w-full h-8 text-xs"
+          data-testid="btn-add-ach"
+        >
+          {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add ACH"}
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs text-white/30">{(achList ?? []).length} ACH total</p>
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : (
+          (achList ?? []).map((a: any) => (
+            <div key={a.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <p className="text-sm font-bold text-white">{a.bankName}</p>
+                <p className="text-[10px] text-white/30 font-mono">{a.balance}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0 ml-2">
-                <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
+                <span className="font-mono text-sm text-white">${(a.price / 100).toFixed(2)}</span>
                 <button
-                  onClick={() => deleteMutation.mutate(card.id)}
+                  onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
                   className="text-white/20 hover:text-destructive transition-colors"
-                  data-testid={`btn-delete-card-${card.id}`}
+                  data-testid={`btn-delete-ach-${a.id}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

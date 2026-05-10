@@ -9,7 +9,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
@@ -1769,6 +1769,110 @@ export async function registerRoutes(
     const job = emailBombJobs.get(req.params.jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
     res.json(job);
+  });
+
+  // ── ACH ──────────────────────────────────────────────────────
+  app.get("/api/ach", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const list = await storage.getAchs();
+    res.json(list);
+  });
+
+  app.post("/api/ach", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    const { bankName, balance, fullItem, price } = req.body;
+    if (!bankName || !balance || !fullItem || !price) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+    const ach = await storage.createAch({
+      bankName: String(bankName).trim(),
+      balance: String(balance).trim(),
+      fullItem: String(fullItem).trim(),
+      price: Math.round(parseFloat(String(price)) * 100),
+    });
+    res.status(201).json(ach);
+  });
+
+  app.post("/api/ach/:id/purchase", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const achId = Number(req.params.id);
+      const userId = (req.user as any).id;
+      const ach = await storage.getAch(achId);
+      if (!ach || ach.isSold) return res.status(404).json({ message: "ACH not found or sold" });
+
+      const user = await storage.getUser(userId);
+      if (!user || user.balance < ach.price) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      await storage.updateUserBalance(userId, -ach.price);
+      await storage.createTransaction(userId, -ach.price, "purchase", `Purchased ACH: ${ach.bankName}`);
+
+      const originalSellerId = ach.sellerId;
+      await storage.purchaseAch(achId);
+
+      if (originalSellerId && originalSellerId !== userId) {
+        const sellerCut = Math.floor(ach.price * 0.8);
+        await db.update(users)
+          .set({
+            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
+            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
+          })
+          .where(eq(users.id, originalSellerId));
+      }
+
+      const publicOrderId = Math.random().toString(36).substring(2, 15);
+      await db.insert(orders).values({
+        userId,
+        orderId: `ACH-${publicOrderId}`,
+        total: ach.price,
+        paidAmount: ach.price,
+        status: "fulfilled",
+        deliveryContent: ach.fullItem,
+        paymentMethod: "wallet",
+      });
+
+      res.json({ success: true, deliveryContent: ach.fullItem });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/ach/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    await storage.deleteAch(Number(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.post("/api/seller/ach", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const user = req.user as any;
+    if (!user.isSeller) return res.status(403).json({ message: "Not a seller" });
+    const { bankName, balance, fullItem, price } = req.body;
+    if (!bankName || !balance || !fullItem || !price) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+    const ach = await storage.createAch({
+      bankName: String(bankName).trim(),
+      balance: String(balance).trim(),
+      fullItem: String(fullItem).trim(),
+      price: Math.round(parseFloat(String(price)) * 100),
+      sellerId: user.id,
+    });
+    res.status(201).json(ach);
+  });
+
+  app.get("/api/seller/ach", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const user = req.user as any;
+    if (!user.isSeller) return res.status(403).json({ message: "Not a seller" });
+    const list = await storage.getSellerAchs(user.id);
+    res.json(list);
   });
 
   // ── SMTP Settings (admin) ──────────────────────────────────────

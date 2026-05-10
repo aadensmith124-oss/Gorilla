@@ -376,6 +376,22 @@ export const sellerApplications = pgTable("seller_applications", {
 export const insertSellerApplicationSchema = createInsertSchema(sellerApplications).omit({ id: true, status: true, createdAt: true });
 export type SellerApplication = typeof sellerApplications.$inferSelect;
 
+// === ACH ACCOUNTS ===
+export const achs = pgTable("achs", {
+  id: serial("id").primaryKey(),
+  bankName: text("bank_name").notNull(),
+  balance: text("balance").notNull(),
+  fullItem: text("full_item").notNull(),
+  price: integer("price").notNull(),
+  isSold: boolean("is_sold").default(false).notNull(),
+  sellerId: integer("seller_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAchSchema = createInsertSchema(achs).omit({ id: true, isSold: true, sellerId: true, createdAt: true });
+export type Ach = typeof achs.$inferSelect;
+export type InsertAch = z.infer<typeof insertAchSchema>;
+
 // === SITE SETTINGS ===
 export const siteSettings = pgTable("site_settings", {
   key: text("key").primaryKey(),
