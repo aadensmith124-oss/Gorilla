@@ -7,7 +7,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 
-type TabType = "all" | "cards" | "logs";
+type TabType = "all" | "cards" | "ach" | "logs";
 
 function getTier(totalDepositsCents: number): { label: string; discount: string } {
   const dollars = totalDepositsCents / 100;
@@ -29,15 +29,19 @@ function formatDateTime(date: Date): string {
   });
 }
 
+function isAchOrder(order: any): boolean {
+  return (order.orderId ?? "").startsWith("ACH-");
+}
+
 function isCardOrder(order: any): boolean {
   return (
     (order.orderId ?? "").startsWith("CARD-") ||
-    (order.items ?? []).some((i: any) => i.itemType === "card" || i.cardId != null)
+    (!isAchOrder(order) && (order.items ?? []).some((i: any) => i.itemType === "card" || i.cardId != null))
   );
 }
 
 function isLogOrder(order: any): boolean {
-  return !isCardOrder(order);
+  return !isCardOrder(order) && !isAchOrder(order);
 }
 
 function statusBadge(status: string) {
@@ -86,9 +90,10 @@ export default function OrdersPage() {
   }, [allOrders]);
 
   const cardOrders = useMemo(() => allOrders.filter(isCardOrder), [allOrders]);
+  const achOrders = useMemo(() => allOrders.filter(isAchOrder), [allOrders]);
   const logOrders = useMemo(() => allOrders.filter(isLogOrder), [allOrders]);
 
-  const tabOrders = tab === "cards" ? cardOrders : tab === "logs" ? logOrders : allOrders;
+  const tabOrders = tab === "cards" ? cardOrders : tab === "ach" ? achOrders : tab === "logs" ? logOrders : allOrders;
 
   const filteredOrders = useMemo(() => {
     if (!search.trim()) return tabOrders;
@@ -112,6 +117,7 @@ export default function OrdersPage() {
   const tabs: { key: TabType; label: string; count: number }[] = [
     { key: "all", label: "all", count: allOrders.length },
     { key: "cards", label: "cards", count: cardOrders.length },
+    { key: "ach", label: "ach", count: achOrders.length },
     { key: "logs", label: "logs", count: logOrders.length },
   ];
 
@@ -205,8 +211,8 @@ export default function OrdersPage() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-[10px] font-mono text-white/35 truncate">#{order.orderId}</p>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${isCard ? "bg-blue-900/30 text-blue-400" : "bg-purple-900/30 text-purple-400"}`}>
-                        {isCard ? "card" : "log"}
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${isCard ? "bg-blue-900/30 text-blue-400" : isAchOrder(order) ? "bg-cyan-900/30 text-cyan-400" : "bg-purple-900/30 text-purple-400"}`}>
+                        {isCard ? "card" : isAchOrder(order) ? "ach" : "log"}
                       </span>
                     </div>
                     <p className="text-xs text-white/60">

@@ -83,6 +83,7 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({ title: "Purchase complete", description: "Card delivered to your orders" });
       setLocation("/orders");
     },
@@ -246,6 +247,7 @@ export default function CardsPage() {
     setCartPurchasing({ current: cartCards.length, total: cartCards.length, done: true });
     queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     setCartCardIds(new Set());
     setTimeout(() => {
       setCartPurchasing(null);

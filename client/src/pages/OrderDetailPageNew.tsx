@@ -142,7 +142,47 @@ export default function OrderDetailPageNew() {
 
         {activeTab === "products" && (
           <div className="space-y-8">
-            {grouped.length === 0 && (
+            {/* ACH / direct-delivery orders (no orderItems, deliveryContent is a plain string) */}
+            {grouped.length === 0 && order.deliveryContent && isFulfilled && (() => {
+              const key = "direct";
+              const isOpen = !!stockVisible[key];
+              const wasCopied = !!copied[key];
+              const isAch = (order.orderId ?? "").startsWith("ACH-");
+              const isCard = (order.orderId ?? "").startsWith("CARD-");
+              const label = isAch ? "ACH Account" : isCard ? "Card" : "Item";
+              return (
+                <div className="space-y-4">
+                  <InfoRow label="Type" value={<span className="font-bold text-sm text-white">{label}</span>} />
+                  <InfoRow label="Price" value={`$${(order.total / 100).toFixed(2)}`} />
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={() => toggleStock(key)}
+                      className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isOpen ? `Hide ${label}` : `View ${label}`}
+                    </button>
+                    {isOpen && (
+                      <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed break-all">
+                          {order.deliveryContent}
+                        </p>
+                        <button
+                          onClick={() => handleCopy(key, order.deliveryContent || "")}
+                          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-bold transition-colors"
+                        >
+                          {wasCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {wasCopied ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Standard orders with orderItems */}
+            {grouped.length === 0 && !order.deliveryContent && (
               <p className="text-sm text-white/40">No products found</p>
             )}
             {grouped.map((item, idx) => {

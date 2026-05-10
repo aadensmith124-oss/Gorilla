@@ -1353,11 +1353,27 @@ export async function registerRoutes(
     let pendingOrderId: number | null = null;
     try {
       const userId = (req.user as any).id;
-      const { items } = req.body;
+      const { items, amount, note } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
       const noteId = Math.random().toString(36).substring(2, 6).toUpperCase();
       const paymentNote = `snack-${noteId}`;
       const cashappTag = await storage.getSetting("cashapp_tag", "");
+
+      // Deposit-only mode: no items, just an amount (e.g. Chime deposit)
+      if (productItems.length === 0 && amount && Number(amount) >= 100) {
+        const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const [order] = await db.insert(orders).values({
+          userId,
+          orderId: publicOrderId,
+          total: Number(amount),
+          paidAmount: 0,
+          status: "pending",
+          paymentMethod: "CashApp",
+          paymentNote: note || paymentNote,
+          deliveryContent: null,
+        }).returning();
+        return res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote: note || paymentNote }, paymentNote: note || paymentNote, cashappTag });
+      }
 
       // Use createPendingOrder to reserve stock immediately
       const order = await storage.createPendingOrder(userId, productItems, []);
@@ -1568,6 +1584,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
     const user = await storage.getUser((req.user as any).id);
     if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
+    if (!perms.split(",").includes("cards")) return res.status(403).json({ error: "You don't have permission to add cards" });
     const { cardNumber, price } = req.body;
     if (!cardNumber || !price) return res.status(400).json({ error: "Card number and price required" });
     const digits = cardNumber.replace(/\D/g, "");
@@ -1594,6 +1612,32 @@ export async function registerRoutes(
     res.json(rows);
   });
 
+  // ── Seller Permissions ──────────────────────────────────────────────────
+  app.get("/api/seller/permissions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const perms = await storage.getSetting(`seller_perms_${userId}`, "cards,ach,logs");
+    const list = perms.split(",").map((s: string) => s.trim()).filter(Boolean);
+    res.json({ cards: list.includes("cards"), ach: list.includes("ach"), logs: list.includes("logs") });
+  });
+
+  app.get("/api/admin/seller-permissions/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = req.params.userId;
+    const perms = await storage.getSetting(`seller_perms_${userId}`, "cards,ach,logs");
+    const list = perms.split(",").map((s: string) => s.trim()).filter(Boolean);
+    res.json({ cards: list.includes("cards"), ach: list.includes("ach"), logs: list.includes("logs") });
+  });
+
+  app.post("/api/admin/seller-permissions/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const userId = req.params.userId;
+    const { cards, ach, logs } = req.body;
+    const list = [cards && "cards", ach && "ach", logs && "logs"].filter(Boolean).join(",");
+    await storage.setSetting(`seller_perms_${userId}`, list);
+    res.json({ ok: true });
+  });
+
   // Seller add stock to existing variant
   app.post("/api/seller/stock", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
@@ -1601,10 +1645,14 @@ export async function registerRoutes(
     if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
     const { variantId, content } = req.body;
     if (!variantId || !content) return res.status(400).json({ error: "variantId and content required" });
-    const lines = content.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    // Check logs permission
+    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
+    if (!perms.split(",").includes("logs")) return res.status(403).json({ error: "You don't have permission to add logs" });
+    // Items separated by blank lines (\n\n)
+    const items = content.split("\n\n").map((s: string) => s.trim()).filter(Boolean);
     let count = 0;
-    for (const line of lines) {
-      await db.insert(stockItems).values({ variantId: Number(variantId), content: line, sellerId: user.id } as any);
+    for (const item of items) {
+      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id } as any);
       count++;
     }
     res.json({ ok: true, added: count });
@@ -1774,8 +1822,19 @@ export async function registerRoutes(
   // ── ACH ──────────────────────────────────────────────────────
   app.get("/api/ach", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const list = await storage.getAchs();
-    res.json(list);
+    const { rows } = await db.execute(sql`
+      SELECT a.id, a.bank_name, a.balance, a.price, a.is_sold, a.seller_id, a.created_at,
+             u.seller_type, u.seller_display_name
+      FROM achs a
+      LEFT JOIN users u ON u.id = a.seller_id
+      WHERE a.is_sold = false
+      ORDER BY a.created_at DESC
+    `) as any;
+    res.json(rows.map((r: any) => ({
+      id: r.id, bankName: r.bank_name, balance: r.balance,
+      price: r.price, isSold: r.is_sold, sellerId: r.seller_id, createdAt: r.created_at,
+      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name,
+    })));
   });
 
   app.post("/api/ach", async (req, res) => {
@@ -1853,6 +1912,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as any;
     if (!user.isSeller) return res.status(403).json({ message: "Not a seller" });
+    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
+    if (!perms.split(",").includes("ach")) return res.status(403).json({ message: "You don't have permission to add ACH" });
     const { bankName, balance, fullItem, price } = req.body;
     if (!bankName || !balance || !fullItem || !price) {
       return res.status(400).json({ message: "Missing fields" });

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Mail } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Mail, Building2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/shop", icon: FileText, label: "Logs" },
         { href: "/cards", icon: CreditCard, label: "Cards" },
-        { href: "/ach", icon: Package, label: "ACH" },
+        { href: "/ach", icon: Building2, label: "ACH" },
       ],
     },
     {
@@ -49,8 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "SUPPORT",
       items: [
-        { href: "/support", icon: FileText, label: "Tickets" },
-        { href: "https://t.me/", icon: Send, label: "Telegram Channel", external: true },
+        { href: "https://t.me/+CiKKet6kWmBmYzU5", icon: Send, label: "Telegram Channel", external: true },
       ],
     },
     ...(user?.role === "admin" ? [{

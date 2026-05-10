@@ -862,6 +862,15 @@ function OrdersSection() {
               ))}
             </div>
           )}
+
+          {groupedEntries.length === 0 && current.deliveryContent && current.orderId?.startsWith("ACH-") && (
+            <div className="space-y-2">
+              <p className="text-[10px] text-white/40">ACH Account Delivered</p>
+              <div className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
+                <p className="text-xs font-mono text-white/80 whitespace-pre-wrap break-all">{current.deliveryContent}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -2143,6 +2152,66 @@ function AdminAchSection() {
   );
 }
 
+function SellerPermissionsPanel({ sellerId }: { sellerId: number }) {
+  const { toast } = useToast();
+  const qc = queryClient;
+
+  const { data: perms, isLoading } = useQuery<{ cards: boolean; ach: boolean; logs: boolean }>({
+    queryKey: ["/api/admin/seller-permissions", sellerId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/seller-permissions/${sellerId}`);
+      return res.json();
+    },
+    enabled: !!sellerId,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (newPerms: { cards: boolean; ach: boolean; logs: boolean }) => {
+      const res = await apiRequest("POST", `/api/admin/seller-permissions/${sellerId}`, newPerms);
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/seller-permissions", sellerId] });
+      toast({ title: "Permissions saved" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const toggle = (key: "cards" | "ach" | "logs") => {
+    if (!perms) return;
+    saveMutation.mutate({ ...perms, [key]: !perms[key] });
+  };
+
+  if (isLoading) return <div className="py-2 flex justify-center"><Loader2 className="h-3 w-3 animate-spin text-primary" /></div>;
+
+  const opts: { key: "cards" | "ach" | "logs"; label: string }[] = [
+    { key: "cards", label: "Cards" },
+    { key: "ach", label: "ACH" },
+    { key: "logs", label: "Logs" },
+  ];
+
+  return (
+    <div className="space-y-1.5 pt-1 border-t border-white/5">
+      <p className="text-[9px] text-white/30 uppercase tracking-widest">Can Sell</p>
+      {opts.map(({ key, label }) => (
+        <button
+          key={key}
+          onClick={() => toggle(key)}
+          className={`w-full h-7 flex items-center justify-between px-2 rounded border text-xs transition-all ${
+            perms?.[key]
+              ? "border-green-700/50 bg-green-900/20 text-green-400"
+              : "border-white/8 bg-black/20 text-white/30"
+          }`}
+          data-testid={`btn-perm-${key}-${sellerId}`}
+        >
+          <span>{label}</span>
+          <span className="text-[10px]">{perms?.[key] ? "✓ on" : "✗ off"}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const SELLER_BADGE: Record<string, string> = { bronze: "🍟", fresh: "🍺", top: "🔥" };
 const SELLER_TYPES = [
   { value: "bronze", label: "🍟 Bronze" },
@@ -2332,6 +2401,9 @@ function SellerApplicationsSection() {
                       {setTypeMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin inline" /> : "Save Type"}
                     </button>
                   </div>
+
+                  {/* What seller can sell */}
+                  <SellerPermissionsPanel sellerId={selectedSeller.id} />
 
                   {/* Remove */}
                   <button onClick={() => { if (confirm("Remove this seller?")) removeMutation.mutate(selectedSeller.id); }}

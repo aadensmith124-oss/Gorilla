@@ -28,6 +28,11 @@ export default function SellerDashboardPage() {
     application?: any;
   }>({ queryKey: ["/api/seller/status"], enabled: !!user });
 
+  const { data: permissions } = useQuery<{ cards: boolean; ach: boolean; logs: boolean }>({
+    queryKey: ["/api/seller/permissions"],
+    enabled: !!user,
+  });
+
   if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
   if (!sellerStatus?.isSeller) { setLocation("/become-seller"); return null; }
 
@@ -36,6 +41,13 @@ export default function SellerDashboardPage() {
   const sellerDisplayName = (sellerStatus as any).sellerDisplayName?.trim() || user?.username?.toUpperCase() || "SELLER";
   const badge = SELLER_BADGES[sellerType] ?? "🍟";
   const label = `${badge} ${sellerDisplayName} ${badge}`;
+
+  const allowedTabs: Tab[] = ["overview", "transactions"];
+  if (permissions?.cards !== false) allowedTabs.push("cards");
+  if (permissions?.ach !== false) allowedTabs.push("ach");
+  if (permissions?.logs !== false) allowedTabs.push("logs");
+  const tabOrder: Tab[] = ["overview", "cards", "ach", "logs", "transactions"];
+  const visibleTabs = tabOrder.filter(t => allowedTabs.includes(t));
 
   return (
     <div className="max-w-xl mx-auto px-3 py-4 space-y-3">
@@ -56,7 +68,7 @@ export default function SellerDashboardPage() {
 
       {/* Tabs */}
       <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5 flex-wrap">
-        {(["overview", "cards", "ach", "logs", "transactions"] as Tab[]).map(t => (
+        {visibleTabs.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -68,9 +80,9 @@ export default function SellerDashboardPage() {
       </div>
 
       {tab === "overview" && <OverviewTab sellerStatus={sellerStatus} />}
-      {tab === "cards" && <AddCardsTab />}
-      {tab === "ach" && <AddAchTab />}
-      {tab === "logs" && <AddLogsTab />}
+      {tab === "cards" && permissions?.cards !== false && <AddCardsTab />}
+      {tab === "ach" && permissions?.ach !== false && <AddAchTab />}
+      {tab === "logs" && permissions?.logs !== false && <AddLogsTab />}
       {tab === "transactions" && <TransactionsTab />}
     </div>
   );
