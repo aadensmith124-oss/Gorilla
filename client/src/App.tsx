@@ -53,7 +53,6 @@ function Router() {
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
-        <Route path="/profile" component={ProfilePage} />
         <Route path="/my-code" component={MyCodePage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/become-seller" component={BecomeSellerPage} />

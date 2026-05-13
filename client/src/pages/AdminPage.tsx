@@ -606,7 +606,10 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       return res.json();
     },
     onSuccess: (data) => {
-      toast({ title: `Added ${data.addedCount} stock item${data.addedCount !== 1 ? "s" : ""}` });
+      const msg = data.skippedCount > 0
+        ? `Added ${data.addedCount}, skipped ${data.skippedCount} duplicate${data.skippedCount !== 1 ? "s" : ""}`
+        : `Added ${data.addedCount} stock item${data.addedCount !== 1 ? "s" : ""}`;
+      toast({ title: msg });
       setInput("");
       qc.invalidateQueries({ queryKey: ["/api/admin/stock", variantId] });
       qc.invalidateQueries({ queryKey: ["/api/products"] });
@@ -2161,6 +2164,17 @@ function SellerPermissionsPanel({ sellerId }: { sellerId: number }) {
     enabled: !!sellerId,
   });
 
+  const { data: productPerms } = useQuery<{ productIds: number[] }>({
+    queryKey: ["/api/admin/seller-permissions/products", sellerId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/seller-permissions/products/${sellerId}`);
+      return res.json();
+    },
+    enabled: !!sellerId,
+  });
+
+  const { data: allProducts } = useQuery<any[]>({ queryKey: ["/api/products"] });
+
   const saveMutation = useMutation({
     mutationFn: async (newPerms: { cards: boolean; ach: boolean; logs: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/seller-permissions/${sellerId}`, newPerms);
@@ -2173,9 +2187,29 @@ function SellerPermissionsPanel({ sellerId }: { sellerId: number }) {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const saveProductPermsMutation = useMutation({
+    mutationFn: async (productIds: number[]) => {
+      const res = await apiRequest("POST", `/api/admin/seller-permissions/products/${sellerId}`, { productIds });
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/seller-permissions/products", sellerId] });
+      toast({ title: "Product permissions saved" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const toggle = (key: "cards" | "ach" | "logs") => {
     if (!perms) return;
     saveMutation.mutate({ ...perms, [key]: !perms[key] });
+  };
+
+  const toggleProduct = (productId: number) => {
+    const current = productPerms?.productIds ?? [];
+    const next = current.includes(productId)
+      ? current.filter(id => id !== productId)
+      : [...current, productId];
+    saveProductPermsMutation.mutate(next);
   };
 
   if (isLoading) return <div className="py-2 flex justify-center"><Loader2 className="h-3 w-3 animate-spin text-primary" /></div>;
@@ -2185,6 +2219,9 @@ function SellerPermissionsPanel({ sellerId }: { sellerId: number }) {
     { key: "ach", label: "ACH" },
     { key: "logs", label: "Logs" },
   ];
+
+  const allowedProductIds = productPerms?.productIds ?? [];
+  const logProducts = (allProducts ?? []).filter((p: any) => p.active);
 
   return (
     <div className="space-y-1.5 pt-1 border-t border-white/5">
@@ -2204,6 +2241,30 @@ function SellerPermissionsPanel({ sellerId }: { sellerId: number }) {
           <span className="text-[10px]">{perms?.[key] ? "✓ on" : "✗ off"}</span>
         </button>
       ))}
+
+      {perms?.logs && logProducts.length > 0 && (
+        <div className="pt-1 space-y-1">
+          <p className="text-[9px] text-white/20 uppercase tracking-widest">Allowed Products <span className="normal-case text-white/15">(empty = all)</span></p>
+          {logProducts.map((p: any) => {
+            const allowed = allowedProductIds.includes(p.id);
+            return (
+              <button
+                key={p.id}
+                onClick={() => toggleProduct(p.id)}
+                className={`w-full h-7 flex items-center justify-between px-2 rounded border text-xs transition-all ${
+                  allowed
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-white/5 bg-black/10 text-white/25"
+                }`}
+                data-testid={`btn-product-perm-${p.id}-${sellerId}`}
+              >
+                <span className="truncate text-left">{p.name}</span>
+                <span className="text-[10px] flex-shrink-0 ml-2">{allowed ? "✓" : "✗"}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

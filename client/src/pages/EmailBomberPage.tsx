@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 export default function EmailBomberPage() {
   const { user } = useAuth();
@@ -61,46 +60,48 @@ export default function EmailBomberPage() {
   }, [jobId, status]);
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-start justify-center p-6 pt-16">
-      <div className="w-full max-w-sm space-y-8">
-        <h1 className="text-2xl font-bold text-white">Bomb Emails</h1>
+    <div className="max-w-sm mx-auto px-3 py-4">
+      <div className="bg-[#0e0e0e] border border-white/8 rounded-xl p-4 space-y-3">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Email Bomber</p>
 
-        <div className="space-y-3">
-          <Input
-            value={targetEmail}
-            onChange={e => setTargetEmail(e.target.value)}
-            placeholder="Enter email"
-            type="email"
-            disabled={status === "running"}
-            className="h-11 bg-[#111] border-white/10 focus:border-primary/50 text-white placeholder:text-white/20"
-            data-testid="input-target-email"
-            onKeyDown={e => { if (e.key === "Enter") handleBomb(); }}
-          />
+        <input
+          value={targetEmail}
+          onChange={e => setTargetEmail(e.target.value)}
+          placeholder="target email address"
+          type="email"
+          disabled={status === "running"}
+          className="w-full h-8 bg-black/40 border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/20 outline-none font-mono"
+          data-testid="input-target-email"
+          onKeyDown={e => { if (e.key === "Enter") handleBomb(); }}
+        />
 
-          {status === "running" && (
-            <div className="space-y-1.5">
-              <Progress value={progress} className="h-1.5" />
-              <p className="text-xs text-white/30 text-right font-mono">{progress}%</p>
-            </div>
-          )}
+        {status === "running" && (
+          <div className="space-y-1">
+            <Progress value={progress} className="h-1" />
+            <p className="text-[9px] text-white/25 text-right font-mono">{progress}% · {sent}/{total}</p>
+          </div>
+        )}
 
-          {status === "done" && (
-            <p className="text-xs text-green-400">Done.</p>
-          )}
+        {status === "done" && (
+          <p className="text-[10px] text-green-400 font-mono">done — {total} emails sent</p>
+        )}
 
-          <Button
-            onClick={status === "done" ? () => { setStatus("idle"); setTargetEmail(""); setJobId(null); } : handleBomb}
-            disabled={status === "running" || (status === "idle" && (!targetEmail || !canAfford))}
-            className="w-full h-11 text-sm font-semibold"
-            data-testid="btn-bomb"
-          >
-            {status === "running" ? `${progress}%` : status === "done" ? "Bomb Again" : "Bomb ($0.50)"}
-          </Button>
+        <button
+          onClick={status === "done" ? () => { setStatus("idle"); setTargetEmail(""); setJobId(null); } : handleBomb}
+          disabled={status === "running" || (status === "idle" && (!targetEmail || !canAfford))}
+          className="w-full h-8 flex items-center justify-center gap-2 rounded border border-white/10 text-xs font-mono text-white/60 hover:text-white hover:border-white/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          data-testid="btn-bomb"
+        >
+          {status === "running"
+            ? <><Loader2 className="h-3 w-3 animate-spin" /> {progress}%</>
+            : status === "done"
+            ? "bomb again"
+            : "bomb ($0.50)"}
+        </button>
 
-          {!canAfford && status === "idle" && (
-            <p className="text-xs text-white/30 text-center">Insufficient balance</p>
-          )}
-        </div>
+        {!canAfford && status === "idle" && (
+          <p className="text-[9px] text-white/20 font-mono">insufficient balance</p>
+        )}
       </div>
     </div>
   );

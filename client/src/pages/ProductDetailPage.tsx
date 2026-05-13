@@ -154,9 +154,6 @@ export default function ProductDetailPage() {
                   <SelectValue placeholder="Any seller (random)" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1d24] border-white/[0.08] text-white">
-                  <SelectItem value="any" className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5">
-                    <span className="text-white/60">Any seller (random)</span>
-                  </SelectItem>
                   {sellers.map((s: any) => {
                     const label = getSellerLabel(s);
                     return (

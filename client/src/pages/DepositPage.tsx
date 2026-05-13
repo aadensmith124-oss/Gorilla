@@ -53,9 +53,9 @@ export default function DepositPage() {
     queryKey: ["/api/site-settings/cashapp-tag"],
   });
 
-  const fee = method === "crypto" ? 0.05 : 0.15;
+  const fee = 0.05;
   const youSend = (amount * (1 + fee)).toFixed(2);
-  const minAmount = 20;
+  const minAmount = 5;
 
   const cryptoMutation = useMutation({
     mutationFn: async () => {
@@ -149,7 +149,7 @@ export default function DepositPage() {
           </div>
           <div className="text-center">
             <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00D632]" : "text-white/50"}`}>CashApp</p>
-            <p className="text-[10px] text-white/25 font-mono">15% fee</p>
+            <p className="text-[10px] text-white/25 font-mono">5% fee</p>
           </div>
         </button>
       </div>

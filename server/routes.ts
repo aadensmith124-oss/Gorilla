@@ -627,8 +627,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const count = await storage.addStockItems(req.body.variantId, req.body.rawContent);
-    res.json({ addedCount: count });
+    const result = await storage.addStockItems(req.body.variantId, req.body.rawContent);
+    res.json({ addedCount: result.added, skippedCount: result.skipped });
   });
 
   app.get("/api/admin/stock/:variantId", async (req, res) => {
@@ -1580,6 +1580,27 @@ export async function registerRoutes(
     res.json({ ok: true, amount });
   });
 
+  // ── Seller Product Permissions ────────────────────────────────────────────
+
+  // Get allowed product IDs for a seller
+  app.get("/api/admin/seller-permissions/products/:sellerId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const sellerId = Number(req.params.sellerId);
+    const raw = await storage.getSetting(`seller_product_perms_${sellerId}`, "");
+    const ids = raw ? raw.split(",").map(Number).filter(Boolean) : [];
+    res.json({ productIds: ids });
+  });
+
+  // Set allowed product IDs for a seller
+  app.post("/api/admin/seller-permissions/products/:sellerId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    const sellerId = Number(req.params.sellerId);
+    const { productIds } = req.body;
+    const value = (productIds as number[]).join(",");
+    await storage.setSetting(`seller_product_perms_${sellerId}`, value);
+    res.json({ ok: true });
+  });
+
   // ── Seller Stock / Card Routes ────────────────────────────────────────────
 
   // Seller add card
@@ -1651,14 +1672,29 @@ export async function registerRoutes(
     // Check logs permission
     const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
     if (!perms.split(",").includes("logs")) return res.status(403).json({ error: "You don't have permission to add logs" });
-    // Items separated by blank lines (\n\n)
-    const items = content.split("\n\n").map((s: string) => s.trim()).filter(Boolean);
-    let count = 0;
-    for (const item of items) {
-      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id } as any);
-      count++;
+    // Check product-level permission
+    const [variantRow] = await db.select({ productId: variants.productId }).from(variants).where(eq(variants.id, Number(variantId)));
+    if (variantRow) {
+      const productPermsRaw = await storage.getSetting(`seller_product_perms_${user.id}`, "");
+      if (productPermsRaw) {
+        const allowedIds = productPermsRaw.split(",").map(Number).filter(Boolean);
+        if (allowedIds.length > 0 && !allowedIds.includes(variantRow.productId)) {
+          return res.status(403).json({ error: "You don't have permission to sell in this product" });
+        }
+      }
     }
-    res.json({ ok: true, added: count });
+    // Items separated by blank lines (\n\n) — skip duplicates
+    const items = content.split("\n\n").map((s: string) => s.trim()).filter(Boolean);
+    let added = 0;
+    let skipped = 0;
+    for (const item of items) {
+      const existing = await db.select({ id: stockItems.id }).from(stockItems)
+        .where(eq(stockItems.content, item)).limit(1);
+      if (existing.length > 0) { skipped++; continue; }
+      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id } as any);
+      added++;
+    }
+    res.json({ ok: true, added, skipped });
   });
 
   // Seller get transactions
