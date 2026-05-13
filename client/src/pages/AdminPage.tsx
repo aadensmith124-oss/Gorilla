@@ -1849,7 +1849,8 @@ function IntegrationsSection() {
 interface TelegramBotSettingsData {
   adminId: string;
   nameTag: string;
-  requiredChannel: string;
+  channelLink: string;
+  channelId: string;
   rewardAmount: string;
 }
 
@@ -1857,7 +1858,8 @@ function TelegramBotSettings() {
   const { toast } = useToast();
   const [adminId, setAdminId] = useState("");
   const [nameTag, setNameTag] = useState("");
-  const [requiredChannel, setRequiredChannel] = useState("");
+  const [channelLink, setChannelLink] = useState("");
+  const [channelId, setChannelId] = useState("");
   const [rewardAmount, setRewardAmount] = useState("");
 
   const { data, isLoading } = useQuery<TelegramBotSettingsData>({
@@ -1868,14 +1870,15 @@ function TelegramBotSettings() {
     if (!data) return;
     setAdminId(data.adminId ?? "");
     setNameTag(data.nameTag ?? "");
-    setRequiredChannel(data.requiredChannel ?? "");
+    setChannelLink(data.channelLink ?? "");
+    setChannelId(data.channelId ?? "");
     setRewardAmount(data.rewardAmount ? String(parseInt(data.rewardAmount, 10) / 100) : "5");
   }, [data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/settings/telegram-bot", {
-        adminId, nameTag, requiredChannel, rewardAmount,
+        adminId, nameTag, channelLink, channelId, rewardAmount,
       });
       if (!res.ok) throw new Error("Failed to save");
       return res.json();
@@ -1917,19 +1920,27 @@ function TelegramBotSettings() {
               />
               <p className="text-[10px] text-white/30 mt-1">Users must have this in their Telegram name</p>
             </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-muted-foreground block mb-1.5">Required Channel</label>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Channel Invite Link</label>
               <Input
-                value={requiredChannel}
-                onChange={e => setRequiredChannel(e.target.value)}
+                value={channelLink}
+                onChange={e => setChannelLink(e.target.value)}
+                placeholder="https://t.me/+..."
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-channel-link"
+              />
+              <p className="text-[10px] text-white/30 mt-1">Shown as join button — no membership verification</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Channel ID <span className="text-white/30">(enables verified checks)</span></label>
+              <Input
+                value={channelId}
+                onChange={e => setChannelId(e.target.value)}
                 placeholder="@channelname  or  -1001234567890"
                 className="bg-white/5 border-white/8 text-white font-mono text-sm"
-                data-testid="input-tg-required-channel"
+                data-testid="input-tg-channel-id"
               />
-              <p className="text-[10px] text-white/30 mt-1">
-                Use <span className="text-white/50">@channelname</span> or <span className="text-white/50">-100…</span> for verified membership checks via getChatMember.
-                Invite links block linking until updated to a verifiable identifier (use /chan in the bot to update).
-              </p>
+              <p className="text-[10px] text-white/30 mt-1">Uses getChatMember API to verify before linking</p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1.5">Referral Reward ($ per referral)</label>

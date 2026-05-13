@@ -8,6 +8,7 @@ import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
+import { completeLinkByCode } from "./telegram-bot";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs } from "@shared/schema";
 import { db } from "./db";
@@ -1530,6 +1531,25 @@ export async function registerRoutes(
       const cents = Math.round(parseFloat(rewardAmount) * 100);
       if (!isNaN(cents) && cents > 0) await storage.setSetting("referral_reward_amount", String(cents));
     }
+    res.json({ success: true });
+  });
+
+  // ── User: confirm Telegram link via one-time code ────────────────────────
+  app.post("/api/user/telegram/link", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const { code } = req.body;
+    if (!code || typeof code !== "string") return res.status(400).json({ message: "code required" });
+    const ok = await completeLinkByCode(code.trim().toUpperCase(), userId);
+    if (!ok) return res.status(400).json({ message: "Invalid or expired code" });
+    res.json({ success: true });
+  });
+
+  // ── User: disconnect Telegram ─────────────────────────────────────────────
+  app.post("/api/user/telegram/disconnect", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    await db.update(users).set({ telegramId: null, telegramConnected: false }).where(eq(users.id, userId));
     res.json({ success: true });
   });
 
