@@ -31,7 +31,7 @@ export default function EatzPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const telegramUrl = selected
-    ? `https://t.me/dexternyc?text=${encodeURIComponent(`hello dexter, i want eats for ${selected}`)}`
+    ? `https://t.me/dextabehittin?text=${encodeURIComponent(`hello dexter, i want eats for ${selected}`)}`
     : "#";
 
   return (
