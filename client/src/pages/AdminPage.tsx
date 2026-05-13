@@ -613,18 +613,8 @@ function ProductsSection() {
 
 function VariantStockPanel({ variantId }: { variantId: number }) {
   const [input, setInput] = useState("");
-  const [sellerId, setSellerId] = useState<string>("nychq");
   const { toast } = useToast();
   const qc = useQueryClient();
-
-  const { data: activeSellers } = useQuery<any[]>({
-    queryKey: ["/api/admin/active-sellers"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/active-sellers", { credentials: "include" });
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["/api/admin/stock", variantId],
@@ -638,9 +628,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!input.trim()) throw new Error("No items to add");
-      const body: any = { variantId, rawContent: input };
-      if (sellerId !== "nychq") body.sellerId = Number(sellerId);
-      const res = await apiRequest("POST", "/api/admin/stock/bulk", body);
+      const res = await apiRequest("POST", "/api/admin/stock/bulk", { variantId, rawContent: input });
       return res.json();
     },
     onSuccess: (data) => {
@@ -668,32 +656,15 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
     },
   });
 
-  const TIER_BADGE: Record<string, string> = { top: "🔥", fresh: "🍺", bronze: "🍟" };
-
   return (
     <div className="mt-1 mb-2 bg-black/50 rounded-lg border border-white/8 p-3 space-y-3">
-      <p className="text-[10px] font-bold text-muted-foreground">
-        Stock — {isLoading ? "..." : `${items?.length || 0} items available`}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold text-muted-foreground">
+          🔥 Top Seller — {isLoading ? "..." : `${items?.length || 0} available`}
+        </p>
+      </div>
 
       <div className="space-y-1.5">
-        {/* Seller attribution picker */}
-        <div className="space-y-1">
-          <p className="text-[9px] text-white/30 uppercase tracking-widest">Attribute stock to</p>
-          <Select value={sellerId} onValueChange={setSellerId}>
-            <SelectTrigger className="h-7 text-xs bg-black/60 border-white/10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
-              <SelectItem value="nychq" className="text-xs">🔥 NYCHQ (Admin Stock)</SelectItem>
-              {(activeSellers ?? []).map((s: any) => (
-                <SelectItem key={s.id} value={String(s.id)} className="text-xs">
-                  {TIER_BADGE[s.sellerType] ?? "🍟"} {s.sellerDisplayName || s.username} ({s.sellerType})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -715,19 +686,23 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       {isLoading ? (
         <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
       ) : items?.length > 0 ? (
-        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {items.map((item: any) => (
-            <div key={item.id} className="flex items-start gap-2 bg-black/30 rounded px-2 py-2 border border-white/5">
-              <span className="text-[11px] font-mono text-white/60 flex-1 whitespace-pre-wrap break-all">
-                {item.content}
-              </span>
-              <button
-                onClick={() => deleteMutation.mutate(item.id)}
-                disabled={deleteMutation.isPending}
-                className="text-destructive/70 hover:text-destructive transition-colors flex-shrink-0"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+            <div key={item.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-mono text-white/50 truncate">{(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}</p>
+                <p className="text-[9px] font-mono text-white/20 mt-0.5">#{item.id}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-[9px] text-white/20">avail</span>
+                <button
+                  onClick={() => deleteMutation.mutate(item.id)}
+                  disabled={deleteMutation.isPending}
+                  className="text-red-400/50 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
