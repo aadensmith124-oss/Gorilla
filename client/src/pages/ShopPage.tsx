@@ -1,9 +1,9 @@
 import { useProducts } from "@/hooks/use-products";
-import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Loader2, ShieldX } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { Link } from "wouter";
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const result = [...arr];
@@ -32,9 +32,9 @@ export default function ShopPage() {
     return [...pinned, ...rest];
   }, [products, shuffleSeed]);
 
-  const filtered = shuffledProducts.filter(p =>
+  const filtered = shuffledProducts.filter((p: any) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.description.toLowerCase().includes(search.toLowerCase())
+    p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   if (isLoading) {
@@ -43,29 +43,18 @@ export default function ShopPage() {
 
   if (user?.isBanned) {
     return (
-      <div className="space-y-8 py-12">
-        <div className="bg-destructive/10 border border-destructive/20 p-8 rounded-2xl text-center space-y-4 max-w-2xl mx-auto shadow-2xl shadow-destructive/5">
-          <div className="bg-destructive/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2">
-            <ShieldX className="h-8 w-8 text-destructive" />
-          </div>
-          <h2 className="text-2xl text-destructive">Account Restricted</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Your account has been banned by an administrator. You may still browse our product catalog, but purchasing and other features are disabled.
-            <br /><br />
-            If you believe this is an error, please contact support.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto w-full opacity-60 grayscale-[0.5]">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+      <div className="max-w-sm mx-auto px-3 py-8 space-y-4">
+        <div className="bg-destructive/10 border border-destructive/20 p-6 rounded-xl text-center space-y-3">
+          <ShieldX className="h-8 w-8 text-destructive mx-auto" />
+          <p className="text-sm text-destructive font-bold">Account Restricted</p>
+          <p className="text-xs text-white/40 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
+    <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
       <div className="space-y-1 mb-4">
         <h1 className="text-xl font-bold text-white">TRENT <span className="text-primary">HQ</span></h1>
         <p className="text-xs text-white/30">Premium marketplace</p>
@@ -82,14 +71,43 @@ export default function ShopPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-white/20 text-sm">
-          No products found
-        </div>
+        <div className="text-center py-20 text-white/20 text-sm">No products found</div>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="divide-y divide-white/[0.05]">
+          {filtered.map((product: any) => {
+            const lowestVariant = product.variants?.length > 0
+              ? product.variants.reduce((a: any, b: any) => a.price < b.price ? a : b)
+              : null;
+            const lowestPrice = lowestVariant?.price ?? 0;
+            const comparePrice = lowestVariant?.comparePrice ?? null;
+            const variantCount = product.variants?.length ?? 0;
+            const inStock = product.variants?.some((v: any) => v.stockCount > 0);
+
+            return (
+              <Link key={product.id} href={`/product/${encodeURIComponent(product.name)}`}>
+                <div
+                  className="flex items-center justify-between py-3 cursor-pointer hover:bg-white/[0.02] transition-colors rounded px-1"
+                  data-testid={`card-product-${product.id}`}
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <p className="text-sm font-bold text-white leading-tight">{product.name}</p>
+                    <p className="text-[10px] text-white/30 font-mono">
+                      {variantCount} variant{variantCount !== 1 ? "s" : ""}
+                      {!inStock && <span className="ml-2 text-red-400/60">· out of stock</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                    {comparePrice && comparePrice > lowestPrice && (
+                      <span className="text-[10px] line-through text-white/25 font-mono">${(comparePrice / 100).toFixed(2)}</span>
+                    )}
+                    {lowestPrice > 0 && (
+                      <span className="text-xs font-bold text-primary font-mono">${(lowestPrice / 100).toFixed(2)}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

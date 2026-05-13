@@ -166,7 +166,6 @@ function ProductsSection() {
 
   const productSchema = z.object({
     name: z.string().min(1, "Name required"),
-    image: z.string().optional(),
     description: z.string().optional(),
   });
 
@@ -178,12 +177,12 @@ function ProductsSection() {
 
   const addForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", image: "", description: "" },
+    defaultValues: { name: "", description: "" },
   });
 
   const editForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", image: "", description: "" },
+    defaultValues: { name: "", description: "" },
   });
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
@@ -289,37 +288,9 @@ function ProductsSection() {
 
   const startEdit = (product: any) => {
     setEditingProduct(product);
-    editForm.reset({ name: product.name, image: product.image || "", description: product.description || "" });
+    editForm.reset({ name: product.name, description: product.description || "" });
     setShowAddForm(false);
   };
-
-  const ImageUploadField = ({ field }: { field: any }) => (
-    <div className="space-y-2">
-      <Input {...field} placeholder="https://example.com/image.png" className="bg-black/50 border-white/10" />
-      <label className="block">
-        <span className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors">Or upload file →</span>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (ev) => field.onChange(ev.target?.result);
-              reader.readAsDataURL(file);
-            }
-          }}
-        />
-      </label>
-      {field.value && field.value.startsWith("data:") && (
-        <div className="flex items-center gap-2 text-xs text-green-400">
-          <span>✓ Image uploaded</span>
-          <button type="button" onClick={() => field.onChange("")} className="text-destructive hover:opacity-80">Remove</button>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -345,12 +316,6 @@ function ProductsSection() {
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
                     <FormControl><Input {...field} className="bg-black/50 border-white/10" /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={addForm.control} name="image" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image</FormLabel>
-                    <FormControl><ImageUploadField field={field} /></FormControl>
                   </FormItem>
                 )} />
                 <FormField control={addForm.control} name="description" render={({ field }) => (
@@ -392,12 +357,6 @@ function ProductsSection() {
                     <FormControl><Input {...field} className="bg-black/50 border-white/10" /></FormControl>
                   </FormItem>
                 )} />
-                <FormField control={editForm.control} name="image" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image</FormLabel>
-                    <FormControl><ImageUploadField field={field} /></FormControl>
-                  </FormItem>
-                )} />
                 <FormField control={editForm.control} name="description" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
@@ -425,9 +384,6 @@ function ProductsSection() {
           <div key={product.id} className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                {product.image && (
-                  <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded" />
-                )}
                 <div>
                   <p className="font-bold text-sm">{product.name}</p>
                   <p className="text-xs text-muted-foreground">{product.variants?.length || 0} variant(s)</p>
@@ -2198,7 +2154,19 @@ function AdminAchSection() {
 
         <div className="space-y-1">
           <label className="text-[10px] text-white/40 uppercase tracking-widest">Balance</label>
-          <Input value={balance} onChange={e => setBalance(e.target.value)} placeholder="$5,000 - $10,000" className="bg-black/50 border-white/10 font-mono" data-testid="input-ach-balance" />
+          <div className="flex items-center bg-black/50 border border-white/10 rounded-md overflow-hidden">
+            <span className="pl-3 pr-1 text-sm text-white/50 font-mono select-none">$</span>
+            <input
+              value={balance}
+              onChange={e => setBalance(e.target.value.replace(/[^0-9\-]/g, ""))}
+              placeholder="5000"
+              type="text"
+              inputMode="numeric"
+              className="flex-1 bg-transparent py-2 pr-3 text-sm text-white font-mono outline-none placeholder:text-white/20"
+              data-testid="input-ach-balance"
+            />
+          </div>
+          <p className="text-[10px] text-white/25">Numbers only — $ is added automatically</p>
         </div>
 
         <div className="space-y-1">

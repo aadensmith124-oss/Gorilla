@@ -51,7 +51,9 @@ function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onTo
             <p className="text-sm font-bold text-white font-mono uppercase tracking-wide">
               {sellerLabel ?? ach.bankName}
             </p>
-            <p className="text-xs text-white/40 font-mono">{ach.bankName} · {ach.balance}</p>
+            <p className="text-xs text-white/40 font-mono">
+              {ach.bankName} · Balance ${String(ach.balance).replace(/^\$/, "")}
+            </p>
           </div>
           <p className="text-sm font-mono font-bold text-white flex-shrink-0">${(ach.price / 100).toFixed(2)}</p>
         </div>
