@@ -465,8 +465,14 @@ function AddLogsTab() {
   });
 
   const itemCount = content.split("\n\n").filter(s => s.trim()).length;
-  const availCount = (myStock ?? []).filter(i => !i.is_sold).length;
-  const soldCount = (myStock ?? []).filter(i => i.is_sold).length;
+
+  // Filter stock list to selected variant when one is picked
+  const filteredStock = variantId
+    ? (myStock ?? []).filter((i: any) => String(i.variant_id) === variantId)
+    : (myStock ?? []);
+  const availCount = filteredStock.filter(i => !i.is_sold).length;
+  const soldCount = filteredStock.filter(i => i.is_sold).length;
+  const selectedVariantName = allVariants.find(v => String(v.id) === variantId);
 
   return (
     <div className="space-y-3">
@@ -511,20 +517,25 @@ function AddLogsTab() {
         </button>
       </div>
 
-      {/* Stock list */}
+      {/* Stock list — filtered to selected variant */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
           <p className="text-[9px] text-white/20 uppercase tracking-widest">
-            Your Stock — {availCount} avail · {soldCount} sold
+            {selectedVariantName
+              ? `${selectedVariantName.productName} — ${selectedVariantName.name}`
+              : "All Stock"}
           </p>
+          <p className="text-[9px] text-white/20 font-mono">{availCount} avail · {soldCount} sold</p>
         </div>
         {stockLoading ? (
           <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
-        ) : (myStock ?? []).length === 0 ? (
-          <p className="text-[10px] text-white/20 py-3 text-center">No stock uploaded yet</p>
+        ) : filteredStock.length === 0 ? (
+          <p className="text-[10px] text-white/20 py-3 text-center">
+            {variantId ? "No stock for this option yet" : "No stock uploaded yet"}
+          </p>
         ) : (
           <div className="space-y-1 max-h-64 overflow-y-auto">
-            {(myStock ?? []).map((item: any) => (
+            {filteredStock.map((item: any) => (
               <StockItemRow key={item.id} item={item} />
             ))}
           </div>
