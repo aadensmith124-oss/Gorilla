@@ -13,14 +13,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const SELLER_BADGE: Record<string, string> = { bronze: "🍟", fresh: "🍺", top: "🔥" };
+const TIER_ORDER = ["top", "fresh", "bronze"];
+const TIER_LABEL: Record<string, string> = {
+  top: "🔥 Top Seller 🔥",
+  fresh: "🍺 Fresh Seller 🍺",
+  bronze: "🍟 Bronze Seller 🍟",
+};
 
-function getSellerLabel(seller: any): string {
-  const type = seller.sellerType ?? "bronze";
-  const name = seller.sellerDisplayName?.trim();
-  const emoji = SELLER_BADGE[type] ?? "🍟";
-  if (name) return `${emoji} ${name} ${emoji}`;
-  return `${emoji} ${type.charAt(0).toUpperCase() + type.slice(1)} Seller ${emoji}`;
+function groupByTier(sellers: any[]): { type: string; label: string; stock: number; ids: number[] }[] {
+  const map: Record<string, { stock: number; ids: number[] }> = {};
+  for (const s of sellers) {
+    const type = s.sellerType ?? "bronze";
+    if (!map[type]) map[type] = { stock: 0, ids: [] };
+    map[type].stock += s.stockCount ?? 0;
+    map[type].ids.push(s.id);
+  }
+  return TIER_ORDER
+    .filter((t) => map[t])
+    .map((t) => ({ type: t, label: TIER_LABEL[t] ?? t, stock: map[t].stock, ids: map[t].ids }));
 }
 
 export default function ProductDetailPage() {
@@ -31,7 +41,7 @@ export default function ProductDetailPage() {
   const product = products?.find((p: any) => p.name === name);
   const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-  const [selectedSellerId, setSelectedSellerId] = useState<number | null>(null);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
@@ -39,7 +49,6 @@ export default function ProductDetailPage() {
   const minQty = selectedVariant?.minQuantity || 1;
   const totalAmount = selectedVariant ? selectedVariant.price * quantity : 0;
 
-  // Fetch sellers for the selected variant
   const { data: sellers } = useQuery<any[]>({
     queryKey: ["/api/variants", selectedVariantId, "sellers"],
     queryFn: async () => {
@@ -50,13 +59,11 @@ export default function ProductDetailPage() {
     enabled: !!selectedVariantId,
   });
 
-  const hasSellers = sellers && sellers.length > 0;
+  const tiers = sellers && sellers.length > 0 ? groupByTier(sellers) : [];
 
   useEffect(() => {
-    if (selectedVariant) {
-      setQuantity(Math.max(minQty, 1));
-    }
-    setSelectedSellerId(null);
+    if (selectedVariant) setQuantity(Math.max(minQty, 1));
+    setSelectedTier(null);
   }, [selectedVariantId, minQty]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -70,7 +77,13 @@ export default function ProductDetailPage() {
         items: [{ variantId: selectedVariant.id, quantity }],
         cardIds: [],
       };
-      if (selectedSellerId) body.sellerId = selectedSellerId;
+      // Pick a random seller from the selected tier
+      if (selectedTier && sellers) {
+        const tierSellers = sellers.filter((s: any) => (s.sellerType ?? "bronze") === selectedTier);
+        if (tierSellers.length > 0) {
+          body.sellerId = tierSellers[Math.floor(Math.random() * tierSellers.length)].id;
+        }
+      }
       const res = await apiRequest("POST", "/api/orders", body);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -144,41 +157,29 @@ export default function ProductDetailPage() {
               </SelectContent>
             </Select>
 
-            {/* Seller chips — shown inline below variant selector */}
-            {selectedVariantId && hasSellers && (
-              <div className="space-y-1.5 pt-1">
-                <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">Available sellers</p>
-                <div className="flex flex-col gap-1.5">
-                  {sellers!.map((s: any) => {
-                    const label = getSellerLabel(s);
-                    const isSelected = selectedSellerId === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => setSelectedSellerId(isSelected ? null : s.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all ${
-                          isSelected
-                            ? "border-primary/50 bg-primary/10 text-white"
-                            : "border-white/[0.07] bg-[#1a1d24] text-white/70 hover:border-white/20 hover:text-white"
-                        }`}
-                        data-testid={`btn-seller-chip-${s.id}`}
-                      >
-                        <span className="font-bold">{label}</span>
-                        <span className={`text-[10px] font-mono ${isSelected ? "text-primary" : "text-white/30"}`}>
-                          {s.stockCount} in stock
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedSellerId && (
-                  <button
-                    onClick={() => setSelectedSellerId(null)}
-                    className="text-[10px] text-white/25 hover:text-white/50 transition-colors font-mono"
-                  >
-                    clear selection (any seller)
-                  </button>
-                )}
+            {/* Tier chips — one per seller tier with combined stock */}
+            {selectedVariantId && tiers.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                {tiers.map((tier) => {
+                  const isSelected = selectedTier === tier.type;
+                  return (
+                    <button
+                      key={tier.type}
+                      onClick={() => setSelectedTier(isSelected ? null : tier.type)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all ${
+                        isSelected
+                          ? "border-primary/50 bg-primary/10 text-white"
+                          : "border-white/[0.07] bg-[#1a1d24] text-white/70 hover:border-white/20 hover:text-white"
+                      }`}
+                      data-testid={`btn-tier-${tier.type}`}
+                    >
+                      <span className="font-bold">{tier.label}</span>
+                      <span className={`text-[10px] font-mono ${isSelected ? "text-primary" : "text-white/30"}`}>
+                        {tier.stock} in stock
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
