@@ -184,7 +184,7 @@ export default function CartPage() {
         orderId: data.order?.orderId || data.orderId || "N/A",
         total: dueTotal,
         paymentNote: data.paymentNote || data.order?.orderId || "",
-        cashappTag: data.cashappTag || "$RulfShop",
+        cashappTag: data.cashappTag || "",
       });
     },
     onError: (e: any) => {
@@ -208,7 +208,7 @@ export default function CartPage() {
     onSuccess: () => {
       clearCart();
       toast({ title: "Order placed!", description: "Your order has been placed and will be fulfilled soon." });
-      setLocation("/profile?tab=orders");
+      setLocation("/orders");
     },
     onError: (e: any) => {
       toast({ title: "Checkout failed", description: e.message || "Could not create order.", variant: "destructive" });
@@ -294,7 +294,7 @@ export default function CartPage() {
           total={cashappModal.total}
           paymentNote={cashappModal.paymentNote}
           cashappTag={cashappModal.cashappTag}
-          onClose={() => { setCashappModal(null); setLocation("/profile?tab=orders"); }}
+          onClose={() => { setCashappModal(null); setLocation("/orders"); }}
         />
       )}
 

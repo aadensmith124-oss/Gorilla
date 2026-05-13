@@ -50,7 +50,7 @@ export default function OrderDetailPageNew() {
     return (
       <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4 gap-4">
         <p className="text-white font-bold">Order not found</p>
-        <button onClick={() => setLocation("/profile?tab=orders")} className="text-sm text-primary hover:underline">← Back to Orders</button>
+        <button onClick={() => setLocation("/orders")} className="text-sm text-primary hover:underline">← Back to Orders</button>
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function OrderDetailPageNew() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-white">Order Info</h1>
           <button
-            onClick={() => setLocation("/profile?tab=orders")}
+            onClick={() => setLocation("/orders")}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
           >
             <X className="h-4 w-4" />

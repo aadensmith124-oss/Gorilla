@@ -1720,7 +1720,7 @@ function IntegrationsSection() {
   });
 
   const METHODS = [
-    { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-white" />, bg: "bg-primary" },
+    { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
     { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },

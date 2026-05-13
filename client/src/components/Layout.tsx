@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Building2 } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Building2, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -161,6 +161,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="px-3 py-2 border-b border-white/10">
                     <p className="text-[10px] text-white/30 truncate">{user.username}</p>
                   </div>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
+                        <User className="h-3 w-3" />
+                        Profile
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/my-code">
                       <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">

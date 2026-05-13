@@ -40,7 +40,7 @@ export function useForebitPolling() {
               });
               const orderId = data.orderId || lastOrderId;
               if (orderId) {
-                window.location.href = `/profile?order=${orderId}`;
+                window.location.href = `/order/${orderId}`;
               }
             } else {
               toast({
