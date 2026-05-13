@@ -20,7 +20,7 @@ function getSellerLabel(seller: any): string {
   const name = seller.sellerDisplayName?.trim();
   const emoji = SELLER_BADGE[type] ?? "🍟";
   if (name) return `${emoji} ${name} ${emoji}`;
-  return `${emoji} ${type.toUpperCase()} SELLER ${emoji}`;
+  return `${emoji} ${type.charAt(0).toUpperCase() + type.slice(1)} Seller ${emoji}`;
 }
 
 export default function ProductDetailPage() {
@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
   const product = products?.find((p: any) => p.name === name);
   const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+  const [selectedSellerId, setSelectedSellerId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
@@ -70,7 +70,7 @@ export default function ProductDetailPage() {
         items: [{ variantId: selectedVariant.id, quantity }],
         cardIds: [],
       };
-      if (selectedSellerId) body.sellerId = Number(selectedSellerId);
+      if (selectedSellerId) body.sellerId = selectedSellerId;
       const res = await apiRequest("POST", "/api/orders", body);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -143,36 +143,45 @@ export default function ProductDetailPage() {
                 })}
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Seller selector — only shown when sellers have stock for this variant */}
-          {selectedVariantId && hasSellers && (
-            <div className="space-y-1.5">
-              <p className="text-xs text-white/40">Choose seller</p>
-              <Select onValueChange={setSelectedSellerId} value={selectedSellerId || undefined}>
-                <SelectTrigger className="w-full h-10 bg-[#1a1d24] border-white/[0.07] text-white text-xs rounded-lg" data-testid="select-seller">
-                  <SelectValue placeholder="Any seller (random)" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1d24] border-white/[0.08] text-white">
-                  {sellers.map((s: any) => {
+            {/* Seller chips — shown inline below variant selector */}
+            {selectedVariantId && hasSellers && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">Available sellers</p>
+                <div className="flex flex-col gap-1.5">
+                  {sellers!.map((s: any) => {
                     const label = getSellerLabel(s);
+                    const isSelected = selectedSellerId === s.id;
                     return (
-                      <SelectItem
+                      <button
                         key={s.id}
-                        value={s.id.toString()}
-                        className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5"
+                        onClick={() => setSelectedSellerId(isSelected ? null : s.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all ${
+                          isSelected
+                            ? "border-primary/50 bg-primary/10 text-white"
+                            : "border-white/[0.07] bg-[#1a1d24] text-white/70 hover:border-white/20 hover:text-white"
+                        }`}
+                        data-testid={`btn-seller-chip-${s.id}`}
                       >
-                        <span className="font-bold text-white">
-                          {label}
-                          <span className="ml-2 font-normal text-white/40">- {s.stockCount} in stock</span>
+                        <span className="font-bold">{label}</span>
+                        <span className={`text-[10px] font-mono ${isSelected ? "text-primary" : "text-white/30"}`}>
+                          {s.stockCount} in stock
                         </span>
-                      </SelectItem>
+                      </button>
                     );
                   })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                </div>
+                {selectedSellerId && (
+                  <button
+                    onClick={() => setSelectedSellerId(null)}
+                    className="text-[10px] text-white/25 hover:text-white/50 transition-colors font-mono"
+                  >
+                    clear selection (any seller)
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Quantity */}
           <div className="space-y-1.5">
@@ -204,7 +213,7 @@ export default function ProductDetailPage() {
             </p>
           </div>
 
-          {/* Bottom actions */}
+          {/* Purchase button */}
           <button
             onClick={() => purchaseMutation.mutate()}
             disabled={!selectedVariantId || purchaseMutation.isPending}

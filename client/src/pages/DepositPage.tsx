@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronRight, Loader2, Copy, Check } from "lucide-react";
-import { Link } from "wouter";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -113,7 +112,7 @@ export default function DepositPage() {
   return (
     <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
       {/* Payment issues banner */}
-      <Link href="/support">
+      <a href="https://t.me/nychqsupport" target="_blank" rel="noopener noreferrer">
         <button className="w-full flex items-center justify-between px-3 py-2 bg-primary/10 border border-primary/20 rounded text-xs text-primary hover:bg-primary/15 transition-colors" data-testid="btn-payment-issues">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
@@ -121,7 +120,7 @@ export default function DepositPage() {
           </div>
           <ChevronRight className="h-3 w-3 flex-shrink-0" />
         </button>
-      </Link>
+      </a>
 
       {/* Method cards */}
       <div className="grid grid-cols-2 gap-2">

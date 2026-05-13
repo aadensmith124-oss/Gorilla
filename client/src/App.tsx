@@ -18,12 +18,10 @@ import ProfilePage from "@/pages/ProfilePageFix";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
-import SupportPage from "@/pages/SupportPage";
 import DepositPage from "@/pages/DepositPage";
 import BecomeSellerPage from "@/pages/BecomeSellerPage";
 import SellerDashboardPage from "@/pages/SellerDashboardPage";
 import OrdersPage from "@/pages/OrdersPage";
-import EmailBomberPage from "@/pages/EmailBomberPage";
 import MyCodePage from "@/pages/MyCodePage";
 import AchPage from "@/pages/AchPage";
 
@@ -54,10 +52,8 @@ function Router() {
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/my-code" component={MyCodePage} />
-        <Route path="/support" component={SupportPage} />
         <Route path="/become-seller" component={BecomeSellerPage} />
         <Route path="/seller" component={SellerDashboardPage} />
-        <Route path="/email-bomber" component={EmailBomberPage} />
         <Route path="/ach" component={AchPage} />
         <Route path="/admin">
           {() => <AdminPage />}

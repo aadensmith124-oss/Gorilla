@@ -1115,7 +1115,10 @@ function CopyLoginCode({ code, userId }: { code: string; userId: number }) {
 
 function UsersSection() {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [balanceInput, setBalanceInput] = useState("");
+  const [search, setSearch] = useState("");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['/api/admin/users'],
@@ -1133,9 +1136,9 @@ function UsersSection() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      qc.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({ title: 'User banned' });
-      if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: true }));
+      setSelectedUser((u: any) => u ? { ...u, isBanned: true } : null);
     },
   });
 
@@ -1145,84 +1148,190 @@ function UsersSection() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      qc.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({ title: 'User unbanned' });
-      if (selectedUser) setSelectedUser((u: any) => ({ ...u, isBanned: false }));
+      setSelectedUser((u: any) => u ? { ...u, isBanned: false } : null);
     },
+  });
+
+  const setBalanceMutation = useMutation({
+    mutationFn: async ({ userId, balance }: { userId: number; balance: string }) => {
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/set-balance`, { balance: parseFloat(balance) });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed'); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setSelectedUser((u: any) => u ? { ...u, balance: data.balance } : null);
+      setBalanceInput("");
+      toast({ title: `Balance set to $${(data.balance / 100).toFixed(2)}` });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const setRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/set-role`, { role });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed'); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setSelectedUser((u: any) => u ? { ...u, role: data.role } : null);
+      toast({ title: `Role set to ${data.role}` });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
+  const filtered = (users ?? []).filter((u: any) =>
+    !search || u.username?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
   if (selectedUser) {
     return (
-      <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => setSelectedUser(null)}>← Back to Users</Button>
-        <Card className="bg-[#0f1115] border-white/5">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between flex-wrap gap-2">
-              <span>{selectedUser.username}</span>
-              {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400">BANNED</Badge>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-white/5 rounded-xl p-3 space-y-2 border border-white/5 text-sm">
-              <p className="text-[10px] font-bold text-muted-foreground mb-2">Account</p>
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">Login Code</p>
-                {selectedUser.loginCode
-                  ? <CopyLoginCode code={selectedUser.loginCode} userId={selectedUser.id} />
-                  : <p className="text-xs text-white/30">—</p>}
-              </div>
-              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Telegram</p><p className="text-xs">@{selectedUser.telegramUsername || '—'}</p></div>
-              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Role</p><p className="text-xs capitalize">{selectedUser.role}</p></div>
-              <div className="flex justify-between"><p className="text-xs text-muted-foreground">Joined</p><p className="text-xs">{new Date(selectedUser.createdAt).toLocaleDateString()}</p></div>
+      <div className="space-y-3">
+        <button onClick={() => setSelectedUser(null)} className="text-xs text-white/40 hover:text-white transition-colors">← Back to Users</button>
+
+        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-bold text-white">{selectedUser.username}</p>
+              <p className="text-[10px] text-white/30 font-mono">{selectedUser.email}</p>
             </div>
-            <div className="border-t border-white/5 pt-3 flex gap-2">
-              {selectedUser.isBanned ? (
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
-                  onClick={() => unbanMutation.mutate(selectedUser.id)} disabled={unbanMutation.isPending}>
-                  {unbanMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                  Unban User
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 h-8 text-xs"
-                  onClick={() => { if (confirm('Ban this user?')) banMutation.mutate(selectedUser.id); }}
-                  disabled={banMutation.isPending}>
-                  {banMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                  Ban User
-                </Button>
-              )}
+            <div className="flex gap-2 items-center">
+              {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
+              <Badge className={selectedUser.role === "admin" ? "bg-primary/20 text-primary border-primary/30" : "bg-white/5 text-white/40 border-white/10"}>
+                {selectedUser.role}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="bg-black/30 rounded-lg p-2">
+              <p className="text-[9px] text-white/30">Balance</p>
+              <p className="text-sm font-mono font-bold text-white">${(selectedUser.balance / 100).toFixed(2)}</p>
+            </div>
+            <div className="bg-black/30 rounded-lg p-2">
+              <p className="text-[9px] text-white/30">Login Code</p>
+              {selectedUser.loginCode
+                ? <CopyLoginCode code={selectedUser.loginCode} userId={selectedUser.id} />
+                : <p className="text-xs text-white/30">—</p>}
+            </div>
+          </div>
+
+          {/* Set Balance */}
+          <div className="space-y-1.5 pt-1 border-t border-white/5">
+            <p className="text-[9px] text-white/30 uppercase tracking-widest">Set Balance ($)</p>
+            <div className="flex gap-2">
+              <input
+                value={balanceInput}
+                onChange={e => setBalanceInput(e.target.value)}
+                placeholder="e.g. 50.00"
+                type="number"
+                step="0.01"
+                min="0"
+                className="flex-1 h-8 bg-black/40 border border-white/10 rounded px-2 text-xs text-white font-mono outline-none focus:border-primary/40"
+                data-testid={`input-balance-${selectedUser.id}`}
+              />
+              <button
+                onClick={() => setBalanceMutation.mutate({ userId: selectedUser.id, balance: balanceInput })}
+                disabled={setBalanceMutation.isPending || !balanceInput}
+                className="h-8 px-3 bg-primary/80 hover:bg-primary text-white text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
+                data-testid={`btn-set-balance-${selectedUser.id}`}
+              >
+                {setBalanceMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Set"}
+              </button>
+            </div>
+          </div>
+
+          {/* Role + Actions */}
+          <div className="flex flex-wrap gap-2 pt-1 border-t border-white/5">
+            {selectedUser.role !== "admin" ? (
+              <button
+                onClick={() => { if (confirm("Make this user admin?")) setRoleMutation.mutate({ userId: selectedUser.id, role: "admin" }); }}
+                disabled={setRoleMutation.isPending}
+                className="h-7 px-3 bg-yellow-600/80 hover:bg-yellow-600 text-white text-xs font-bold rounded transition-colors disabled:opacity-40"
+                data-testid={`btn-make-admin-${selectedUser.id}`}
+              >
+                Make Admin
+              </button>
+            ) : (
+              <button
+                onClick={() => { if (confirm("Remove admin from this user?")) setRoleMutation.mutate({ userId: selectedUser.id, role: "user" }); }}
+                disabled={setRoleMutation.isPending}
+                className="h-7 px-3 border border-yellow-700/40 text-yellow-500 text-xs font-bold rounded hover:bg-yellow-900/20 transition-colors disabled:opacity-40"
+                data-testid={`btn-remove-admin-${selectedUser.id}`}
+              >
+                Remove Admin
+              </button>
+            )}
+            {selectedUser.isBanned ? (
+              <button
+                onClick={() => unbanMutation.mutate(selectedUser.id)}
+                disabled={unbanMutation.isPending}
+                className="h-7 px-3 bg-green-700/80 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors disabled:opacity-40"
+                data-testid={`btn-unban-${selectedUser.id}`}
+              >
+                Unban
+              </button>
+            ) : (
+              <button
+                onClick={() => { if (confirm("Ban this user?")) banMutation.mutate(selectedUser.id); }}
+                disabled={banMutation.isPending}
+                className="h-7 px-3 border border-red-800/40 text-red-400 text-xs font-bold rounded hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                data-testid={`btn-ban-${selectedUser.id}`}
+              >
+                Ban
+              </button>
+            )}
+          </div>
+
+          <div className="text-[9px] text-white/20 font-mono pt-1 border-t border-white/5 space-y-0.5">
+            <p>Telegram: @{selectedUser.telegramUsername || '—'}</p>
+            <p>Joined: {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <p className="text-sm text-muted-foreground mt-1">{users?.length || 0} total</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-white">Users <span className="text-white/30 font-normal">({(users ?? []).length})</span></h2>
       </div>
-      <div className="space-y-2">
-        {users?.map((user: any) => (
-          <Card key={user.id} className="bg-[#0f1115] border-white/5 cursor-pointer hover:border-white/10 transition-colors"
-            onClick={() => setSelectedUser(user)}>
-            <CardContent className="p-4 flex items-center justify-between gap-3">
-              <div className="space-y-0.5 min-w-0 flex-1" onClick={() => setSelectedUser(user)}>
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search by username or email..."
+        className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none"
+        data-testid="input-users-search"
+      />
+      <div className="space-y-1.5">
+        {filtered.map((user: any) => (
+          <button
+            key={user.id}
+            onClick={() => { setSelectedUser(user); setBalanceInput(""); }}
+            className="w-full text-left bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors"
+            data-testid={`btn-user-${user.id}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-bold text-sm text-white">{user.username}</p>
-                  {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
+                  <p className="font-bold text-sm text-white truncate">{user.username}</p>
+                  {user.role === "admin" && <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px]">admin</Badge>}
+                  {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">banned</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground truncate">@{user.telegramUsername || '—'} · {user.role}</p>
+                <p className="text-[10px] text-white/30 font-mono">${(user.balance / 100).toFixed(2)}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2 shrink-0">
                 {user.loginCode && <CopyLoginCode code={user.loginCode} userId={user.id} />}
-                <ChevronRight className="h-4 w-4 text-muted-foreground cursor-pointer" onClick={() => setSelectedUser(user)} />
+                <ChevronRight className="h-3.5 w-3.5 text-white/20" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </button>
         ))}
       </div>
     </div>

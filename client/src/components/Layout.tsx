@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Mail, Building2 } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Building2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -41,15 +41,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ],
     },
     {
-      label: "BOT",
-      items: [
-        { href: "/email-bomber", icon: Mail, label: "Email Bomber" },
-      ],
-    },
-    {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/+CiKKet6kWmBmYzU5", icon: Send, label: "Telegram Channel", external: true },
+        { href: "https://t.me/nychqsupport", icon: Send, label: "Telegram Support", external: true },
       ],
     },
     ...(user?.role === "admin" ? [{

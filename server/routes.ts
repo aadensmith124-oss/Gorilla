@@ -715,6 +715,35 @@ export async function registerRoutes(
     res.json(user);
   });
 
+  // Set user balance to an absolute value
+  app.post("/api/admin/users/:id/set-balance", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = Number(req.params.id);
+    const newBalance = Math.round(Number(req.body.balance) * 100); // dollars → cents
+    const existing = await storage.getUser(userId);
+    if (!existing) return res.status(404).json({ message: "User not found" });
+    const delta = newBalance - existing.balance;
+    await db.update(users).set({ balance: newBalance } as any).where(eq(users.id, userId));
+    await storage.createTransaction(userId, delta, "admin_adjustment", `Admin set balance to $${(newBalance / 100).toFixed(2)}`);
+    const updated = await storage.getUser(userId);
+    res.json(updated);
+  });
+
+  // Set user role (promote/demote admin)
+  app.post("/api/admin/users/:id/set-role", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = Number(req.params.id);
+    const { role } = req.body;
+    if (!["user", "admin"].includes(role)) return res.status(400).json({ message: "Invalid role" });
+    await db.update(users).set({ role } as any).where(eq(users.id, userId));
+    const updated = await storage.getUser(userId);
+    res.json(updated);
+  });
+
   // Admin Balance Codes (list)
   app.get("/api/admin/codes", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
