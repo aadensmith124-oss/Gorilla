@@ -8,8 +8,75 @@ import { Loader2, Package, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+const RANKS = [
+  { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-white/40",  bg: "bg-white/5",   discount: 0,  threshold: 0       },
+  { key: "regular", label: "Regular", emoji: "⭐", color: "text-blue-400",  bg: "bg-blue-500/10", discount: 2,  threshold: 10000   },
+  { key: "vip",     label: "VIP",     emoji: "💎", color: "text-purple-400",bg: "bg-purple-500/10", discount: 5,  threshold: 50000   },
+  { key: "nyc",     label: "NYC",     emoji: "🔥", color: "text-amber-400", bg: "bg-amber-500/10", discount: 10, threshold: 100000  },
+] as const;
+
+function RankCard({ rankData }: { rankData: any }) {
+  const current = RANKS.find(r => r.key === rankData.rank) ?? RANKS[0];
+  const currentIdx = RANKS.findIndex(r => r.key === rankData.rank);
+  const next = RANKS[currentIdx + 1] ?? null;
+  const totalDeposited = rankData.totalDeposited ?? 0;
+  const progress = next
+    ? Math.min(100, Math.round(((totalDeposited - current.threshold) / (next.threshold - current.threshold)) * 100))
+    : 100;
+
+  return (
+    <div className={`rounded-xl border border-white/5 ${current.bg} p-4 space-y-3`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{current.emoji}</span>
+          <div>
+            <p className={`text-sm font-bold ${current.color}`}>{current.label}</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest">Your rank</p>
+          </div>
+        </div>
+        {current.discount > 0 && (
+          <span className={`text-xs font-bold px-2 py-1 rounded-full border ${current.color} border-current/30`}>
+            {current.discount}% off all orders
+          </span>
+        )}
+        {current.discount === 0 && (
+          <span className="text-xs text-white/20 font-mono">no discount yet</span>
+        )}
+      </div>
+
+      {next && (
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[10px] text-white/30">
+            <span>${(totalDeposited / 100).toFixed(0)} deposited</span>
+            <span>${(next.threshold / 100).toFixed(0)} for {next.label}</span>
+          </div>
+          <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${current.color.replace("text-", "bg-")}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+      {!next && (
+        <p className="text-[10px] text-amber-400/60">Max rank reached — {current.discount}% discount on every order</p>
+      )}
+
+      <div className="grid grid-cols-4 gap-1 pt-1">
+        {RANKS.map((r, i) => (
+          <div key={r.key} className={`text-center py-1.5 rounded-lg ${i <= currentIdx ? r.bg : "bg-white/[0.02]"} border border-white/5`}>
+            <div className="text-sm">{r.emoji}</div>
+            <div className={`text-[9px] font-bold mt-0.5 ${i <= currentIdx ? r.color : "text-white/20"}`}>{r.label}</div>
+            <div className="text-[8px] text-white/20">{r.discount > 0 ? `${r.discount}%` : "—"}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
@@ -17,6 +84,7 @@ export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const queryClient = useQueryClient();
+  const { data: rankData } = useQuery<any>({ queryKey: ["/api/user/rank"] });
 
   const tabFromUrl = new URLSearchParams(search).get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "dashboard");
@@ -50,7 +118,8 @@ export default function ProfilePage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="pt-6">
+        <TabsContent value="dashboard" className="pt-6 space-y-4">
+          {rankData && <RankCard rankData={rankData} />}
           <Card className="bg-card/40 border-white/5">
             <CardHeader>
               <CardTitle>Account Information</CardTitle>

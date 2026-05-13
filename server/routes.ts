@@ -425,6 +425,20 @@ export async function registerRoutes(
     }
   });
 
+  // User Rank
+  app.get("/api/user/rank", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const result = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), sql`amount > 0`, sql`type IN ('deposit', 'manual_deposit')`));
+    const totalDeposited = Number(result[0]?.total ?? 0);
+    const rank = totalDeposited >= 100000 ? "nyc" : totalDeposited >= 50000 ? "vip" : totalDeposited >= 10000 ? "regular" : "newbie";
+    const discountPct = rank === "nyc" ? 10 : rank === "vip" ? 5 : rank === "regular" ? 2 : 0;
+    const nextRankAt = rank === "newbie" ? 10000 : rank === "regular" ? 50000 : rank === "vip" ? 100000 : null;
+    res.json({ rank, discountPct, totalDeposited, nextRankAt });
+  });
+
   // User - Update Password
   app.patch("/api/user/password", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });

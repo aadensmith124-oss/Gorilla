@@ -452,6 +452,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Apply rank discount automatically
+    const rankResult = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), sql`amount > 0`, sql`type IN ('deposit', 'manual_deposit')`));
+    const totalDeposited = Number(rankResult[0]?.total ?? 0);
+    const rankDiscountPct = totalDeposited >= 100000 ? 10 : totalDeposited >= 50000 ? 5 : totalDeposited >= 10000 ? 2 : 0;
+    if (rankDiscountPct > 0) {
+      total = Math.max(0, Math.round(total * (1 - rankDiscountPct / 100)));
+    }
+
     if (rawTotal < 100) throw new Error("Order total must be at least $1.00");
 
     // Check balance BEFORE consuming any stock

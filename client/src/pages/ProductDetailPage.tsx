@@ -26,6 +26,7 @@ export default function ProductDetailPage() {
 
   const selectedVariant = product?.variants.find((v: any) => v.id.toString() === selectedVariantId);
   const minQty = selectedVariant?.minQuantity || 1;
+  const maxQty = selectedVariant?.stockCount ?? 999;
   const totalAmount = selectedVariant ? selectedVariant.price * quantity : 0;
 
   // Load all sellers for the selected variant — used to pick one randomly at purchase
@@ -40,8 +41,8 @@ export default function ProductDetailPage() {
   });
 
   useEffect(() => {
-    if (selectedVariant) setQuantity(Math.max(minQty, 1));
-  }, [selectedVariantId, minQty]);
+    if (selectedVariant) setQuantity(Math.min(Math.max(minQty, 1), maxQty));
+  }, [selectedVariantId, minQty, maxQty]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white/50 text-sm">Product not found</div>;
@@ -139,15 +140,17 @@ export default function ProductDetailPage() {
             <div className="flex items-center h-10 bg-[#1a1d24] border border-white/[0.07] rounded-lg overflow-hidden w-full">
               <button
                 onClick={() => setQuantity(prev => Math.max(minQty, prev - 1))}
-                className="h-full px-3 text-white/50 hover:text-white hover:bg-white/5 transition-colors border-r border-white/[0.07] text-base font-medium"
+                disabled={quantity <= minQty}
+                className="h-full px-3 text-white/50 hover:text-white hover:bg-white/5 transition-colors border-r border-white/[0.07] text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
                 data-testid="button-qty-decrease"
               >
                 <Minus className="h-3 w-3" />
               </button>
               <span className="flex-1 text-center text-sm text-white font-mono">{quantity}</span>
               <button
-                onClick={() => setQuantity(prev => prev + 1)}
-                className="h-full px-3 text-white/50 hover:text-white hover:bg-white/5 transition-colors border-l border-white/[0.07] text-base font-medium"
+                onClick={() => setQuantity(prev => Math.min(maxQty, prev + 1))}
+                disabled={quantity >= maxQty}
+                className="h-full px-3 text-white/50 hover:text-white hover:bg-white/5 transition-colors border-l border-white/[0.07] text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
                 data-testid="button-qty-increase"
               >
                 <Plus className="h-3 w-3" />
