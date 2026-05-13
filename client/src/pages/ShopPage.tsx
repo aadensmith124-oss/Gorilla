@@ -4,6 +4,7 @@ import { Loader2, ShieldX } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const result = [...arr];
@@ -19,10 +20,18 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
   return result;
 }
 
+const SELLER_TYPES = [
+  { value: "all", label: "All Sellers" },
+  { value: "top", label: "🔥 Top Seller" },
+  { value: "fresh", label: "🍺 Fresh Seller" },
+  { value: "bronze", label: "🍟 Bronze Seller" },
+];
+
 export default function ShopPage() {
   const { user } = useAuth();
   const { data: products, isLoading } = useProducts();
   const [search, setSearch] = useState("");
+  const [sellerType, setSellerType] = useState("all");
   const [shuffleSeed] = useState(() => Math.random() * 233280);
 
   const shuffledProducts = useMemo(() => {
@@ -32,13 +41,20 @@ export default function ShopPage() {
     return [...pinned, ...rest];
   }, [products, shuffleSeed]);
 
-  const filtered = shuffledProducts.filter((p: any) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    return shuffledProducts.filter((p: any) => {
+      const matchSearch =
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.description?.toLowerCase().includes(search.toLowerCase());
+      const matchSeller =
+        sellerType === "all" ||
+        p.variants?.some((v: any) => (v.sellerType ?? "bronze") === sellerType);
+      return matchSearch && matchSeller;
+    });
+  }, [shuffledProducts, search, sellerType]);
 
   if (isLoading) {
-    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>;
   }
 
   if (user?.isBanned) {
@@ -56,7 +72,7 @@ export default function ShopPage() {
   return (
     <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
       <div className="space-y-1 mb-4">
-        <h1 className="text-xl font-bold text-white">TRENT <span className="text-primary">HQ</span></h1>
+        <h1 className="text-xl font-bold text-white">NYC<span className="text-white/40">HQ</span></h1>
         <p className="text-xs text-white/30">Premium marketplace</p>
       </div>
 
@@ -69,6 +85,17 @@ export default function ShopPage() {
           data-testid="input-search"
         />
       </div>
+
+      <Select value={sellerType} onValueChange={setSellerType}>
+        <SelectTrigger className="w-full bg-[#111] border-white/5 text-white/60 h-9 text-xs" data-testid="select-seller-type">
+          <SelectValue placeholder="All Sellers" />
+        </SelectTrigger>
+        <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
+          {SELLER_TYPES.map(t => (
+            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-white/20 text-sm">No products found</div>
@@ -101,7 +128,7 @@ export default function ShopPage() {
                       <span className="text-[10px] line-through text-white/25 font-mono">${(comparePrice / 100).toFixed(2)}</span>
                     )}
                     {lowestPrice > 0 && (
-                      <span className="text-xs font-bold text-primary font-mono">${(lowestPrice / 100).toFixed(2)}</span>
+                      <span className="text-xs font-bold text-white font-mono">${(lowestPrice / 100).toFixed(2)}</span>
                     )}
                   </div>
                 </div>

@@ -66,7 +66,7 @@ export default function BecomeSellerPage() {
     <div className="max-w-md mx-auto px-4 py-6 space-y-5">
       <div className="space-y-1">
         <h1 className="text-xl font-bold text-white">Become a Seller</h1>
-        <p className="text-sm text-white/40">Join TRENT HQ marketplace and sell your products</p>
+        <p className="text-sm text-white/40">Join NYCHQ marketplace and sell your products</p>
       </div>
 
       {/* Requirements */}

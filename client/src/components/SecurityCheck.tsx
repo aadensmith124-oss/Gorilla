@@ -128,7 +128,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
           <div className="text-right flex-shrink-0">
             <p className="text-white/80 text-xs font-bold tracking-widest uppercase">
-              TRENT<span style={{ color: "#cc2222" }}>HQ</span>
+              NYC<span style={{ color: "#888" }}>HQ</span>
             </p>
             <p className="text-white/30 text-[10px] mt-0.5">Security · Protected</p>
           </div>
@@ -147,7 +147,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-white/20 text-[11px]">
-          Ray ID: {rayId.current} · Protected by TRENTHQ Security
+          Ray ID: {rayId.current} · Protected by NYCHQ Security
         </p>
       </div>
     </div>

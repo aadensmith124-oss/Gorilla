@@ -108,8 +108,9 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           <p className="text-sm font-mono font-bold text-white flex-shrink-0">${(card.price / 100).toFixed(2)}</p>
         </div>
 
-        {/* Row 2: Bank + card type */}
-        <div className="flex items-center gap-2 font-mono text-[11px] text-white/40">
+        {/* Row 2: BIN chip + bank + card type + country */}
+        <div className="flex items-center gap-2 font-mono text-[11px] text-white/40 flex-wrap">
+          {bin && <span className="border border-white/20 px-1.5 py-0.5 rounded text-white/60 text-[11px]">{bin}</span>}
           {binData?.bank && <span>{binData.bank}</span>}
           {cardType && <span className="uppercase">{cardType}</span>}
           {(binData?.country || binData?.countryCode) && (
