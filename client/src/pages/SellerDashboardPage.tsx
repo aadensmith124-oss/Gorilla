@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -33,8 +33,14 @@ export default function SellerDashboardPage() {
     enabled: !!user,
   });
 
-  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
-  if (!sellerStatus?.isSeller) { setLocation("/become-seller"); return null; }
+  useEffect(() => {
+    if (!isLoading && sellerStatus && !sellerStatus.isSeller) {
+      setLocation("/become-seller");
+    }
+  }, [isLoading, sellerStatus]);
+
+  if (isLoading || !sellerStatus) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+  if (!sellerStatus.isSeller) return null;
 
   const sellerCode = sellerStatus.application?.sellerCode ?? "—";
   const sellerType = (sellerStatus as any).sellerType ?? "bronze";
@@ -399,13 +405,11 @@ function StockItemRow({ item }: { item: any }) {
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const preview = (item.content || "").substring(0, 60) + ((item.content || "").length > 60 ? "…" : "");
-
   return (
     <div className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
       <div className="min-w-0 flex-1">
         <p className="text-[9px] text-white/30 uppercase tracking-widest truncate">{item.product_name} — {item.variant_name}</p>
-        <p className="text-[10px] font-mono text-white/50 truncate mt-0.5">{preview}</p>
+        <p className="text-[9px] font-mono text-white/20 mt-0.5">#{item.id}</p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className={`text-[9px] ${isSold ? "text-green-400" : "text-white/20"}`}>{isSold ? "sold" : "avail"}</span>
@@ -435,14 +439,14 @@ function AddLogsTab() {
 
   const allowedIds = productPerms?.allowedIds ?? [];
 
-  const allVariants = (products ?? []).flatMap((p: any) =>
-    (p.variants ?? []).map((v: any) => ({
+  // Only include products this seller is allowed to sell in
+  const allVariants = (products ?? [])
+    .filter((p: any) => allowedIds.length === 0 || allowedIds.includes(p.id))
+    .flatMap((p: any) => (p.variants ?? []).map((v: any) => ({
       ...v,
       productName: p.name,
       productId: p.id,
-      isAllowed: allowedIds.length === 0 || allowedIds.includes(p.id),
-    }))
-  );
+    })));
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -469,23 +473,14 @@ function AddLogsTab() {
         <div className="space-y-1">
           <label className="text-[9px] text-white/30 uppercase tracking-widest">Select Product Option</label>
           {isLoading ? <div className="text-xs text-white/30">Loading...</div> : (
-            <Select value={variantId} onValueChange={(val) => {
-              const v = allVariants.find(v => String(v.id) === val);
-              if (v?.isAllowed !== false) setVariantId(val);
-            }}>
+            <Select value={variantId} onValueChange={setVariantId}>
               <SelectTrigger className="h-8 text-xs bg-black/50 border-white/10" data-testid="select-variant">
                 <SelectValue placeholder="Pick a product option..." />
               </SelectTrigger>
               <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
                 {allVariants.map((v: any) => (
-                  <SelectItem
-                    key={v.id}
-                    value={String(v.id)}
-                    disabled={!v.isAllowed}
-                    className={`text-xs ${!v.isAllowed ? "opacity-40 cursor-not-allowed" : ""}`}
-                  >
+                  <SelectItem key={v.id} value={String(v.id)} className="text-xs">
                     {v.productName} — {v.name}
-                    {!v.isAllowed && <span className="ml-1 text-red-400/70">🚫 restricted</span>}
                   </SelectItem>
                 ))}
               </SelectContent>

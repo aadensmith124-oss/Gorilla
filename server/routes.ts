@@ -92,7 +92,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const count = await storage.addStockItems(req.body.variantId, req.body.rawContent);
+    const sellerId = req.body.sellerId ? Number(req.body.sellerId) : undefined;
+    const count = await storage.addStockItems(req.body.variantId, req.body.rawContent, sellerId);
     res.json({ addedCount: count });
   });
 
@@ -747,7 +748,8 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const result = await storage.addStockItems(req.body.variantId, req.body.rawContent);
+    const sellerId = req.body.sellerId ? Number(req.body.sellerId) : undefined;
+    const result = await storage.addStockItems(req.body.variantId, req.body.rawContent, sellerId);
     res.json({ addedCount: result.added, skippedCount: result.skipped });
   });
 

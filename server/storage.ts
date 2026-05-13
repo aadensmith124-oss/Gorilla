@@ -291,7 +291,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(products).where(eq(products.id, id));
   }
 
-  async addStockItems(variantId: number, content: string): Promise<{ added: number; skipped: number }> {
+  async addStockItems(variantId: number, content: string, sellerId?: number): Promise<{ added: number; skipped: number }> {
     const items = content.split(/\n\s*\n/).map(block => block.trim()).filter(block => block.length > 0);
     if (items.length === 0) return { added: 0, skipped: 0 };
 
@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
       const existing = await db.select({ id: stockItems.id }).from(stockItems)
         .where(eq(stockItems.content, itemContent)).limit(1);
       if (existing.length > 0) { skipped++; continue; }
-      await db.insert(stockItems).values({ variantId, content: itemContent, isSold: false });
+      await db.insert(stockItems).values({ variantId, content: itemContent, isSold: false, sellerId: sellerId ?? null } as any);
       added++;
     }
     return { added, skipped };

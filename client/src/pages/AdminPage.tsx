@@ -613,8 +613,18 @@ function ProductsSection() {
 
 function VariantStockPanel({ variantId }: { variantId: number }) {
   const [input, setInput] = useState("");
+  const [sellerId, setSellerId] = useState<string>("nychq");
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  const { data: activeSellers } = useQuery<any[]>({
+    queryKey: ["/api/admin/active-sellers"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/active-sellers", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["/api/admin/stock", variantId],
@@ -628,7 +638,9 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!input.trim()) throw new Error("No items to add");
-      const res = await apiRequest("POST", "/api/admin/stock/bulk", { variantId, rawContent: input });
+      const body: any = { variantId, rawContent: input };
+      if (sellerId !== "nychq") body.sellerId = Number(sellerId);
+      const res = await apiRequest("POST", "/api/admin/stock/bulk", body);
       return res.json();
     },
     onSuccess: (data) => {
@@ -656,6 +668,8 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
     },
   });
 
+  const TIER_BADGE: Record<string, string> = { top: "🔥", fresh: "🍺", bronze: "🍟" };
+
   return (
     <div className="mt-1 mb-2 bg-black/50 rounded-lg border border-white/8 p-3 space-y-3">
       <p className="text-[10px] font-bold text-muted-foreground">
@@ -663,6 +677,23 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       </p>
 
       <div className="space-y-1.5">
+        {/* Seller attribution picker */}
+        <div className="space-y-1">
+          <p className="text-[9px] text-white/30 uppercase tracking-widest">Attribute stock to</p>
+          <Select value={sellerId} onValueChange={setSellerId}>
+            <SelectTrigger className="h-7 text-xs bg-black/60 border-white/10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
+              <SelectItem value="nychq" className="text-xs">🔥 NYCHQ (Admin Stock)</SelectItem>
+              {(activeSellers ?? []).map((s: any) => (
+                <SelectItem key={s.id} value={String(s.id)} className="text-xs">
+                  {TIER_BADGE[s.sellerType] ?? "🍟"} {s.sellerDisplayName || s.username} ({s.sellerType})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
