@@ -24,6 +24,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import MyCodePage from "@/pages/MyCodePage";
 import AchPage from "@/pages/AchPage";
 import CartPage from "@/pages/CartPage";
+import RanksPage from "@/pages/RanksPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -57,6 +58,7 @@ function Router() {
         <Route path="/ach" component={AchPage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/ranks" component={RanksPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>
