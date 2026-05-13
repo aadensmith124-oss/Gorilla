@@ -1511,19 +1511,21 @@ export async function registerRoutes(
   app.get("/api/admin/settings/telegram-bot", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     res.json({
-      adminId:         await storage.getSetting("telegram_admin_id", ""),
-      nameTag:         await storage.getSetting("telegram_name_tag", "nychq.cc"),
-      requiredChannel: await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5"),
-      rewardAmount:    await storage.getSetting("referral_reward_amount", "500"),
+      adminId:      await storage.getSetting("telegram_admin_id", ""),
+      nameTag:      await storage.getSetting("telegram_name_tag", "nychq.cc"),
+      channelLink:  await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5"),
+      channelId:    await storage.getSetting("telegram_channel_id", ""),
+      rewardAmount: await storage.getSetting("referral_reward_amount", "500"),
     });
   });
 
   app.post("/api/admin/settings/telegram-bot", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
-    const { adminId, nameTag, requiredChannel, rewardAmount } = req.body;
-    if (adminId          !== undefined) await storage.setSetting("telegram_admin_id",       String(adminId).trim());
-    if (nameTag          !== undefined) await storage.setSetting("telegram_name_tag",        String(nameTag).trim());
-    if (requiredChannel  !== undefined) await storage.setSetting("telegram_required_channel", String(requiredChannel).trim());
+    const { adminId, nameTag, channelLink, channelId, rewardAmount } = req.body;
+    if (adminId     !== undefined) await storage.setSetting("telegram_admin_id",         String(adminId).trim());
+    if (nameTag     !== undefined) await storage.setSetting("telegram_name_tag",          String(nameTag).trim());
+    if (channelLink !== undefined) await storage.setSetting("telegram_required_channel",  String(channelLink).trim());
+    if (channelId   !== undefined) await storage.setSetting("telegram_channel_id",        String(channelId).trim());
     if (rewardAmount !== undefined) {
       const cents = Math.round(parseFloat(rewardAmount) * 100);
       if (!isNaN(cents) && cents > 0) await storage.setSetting("referral_reward_amount", String(cents));
