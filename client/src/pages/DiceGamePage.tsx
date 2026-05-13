@@ -33,7 +33,7 @@ export default function DiceGamePage() {
                   <motion.div 
                     initial={{ rotate: -180, scale: 0 }} 
                     animate={{ rotate: 0, scale: 1 }} 
-                    className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center text-4xl font-black text-white shadow-xl shadow-primary/30"
+                    className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center text-4xl font-black text-black shadow-xl shadow-primary/30"
                   >
                     {result.roll[0]}
                   </motion.div>
@@ -41,7 +41,7 @@ export default function DiceGamePage() {
                     initial={{ rotate: 180, scale: 0 }} 
                     animate={{ rotate: 0, scale: 1 }} 
                     transition={{ delay: 0.1 }}
-                    className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center text-4xl font-black text-white shadow-xl shadow-primary/30"
+                    className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center text-4xl font-black text-black shadow-xl shadow-primary/30"
                   >
                     {result.roll[1]}
                   </motion.div>
@@ -70,7 +70,7 @@ export default function DiceGamePage() {
             </div>
             <Button 
               size="lg" 
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black italic tracking-tighter uppercase text-xl" 
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-black font-black italic tracking-tighter uppercase text-xl" 
               onClick={handleRoll}
               disabled={playDice.isPending}
             >

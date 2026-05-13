@@ -1264,7 +1264,7 @@ function UsersSection() {
               <button
                 onClick={() => setBalanceMutation.mutate({ userId: selectedUser.id, balance: balanceInput })}
                 disabled={setBalanceMutation.isPending || !balanceInput}
-                className="h-8 px-3 bg-primary/80 hover:bg-primary text-white text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
+                className="h-8 px-3 bg-primary/80 hover:bg-primary text-black text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
                 data-testid={`btn-set-balance-${selectedUser.id}`}
               >
                 {setBalanceMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Set"}
@@ -2600,7 +2600,7 @@ function SellerApplicationsSection() {
                     <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Display name (e.g. JOHN'S SHOP)" className="w-full bg-black/40 border border-white/10 rounded h-7 px-2 text-xs text-white placeholder:text-white/20 outline-none" data-testid="input-seller-display-name" />
                     <button onClick={() => setTypeMutation.mutate({ userId: selectedSeller.id, sellerType: editType, sellerDisplayName: editName })}
                       disabled={setTypeMutation.isPending}
-                      className="w-full h-7 bg-primary/80 hover:bg-primary text-white text-xs font-bold rounded transition-colors disabled:opacity-40"
+                      className="w-full h-7 bg-primary/80 hover:bg-primary text-black text-xs font-bold rounded transition-colors disabled:opacity-40"
                       data-testid={`btn-set-type-${selectedSeller.id}`}>
                       {setTypeMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin inline" /> : "Save Type"}
                     </button>

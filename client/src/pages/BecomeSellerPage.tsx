@@ -53,7 +53,7 @@ export default function BecomeSellerPage() {
         <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
         <h2 className="text-xl font-bold text-white">You're an approved seller!</h2>
         <p className="text-white/50 text-sm">Access your seller dashboard to manage your products and view earnings.</p>
-        <a href="/seller" className="inline-block px-6 py-3 bg-primary text-white rounded font-medium text-sm hover:bg-primary/90 transition-colors">
+        <a href="/seller" className="inline-block px-6 py-3 bg-primary text-black rounded font-medium text-sm hover:bg-primary/90 transition-colors">
           Go to Seller Dashboard →
         </a>
       </div>
@@ -124,7 +124,7 @@ export default function BecomeSellerPage() {
         <button
           onClick={() => applyMutation.mutate()}
           disabled={applyMutation.isPending}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 text-white rounded font-medium text-sm transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 text-black rounded font-medium text-sm transition-colors disabled:opacity-50"
           data-testid="btn-become-seller"
         >
           {applyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Become Seller →"}

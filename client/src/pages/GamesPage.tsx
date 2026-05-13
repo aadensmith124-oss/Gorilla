@@ -66,7 +66,7 @@ export default function GamesPage() {
                 {game.description}
               </p>
               
-              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-white text-white font-bold border border-white/5">
+              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-black text-white font-bold border border-white/5">
                 Play Now
               </Button>
             </CardContent>
@@ -103,7 +103,7 @@ function DiceGame() {
                 <motion.div 
                   initial={{ rotate: -180, scale: 0 }} 
                   animate={{ rotate: 0, scale: 1 }} 
-                  className="w-24 h-24 bg-primary rounded-xl flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-primary/50"
+                  className="w-24 h-24 bg-primary rounded-xl flex items-center justify-center text-4xl font-bold text-black shadow-lg shadow-primary/50"
                 >
                   {result.roll[0]}
                 </motion.div>
@@ -111,7 +111,7 @@ function DiceGame() {
                   initial={{ rotate: 180, scale: 0 }} 
                   animate={{ rotate: 0, scale: 1 }} 
                   transition={{ delay: 0.1 }}
-                  className="w-24 h-24 bg-primary rounded-xl flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-primary/50"
+                  className="w-24 h-24 bg-primary rounded-xl flex items-center justify-center text-4xl font-bold text-black shadow-lg shadow-primary/50"
                 >
                   {result.roll[1]}
                 </motion.div>

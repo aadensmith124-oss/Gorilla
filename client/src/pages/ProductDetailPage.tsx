@@ -218,7 +218,7 @@ export default function ProductDetailPage() {
           <button
             onClick={() => purchaseMutation.mutate()}
             disabled={!selectedVariantId || purchaseMutation.isPending}
-            className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-white"
+            className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-black"
             data-testid="button-purchase"
           >
             {purchaseMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `Purchase ${totalAmount > 0 ? `$${(totalAmount / 100).toFixed(2)}` : ""}`}

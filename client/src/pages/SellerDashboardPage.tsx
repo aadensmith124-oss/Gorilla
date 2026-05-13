@@ -197,7 +197,7 @@ function AddCardsTab() {
         <button
           onClick={() => addMutation.mutate()}
           disabled={addMutation.isPending || !cardNumber || !price}
-          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-black rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
           data-testid="btn-add-card"
         >
           {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CreditCard className="h-3 w-3" />Add Card</>}
@@ -286,7 +286,7 @@ function AddAchTab() {
         <button
           onClick={() => addMutation.mutate()}
           disabled={addMutation.isPending || !bankName || !balance || !fullItem || !price}
-          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-black rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
           data-testid="btn-add-ach"
         >
           {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Building2 className="h-3 w-3" />Add ACH</>}
@@ -371,7 +371,7 @@ function AddLogsTab() {
         <button
           onClick={() => addMutation.mutate()}
           disabled={addMutation.isPending || !variantId || !content.trim()}
-          className="w-full h-8 bg-primary/90 hover:bg-primary text-white rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+          className="w-full h-8 bg-primary/90 hover:bg-primary text-black rounded text-xs font-bold transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
           data-testid="btn-add-stock"
         >
           {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Package className="h-3 w-3" />Add Stock</>}
