@@ -32,14 +32,6 @@ function extractBin(cardNumber: string): string {
   return (cardNumber ?? "").replace(/\D/g, "").substring(0, 6);
 }
 
-function useBinData(bin: string) {
-  return useQuery<{ bin: string; bank?: string; scheme?: string; type?: string; brand?: string; country?: string; countryCode?: string }>({
-    queryKey: [`/api/bin/${bin}`],
-    enabled: !!bin && bin.length === 6,
-    staleTime: 1000 * 60 * 60,
-  });
-}
-
 function formatCardType(data: any): string {
   if (!data) return "";
   const parts = [
@@ -49,26 +41,13 @@ function formatCardType(data: any): string {
   return parts.join(" ");
 }
 
-function BinRow({ bin }: { bin: string }) {
-  const { data } = useBinData(bin);
-  return (
-    <div className="flex items-center gap-2 font-mono text-[11px] text-white/40">
-      <span className="border border-white/20 px-1.5 py-0.5 rounded text-white/60 text-[11px]">{bin}</span>
-      {data?.bank && <span>{data.bank}</span>}
-      {(data?.country || data?.countryCode) && (
-        <span>{[data.country, data.countryCode].filter(Boolean).join(" ")}</span>
-      )}
-    </div>
-  );
-}
-
 function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; onToggleCart: (card: any) => void }) {
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const bin = extractBin(card.cardNumber);
   const sellerLabel = getSellerLabel(card);
-  const { data: binData } = useBinData(bin);
+  const binData = card.binData ?? null;
   const cardType = formatCardType(binData);
 
   const purchaseMutation = useMutation({
@@ -181,6 +160,7 @@ export default function CardsPage() {
 
   const { data: cards, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cards"],
+    refetchInterval: 20000,
   });
 
   const bases = useMemo(() => {

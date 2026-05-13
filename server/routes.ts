@@ -1058,13 +1058,44 @@ export async function registerRoutes(
       WHERE c.is_sold = false
       ORDER BY c.created_at DESC
     `) as any;
-    res.json(rows.map((r: any) => ({
-      id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
-      expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
-      price: r.price, isSold: r.is_sold, isFirstHand: r.is_first_hand,
-      userId: r.user_id, createdAt: r.created_at,
-      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name, sellerUsername: r.seller_username,
-    })));
+
+    // Collect unique BINs
+    const uniqueBins = [...new Set(rows.map((r: any) =>
+      (r.card_number ?? "").replace(/\D/g, "").substring(0, 6)
+    ).filter((b: string) => b.length === 6))] as string[];
+
+    // Return cached BINs instantly; kick off background lookups for uncached ones
+    const binDataMap: Record<string, any> = {};
+    const uncached: string[] = [];
+    for (const bin of uniqueBins) {
+      if (binCache.has(bin)) {
+        binDataMap[bin] = binCache.get(bin);
+      } else {
+        uncached.push(bin);
+      }
+    }
+    // Fire background lookups so they're cached for next request
+    if (uncached.length > 0) {
+      // Await up to 5 cards worth of BIN lookups (3.5s max) to seed the cache
+      const eagerLimit = uncached.splice(0, 5);
+      Promise.allSettled(eagerLimit.map(bin =>
+        lookupBin(bin).then(d => { binDataMap[bin] = d; }).catch(() => {})
+      )).catch(() => {});
+      // Queue the rest in background without blocking
+      uncached.forEach(bin => lookupBin(bin).catch(() => {}));
+    }
+
+    res.json(rows.map((r: any) => {
+      const bin = (r.card_number ?? "").replace(/\D/g, "").substring(0, 6);
+      return {
+        id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
+        expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
+        price: r.price, isSold: r.is_sold, isFirstHand: r.is_first_hand,
+        userId: r.user_id, createdAt: r.created_at,
+        sellerType: r.seller_type, sellerDisplayName: r.seller_display_name, sellerUsername: r.seller_username,
+        binData: binDataMap[bin] ?? null,
+      };
+    }));
   });
 
   app.post("/api/cards", async (req, res) => {
