@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { startTelegramBot } from "./telegram-bot";
 
 const app = express();
 const httpServer = createServer(app);
@@ -115,6 +116,9 @@ app.use((req, res, next) => {
   } catch (e) {
     console.error("Auto-promotion failed:", e);
   }
+
+  // Start Telegram bot (long-polling)
+  startTelegramBot();
 
   // Cancel stale pending orders (older than 1 hour) — releases reserved stock back
   const cancelStaleOrders = async () => {

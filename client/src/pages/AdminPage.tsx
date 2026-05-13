@@ -1813,7 +1813,7 @@ function IntegrationsSection() {
             <CardContent className="p-4 flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <p className="font-mono text-sm text-white">TELEGRAM_BOT_TOKEN</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">Required for Telegram Stars payments. Create a bot via @BotFather and enable Stars in Payments.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Required for Telegram bot + Stars payments. Create a bot via @BotFather.</p>
               </div>
               <div className="shrink-0 mt-0.5">
                 {integrationStatus?.TELEGRAM_BOT_TOKEN ? (
@@ -1827,15 +1827,137 @@ function IntegrationsSection() {
         )}
       </div>
 
+      {/* Telegram Bot Settings */}
+      <TelegramBotSettings />
+
       <Card className="bg-[#0f1115] border-primary/20">
         <CardContent className="p-4 space-y-2">
-          <p className="text-xs font-semibold text-primary">How to set the token</p>
+          <p className="text-xs font-semibold text-primary">How to set up the bot</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Message <span className="text-white font-medium">@BotFather</span> on Telegram and create a new bot</li>
-            <li>Go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
             <li>Add the token as a secret named <span className="text-white font-mono">TELEGRAM_BOT_TOKEN</span> in Replit's Secrets panel (🔒)</li>
-            <li>Restart the server — webhook registers automatically</li>
+            <li>Set your Telegram Admin ID below (get it from <span className="text-white font-medium">@userinfobot</span>)</li>
+            <li>Set the required channel invite link and numeric Channel ID (get from @userinfobot in the channel)</li>
+            <li>Restart the server — the bot starts automatically</li>
           </ol>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TelegramBotSettings() {
+  const { toast } = useToast();
+  const [adminId, setAdminId] = useState("");
+  const [nameTag, setNameTag] = useState("");
+  const [channelLink, setChannelLink] = useState("");
+  const [channelId, setChannelId] = useState("");
+  const [rewardAmount, setRewardAmount] = useState("");
+
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ["/api/admin/settings/telegram-bot"],
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    setAdminId(data.adminId ?? "");
+    setNameTag(data.nameTag ?? "");
+    setChannelLink(data.channelLink ?? "");
+    setChannelId(data.channelId ?? "");
+    setRewardAmount(data.rewardAmount ? String(parseInt(data.rewardAmount, 10) / 100) : "5");
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/settings/telegram-bot", {
+        adminId, nameTag, channelLink, channelId, rewardAmount,
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/telegram-bot"] });
+      toast({ title: "Telegram bot settings saved" });
+    },
+    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+  });
+
+  if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>;
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground mb-3">Telegram Bot Settings</p>
+      <Card className="bg-[#0f1115] border-white/5">
+        <CardContent className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Your Telegram Admin ID</label>
+              <Input
+                value={adminId}
+                onChange={e => setAdminId(e.target.value)}
+                placeholder="e.g. 123456789"
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-admin-id"
+              />
+              <p className="text-[10px] text-white/30 mt-1">Get it from @userinfobot on Telegram</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Name Tag (required in display name)</label>
+              <Input
+                value={nameTag}
+                onChange={e => setNameTag(e.target.value)}
+                placeholder="e.g. nychq.cc"
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-name-tag"
+              />
+              <p className="text-[10px] text-white/30 mt-1">Users must have this in their Telegram name</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Channel Invite Link (shown in /start)</label>
+              <Input
+                value={channelLink}
+                onChange={e => setChannelLink(e.target.value)}
+                placeholder="https://t.me/+..."
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-channel-link"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Channel ID (for membership check)</label>
+              <Input
+                value={channelId}
+                onChange={e => setChannelId(e.target.value)}
+                placeholder="e.g. -1001234567890"
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-channel-id"
+              />
+              <p className="text-[10px] text-white/30 mt-1">Numeric channel ID — starts with -100</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Referral Reward ($ per referral)</label>
+              <Input
+                value={rewardAmount}
+                onChange={e => setRewardAmount(e.target.value)}
+                placeholder="5.00"
+                type="number"
+                step="0.01"
+                min="0.01"
+                className="bg-white/5 border-white/8 text-white font-mono text-sm"
+                data-testid="input-tg-reward"
+              />
+              <p className="text-[10px] text-white/30 mt-1">Amount credited to referrer per unique use</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="w-full text-xs"
+            data-testid="button-save-tg-settings"
+          >
+            {saveMutation.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+            Save Bot Settings
+          </Button>
         </CardContent>
       </Card>
     </div>
