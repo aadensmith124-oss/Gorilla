@@ -1076,21 +1076,39 @@ export class DatabaseStorage implements IStorage {
     return card;
   }
 
-  async purchaseCard(cardId: number, userId: number): Promise<Card> {
+  async purchaseCard(cardId: number, userId: number, finalPrice?: number): Promise<Card> {
     const [card] = await db.select().from(cards).where(and(eq(cards.id, cardId), eq(cards.isSold, false)));
     if (!card) throw new Error("Card not found or already sold");
     
     const [updated] = await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cardId)).returning();
+
+    const paidTotal = finalPrice ?? card.price;
+
+    // Compose full card content
+    const deliveryContent = [card.cardNumber, card.expiry, card.cvv, card.country, card.extras]
+      .filter(Boolean).join("|");
 
     // Create a matching order so it shows in "Orders"
     const publicOrderId = Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
       userId,
       orderId: `CARD-${publicOrderId}`,
-      total: card.price,
-      paidAmount: card.price,
-      status: "fulfilled"
+      total: paidTotal,
+      paidAmount: paidTotal,
+      status: "fulfilled",
+      deliveryContent,
+      paymentMethod: "wallet",
     }).returning();
+
+    // Insert order item so the products tab is populated
+    await db.insert(orderItems).values({
+      orderId: order.id,
+      variantId: null,
+      cardId: card.id,
+      itemType: "card",
+      price: card.price,
+      quantity: 1,
+    });
 
     return updated;
   }

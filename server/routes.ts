@@ -1109,17 +1109,25 @@ export async function registerRoutes(
       const card = await storage.getCard(cardId);
       if (!card) return res.status(404).json({ message: "Card not found" });
 
+      // Apply rank discount
+      const rankResult = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+        .from(transactions)
+        .where(and(eq(transactions.userId, userId), sql`amount > 0`, sql`type IN ('deposit', 'manual_deposit')`));
+      const totalDeposited = Number(rankResult[0]?.total ?? 0);
+      const rankPct = totalDeposited >= 100000 ? 10 : totalDeposited >= 50000 ? 5 : totalDeposited >= 10000 ? 2 : 0;
+      const finalPrice = rankPct > 0 ? Math.max(0, Math.round(card.price * (1 - rankPct / 100))) : card.price;
+
       const user = await storage.getUser(userId);
-      if (!user || user.balance < card.price) {
+      if (!user || user.balance < finalPrice) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
-      await storage.updateUserBalance(userId, -card.price);
-      await storage.createTransaction(userId, -card.price, "purchase", `Purchased card ${card.maskedCard}`);
+      await storage.updateUserBalance(userId, -finalPrice);
+      await storage.createTransaction(userId, -finalPrice, "purchase", `Purchased card ${card.maskedCard}`);
 
-      // Credit seller 80% of the sale price (if card belongs to a seller)
+      // Credit seller 80% of the ORIGINAL price (not discounted)
       const originalSellerId = card.userId;
-      const updatedCard = await storage.purchaseCard(cardId, userId);
+      const updatedCard = await storage.purchaseCard(cardId, userId, finalPrice);
 
       if (originalSellerId && originalSellerId !== userId) {
         const sellerCut = Math.floor(card.price * 0.8);
@@ -2248,13 +2256,21 @@ export async function registerRoutes(
       const ach = await storage.getAch(achId);
       if (!ach || ach.isSold) return res.status(404).json({ message: "ACH not found or sold" });
 
+      // Apply rank discount
+      const rankResult = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+        .from(transactions)
+        .where(and(eq(transactions.userId, userId), sql`amount > 0`, sql`type IN ('deposit', 'manual_deposit')`));
+      const totalDeposited = Number(rankResult[0]?.total ?? 0);
+      const rankPct = totalDeposited >= 100000 ? 10 : totalDeposited >= 50000 ? 5 : totalDeposited >= 10000 ? 2 : 0;
+      const finalPrice = rankPct > 0 ? Math.max(0, Math.round(ach.price * (1 - rankPct / 100))) : ach.price;
+
       const user = await storage.getUser(userId);
-      if (!user || user.balance < ach.price) {
+      if (!user || user.balance < finalPrice) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
-      await storage.updateUserBalance(userId, -ach.price);
-      await storage.createTransaction(userId, -ach.price, "purchase", `Purchased ACH: ${ach.bankName}`);
+      await storage.updateUserBalance(userId, -finalPrice);
+      await storage.createTransaction(userId, -finalPrice, "purchase", `Purchased ACH: ${ach.bankName}`);
 
       const originalSellerId = ach.sellerId;
       await storage.purchaseAch(achId);
@@ -2270,14 +2286,24 @@ export async function registerRoutes(
       }
 
       const publicOrderId = Math.random().toString(36).substring(2, 15);
-      await db.insert(orders).values({
+      const [achOrder] = await db.insert(orders).values({
         userId,
         orderId: `ACH-${publicOrderId}`,
-        total: ach.price,
-        paidAmount: ach.price,
+        total: finalPrice,
+        paidAmount: finalPrice,
         status: "fulfilled",
         deliveryContent: ach.fullItem,
         paymentMethod: "wallet",
+      }).returning();
+
+      // Insert order item so the products tab is populated
+      await db.insert(orderItems).values({
+        orderId: achOrder.id,
+        variantId: null,
+        cardId: null,
+        itemType: "ach",
+        price: ach.price,
+        quantity: 1,
       });
 
       res.json({ success: true, deliveryContent: ach.fullItem });

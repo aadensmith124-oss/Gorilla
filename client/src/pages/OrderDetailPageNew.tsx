@@ -63,13 +63,22 @@ export default function OrderDetailPageNew() {
   const seen: Record<string, number> = {};
   for (const item of allItems) {
     const isCard = item.itemType === "card";
-    const key = isCard ? `card-${item.cardId ?? item.id}` : String(item.variantId || item.id);
+    const isAchItem = item.itemType === "ach";
+    const key = isCard ? `card-${item.cardId ?? item.id}` : isAchItem ? `ach-${item.id}` : String(item.variantId || item.id);
     if (seen[key] === undefined) {
       seen[key] = grouped.length;
       grouped.push({
         key,
-        productName: isCard ? (item.card?.maskedCard ? `Card ${item.card.maskedCard}` : "Card") : (item.productName || "Product"),
-        variantName: isCard ? (item.card?.country ?? "—") : (item.variant?.name || item.variantName || "—"),
+        productName: isCard
+          ? (item.card?.maskedCard ? `Card ${item.card.maskedCard}` : "Card")
+          : isAchItem
+          ? "ACH Account"
+          : (item.productName || "Product"),
+        variantName: isCard
+          ? (item.card?.country ?? "—")
+          : isAchItem
+          ? "Bank Account"
+          : (item.variant?.name || item.variantName || "—"),
         qty: item.quantity ?? 1,
         unitPrice: item.price,
         itemType: item.itemType ?? "product",
@@ -88,6 +97,7 @@ export default function OrderDetailPageNew() {
   const getStockForKey = (item: typeof grouped[0]): string | null => {
     if (!isFulfilled) return null;
     if (item.itemType === "card") return item.cardContent || null;
+    if (item.itemType === "ach") return order.deliveryContent || null;
     if (deliveryMap) return deliveryMap[item.key] || null;
     return order.deliveryContent || null;
   };
@@ -212,7 +222,9 @@ export default function OrderDetailPageNew() {
                           className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                         >
                           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          {isOpen ? `Hide ${item.itemType === "card" ? "Card" : "Stock"}` : `View ${item.itemType === "card" ? "Card" : "Stock"}`}
+                          {isOpen
+                            ? `Hide ${item.itemType === "card" ? "Card" : item.itemType === "ach" ? "Account" : "Stock"}`
+                            : `View ${item.itemType === "card" ? "Card" : item.itemType === "ach" ? "Account" : "Stock"}`}
                         </button>
 
                         {isOpen && (
