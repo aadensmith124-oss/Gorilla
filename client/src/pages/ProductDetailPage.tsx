@@ -13,26 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const TIER_ORDER = ["top", "fresh", "bronze"];
-const TIER_LABEL: Record<string, string> = {
-  top: "🔥 Top Seller 🔥",
-  fresh: "🍺 Fresh Seller 🍺",
-  bronze: "🍟 Bronze Seller 🍟",
-};
-
-function groupByTier(sellers: any[]): { type: string; label: string; stock: number; ids: number[] }[] {
-  const map: Record<string, { stock: number; ids: number[] }> = {};
-  for (const s of sellers) {
-    const type = s.sellerType ?? "bronze";
-    if (!map[type]) map[type] = { stock: 0, ids: [] };
-    map[type].stock += s.stockCount ?? 0;
-    map[type].ids.push(s.id);
-  }
-  return TIER_ORDER
-    .filter((t) => map[t])
-    .map((t) => ({ type: t, label: TIER_LABEL[t] ?? t, stock: map[t].stock, ids: map[t].ids }));
-}
-
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:name");
   const [, setLocation] = useLocation();
@@ -41,7 +21,6 @@ export default function ProductDetailPage() {
   const product = products?.find((p: any) => p.name === name);
   const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-  const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
@@ -49,18 +28,7 @@ export default function ProductDetailPage() {
   const minQty = selectedVariant?.minQuantity || 1;
   const totalAmount = selectedVariant ? selectedVariant.price * quantity : 0;
 
-  // Load all sellers across all variants — shown immediately on open
-  const { data: productSellers } = useQuery<any[]>({
-    queryKey: ["/api/products", product?.id, "sellers"],
-    queryFn: async () => {
-      const res = await fetch(`/api/products/${product?.id}/sellers`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!product?.id,
-  });
-
-  // Load sellers for the selected variant — refines stock counts after variant pick
+  // Load all sellers for the selected variant — used to pick one randomly at purchase
   const { data: variantSellers } = useQuery<any[]>({
     queryKey: ["/api/variants", selectedVariantId, "sellers"],
     queryFn: async () => {
@@ -71,39 +39,25 @@ export default function ProductDetailPage() {
     enabled: !!selectedVariantId,
   });
 
-  // Use variant-specific sellers when a variant is selected, otherwise product-wide
-  const activeSellers = selectedVariantId ? (variantSellers ?? productSellers ?? []) : (productSellers ?? []);
-  const tiers = activeSellers.length > 0 ? groupByTier(activeSellers) : [];
-
   useEffect(() => {
     if (selectedVariant) setQuantity(Math.max(minQty, 1));
-    // If selected tier no longer has stock in this variant, clear it
-    if (selectedTier && variantSellers) {
-      const tierGroups = groupByTier(variantSellers);
-      const tierData = tierGroups.find(t => t.type === selectedTier);
-      if (!tierData || tierData.stock === 0) setSelectedTier(null);
-    }
   }, [selectedVariantId, minQty]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white/50 text-sm">Product not found</div>;
 
-  const canPurchase = !!selectedVariantId && !!selectedTier;
-
   const purchaseMutation = useMutation({
     mutationFn: async () => {
       if (!selectedVariant) throw new Error("Select an option first");
-      if (!selectedTier) throw new Error("Select a seller type first");
       if (quantity < minQty) throw new Error(`Minimum order is ${minQty}`);
       const body: any = {
         items: [{ variantId: selectedVariant.id, quantity }],
         cardIds: [],
       };
-      // Pick a random seller from the selected tier (using variant-level data for accuracy)
-      const tierSource = variantSellers ?? productSellers ?? [];
-      const tierSellers = tierSource.filter((s: any) => (s.sellerType ?? "bronze") === selectedTier);
-      if (tierSellers.length > 0) {
-        body.sellerId = tierSellers[Math.floor(Math.random() * tierSellers.length)].id;
+      // Pick a random seller from all available sellers for this variant
+      const available = (variantSellers ?? []).filter((s: any) => (s.stockCount ?? 0) > 0);
+      if (available.length > 0) {
+        body.sellerId = available[Math.floor(Math.random() * available.length)].id;
       }
       const res = await apiRequest("POST", "/api/orders", body);
       if (!res.ok) {
@@ -148,42 +102,9 @@ export default function ProductDetailPage() {
             </div>
           ) : null}
 
-          {/* Seller tier chips — loaded immediately for all variants */}
-          {tiers.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs text-white/40">Select seller</p>
-              <div className="flex flex-col gap-1.5">
-                {tiers.map((tier) => {
-                  const isSelected = selectedTier === tier.type;
-                  const outOfStock = tier.stock === 0;
-                  return (
-                    <button
-                      key={tier.type}
-                      onClick={() => { if (!outOfStock) setSelectedTier(isSelected ? null : tier.type); }}
-                      disabled={outOfStock}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs transition-all ${
-                        outOfStock
-                          ? "border-white/[0.04] bg-[#131519] text-white/25 cursor-not-allowed"
-                          : isSelected
-                          ? "border-primary/50 bg-primary/10 text-white"
-                          : "border-white/[0.07] bg-[#1a1d24] text-white/70 hover:border-white/20 hover:text-white"
-                      }`}
-                      data-testid={`btn-tier-${tier.type}`}
-                    >
-                      <span className={`font-bold ${outOfStock ? "opacity-40" : ""}`}>{tier.label}</span>
-                      <span className={`text-[10px] font-mono ${outOfStock ? "text-red-400/50" : isSelected ? "text-primary" : "text-white/30"}`}>
-                        {outOfStock ? "out of stock" : `${tier.stock} in stock`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Variant select */}
           <div className="space-y-1.5">
-            <p className="text-xs text-white/40">Select option</p>
+            <p className="text-xs text-white/40">Available options</p>
             <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
               <SelectTrigger className="w-full h-10 bg-[#1a1d24] border-white/[0.07] text-white text-xs rounded-lg" data-testid="select-variant">
                 <SelectValue placeholder="Select an option" />
@@ -245,15 +166,13 @@ export default function ProductDetailPage() {
           {/* Purchase button */}
           <button
             onClick={() => purchaseMutation.mutate()}
-            disabled={!canPurchase || purchaseMutation.isPending}
+            disabled={!selectedVariantId || purchaseMutation.isPending}
             className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-black"
             data-testid="button-purchase"
           >
             {purchaseMutation.isPending
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : canPurchase
-              ? `Purchase ${totalAmount > 0 ? `$${(totalAmount / 100).toFixed(2)}` : ""}`
-              : "Select seller & option"}
+              : `Purchase${totalAmount > 0 ? ` $${(totalAmount / 100).toFixed(2)}` : ""}`}
           </button>
         </div>
       </div>
