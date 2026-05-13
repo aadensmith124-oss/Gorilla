@@ -17,6 +17,40 @@ import nodemailer from "nodemailer";
 // In-memory store for email bomb jobs
 const emailBombJobs = new Map<string, { sent: number; total: number; status: "running" | "done" | "failed" }>();
 
+// BIN lookup cache + throttle queue (binlist.net = ~10 req/min free tier)
+const binCache = new Map<string, any>();
+const binQueue: Array<{ bin: string; resolve: (v: any) => void }> = [];
+let binQueueRunning = false;
+function processBinQueue() {
+  if (binQueueRunning || binQueue.length === 0) return;
+  binQueueRunning = true;
+  const { bin, resolve } = binQueue.shift()!;
+  fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } })
+    .then(async r => {
+      if (!r.ok) { resolve({ bin }); return; }
+      const data = await r.json() as any;
+      const result = {
+        bin,
+        bank: data.bank?.name ?? null,
+        scheme: data.scheme ?? null,
+        type: data.type ?? null,
+        brand: data.brand ?? null,
+        country: data.country?.name ?? null,
+        countryCode: data.country?.alpha2 ?? null,
+      };
+      binCache.set(bin, result);
+      resolve(result);
+    })
+    .catch(() => resolve({ bin }))
+    .finally(() => {
+      setTimeout(() => { binQueueRunning = false; processBinQueue(); }, 700);
+    });
+}
+function lookupBin(bin: string): Promise<any> {
+  if (binCache.has(bin)) return Promise.resolve(binCache.get(bin));
+  return new Promise(resolve => { binQueue.push({ bin, resolve }); processBinQueue(); });
+}
+
 const gameLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
@@ -2028,18 +2062,8 @@ export async function registerRoutes(
     const { bin } = req.params;
     if (!/^\d{6,8}$/.test(bin)) return res.status(400).json({ error: "Invalid BIN" });
     try {
-      const r = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
-      if (!r.ok) return res.json({ bin });
-      const data = await r.json() as any;
-      res.json({
-        bin,
-        bank: data.bank?.name ?? null,
-        scheme: data.scheme ?? null,
-        type: data.type ?? null,
-        brand: data.brand ?? null,
-        country: data.country?.name ?? null,
-        countryCode: data.country?.alpha2 ?? null,
-      });
+      const result = await lookupBin(bin);
+      res.json(result);
     } catch {
       res.json({ bin });
     }
