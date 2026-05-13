@@ -28,6 +28,7 @@ function groupByTier(sellers: any[]): { type: string; label: string; stock: numb
     map[type].stock += s.stockCount ?? 0;
     map[type].ids.push(s.id);
   }
+  // Show all tiers that have ANY seller (even if stock is 0 — shown as out of stock)
   return TIER_ORDER
     .filter((t) => map[t])
     .map((t) => ({ type: t, label: TIER_LABEL[t] ?? t, stock: map[t].stock, ids: map[t].ids }));
@@ -162,20 +163,24 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-1.5 pt-1">
                 {tiers.map((tier) => {
                   const isSelected = selectedTier === tier.type;
+                  const outOfStock = tier.stock === 0;
                   return (
                     <button
                       key={tier.type}
-                      onClick={() => setSelectedTier(isSelected ? null : tier.type)}
+                      onClick={() => { if (!outOfStock) setSelectedTier(isSelected ? null : tier.type); }}
+                      disabled={outOfStock}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all ${
-                        isSelected
+                        outOfStock
+                          ? "border-white/[0.04] bg-[#131519] text-white/25 cursor-not-allowed"
+                          : isSelected
                           ? "border-primary/50 bg-primary/10 text-white"
                           : "border-white/[0.07] bg-[#1a1d24] text-white/70 hover:border-white/20 hover:text-white"
                       }`}
                       data-testid={`btn-tier-${tier.type}`}
                     >
-                      <span className="font-bold">{tier.label}</span>
-                      <span className={`text-[10px] font-mono ${isSelected ? "text-primary" : "text-white/30"}`}>
-                        {tier.stock} in stock
+                      <span className={`font-bold ${outOfStock ? "opacity-40" : ""}`}>{tier.label}</span>
+                      <span className={`text-[10px] font-mono ${outOfStock ? "text-red-400/50" : isSelected ? "text-primary" : "text-white/30"}`}>
+                        {outOfStock ? "out of stock" : `${tier.stock} in stock`}
                       </span>
                     </button>
                   );

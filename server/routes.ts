@@ -1865,36 +1865,36 @@ export async function registerRoutes(
   });
 
   // ── Sellers per variant (for buyer seller selection) ──────────────────────
+  // Always returns every seller who has ever added stock to this variant,
+  // even if their current available count is 0 (so all tiers are visible).
   app.get("/api/variants/:variantId/sellers", async (req, res) => {
     const variantId = Number(req.params.variantId);
     if (!variantId) return res.status(400).json({ message: "Invalid variant" });
     try {
       const { rows } = await db.execute(sql`
         SELECT id, "sellerType", "sellerDisplayName", username, "stockCount" FROM (
+          -- Admin stock (seller_id IS NULL) — show if ANY admin stock exists for this variant
           SELECT
             -1 as id,
             'top' as "sellerType",
             'NYCHQ' as "sellerDisplayName",
             'nychq' as username,
-            COUNT(si.id)::int as "stockCount"
+            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
           FROM stock_items si
           WHERE si.variant_id = ${variantId}
-            AND si.is_sold = false
-            AND si.is_reserved = false
             AND si.seller_id IS NULL
-          HAVING COUNT(si.id) > 0
+          HAVING COUNT(*) > 0
           UNION ALL
+          -- Seller stock — show each seller who has ever uploaded stock to this variant
           SELECT
             u.id,
             u.seller_type as "sellerType",
             u.seller_display_name as "sellerDisplayName",
             u.username,
-            COUNT(si.id)::int as "stockCount"
+            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
           FROM stock_items si
           JOIN users u ON u.id = si.seller_id
           WHERE si.variant_id = ${variantId}
-            AND si.is_sold = false
-            AND si.is_reserved = false
             AND si.seller_id IS NOT NULL
           GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
         ) combined
@@ -1904,6 +1904,17 @@ export async function registerRoutes(
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
+  });
+
+  // ── Seller: get own allowed product IDs ───────────────────────────────────
+  app.get("/api/seller/product-permissions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const raw = await storage.getSetting(`seller_product_perms_${userId}`, "");
+    const allowedIds = raw ? raw.split(",").map(Number).filter(Boolean) : [];
+    res.json({ allowedIds });
   });
 
   // ── Seller: view own log stock items ──────────────────────────────────────

@@ -431,8 +431,18 @@ function AddLogsTab() {
   const [content, setContent] = useState("");
   const { data: products, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/products"] });
   const { data: myStock, isLoading: stockLoading } = useQuery<any[]>({ queryKey: ["/api/seller/stock"] });
+  const { data: productPerms } = useQuery<{ allowedIds: number[] }>({ queryKey: ["/api/seller/product-permissions"] });
 
-  const allVariants = (products ?? []).flatMap((p: any) => (p.variants ?? []).map((v: any) => ({ ...v, productName: p.name })));
+  const allowedIds = productPerms?.allowedIds ?? [];
+
+  const allVariants = (products ?? []).flatMap((p: any) =>
+    (p.variants ?? []).map((v: any) => ({
+      ...v,
+      productName: p.name,
+      productId: p.id,
+      isAllowed: allowedIds.length === 0 || allowedIds.includes(p.id),
+    }))
+  );
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -459,13 +469,24 @@ function AddLogsTab() {
         <div className="space-y-1">
           <label className="text-[9px] text-white/30 uppercase tracking-widest">Select Product Option</label>
           {isLoading ? <div className="text-xs text-white/30">Loading...</div> : (
-            <Select value={variantId} onValueChange={setVariantId}>
+            <Select value={variantId} onValueChange={(val) => {
+              const v = allVariants.find(v => String(v.id) === val);
+              if (v?.isAllowed !== false) setVariantId(val);
+            }}>
               <SelectTrigger className="h-8 text-xs bg-black/50 border-white/10" data-testid="select-variant">
                 <SelectValue placeholder="Pick a product option..." />
               </SelectTrigger>
               <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
                 {allVariants.map((v: any) => (
-                  <SelectItem key={v.id} value={String(v.id)} className="text-xs">{v.productName} — {v.name}</SelectItem>
+                  <SelectItem
+                    key={v.id}
+                    value={String(v.id)}
+                    disabled={!v.isAllowed}
+                    className={`text-xs ${!v.isAllowed ? "opacity-40 cursor-not-allowed" : ""}`}
+                  >
+                    {v.productName} — {v.name}
+                    {!v.isAllowed && <span className="ml-1 text-red-400/70">🚫 restricted</span>}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
