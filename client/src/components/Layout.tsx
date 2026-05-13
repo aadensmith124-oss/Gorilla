@@ -39,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { href: "/shop", icon: FileText, label: "Logs" },
         { href: "/cards", icon: CreditCard, label: "Cards" },
         { href: "/ach", icon: Building2, label: "ACH" },
-        { href: "/eatz", icon: Store, label: "EATZ" },
+        { href: "/eatz", icon: Store, label: "EATS" },
       ],
     },
     {
