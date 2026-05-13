@@ -29,6 +29,7 @@ const adminSections = [
   { id: "ach", label: "ACH" },
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
+  { id: "deposits", label: "Deposits" },
   { id: "users", label: "Users" },
   { id: "sellers", label: "Sellers" },
   { id: "codes", label: "Codes" },
@@ -67,7 +68,7 @@ export default function AdminPage() {
             key={section.id}
             onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              activeSection === section.id ? "bg-primary/20 text-primary border border-primary/30" : "text-white/60 hover:bg-white/5 hover:text-white"
+              activeSection === section.id ? "bg-white/10 text-white border-l-2 border-white/50" : "text-white/50 hover:bg-white/5 hover:text-white/80"
             }`}
           >
             <span>{section.label}</span>
@@ -107,6 +108,7 @@ export default function AdminPage() {
           {activeSection === "cards" && <AdminCardsSection />}
           {activeSection === "ach" && <AdminAchSection />}
           {activeSection === "sellers" && <SellerApplicationsSection />}
+          {activeSection === "deposits" && <DepositsSection />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
       </div>
@@ -136,6 +138,74 @@ function DashboardSection() {
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
         <StatCard title="Stock Worth" value={`$${((stats?.stockWorth || 0) / 100).toFixed(2)}`} icon={Package} color="gold" />
       </div>
+    </div>
+  );
+}
+
+function DepositsSection() {
+  const { data: deposits, isLoading, refetch } = useQuery({
+    queryKey: ["/api/admin/deposits"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/deposits");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const statusBadge = (status: string, type: string) => {
+    if (status === "fulfilled" || status === "delivering") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-mono">credited</span>;
+    if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">{type === "cashapp" ? "awaiting admin" : "pending"}</span>;
+    if (status === "waiting_payment") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">unpaid</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/40 font-mono">{status}</span>;
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Deposits</h1>
+          <p className="text-sm text-muted-foreground mt-1">All crypto and CashApp deposits from all users</p>
+        </div>
+        <Button size="sm" variant="outline" className="text-xs border-white/10" onClick={() => refetch()}>Refresh</Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+      ) : !deposits?.length ? (
+        <div className="text-center py-20 text-white/30 text-sm">No deposits yet</div>
+      ) : (
+        <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead className="text-white/40 text-xs">User</TableHead>
+                <TableHead className="text-white/40 text-xs">Type</TableHead>
+                <TableHead className="text-white/40 text-xs">Amount</TableHead>
+                <TableHead className="text-white/40 text-xs">Status</TableHead>
+                <TableHead className="text-white/40 text-xs">Note</TableHead>
+                <TableHead className="text-white/40 text-xs">Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deposits.map((d: any) => (
+                <TableRow key={d.id} className="border-white/5 hover:bg-white/[0.02]">
+                  <TableCell className="text-xs font-mono text-white/70">{d.username}</TableCell>
+                  <TableCell className="text-xs">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${d.type === "crypto" ? "bg-blue-500/15 text-blue-400" : "bg-green-500/15 text-green-400"}`}>
+                      {d.type}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono font-bold">${((d.amount ?? 0) / 100).toFixed(2)}</TableCell>
+                  <TableCell>{statusBadge(d.status, d.type)}</TableCell>
+                  <TableCell className="text-[10px] font-mono text-white/40">{d.paymentNote ?? "—"}</TableCell>
+                  <TableCell className="text-[10px] text-white/40">{new Date(d.createdAt).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

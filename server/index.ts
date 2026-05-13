@@ -130,6 +130,20 @@ app.use((req, res, next) => {
   cancelStaleOrders();
   setInterval(cancelStaleOrders, 5 * 60 * 1000);
 
+  // Mark stale CashApp deposits as unpaid after 2 hours
+  const markStaleDeposits = async () => {
+    try {
+      const marked = await storage.markStaleCashappDepositsUnpaid(2 * 60 * 60 * 1000);
+      if (marked > 0) {
+        log(`Marked ${marked} CashApp deposit(s) as unpaid (older than 2 hours)`);
+      }
+    } catch (err) {
+      console.error("Error in stale deposit job:", err);
+    }
+  };
+  markStaleDeposits();
+  setInterval(markStaleDeposits, 5 * 60 * 1000);
+
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.

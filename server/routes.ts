@@ -212,6 +212,64 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: all deposits from all users
+  app.get("/api/admin/deposits", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const cryptoRows = await db
+        .select({
+          id: cryptoPayments.id, userId: cryptoPayments.userId, amount: cryptoPayments.amount,
+          status: cryptoPayments.status, createdAt: cryptoPayments.createdAt,
+          username: users.username,
+        })
+        .from(cryptoPayments)
+        .leftJoin(users, eq(cryptoPayments.userId, users.id))
+        .where(eq(cryptoPayments.purpose, "deposit"))
+        .orderBy(desc(cryptoPayments.createdAt))
+        .limit(200);
+
+      const cashappRows = await db
+        .select({
+          id: orders.id, userId: orders.userId, total: orders.total,
+          status: orders.status, paymentNote: orders.paymentNote, createdAt: orders.createdAt,
+          username: users.username,
+        })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
+        .where(eq(orders.paymentMethod, "CashApp"))
+        .orderBy(desc(orders.createdAt))
+        .limit(200);
+
+      const allOrderIds = cashappRows.map(o => o.id);
+      let depositOnlyCashapp = cashappRows;
+      if (allOrderIds.length > 0) {
+        const itemsInOrders = await db
+          .select({ orderId: orderItems.orderId })
+          .from(orderItems)
+          .where(sql`${orderItems.orderId} = ANY(ARRAY[${sql.join(allOrderIds.map(id => sql`${id}`), sql`, `)}]::int[])`);
+        const orderIdsWithItems = new Set(itemsInOrders.map(i => i.orderId));
+        depositOnlyCashapp = cashappRows.filter(o => !orderIdsWithItems.has(o.id));
+      }
+
+      const result = [
+        ...cryptoRows.map(p => ({
+          id: `crypto_${p.id}`, type: "crypto", username: p.username ?? "?",
+          amount: p.amount, status: p.status, createdAt: p.createdAt,
+        })),
+        ...depositOnlyCashapp.map(o => ({
+          id: `cashapp_${o.id}`, type: "cashapp", username: o.username ?? "?",
+          amount: o.total, status: o.status, paymentNote: o.paymentNote, createdAt: o.createdAt,
+        })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // Games
   app.post(api.games.dice.path, gameLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

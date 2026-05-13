@@ -48,7 +48,7 @@ export default function ShopPage() {
         p.description?.toLowerCase().includes(search.toLowerCase());
       const matchSeller =
         sellerType === "all" ||
-        p.variants?.some((v: any) => (v.sellerType ?? "bronze") === sellerType);
+        (p.sellerTypes && p.sellerTypes.includes(sellerType));
       return matchSearch && matchSeller;
     });
   }, [shuffledProducts, search, sellerType]);

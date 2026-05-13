@@ -191,21 +191,37 @@ export class DatabaseStorage implements IStorage {
     return this.enrichProductsWithVariants(allProducts);
   }
 
-  private async enrichProductsWithVariants(allProducts: Product[]): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]> {
+  private async enrichProductsWithVariants(allProducts: Product[]): Promise<(Product & { variants: (Variant & { stockCount: number })[]; sellerTypes: string[] })[]> {
     const result = [];
     for (const prod of allProducts) {
       const prodVariants = await db.select().from(variants).where(eq(variants.productId, prod.id));
       const variantsWithStock = [];
-      
+      const sellerTypeSet = new Set<string>();
+
       for (const v of prodVariants) {
         const [count] = await db
           .select({ count: sql<number>`count(*)` })
           .from(stockItems)
           .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
-        
+
         variantsWithStock.push({ ...v, stockCount: Number(count.count) });
+
+        try {
+          const { rows } = await db.execute(sql`
+            SELECT DISTINCT u.seller_type as "sellerType"
+            FROM stock_items si
+            JOIN users u ON u.id = si.seller_id
+            WHERE si.variant_id = ${v.id}
+              AND si.is_sold = false
+              AND si.is_reserved = false
+              AND si.seller_id IS NOT NULL
+          `) as any;
+          for (const r of rows) {
+            if (r.sellerType) sellerTypeSet.add(r.sellerType);
+          }
+        } catch {}
       }
-      result.push({ ...prod, variants: variantsWithStock });
+      result.push({ ...prod, variants: variantsWithStock, sellerTypes: [...sellerTypeSet] });
     }
     return result;
   }
@@ -743,6 +759,16 @@ export class DatabaseStorage implements IStorage {
       cancelled++;
     }
     return cancelled;
+  }
+
+  async markStaleCashappDepositsUnpaid(maxAgeMs: number = 2 * 60 * 60 * 1000): Promise<number> {
+    const cutoff = new Date(Date.now() - maxAgeMs);
+    const staleOrders = await db.select().from(orders)
+      .where(and(eq(orders.status, "pending"), eq(orders.paymentMethod, "CashApp"), lt(orders.createdAt, cutoff)));
+    for (const order of staleOrders) {
+      await this.markOrderUnpaid(order.id);
+    }
+    return staleOrders.length;
   }
 
   async getOrders(userId: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] })[]> {
