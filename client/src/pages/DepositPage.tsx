@@ -27,7 +27,7 @@ export default function DepositPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [method, setMethod] = useState<Method>("crypto");
-  const [amount, setAmount] = useState(20);
+  const [amount, setAmount] = useState(5);
   const [cashappResult, setCashappResult] = useState<{ note: string; tag: string } | null>(null);
 
   const { data: transactions } = useQuery<any[]>({
@@ -52,8 +52,11 @@ export default function DepositPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.checkoutUrl) window.open(data.checkoutUrl, "_blank");
-      else toast({ title: "Invoice created" });
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast({ title: "Invoice created" });
+      }
       qc.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),

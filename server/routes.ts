@@ -1095,7 +1095,8 @@ export async function registerRoutes(
     
     try {
       const { amount, purpose, orderId } = req.body;
-      const amountUsd = parseFloat(amount);
+      // amount arrives in cents from the frontend (e.g. 500 = $5.00)
+      const amountUsd = parseFloat(amount) / 100;
       
       if (!amountUsd || amountUsd < 0.50) {
         return res.status(400).json({ message: "Minimum payment is $0.50" });
@@ -1402,7 +1403,7 @@ export async function registerRoutes(
           status: "pending",
           paymentMethod: "CashApp",
           paymentNote: note || paymentNote,
-          deliveryContent: null,
+          deliveryContent: "",
         }).returning();
         return res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote: note || paymentNote }, paymentNote: note || paymentNote, cashappTag });
       }
