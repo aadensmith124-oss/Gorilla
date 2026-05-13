@@ -1866,9 +1866,45 @@ export async function registerRoutes(
     res.json(prods);
   });
 
-  // ── Sellers per variant (for buyer seller selection) ──────────────────────
-  // Always returns every seller who has ever added stock to this variant,
-  // even if their current available count is 0 (so all tiers are visible).
+  // ── Sellers across ALL variants of a product (shown immediately on product open) ──
+  app.get("/api/products/:productId/sellers", async (req, res) => {
+    const productId = Number(req.params.productId);
+    if (!productId) return res.status(400).json({ message: "Invalid product" });
+    try {
+      const { rows } = await db.execute(sql`
+        SELECT id, "sellerType", "sellerDisplayName", username, "stockCount" FROM (
+          SELECT
+            -1 as id,
+            'top' as "sellerType",
+            'NYCHQ' as "sellerDisplayName",
+            'nychq' as username,
+            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
+          FROM stock_items si
+          JOIN variants v ON v.id = si.variant_id
+          WHERE v.product_id = ${productId} AND si.seller_id IS NULL
+          HAVING COUNT(*) > 0
+          UNION ALL
+          SELECT
+            u.id,
+            u.seller_type as "sellerType",
+            u.seller_display_name as "sellerDisplayName",
+            u.username,
+            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
+          FROM stock_items si
+          JOIN variants v ON v.id = si.variant_id
+          JOIN users u ON u.id = si.seller_id
+          WHERE v.product_id = ${productId} AND si.seller_id IS NOT NULL
+          GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
+        ) combined
+        ORDER BY "stockCount" DESC
+      `) as any;
+      res.json(rows);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ── Sellers per variant (for variant-specific stock counts after variant is picked) ──
   app.get("/api/variants/:variantId/sellers", async (req, res) => {
     const variantId = Number(req.params.variantId);
     if (!variantId) return res.status(400).json({ message: "Invalid variant" });
