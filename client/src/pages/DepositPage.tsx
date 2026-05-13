@@ -254,14 +254,16 @@ export default function DepositPage() {
 
   return (
     <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
-      {/* Weekly earnings banner */}
-      <div className="w-full flex items-center gap-3 px-3 py-2.5 bg-amber-500/8 border border-amber-500/20 rounded text-xs" data-testid="banner-weekly-earn">
-        <span className="text-base flex-shrink-0">💸</span>
-        <div className="min-w-0">
-          <p className="text-amber-300 font-semibold">Earn up to $20 weekly</p>
-          <p className="text-white/40 mt-0.5">Share your referral code in the Telegram bot to earn every time someone uses it</p>
-        </div>
-      </div>
+      {/* Payment issues banner */}
+      <a href="https://t.me/nychqsupport" target="_blank" rel="noopener noreferrer">
+        <button className="w-full flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded text-xs text-white/50 hover:bg-white/8 transition-colors" data-testid="btn-payment-issues">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse flex-shrink-0" />
+            <span className="font-mono">payment issues? click here</span>
+          </div>
+          <ChevronRight className="h-3 w-3 flex-shrink-0" />
+        </button>
+      </a>
 
       {/* Pending deposits alert */}
       {pendingDeposits.length > 0 && (

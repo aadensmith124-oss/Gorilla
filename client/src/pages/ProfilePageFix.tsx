@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Package, Gift, Copy, Check } from "lucide-react";
+import { Loader2, Package, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -78,126 +78,6 @@ function RankCard({ rankData }: { rankData: any }) {
   );
 }
 
-function ReferralCard() {
-  const [copied, setCopied] = useState(false);
-  const { data } = useQuery<{ referralCode: string | null }>({ queryKey: ["/api/user/referral-code"] });
-  const code = data?.referralCode;
-
-  const copy = () => {
-    if (!code) return;
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3" data-testid="card-referral">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">🎁</span>
-        <div>
-          <p className="text-sm font-bold text-amber-300">Your Referral Code</p>
-          <p className="text-[10px] text-white/40 uppercase tracking-widest">Earn up to $20 weekly</p>
-        </div>
-      </div>
-      {code ? (
-        <>
-          <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2.5 border border-white/8">
-            <span className="font-mono text-lg font-bold text-white tracking-widest flex-1" data-testid="text-referral-code">{code}</span>
-            <button onClick={copy} className="text-white/40 hover:text-white transition-colors flex-shrink-0" data-testid="btn-copy-referral">
-              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-            </button>
-          </div>
-          <p className="text-[11px] text-white/40 leading-relaxed">
-            Share this code — every time someone uses it in the Telegram bot, <span className="text-amber-300 font-medium">you automatically get credited</span>.
-          </p>
-        </>
-      ) : (
-        <p className="text-xs text-white/30">Referral code loading...</p>
-      )}
-    </div>
-  );
-}
-
-function TelegramLinkCard({ user }: { user: { telegramConnected?: boolean } }) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [code, setCode] = useState("");
-
-  const linkMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/user/telegram/link", { code });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
-    },
-    onSuccess: () => {
-      toast({ title: "Telegram linked!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      setCode("");
-    },
-    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
-  });
-
-  const disconnectMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/user/telegram/disconnect", {});
-      if (!res.ok) throw new Error("Failed");
-    },
-    onSuccess: () => {
-      toast({ title: "Telegram disconnected" });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-    },
-    onError: () => toast({ title: "Failed to disconnect", variant: "destructive" }),
-  });
-
-  return (
-    <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3" data-testid="card-telegram-link">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">✈️</span>
-          <div>
-            <p className="text-sm font-bold text-blue-300">Telegram Account</p>
-            <p className="text-[10px] text-white/40 uppercase tracking-widest">{user.telegramConnected ? "Connected" : "Not linked"}</p>
-          </div>
-        </div>
-        {user.telegramConnected && (
-          <button
-            onClick={() => disconnectMutation.mutate()}
-            disabled={disconnectMutation.isPending}
-            className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
-            data-testid="btn-telegram-disconnect"
-          >
-            Disconnect
-          </button>
-        )}
-      </div>
-      {!user.telegramConnected && (
-        <>
-          <p className="text-[11px] text-white/40 leading-relaxed">
-            Start the bot on Telegram, send your username, and enter the code it gives you here.
-          </p>
-          <div className="flex gap-2">
-            <Input
-              value={code}
-              onChange={e => setCode(e.target.value.toUpperCase())}
-              placeholder="Enter link code from bot"
-              className="bg-black/30 border-white/8 text-white font-mono text-sm flex-1"
-              data-testid="input-telegram-link-code"
-            />
-            <Button
-              size="sm"
-              onClick={() => linkMutation.mutate()}
-              disabled={linkMutation.isPending || !code.trim()}
-              className="shrink-0"
-              data-testid="btn-telegram-link-verify"
-            >
-              {linkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify"}
-            </Button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function ProfilePage() {
   const { user, isLoading, logout } = useAuth();
   const { data: orders } = useOrders();
@@ -240,8 +120,6 @@ export default function ProfilePage() {
 
         <TabsContent value="dashboard" className="pt-6 space-y-4">
           {rankData && <RankCard rankData={rankData} />}
-          <TelegramLinkCard user={user} />
-          <ReferralCard />
           <Card className="bg-card/40 border-white/5">
             <CardHeader>
               <CardTitle>Account Information</CardTitle>

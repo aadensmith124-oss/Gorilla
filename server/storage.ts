@@ -127,16 +127,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Auto-generate a unique referral code if not provided
-    let referralCode = insertUser.referralCode ?? null;
-    if (!referralCode) {
-      for (let i = 0; i < 10; i++) {
-        const candidate = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.referralCode, candidate)).limit(1);
-        if (!existing) { referralCode = candidate; break; }
-      }
-    }
-    const [user] = await db.insert(users).values({ ...insertUser, referralCode }).returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 

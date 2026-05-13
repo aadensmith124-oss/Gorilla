@@ -11,9 +11,6 @@ export const users = pgTable("users", {
   loginCode: text("login_code").default("").notNull(),
   email: text("email").notNull().unique(),
   telegramUsername: text("telegram_username").default("").notNull(),
-  telegramId: text("telegram_id").unique(),
-  telegramConnected: boolean("telegram_connected").default(false).notNull(),
-  referralCode: text("referral_code").unique(),
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   balance: integer("balance").default(0).notNull(),
@@ -344,18 +341,6 @@ export const cryptoPayments = pgTable("crypto_payments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-// === REFERRAL USAGES ===
-export const referralUsages = pgTable("referral_usages", {
-  id: serial("id").primaryKey(),
-  referrerId: integer("referrer_id").notNull().references(() => users.id),
-  redeemerId: integer("redeemer_id").notNull().references(() => users.id),
-  code: text("code").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-export const insertReferralUsageSchema = createInsertSchema(referralUsages).omit({ id: true, createdAt: true });
-export type InsertReferralUsage = z.infer<typeof insertReferralUsageSchema>;
-export type ReferralUsage = typeof referralUsages.$inferSelect;
 
 // === TYPES ===
 export type User = typeof users.$inferSelect;

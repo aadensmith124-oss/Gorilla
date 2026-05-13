@@ -7,7 +7,6 @@ import { storage } from "./storage";
 import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { startTelegramBot, bootstrapSchema } from "./telegram-bot";
 
 const app = express();
 const httpServer = createServer(app);
@@ -116,12 +115,6 @@ app.use((req, res, next) => {
   } catch (e) {
     console.error("Auto-promotion failed:", e);
   }
-
-  // Run Telegram schema migrations unconditionally (columns/tables needed regardless of bot token)
-  await bootstrapSchema();
-
-  // Start Telegram bot (long-polling)
-  startTelegramBot();
 
   // Cancel stale pending orders (older than 1 hour) — releases reserved stock back
   const cancelStaleOrders = async () => {

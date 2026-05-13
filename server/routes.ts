@@ -8,7 +8,6 @@ import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
-import { completeLinkByCode } from "./telegram-bot";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs } from "@shared/schema";
 import { db } from "./db";
@@ -1508,58 +1507,6 @@ export async function registerRoutes(
     });
   });
 
-  // ── Telegram Bot Settings (admin) ────────────────────────────────────────
-  app.get("/api/admin/settings/telegram-bot", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
-    res.json({
-      adminId:      await storage.getSetting("telegram_admin_id", ""),
-      nameTag:      await storage.getSetting("telegram_name_tag", "nychq.cc"),
-      channelLink:  await storage.getSetting("telegram_required_channel_link", "https://t.me/+CiKKet6kWmBmYzU5"),
-      channelId:    await storage.getSetting("telegram_required_channel_id", ""),
-      rewardAmount: await storage.getSetting("referral_reward_amount", "500"),
-    });
-  });
-
-  app.post("/api/admin/settings/telegram-bot", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
-    const { adminId, nameTag, channelLink, channelId, rewardAmount } = req.body;
-    if (adminId     !== undefined) await storage.setSetting("telegram_admin_id",              String(adminId).trim());
-    if (nameTag     !== undefined) await storage.setSetting("telegram_name_tag",               String(nameTag).trim());
-    if (channelLink !== undefined) await storage.setSetting("telegram_required_channel_link",  String(channelLink).trim());
-    if (channelId   !== undefined) await storage.setSetting("telegram_required_channel_id",    String(channelId).trim());
-    if (rewardAmount !== undefined) {
-      const cents = Math.round(parseFloat(rewardAmount) * 100);
-      if (!isNaN(cents) && cents > 0) await storage.setSetting("referral_reward_amount", String(cents));
-    }
-    res.json({ success: true });
-  });
-
-  // ── User: confirm Telegram link via one-time code ────────────────────────
-  app.post("/api/user/telegram/link", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const { code } = req.body;
-    if (!code || typeof code !== "string") return res.status(400).json({ message: "code required" });
-    const ok = await completeLinkByCode(code.trim().toUpperCase(), userId);
-    if (!ok) return res.status(400).json({ message: "Invalid or expired code" });
-    res.json({ success: true });
-  });
-
-  // ── User: disconnect Telegram ─────────────────────────────────────────────
-  app.post("/api/user/telegram/disconnect", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const userId = (req.user as any).id;
-    await db.update(users).set({ telegramId: null, telegramConnected: false }).where(eq(users.id, userId));
-    res.json({ success: true });
-  });
-
-  // ── User: get own referral code ──────────────────────────────────────────
-  app.get("/api/user/referral-code", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const user = await storage.getUser((req.user as any).id);
-    res.json({ referralCode: user?.referralCode ?? null });
-  });
-
   // ── Admin: CashApp tag setting ────────────────────────────────────────────
   app.get("/api/admin/settings/cashapp-tag", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
@@ -2145,11 +2092,7 @@ export async function registerRoutes(
   });
 
   // ── Register Telegram webhook on server start ─────────────────────────────
-  // Only set up webhook when NOT running in long-poll bot mode.
-  // If TELEGRAM_BOT_TOKEN is set, startTelegramBot() in server/index.ts
-  // calls deleteWebhook first and handles all updates via long polling.
   (async () => {
-    if (process.env.TELEGRAM_BOT_TOKEN) return; // long-poll bot handles everything
     const domain = process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
     if (domain) {
       await setupTelegramWebhook(`https://${domain}/api/telegram/webhook`);
