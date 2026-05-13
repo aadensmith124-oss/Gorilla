@@ -708,6 +708,25 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Deposit-only order (no items) — credit user's wallet balance
+    if (items.length === 0) {
+      await db.update(users)
+        .set({ balance: sql`balance + ${order.total}` })
+        .where(eq(users.id, order.userId));
+      await db.insert(transactions).values({
+        userId: order.userId,
+        amount: order.total,
+        type: "deposit",
+        description: `CashApp deposit confirmed (${order.orderId})`,
+        paymentMethod: "CashApp",
+      });
+      const [updated] = await db.update(orders)
+        .set({ status: "fulfilled", paidAmount: order.total })
+        .where(eq(orders.id, orderId))
+        .returning();
+      return updated;
+    }
+
     const deliveryContent = JSON.stringify(
       Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
     );
