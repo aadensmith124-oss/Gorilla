@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Loader2, Copy, Check, CreditCard, Package, ReceiptText, Building2 } from "lucide-react";
+import { Loader2, Copy, Check, CreditCard, Package, ReceiptText, Building2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -207,21 +207,9 @@ function AddCardsTab() {
       <p className="text-[9px] text-white/20 uppercase tracking-widest">{(myCards ?? []).length} cards uploaded</p>
       {isLoading ? <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div> : (
         <div className="space-y-1">
-          {(myCards ?? []).map((c: any) => {
-            const cBin = (c.card_number || c.cardNumber || "").replace(/\D/g, "").substring(0, 6);
-            return (
-              <div key={c.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-mono border border-white/15 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
-                  {c.country && <span className="text-[9px] text-white/25">{c.country}</span>}
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-mono text-white">${((c.price || 0) / 100).toFixed(2)}</p>
-                  <p className={`text-[9px] ${c.is_sold || c.isSold ? "text-green-400" : "text-white/20"}`}>{c.is_sold || c.isSold ? "sold" : "avail"}</p>
-                </div>
-              </div>
-            );
-          })}
+          {(myCards ?? []).map((c: any) => (
+            <CardRow key={c.id} card={c} />
+          ))}
         </div>
       )}
     </div>
@@ -297,19 +285,142 @@ function AddAchTab() {
       {isLoading ? <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div> : (
         <div className="space-y-1">
           {(myAchs ?? []).map((a: any) => (
-            <div key={a.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-white">{a.bankName}</p>
-                <p className="text-[9px] text-white/30 font-mono">{a.balance}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-mono text-white">${((a.price || 0) / 100).toFixed(2)}</p>
-                <p className={`text-[9px] ${a.isSold ? "text-green-400" : "text-white/20"}`}>{a.isSold ? "sold" : "avail"}</p>
-              </div>
-            </div>
+            <AchRow key={a.id} ach={a} />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CardRow({ card }: { card: any }) {
+  const { toast } = useToast();
+  const isSold = card.is_sold || card.isSold;
+  const bin = (card.card_number || card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/seller/cards/${card.id}`, {});
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/cards"] });
+      toast({ title: "Card removed" });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-mono border border-white/15 px-1.5 py-0.5 rounded text-white/50">{bin}</span>
+        {card.country && <span className="text-[9px] text-white/25">{card.country}</span>}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="text-xs font-mono text-white">${((card.price || 0) / 100).toFixed(2)}</p>
+          <p className={`text-[9px] ${isSold ? "text-green-400" : "text-white/20"}`}>{isSold ? "sold" : "avail"}</p>
+        </div>
+        {!isSold && (
+          <button
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            className="text-red-400/50 hover:text-red-400 transition-colors disabled:opacity-40"
+            title="Remove"
+            data-testid={`btn-remove-card-${card.id}`}
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AchRow({ ach }: { ach: any }) {
+  const { toast } = useToast();
+  const isSold = ach.isSold || ach.is_sold;
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/seller/ach/${ach.id}`, {});
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/ach"] });
+      toast({ title: "ACH removed" });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between">
+      <div>
+        <p className="text-xs font-bold text-white">{ach.bankName}</p>
+        <p className="text-[9px] text-white/30 font-mono">{ach.balance}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="text-xs font-mono text-white">${((ach.price || 0) / 100).toFixed(2)}</p>
+          <p className={`text-[9px] ${isSold ? "text-green-400" : "text-white/20"}`}>{isSold ? "sold" : "avail"}</p>
+        </div>
+        {!isSold && (
+          <button
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            className="text-red-400/50 hover:text-red-400 transition-colors disabled:opacity-40"
+            title="Remove"
+            data-testid={`btn-remove-ach-${ach.id}`}
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StockItemRow({ item }: { item: any }) {
+  const { toast } = useToast();
+  const isSold = item.is_sold;
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/seller/stock/${item.id}`, {});
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/stock"] });
+      toast({ title: "Stock item removed" });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const preview = (item.content || "").substring(0, 60) + ((item.content || "").length > 60 ? "…" : "");
+
+  return (
+    <div className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] text-white/30 uppercase tracking-widest truncate">{item.product_name} — {item.variant_name}</p>
+        <p className="text-[10px] font-mono text-white/50 truncate mt-0.5">{preview}</p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className={`text-[9px] ${isSold ? "text-green-400" : "text-white/20"}`}>{isSold ? "sold" : "avail"}</span>
+        {!isSold && (
+          <button
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            className="text-red-400/50 hover:text-red-400 transition-colors disabled:opacity-40"
+            title="Remove"
+            data-testid={`btn-remove-stock-${item.id}`}
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -319,6 +430,7 @@ function AddLogsTab() {
   const [variantId, setVariantId] = useState("");
   const [content, setContent] = useState("");
   const { data: products, isLoading } = useQuery<any[]>({ queryKey: ["/api/seller/products"] });
+  const { data: myStock, isLoading: stockLoading } = useQuery<any[]>({ queryKey: ["/api/seller/stock"] });
 
   const allVariants = (products ?? []).flatMap((p: any) => (p.variants ?? []).map((v: any) => ({ ...v, productName: p.name })));
 
@@ -330,12 +442,15 @@ function AddLogsTab() {
     },
     onSuccess: (data) => {
       setContent("");
-      toast({ title: `Added ${data.added} stock items` });
+      queryClient.invalidateQueries({ queryKey: ["/api/seller/stock"] });
+      toast({ title: `Added ${data.added} stock item${data.added !== 1 ? "s" : ""}${data.skipped > 0 ? ` (${data.skipped} skipped)` : ""}` });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const itemCount = content.split("\n\n").filter(s => s.trim()).length;
+  const availCount = (myStock ?? []).filter(i => !i.is_sold).length;
+  const soldCount = (myStock ?? []).filter(i => i.is_sold).length;
 
   return (
     <div className="space-y-3">
@@ -376,6 +491,26 @@ function AddLogsTab() {
         >
           {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Package className="h-3 w-3" />Add Stock</>}
         </button>
+      </div>
+
+      {/* Stock list */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] text-white/20 uppercase tracking-widest">
+            Your Stock — {availCount} avail · {soldCount} sold
+          </p>
+        </div>
+        {stockLoading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
+        ) : (myStock ?? []).length === 0 ? (
+          <p className="text-[10px] text-white/20 py-3 text-center">No stock uploaded yet</p>
+        ) : (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {(myStock ?? []).map((item: any) => (
+              <StockItemRow key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

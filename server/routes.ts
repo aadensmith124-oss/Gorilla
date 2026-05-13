@@ -1870,25 +1870,108 @@ export async function registerRoutes(
     if (!variantId) return res.status(400).json({ message: "Invalid variant" });
     try {
       const { rows } = await db.execute(sql`
-        SELECT
-          u.id,
-          u.seller_type as "sellerType",
-          u.seller_display_name as "sellerDisplayName",
-          u.username,
-          COUNT(si.id)::int as "stockCount"
-        FROM stock_items si
-        JOIN users u ON u.id = si.seller_id
-        WHERE si.variant_id = ${variantId}
-          AND si.is_sold = false
-          AND si.is_reserved = false
-          AND si.seller_id IS NOT NULL
-        GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
+        SELECT id, "sellerType", "sellerDisplayName", username, "stockCount" FROM (
+          SELECT
+            -1 as id,
+            'top' as "sellerType",
+            'NYCHQ' as "sellerDisplayName",
+            'nychq' as username,
+            COUNT(si.id)::int as "stockCount"
+          FROM stock_items si
+          WHERE si.variant_id = ${variantId}
+            AND si.is_sold = false
+            AND si.is_reserved = false
+            AND si.seller_id IS NULL
+          HAVING COUNT(si.id) > 0
+          UNION ALL
+          SELECT
+            u.id,
+            u.seller_type as "sellerType",
+            u.seller_display_name as "sellerDisplayName",
+            u.username,
+            COUNT(si.id)::int as "stockCount"
+          FROM stock_items si
+          JOIN users u ON u.id = si.seller_id
+          WHERE si.variant_id = ${variantId}
+            AND si.is_sold = false
+            AND si.is_reserved = false
+            AND si.seller_id IS NOT NULL
+          GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
+        ) combined
         ORDER BY "stockCount" DESC
       `) as any;
       res.json(rows);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
+  });
+
+  // ── Seller: view own log stock items ──────────────────────────────────────
+  app.get("/api/seller/stock", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    try {
+      const { rows } = await db.execute(sql`
+        SELECT si.id, si.variant_id, si.content, si.is_sold, si.created_at,
+               v.name as variant_name, p.name as product_name
+        FROM stock_items si
+        JOIN variants v ON v.id = si.variant_id
+        JOIN products p ON p.id = v.product_id
+        WHERE si.seller_id = ${userId}
+        ORDER BY si.created_at DESC
+        LIMIT 300
+      `) as any;
+      res.json(rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Seller: delete own unsold log stock item ──────────────────────────────
+  app.delete("/api/seller/stock/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const id = Number(req.params.id);
+    const [item] = await db.select().from(stockItems).where(and(eq(stockItems.id, id)));
+    if (!item) return res.status(404).json({ error: "Not found" });
+    if ((item as any).sellerId !== userId) return res.status(403).json({ error: "Not yours" });
+    if (item.isSold) return res.status(400).json({ error: "Already sold" });
+    await db.delete(stockItems).where(eq(stockItems.id, id));
+    res.json({ ok: true });
+  });
+
+  // ── Seller: delete own unsold card ────────────────────────────────────────
+  app.delete("/api/seller/cards/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const id = Number(req.params.id);
+    const [card] = await db.select().from(cards).where(eq(cards.id, id));
+    if (!card) return res.status(404).json({ error: "Not found" });
+    if ((card as any).userId !== userId) return res.status(403).json({ error: "Not yours" });
+    if (card.isSold) return res.status(400).json({ error: "Already sold" });
+    await db.delete(cards).where(eq(cards.id, id));
+    res.json({ ok: true });
+  });
+
+  // ── Seller: delete own unsold ACH ─────────────────────────────────────────
+  app.delete("/api/seller/ach/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const user = await storage.getUser(userId);
+    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
+    const id = Number(req.params.id);
+    const [ach] = await db.select().from(achs).where(eq(achs.id, id));
+    if (!ach) return res.status(404).json({ error: "Not found" });
+    if ((ach as any).sellerId !== userId) return res.status(403).json({ error: "Not yours" });
+    if ((ach as any).isSold) return res.status(400).json({ error: "Already sold" });
+    await db.delete(achs).where(eq(achs.id, id));
+    res.json({ ok: true });
   });
 
   // ── BIN Lookup ───────────────────────────────────────────────────────────

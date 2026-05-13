@@ -333,36 +333,56 @@ export class DatabaseStorage implements IStorage {
   // Reserve stock for immediate (wallet) purchase — marks as sold right away.
   // Uses a single atomic UPDATE with subquery to avoid race conditions.
   async reserveStockItem(variantId: number, sellerId?: number): Promise<StockItem | undefined> {
-    const result = sellerId
-      ? await db.execute(sql`
-          UPDATE stock_items
-          SET is_sold = true
-          WHERE id = (
-            SELECT id FROM stock_items
-            WHERE variant_id = ${variantId}
-              AND is_sold = false
-              AND is_reserved = false
-              AND seller_id = ${sellerId}
-            ORDER BY id
-            LIMIT 1
-            FOR UPDATE SKIP LOCKED
-          )
-          RETURNING *
-        `)
-      : await db.execute(sql`
-          UPDATE stock_items
-          SET is_sold = true
-          WHERE id = (
-            SELECT id FROM stock_items
-            WHERE variant_id = ${variantId}
-              AND is_sold = false
-              AND is_reserved = false
-            ORDER BY id
-            LIMIT 1
-            FOR UPDATE SKIP LOCKED
-          )
-          RETURNING *
-        `);
+    let result;
+    if (sellerId === -1) {
+      // Admin-only stock (seller_id IS NULL)
+      result = await db.execute(sql`
+        UPDATE stock_items
+        SET is_sold = true
+        WHERE id = (
+          SELECT id FROM stock_items
+          WHERE variant_id = ${variantId}
+            AND is_sold = false
+            AND is_reserved = false
+            AND seller_id IS NULL
+          ORDER BY id
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        )
+        RETURNING *
+      `);
+    } else if (sellerId) {
+      result = await db.execute(sql`
+        UPDATE stock_items
+        SET is_sold = true
+        WHERE id = (
+          SELECT id FROM stock_items
+          WHERE variant_id = ${variantId}
+            AND is_sold = false
+            AND is_reserved = false
+            AND seller_id = ${sellerId}
+          ORDER BY id
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        )
+        RETURNING *
+      `);
+    } else {
+      result = await db.execute(sql`
+        UPDATE stock_items
+        SET is_sold = true
+        WHERE id = (
+          SELECT id FROM stock_items
+          WHERE variant_id = ${variantId}
+            AND is_sold = false
+            AND is_reserved = false
+          ORDER BY id
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        )
+        RETURNING *
+      `);
+    }
     return result.rows[0] as StockItem | undefined;
   }
 
