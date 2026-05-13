@@ -2228,15 +2228,15 @@ function AdminAchSection() {
             <span className="pl-3 pr-1 text-sm text-white/50 font-mono select-none">$</span>
             <input
               value={balance}
-              onChange={e => setBalance(e.target.value.replace(/[^0-9\-]/g, ""))}
-              placeholder="5000"
+              onChange={e => setBalance(e.target.value.replace(/[^0-9,.\-]/g, ""))}
+              placeholder="4,990 or 3,298.09"
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               className="flex-1 bg-transparent py-2 pr-3 text-sm text-white font-mono outline-none placeholder:text-white/20"
               data-testid="input-ach-balance"
             />
           </div>
-          <p className="text-[10px] text-white/25">Numbers only — $ is added automatically</p>
+          <p className="text-[10px] text-white/25">e.g. 4,990 or 3,298.09 — $ is added automatically</p>
         </div>
 
         <div className="space-y-1">
