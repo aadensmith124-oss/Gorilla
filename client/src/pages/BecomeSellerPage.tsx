@@ -99,7 +99,7 @@ export default function BecomeSellerPage() {
           {app.status === "pending" && (
             <div className="bg-[#111] border border-white/5 rounded p-4 space-y-3">
               <p className="text-sm text-white/70">
-                Your application is pending. Text your seller code to <strong className="text-white">@Omzrii</strong> on Telegram to activate your seller account.
+                Your application is pending. Text your seller code to <strong className="text-white">@nychqsupport</strong> on Telegram to activate your seller account.
               </p>
               <div className="space-y-1">
                 <p className="text-[10px] text-white/30 uppercase tracking-widest">Your Seller Code</p>
@@ -115,7 +115,7 @@ export default function BecomeSellerPage() {
                 </div>
               </div>
               <p className="text-[11px] text-white/30">
-                Message @Omzrii on Telegram with your code. Once verified, your seller access will be activated.
+                Message @nychqsupport on Telegram with your code. Once verified, your seller access will be activated.
               </p>
             </div>
           )}

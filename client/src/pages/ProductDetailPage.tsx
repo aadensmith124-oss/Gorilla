@@ -29,6 +29,12 @@ export default function ProductDetailPage() {
   const maxQty = selectedVariant?.stockCount ?? 999;
   const totalAmount = selectedVariant ? selectedVariant.price * quantity : 0;
 
+  const { data: rankData } = useQuery<any>({ queryKey: ["/api/user/rank"] });
+  const rankDiscountPct = rankData?.discountPct ?? 0;
+  const discountedAmount = rankDiscountPct > 0 && totalAmount > 0
+    ? Math.round(totalAmount * (1 - rankDiscountPct / 100))
+    : totalAmount;
+
   // Load all sellers for the selected variant — used to pick one randomly at purchase
   const { data: variantSellers } = useQuery<any[]>({
     queryKey: ["/api/variants", selectedVariantId, "sellers"],
@@ -161,9 +167,17 @@ export default function ProductDetailPage() {
           {/* Total amount */}
           <div className="space-y-1">
             <p className="text-xs text-white/40">Total amount</p>
-            <p className="text-lg font-bold text-primary">
-              {totalAmount > 0 ? `$${(totalAmount / 100).toFixed(2)}` : "—"}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-lg font-bold text-primary">
+                {discountedAmount > 0 ? `$${(discountedAmount / 100).toFixed(2)}` : "—"}
+              </p>
+              {rankDiscountPct > 0 && totalAmount > 0 && (
+                <span className="text-xs text-white/30 line-through">${(totalAmount / 100).toFixed(2)}</span>
+              )}
+              {rankDiscountPct > 0 && totalAmount > 0 && (
+                <span className="text-[10px] text-amber-400 font-bold">{rankDiscountPct}% off</span>
+              )}
+            </div>
           </div>
 
           {/* Purchase button */}
@@ -175,7 +189,7 @@ export default function ProductDetailPage() {
           >
             {purchaseMutation.isPending
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : `Purchase${totalAmount > 0 ? ` $${(totalAmount / 100).toFixed(2)}` : ""}`}
+              : `Purchase${discountedAmount > 0 ? ` $${(discountedAmount / 100).toFixed(2)}` : ""}`}
           </button>
         </div>
       </div>

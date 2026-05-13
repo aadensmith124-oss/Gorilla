@@ -124,7 +124,7 @@ function OverviewTab({ sellerStatus }: { sellerStatus: any }) {
       <div className="col-span-2 bg-[#111] border border-white/5 rounded-xl p-3">
         <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1">Payout Info</p>
         <p className="text-xs text-white/50 leading-relaxed">
-          You earn <span className="text-white font-bold">80%</span> of every sale. Contact <span className="text-primary">@Omzrii</span> on Telegram to request your payout.
+          You earn <span className="text-white font-bold">80%</span> of every sale. Contact <span className="text-primary">@nychqsupport</span> on Telegram to request your payout.
         </p>
       </div>
     </div>

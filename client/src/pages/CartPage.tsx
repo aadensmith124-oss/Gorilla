@@ -115,7 +115,13 @@ export default function CartPage() {
   const discountAmount = appliedDiscount?.discountAmount ?? 0;
   const discountedTotal = Math.max(0, cartTotal - discountAmount);
   const userBalance = user?.balance || 0;
-  const hasEnoughBalance = userBalance >= discountedTotal;
+
+  const { data: rankData } = useQuery<any>({ queryKey: ["/api/user/rank"], enabled: !!user });
+  const rankDiscountPct = rankData?.discountPct ?? 0;
+  const rankDiscountAmount = rankDiscountPct > 0 ? Math.round(discountedTotal * rankDiscountPct / 100) : 0;
+  const finalTotal = Math.max(0, discountedTotal - rankDiscountAmount);
+
+  const hasEnoughBalance = userBalance >= finalTotal;
 
   const { data: enabledMethods } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/payment-methods"],
@@ -162,8 +168,8 @@ export default function CartPage() {
   });
 
   const processorFeePercent = selectedMethod === "crypto" ? CRYPTO_FEE_PERCENT : CASHAPP_FEE_PERCENT;
-  const processorFee = Math.round(discountedTotal * processorFeePercent / 100);
-  const dueTotal = discountedTotal + processorFee;
+  const processorFee = Math.round(finalTotal * processorFeePercent / 100);
+  const dueTotal = finalTotal + processorFee;
 
   const cashappOrderMutation = useMutation({
     mutationFn: async () => {
@@ -243,13 +249,13 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (discountedTotal < 100) {
+    if (finalTotal < 100) {
       toast({ title: "Minimum order not met", description: "Your cart must be at least $1.00 to checkout.", variant: "destructive" });
       return;
     }
     if (selectedMethod === "balance") {
       if (!hasEnoughBalance) {
-        toast({ title: "Insufficient balance", description: `You need $${(discountedTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });
+        toast({ title: "Insufficient balance", description: `You need $${(finalTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });
         return;
       }
       balanceOrderMutation.mutate();
@@ -391,9 +397,17 @@ export default function CartPage() {
                 <span className="text-primary font-bold">-${(discountAmount / 100).toFixed(2)}</span>
               </div>
             )}
+            {rankDiscountAmount > 0 && (
+              <div className="flex justify-between py-2.5 text-xs">
+                <span className="text-amber-400/80 flex items-center gap-1">
+                  <Tag className="h-3 w-3" /> Rank discount ({rankDiscountPct}% · {rankData?.rank?.toUpperCase()})
+                </span>
+                <span className="text-amber-400 font-bold">-${(rankDiscountAmount / 100).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between py-2.5 text-xs font-bold">
               <span className="text-white">Total</span>
-              <span className="text-white">${(discountedTotal / 100).toFixed(2)}</span>
+              <span className="text-white">${(finalTotal / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>
