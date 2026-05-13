@@ -5,17 +5,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronRight, Loader2, Copy, Check } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Litecoin (LTC)", "USDT (TRC20)", "USDT (ERC20)", "Monero (XMR)"];
-const NETWORKS_MAP: Record<string, string[]> = {
-  "Bitcoin (BTC)": ["Bitcoin"],
-  "Ethereum (ETH)": ["ERC20"],
-  "Litecoin (LTC)": ["Litecoin"],
-  "USDT (TRC20)": ["TRC20"],
-  "USDT (ERC20)": ["ERC20"],
-  "Monero (XMR)": ["Monero"],
-};
 
 type Method = "crypto" | "cashapp";
 
@@ -38,8 +27,6 @@ export default function DepositPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [method, setMethod] = useState<Method>("crypto");
-  const [coin, setCoin] = useState("");
-  const [network, setNetwork] = useState("");
   const [amount, setAmount] = useState(20);
   const [cashappResult, setCashappResult] = useState<{ note: string; tag: string } | null>(null);
 
@@ -60,8 +47,6 @@ export default function DepositPage() {
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
         amount: Math.round(amount * 100),
-        currency: coin,
-        network,
         purpose: "deposit",
       });
       return res.json();
@@ -99,7 +84,6 @@ export default function DepositPage() {
 
   const handleCreate = () => {
     if (method === "crypto") {
-      if (!coin || !network) return toast({ title: "Select coin and network", variant: "destructive" });
       cryptoMutation.mutate();
     } else {
       setCashappResult(null);
@@ -156,35 +140,14 @@ export default function DepositPage() {
       {/* Form */}
       <div className="space-y-2">
         {method === "crypto" && (
-          <>
-            <div className="space-y-1">
-              <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">COIN</label>
-              <Select value={coin} onValueChange={(v) => { setCoin(v); setNetwork(""); }}>
-                <SelectTrigger className="bg-[#0e0e0e] border-white/8 text-white/60 h-9 text-xs font-mono" data-testid="select-coin">
-                  <SelectValue placeholder="select coin..." />
-                </SelectTrigger>
-                <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
-                  {COINS.map(c => <SelectItem key={c} value={c} className="text-xs font-mono">{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">NETWORK</label>
-              <Select value={network} onValueChange={setNetwork} disabled={!coin}>
-                <SelectTrigger className="bg-[#0e0e0e] border-white/8 text-white/60 h-9 text-xs font-mono" data-testid="select-network">
-                  <SelectValue placeholder="select network..." />
-                </SelectTrigger>
-                <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
-                  {(NETWORKS_MAP[coin] ?? []).map(n => <SelectItem key={n} value={n} className="text-xs font-mono">{n}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
+          <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
+            you'll choose your coin on the checkout page · 5% fee applies
+          </div>
         )}
 
         {method === "cashapp" && (
           <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
-            send exact amount via cashapp · 15% processing fee applies
+            send exact amount via cashapp · 5% processing fee applies
           </div>
         )}
 
