@@ -150,6 +150,68 @@ export async function registerRoutes(
     res.json(txs);
   });
 
+  // Combined deposits list (crypto + cashapp deposits) for topup history
+  app.get("/api/deposits", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    try {
+      // Crypto deposit payments
+      const cryptoRows = await db
+        .select()
+        .from(cryptoPayments)
+        .where(and(eq(cryptoPayments.userId, userId), eq(cryptoPayments.purpose, "deposit")))
+        .orderBy(desc(cryptoPayments.createdAt))
+        .limit(30);
+
+      // CashApp deposit-only orders (orders with no items, paymentMethod CashApp)
+      const cashappRows = await db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.userId, userId), eq(orders.paymentMethod, "CashApp")))
+        .orderBy(desc(orders.createdAt))
+        .limit(30);
+
+      // Filter cashapp orders that are deposit-only (no order items)
+      const allOrderIds = cashappRows.map(o => o.id);
+      let depositOnlyCashapp = cashappRows;
+      if (allOrderIds.length > 0) {
+        const itemsInOrders = await db
+          .select({ orderId: orderItems.orderId })
+          .from(orderItems)
+          .where(sql`${orderItems.orderId} = ANY(ARRAY[${sql.join(allOrderIds.map(id => sql`${id}`), sql`, `)}]::int[])`);
+        const orderIdsWithItems = new Set(itemsInOrders.map(i => i.orderId));
+        depositOnlyCashapp = cashappRows.filter(o => !orderIdsWithItems.has(o.id));
+      }
+
+      const cryptoDeposits = cryptoRows.map(p => ({
+        id: `crypto_${p.id}`,
+        type: "crypto" as const,
+        amount: p.amount,
+        status: p.status,
+        paymentId: p.forebitPaymentId,
+        checkoutUrl: p.checkoutUrl,
+        createdAt: p.createdAt,
+      }));
+
+      const cashappDeposits = depositOnlyCashapp.map(o => ({
+        id: `cashapp_${o.id}`,
+        type: "cashapp" as const,
+        amount: o.total,
+        status: o.status,
+        paymentNote: o.paymentNote,
+        createdAt: o.createdAt,
+      }));
+
+      const all = [...cryptoDeposits, ...cashappDeposits].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      res.json(all);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // Games
   app.post(api.games.dice.path, gameLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
