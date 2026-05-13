@@ -6,8 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useForebitPolling } from "@/hooks/use-forebit-polling";
-import { useEffect, useState } from "react";
-import { SecurityCheck } from "@/components/SecurityCheck";
+import { useEffect } from "react";
 
 // Pages
 import AuthPage from "@/pages/AuthPage";
@@ -65,14 +64,11 @@ function Router() {
 }
 
 function App() {
-  const [verified, setVerified] = useState(false);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        {!verified && <SecurityCheck onVerified={() => setVerified(true)} />}
-        {verified && <Router />}
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );
