@@ -299,21 +299,37 @@ export class DatabaseStorage implements IStorage {
 
   // Reserve stock for immediate (wallet) purchase — marks as sold right away.
   // Uses a single atomic UPDATE with subquery to avoid race conditions.
-  async reserveStockItem(variantId: number): Promise<StockItem | undefined> {
-    const result = await db.execute(sql`
-      UPDATE stock_items
-      SET is_sold = true
-      WHERE id = (
-        SELECT id FROM stock_items
-        WHERE variant_id = ${variantId}
-          AND is_sold = false
-          AND is_reserved = false
-        ORDER BY id
-        LIMIT 1
-        FOR UPDATE SKIP LOCKED
-      )
-      RETURNING *
-    `);
+  async reserveStockItem(variantId: number, sellerId?: number): Promise<StockItem | undefined> {
+    const result = sellerId
+      ? await db.execute(sql`
+          UPDATE stock_items
+          SET is_sold = true
+          WHERE id = (
+            SELECT id FROM stock_items
+            WHERE variant_id = ${variantId}
+              AND is_sold = false
+              AND is_reserved = false
+              AND seller_id = ${sellerId}
+            ORDER BY id
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+          )
+          RETURNING *
+        `)
+      : await db.execute(sql`
+          UPDATE stock_items
+          SET is_sold = true
+          WHERE id = (
+            SELECT id FROM stock_items
+            WHERE variant_id = ${variantId}
+              AND is_sold = false
+              AND is_reserved = false
+            ORDER BY id
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+          )
+          RETURNING *
+        `);
     return result.rows[0] as StockItem | undefined;
   }
 
@@ -345,7 +361,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(stockItems.orderId, orderId), eq(stockItems.isReserved, true), eq(stockItems.isSold, false)));
   }
 
-  async createOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = [], discountCodeId?: number | null): Promise<Order> {
+  async createOrder(userId: number, items: { variantId: number; quantity: number; sellerId?: number }[], cardIds: number[] = [], discountCodeId?: number | null): Promise<Order> {
     // ── Step 1: Calculate totals and validate BEFORE touching any stock ──
     let rawTotal = 0;
     const variantMap: Record<number, typeof variants.$inferSelect> = {};
@@ -397,7 +413,7 @@ export class DatabaseStorage implements IStorage {
       for (const item of items) {
         const variant = variantMap[item.variantId];
         for (let i = 0; i < item.quantity; i++) {
-          const stockItem = await this.reserveStockItem(item.variantId);
+          const stockItem = await this.reserveStockItem(item.variantId, (item as any).sellerId || undefined);
           if (!stockItem) {
             throw new Error(`Out of stock: ${variant.name}`);
           }

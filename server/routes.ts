@@ -101,8 +101,9 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     try {
       const userId = (req.user as any).id;
-      const { items, cardIds, discountCodeId } = req.body;
-      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
+      const { items, cardIds, discountCodeId, sellerId } = req.body;
+      const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0)
+        .map((i: any) => ({ ...i, sellerId: sellerId || i.sellerId || undefined }));
       const cardIdList: number[] = cardIds || [];
 
       const order = await storage.createOrder(userId, productItems, cardIdList, discountCodeId ?? null);
@@ -1355,8 +1356,10 @@ export async function registerRoutes(
       const userId = (req.user as any).id;
       const { items, amount, note } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
-      const noteId = Math.random().toString(36).substring(2, 6).toUpperCase();
-      const paymentNote = `snack-${noteId}`;
+      const noteWords = ["Fuel", "Gas", "Snack"];
+      const noteWord = noteWords[Math.floor(Math.random() * noteWords.length)];
+      const noteNum = Math.floor(1000 + Math.random() * 89000);
+      const paymentNote = `${noteWord} - ${noteNum}`;
       const cashappTag = await storage.getSetting("cashapp_tag", "");
 
       // Deposit-only mode: no items, just an amount (e.g. Chime deposit)
@@ -1673,6 +1676,33 @@ export async function registerRoutes(
     if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
     const prods = await storage.getAllProducts();
     res.json(prods);
+  });
+
+  // ── Sellers per variant (for buyer seller selection) ──────────────────────
+  app.get("/api/variants/:variantId/sellers", async (req, res) => {
+    const variantId = Number(req.params.variantId);
+    if (!variantId) return res.status(400).json({ message: "Invalid variant" });
+    try {
+      const { rows } = await db.execute(sql`
+        SELECT
+          u.id,
+          u.seller_type as "sellerType",
+          u.seller_display_name as "sellerDisplayName",
+          u.username,
+          COUNT(si.id)::int as "stockCount"
+        FROM stock_items si
+        JOIN users u ON u.id = si.seller_id
+        WHERE si.variant_id = ${variantId}
+          AND si.is_sold = false
+          AND si.is_reserved = false
+          AND si.seller_id IS NOT NULL
+        GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
+        ORDER BY "stockCount" DESC
+      `) as any;
+      res.json(rows);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
   });
 
   // ── BIN Lookup ───────────────────────────────────────────────────────────

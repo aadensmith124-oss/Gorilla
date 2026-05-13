@@ -3,9 +3,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronRight, Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronRight, Loader2, Copy, Check } from "lucide-react";
 import { Link } from "wouter";
+import { SiBitcoin, SiCashapp } from "react-icons/si";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Litecoin (LTC)", "USDT (TRC20)", "USDT (ERC20)", "Monero (XMR)"];
 const NETWORKS_MAP: Record<string, string[]> = {
@@ -17,7 +18,21 @@ const NETWORKS_MAP: Record<string, string[]> = {
   "Monero (XMR)": ["Monero"],
 };
 
-type Method = "crypto" | "chime";
+type Method = "crypto" | "cashapp";
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const handle = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handle} className="ml-1 text-white/40 hover:text-white transition-colors flex-shrink-0" data-testid="btn-copy-note">
+      {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
 
 export default function DepositPage() {
   const { user } = useAuth();
@@ -27,16 +42,20 @@ export default function DepositPage() {
   const [coin, setCoin] = useState("");
   const [network, setNetwork] = useState("");
   const [amount, setAmount] = useState(20);
+  const [cashappResult, setCashappResult] = useState<{ note: string; tag: string } | null>(null);
 
   const { data: transactions } = useQuery<any[]>({
     queryKey: ["/api/wallet/transactions"],
     enabled: !!user,
   });
 
+  const { data: cashappTagData } = useQuery<{ tag: string }>({
+    queryKey: ["/api/site-settings/cashapp-tag"],
+  });
+
   const fee = method === "crypto" ? 0.05 : 0.15;
   const youSend = (amount * (1 + fee)).toFixed(2);
   const minAmount = 20;
-  const isPending = false;
 
   const cryptoMutation = useMutation({
     mutationFn: async () => {
@@ -56,29 +75,36 @@ export default function DepositPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const chimeMutation = useMutation({
+  const cashappMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/orders/cashapp", {
         amount: Math.round(amount * 100),
-        note: `CHIME DEPOSIT - ${user?.username}`,
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to create deposit");
+      }
       return res.json();
     },
-    onSuccess: () => {
-      toast({ title: "Chime request submitted" });
+    onSuccess: (data) => {
+      setCashappResult({
+        note: data.paymentNote,
+        tag: data.cashappTag || cashappTagData?.tag || "",
+      });
       qc.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const isLoading = cryptoMutation.isPending || chimeMutation.isPending;
+  const isLoading = cryptoMutation.isPending || cashappMutation.isPending;
 
   const handleCreate = () => {
     if (method === "crypto") {
       if (!coin || !network) return toast({ title: "Select coin and network", variant: "destructive" });
       cryptoMutation.mutate();
     } else {
-      chimeMutation.mutate();
+      setCashappResult(null);
+      cashappMutation.mutate();
     }
   };
 
@@ -97,19 +123,35 @@ export default function DepositPage() {
         </button>
       </Link>
 
-      {/* Method tabs */}
-      <div className="flex gap-1.5">
-        {(["crypto", "chime"] as Method[]).map(m => (
-          <button
-            key={m}
-            onClick={() => setMethod(m)}
-            className={`px-3 py-1 rounded text-xs font-mono border transition-all ${method === m ? "bg-white/10 text-white border-white/20" : "bg-transparent text-white/30 border-white/10 hover:text-white/50"}`}
-            data-testid={`btn-method-${m}`}
-          >
-            {m === "crypto" ? "Crypto" : "Chime"}
-          </button>
-        ))}
-        <span className="ml-auto text-[10px] text-white/20 self-center font-mono">buy crypto →</span>
+      {/* Method cards */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => { setMethod("crypto"); setCashappResult(null); }}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-primary/50 bg-primary/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+          data-testid="btn-method-crypto"
+        >
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-primary" : "bg-white/10"}`}>
+            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-black" : "text-white/60"}`} />
+          </div>
+          <div className="text-center">
+            <p className={`text-xs font-bold ${method === "crypto" ? "text-white" : "text-white/50"}`}>Crypto</p>
+            <p className="text-[10px] text-white/25 font-mono">5% fee</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => { setMethod("cashapp"); setCashappResult(null); }}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+          data-testid="btn-method-cashapp"
+        >
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "cashapp" ? "bg-[#00D632]" : "bg-white/10"}`}>
+            <SiCashapp className={`h-5 w-5 ${method === "cashapp" ? "text-white" : "text-white/60"}`} />
+          </div>
+          <div className="text-center">
+            <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00D632]" : "text-white/50"}`}>CashApp</p>
+            <p className="text-[10px] text-white/25 font-mono">15% fee</p>
+          </div>
+        </button>
       </div>
 
       {/* Form */}
@@ -141,9 +183,9 @@ export default function DepositPage() {
           </>
         )}
 
-        {method === "chime" && (
+        {method === "cashapp" && (
           <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
-            send any amount — you'll be credited the full usd value received, no fee
+            send exact amount via cashapp · 15% processing fee applies
           </div>
         )}
 
@@ -168,15 +210,66 @@ export default function DepositPage() {
           <span className="text-white">${youSend}</span>
         </div>
 
-        <button
-          onClick={handleCreate}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 border border-white/10 rounded text-xs text-white/50 font-mono hover:text-white hover:border-white/20 transition-all disabled:opacity-40"
-          data-testid="btn-create-invoice"
-        >
-          {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "create deposit invoice →"}
-        </button>
+        {!cashappResult && (
+          <button
+            onClick={handleCreate}
+            disabled={isLoading}
+            className={`w-full flex items-center justify-center gap-2 py-2 border rounded text-xs font-mono transition-all disabled:opacity-40 ${
+              method === "cashapp"
+                ? "border-[#00D632]/30 text-[#00D632]/70 hover:text-[#00D632] hover:border-[#00D632]/50"
+                : "border-white/10 text-white/50 hover:text-white hover:border-white/20"
+            }`}
+            data-testid="btn-create-invoice"
+          >
+            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : method === "cashapp" ? "create cashapp deposit →" : "create deposit invoice →"}
+          </button>
+        )}
       </div>
+
+      {/* CashApp result — show note + cashtag */}
+      {cashappResult && (
+        <div className="border border-[#00D632]/30 bg-[#00D632]/5 rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <SiCashapp className="h-4 w-4 text-[#00D632]" />
+            <p className="text-xs font-bold text-[#00D632]">Send via CashApp</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="bg-black/40 rounded px-3 py-2">
+              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Send to</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-white font-mono">{cashappResult.tag || "(no cashtag set)"}</p>
+                {cashappResult.tag && <CopyButton value={cashappResult.tag} />}
+              </div>
+            </div>
+
+            <div className="bg-black/40 rounded px-3 py-2">
+              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Amount</p>
+              <p className="text-sm font-bold text-white font-mono">${youSend}</p>
+            </div>
+
+            <div className="bg-black/40 rounded px-3 py-2">
+              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-[#00D632] font-mono">{cashappResult.note}</p>
+                <CopyButton value={cashappResult.note} />
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-white/25 font-mono leading-relaxed">
+            include the exact note when sending · admin will confirm and credit your balance
+          </p>
+
+          <button
+            onClick={() => { setCashappResult(null); cashappMutation.reset(); }}
+            className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors font-mono"
+            data-testid="btn-new-deposit"
+          >
+            ← create new deposit
+          </button>
+        </div>
+      )}
 
       {/* Deposit History */}
       {depositHistory.length > 0 && (

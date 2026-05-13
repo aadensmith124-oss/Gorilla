@@ -2,7 +2,7 @@ import { useProducts } from "@/hooks/use-products";
 import { useRoute, useLocation } from "wouter";
 import { Loader2, Minus, Plus, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -13,6 +13,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const SELLER_BADGE: Record<string, string> = { bronze: "🍟", fresh: "🍺", top: "🔥" };
+
+function getSellerLabel(seller: any): string {
+  const type = seller.sellerType ?? "bronze";
+  const name = seller.sellerDisplayName?.trim();
+  const emoji = SELLER_BADGE[type] ?? "🍟";
+  if (name) return `${emoji} ${name} ${emoji}`;
+  return `${emoji} ${type.toUpperCase()} SELLER ${emoji}`;
+}
+
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:name");
   const [, setLocation] = useLocation();
@@ -21,6 +31,7 @@ export default function ProductDetailPage() {
   const product = products?.find((p: any) => p.name === name);
   const isLoading = !products;
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
@@ -28,10 +39,24 @@ export default function ProductDetailPage() {
   const minQty = selectedVariant?.minQuantity || 1;
   const totalAmount = selectedVariant ? selectedVariant.price * quantity : 0;
 
+  // Fetch sellers for the selected variant
+  const { data: sellers } = useQuery<any[]>({
+    queryKey: ["/api/variants", selectedVariantId, "sellers"],
+    queryFn: async () => {
+      const res = await fetch(`/api/variants/${selectedVariantId}/sellers`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedVariantId,
+  });
+
+  const hasSellers = sellers && sellers.length > 0;
+
   useEffect(() => {
     if (selectedVariant) {
       setQuantity(Math.max(minQty, 1));
     }
+    setSelectedSellerId(null);
   }, [selectedVariantId, minQty]);
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -41,10 +66,12 @@ export default function ProductDetailPage() {
     mutationFn: async () => {
       if (!selectedVariant) throw new Error("Select an option first");
       if (quantity < minQty) throw new Error(`Minimum order is ${minQty}`);
-      const res = await apiRequest("POST", "/api/orders", {
+      const body: any = {
         items: [{ variantId: selectedVariant.id, quantity }],
         cardIds: [],
-      });
+      };
+      if (selectedSellerId) body.sellerId = Number(selectedSellerId);
+      const res = await apiRequest("POST", "/api/orders", body);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Purchase failed");
@@ -117,6 +144,38 @@ export default function ProductDetailPage() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Seller selector — only shown when sellers have stock for this variant */}
+          {selectedVariantId && hasSellers && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-white/40">Choose seller</p>
+              <Select onValueChange={setSelectedSellerId} value={selectedSellerId || undefined}>
+                <SelectTrigger className="w-full h-10 bg-[#1a1d24] border-white/[0.07] text-white text-xs rounded-lg" data-testid="select-seller">
+                  <SelectValue placeholder="Any seller (random)" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1d24] border-white/[0.08] text-white">
+                  <SelectItem value="any" className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5">
+                    <span className="text-white/60">Any seller (random)</span>
+                  </SelectItem>
+                  {sellers.map((s: any) => {
+                    const label = getSellerLabel(s);
+                    return (
+                      <SelectItem
+                        key={s.id}
+                        value={s.id.toString()}
+                        className="text-xs cursor-pointer hover:bg-white/5 focus:bg-white/5"
+                      >
+                        <span className="font-bold text-white">
+                          {label}
+                          <span className="ml-2 font-normal text-white/40">- {s.stockCount} in stock</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Quantity */}
           <div className="space-y-1.5">

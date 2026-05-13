@@ -108,13 +108,14 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           <p className="text-sm font-mono font-bold text-white flex-shrink-0">${(card.price / 100).toFixed(2)}</p>
         </div>
 
-        {/* Row 2: Card type */}
-        {cardType && (
-          <p className="text-[11px] text-white/35 font-mono uppercase tracking-wide">{cardType}</p>
-        )}
-
-        {/* Row 3: BIN info */}
-        {bin && <BinRow bin={bin} />}
+        {/* Row 2: Bank + card type */}
+        <div className="flex items-center gap-2 font-mono text-[11px] text-white/40">
+          {binData?.bank && <span>{binData.bank}</span>}
+          {cardType && <span className="uppercase">{cardType}</span>}
+          {(binData?.country || binData?.countryCode) && (
+            <span>{[binData.country, binData.countryCode].filter(Boolean).join(" ")}</span>
+          )}
+        </div>
 
         {/* Row 4: Buttons */}
         <div className="flex gap-1.5 pt-0.5">

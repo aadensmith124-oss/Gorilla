@@ -32,9 +32,7 @@ const adminSections = [
   { id: "users", label: "Users" },
   { id: "sellers", label: "Sellers" },
   { id: "codes", label: "Codes" },
-  { id: "test", label: "Test Mode" },
   { id: "integrations", label: "Integrations" },
-  { id: "smtp", label: "Email (SMTP)" },
 ];
 
 export default function AdminPage() {
@@ -109,9 +107,7 @@ export default function AdminPage() {
           {activeSection === "cards" && <AdminCardsSection />}
           {activeSection === "ach" && <AdminAchSection />}
           {activeSection === "sellers" && <SellerApplicationsSection />}
-          {activeSection === "test" && <TestModeSection onGoToOrders={() => setActiveSection("orders")} />}
           {activeSection === "integrations" && <IntegrationsSection />}
-          {activeSection === "smtp" && <SmtpSection />}
         </main>
       </div>
     </div>
