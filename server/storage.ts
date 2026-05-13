@@ -207,6 +207,18 @@ export class DatabaseStorage implements IStorage {
         variantsWithStock.push({ ...v, stockCount: Number(count.count) });
 
         try {
+          // Admin-added stock (no seller_id) = top seller automatically
+          const [adminStock] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(stockItems)
+            .where(and(
+              eq(stockItems.variantId, v.id),
+              eq(stockItems.isSold, false),
+              eq(stockItems.isReserved, false),
+              sql`seller_id IS NULL`
+            ));
+          if (Number(adminStock.count) > 0) sellerTypeSet.add("top");
+
           const { rows } = await db.execute(sql`
             SELECT DISTINCT u.seller_type as "sellerType"
             FROM stock_items si
