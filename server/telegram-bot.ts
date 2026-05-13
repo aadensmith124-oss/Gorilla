@@ -75,9 +75,21 @@ async function bootstrapSchema() {
         referrer_id INTEGER NOT NULL REFERENCES users(id),
         redeemer_id INTEGER NOT NULL REFERENCES users(id),
         code TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        UNIQUE(redeemer_id)
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
+    `);
+    // Ensure per-(redeemer, code) uniqueness — one account can only use the same code once
+    await db.execute(sql`
+      ALTER TABLE referral_usages DROP CONSTRAINT IF EXISTS referral_usages_redeemer_id_key
+    `);
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'referral_usages_redeemer_code_unique'
+        ) THEN
+          ALTER TABLE referral_usages ADD CONSTRAINT referral_usages_redeemer_code_unique UNIQUE(redeemer_id, code);
+        END IF;
+      END $$
     `);
     await db.execute(sql`
       UPDATE users
@@ -172,12 +184,16 @@ export function startTelegramBot() {
               }
               if (text.startsWith("/chan ")) {
                 const val = text.slice(5).trim();
+                // Always update the required channel display value
+                await storage.setSetting("telegram_required_channel", val);
                 if (/^-?\d+$/.test(val)) {
+                  // Numeric ID — also store for getChatMember verification
                   await storage.setSetting("telegram_channel_id", val);
-                  await send(token, chatId, `✅ Channel ID set to \`${escMd(val)}\`\\.`);
+                  await send(token, chatId, `✅ Channel set to \`${escMd(val)}\`\\. Membership verification is now *active*\\.`);
                 } else {
-                  await storage.setSetting("telegram_required_channel", val);
-                  await send(token, chatId, `✅ Channel link set to \`${escMd(val)}\`\\.`);
+                  // Invite link — clear numeric ID (verification blocked until ID is set)
+                  await storage.setSetting("telegram_channel_id", "");
+                  await send(token, chatId, `✅ Channel link updated\\.\n\n⚠️ Membership verification is *disabled* until you set the numeric channel ID\\.\nRun \\/chan \\-100XXXX with the channel's numeric ID to enable it\\.`);
                 }
                 continue;
               }
@@ -269,14 +285,24 @@ async function cmdStart(
     inline_keyboard: [[{ text: "📢 Join Channel — Click Here", url: channelLink }]]
   };
 
-  const inChannel = channelId ? await isMember(token, channelId, from.id) : true;
-
-  if (!inChannel) {
-    await send(token, chatId,
-      `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our channel to get started\\.\nTap the button below, then send \\/start again\\.`,
-      { reply_markup: JSON.stringify(joinBtn) }
-    );
-    return;
+  // Channel check: required when channelLink is configured
+  if (channelLink) {
+    if (!channelId) {
+      // Link set but no numeric ID — membership can't be verified; block for safety
+      await send(token, chatId,
+        `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our required channel\\.\nTap the button below, then check back once the admin enables membership verification\\.`,
+        { reply_markup: JSON.stringify(joinBtn) }
+      );
+      return;
+    }
+    const inChannel = await isMember(token, channelId, from.id);
+    if (!inChannel) {
+      await send(token, chatId,
+        `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our channel to get started\\.\nTap the button below, then send \\/start again\\.`,
+        { reply_markup: JSON.stringify(joinBtn) }
+      );
+      return;
+    }
   }
 
   if (linked?.telegram_connected) {
@@ -297,7 +323,13 @@ async function cmdLink(
 ) {
   const joinBtn = { inline_keyboard: [[{ text: "📢 Join Channel", url: channelLink }]] };
 
-  if (channelId) {
+  // Channel check: required when channelLink is configured
+  if (channelLink) {
+    if (!channelId) {
+      await send(token, chatId, `⚠️ *Channel verification pending\\!*\n\nThe admin hasn't finished setting up membership verification\\.\nJoin the channel and check back soon\\.`,
+        { reply_markup: JSON.stringify(joinBtn) });
+      return;
+    }
     const inChannel = await isMember(token, channelId, from.id);
     if (!inChannel) {
       await send(token, chatId, `⚠️ *Join required\\!*\n\nYou must join our channel before linking\\. Tap below:`,
@@ -365,10 +397,12 @@ async function cmdReferral(
     return;
   }
 
-  // Check if this redeemer already used a referral code
-  const { rows: used } = await db.execute(sql`SELECT id FROM referral_usages WHERE redeemer_id = ${linked.id} LIMIT 1`) as any;
+  // Check if this redeemer has already used THIS specific code
+  const { rows: used } = await db.execute(sql`
+    SELECT id FROM referral_usages WHERE redeemer_id = ${linked.id} AND code = ${code} LIMIT 1
+  `) as any;
   if (used.length > 0) {
-    await send(token, chatId, `⚠️ You've already used a referral code before\\. Each account can only redeem once\\.`);
+    await send(token, chatId, `⚠️ You've already used this referral code before\\.`);
     return;
   }
 
