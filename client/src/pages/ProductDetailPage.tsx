@@ -171,10 +171,10 @@ export default function ProductDetailPage() {
               <p className="text-lg font-bold text-primary">
                 {discountedAmount > 0 ? `$${(discountedAmount / 100).toFixed(2)}` : "—"}
               </p>
-              {rankDiscountPct > 0 && totalAmount > 0 && (
+              {rankDiscountPct > 0 && discountedAmount < totalAmount && (
                 <span className="text-xs text-white/30 line-through">${(totalAmount / 100).toFixed(2)}</span>
               )}
-              {rankDiscountPct > 0 && totalAmount > 0 && (
+              {rankDiscountPct > 0 && discountedAmount < totalAmount && (
                 <span className="text-[10px] text-amber-400 font-bold">{rankDiscountPct}% off</span>
               )}
             </div>

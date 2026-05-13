@@ -58,19 +58,24 @@ export default function OrderDetailPageNew() {
   const paid = (order.status === "fulfilled" || order.status === "delivering" || order.status === "replaced") ? order.total : 0;
   const expected = order.total;
 
-  const productItems = (order.items || []).filter((i: any) => !i.itemType || i.itemType === "product");
-  const grouped: { key: string; productName: string; variantName: string; qty: number; unitPrice: number }[] = [];
+  const allItems = order.items || [];
+  const grouped: { key: string; productName: string; variantName: string; qty: number; unitPrice: number; itemType: string; cardContent?: string }[] = [];
   const seen: Record<string, number> = {};
-  for (const item of productItems) {
-    const key = String(item.variantId || item.id);
+  for (const item of allItems) {
+    const isCard = item.itemType === "card";
+    const key = isCard ? `card-${item.cardId ?? item.id}` : String(item.variantId || item.id);
     if (seen[key] === undefined) {
       seen[key] = grouped.length;
       grouped.push({
         key,
-        productName: item.productName || "Product",
-        variantName: item.variant?.name || item.variantName || "—",
+        productName: isCard ? (item.card?.maskedCard ? `Card ${item.card.maskedCard}` : "Card") : (item.productName || "Product"),
+        variantName: isCard ? (item.card?.country ?? "—") : (item.variant?.name || item.variantName || "—"),
         qty: item.quantity ?? 1,
         unitPrice: item.price,
+        itemType: item.itemType ?? "product",
+        cardContent: isCard && item.card
+          ? [item.card.cardNumber, item.card.expiry, item.card.cvv, item.card.country, item.card.extras].filter(Boolean).join("|")
+          : undefined,
       });
     } else {
       grouped[seen[key]].qty += item.quantity ?? 1;
@@ -80,9 +85,10 @@ export default function OrderDetailPageNew() {
   const deliveryMap = parseDeliveryMap(order.deliveryContent);
   const isFulfilled = order.status === "fulfilled" || order.status === "delivering" || order.status === "replaced";
 
-  const getStockForKey = (key: string): string | null => {
+  const getStockForKey = (item: typeof grouped[0]): string | null => {
     if (!isFulfilled) return null;
-    if (deliveryMap) return deliveryMap[key] || null;
+    if (item.itemType === "card") return item.cardContent || null;
+    if (deliveryMap) return deliveryMap[item.key] || null;
     return order.deliveryContent || null;
   };
 
@@ -186,7 +192,7 @@ export default function OrderDetailPageNew() {
               <p className="text-sm text-white/40">No products found</p>
             )}
             {grouped.map((item, idx) => {
-              const stockContent = getStockForKey(item.key);
+              const stockContent = getStockForKey(item);
               const isOpen = !!stockVisible[item.key];
               const wasCopied = !!copied[item.key];
 
@@ -206,7 +212,7 @@ export default function OrderDetailPageNew() {
                           className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                         >
                           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          {isOpen ? "Hide Stock" : "View Stock"}
+                          {isOpen ? `Hide ${item.itemType === "card" ? "Card" : "Stock"}` : `View ${item.itemType === "card" ? "Card" : "Stock"}`}
                         </button>
 
                         {isOpen && (
