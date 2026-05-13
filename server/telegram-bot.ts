@@ -33,7 +33,6 @@ async function send(
   }
 }
 
-/** Send raw text (no parse_mode) — used for /announce so emojis/special chars pass through */
 async function sendPlain(token: string, chatId: string | number, text: string) {
   try {
     await fetch(`${TG(token)}/sendMessage`, {
@@ -44,18 +43,6 @@ async function sendPlain(token: string, chatId: string | number, text: string) {
   } catch { /* fire-and-forget */ }
 }
 
-/**
- * Returns a getChatMember-compatible identifier (numeric ID or @username),
- * or null if the value cannot be used for API membership verification (e.g. invite link).
- */
-function toVerifiableChannelId(value: string): string | null {
-  const v = value.trim();
-  if (/^-\d+$/.test(v)) return v;   // numeric ID like -1001234567890
-  if (v.startsWith("@")) return v;   // @channelname
-  return null;                        // invite link or empty — not verifiable via getChatMember
-}
-
-/** Checks whether a user is a member of a channel using the Telegram getChatMember API. */
 async function isMember(token: string, channelId: string, userId: number): Promise<boolean> {
   try {
     const res = await fetch(`${TG(token)}/getChatMember`, {
@@ -81,6 +68,34 @@ function hasTag(name: string, tag: string): boolean {
 async function getByTelegramId(tgId: string): Promise<User | null> {
   const [user] = await db.select().from(users).where(eq(users.telegramId, tgId)).limit(1);
   return user ?? null;
+}
+
+// ─── One-time link codes ──────────────────────────────────────────────────────
+// Keyed by code; stores which (telegramId, userId) pair it belongs to.
+// Users generate a code in the bot, then enter it on the website while logged in.
+
+interface PendingLink { telegramId: string; userId: number; expiresAt: number; }
+const pendingLinks = new Map<string, PendingLink>();
+
+function generateCode(): string {
+  return Math.random().toString(36).slice(2, 10).toUpperCase();
+}
+
+/**
+ * Called from the web route POST /api/user/telegram/link.
+ * Verifies the code belongs to the authenticated user and applies the link.
+ * Returns true on success, false if code invalid/expired/mismatched.
+ */
+export async function completeLinkByCode(code: string, userId: number): Promise<boolean> {
+  const pending = pendingLinks.get(code);
+  if (!pending || pending.userId !== userId || Date.now() > pending.expiresAt) {
+    return false;
+  }
+  await db.update(users)
+    .set({ telegramId: pending.telegramId, telegramConnected: true })
+    .where(eq(users.id, userId));
+  pendingLinks.delete(code);
+  return true;
 }
 
 // ─── Schema bootstrap (idempotent) ───────────────────────────────────────────
@@ -137,7 +152,6 @@ export function startTelegramBot() {
   const token: string = tokenRaw;
 
   async function init() {
-    // Delete any existing webhook before starting long-poll
     try {
       await fetch(`${TG(token)}/deleteWebhook`, {
         method: "POST",
@@ -153,13 +167,14 @@ export function startTelegramBot() {
 
     while (true) {
       try {
-        const adminId      = await storage.getSetting("telegram_admin_id", "");
-        const nameTag      = await storage.getSetting("telegram_name_tag", "nychq.cc");
-        // Single source of truth for channel requirement.
-        // Must be @username or -100xxx for getChatMember to work.
-        // Invite links block linking until admin updates to a verifiable identifier.
-        const requiredChan = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
-        const rewardCents  = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
+        const adminId     = await storage.getSetting("telegram_admin_id", "");
+        const nameTag     = await storage.getSetting("telegram_name_tag", "nychq.cc");
+        // Two separate settings for channel:
+        //   channelLink — invite URL displayed on the join button (no getChatMember)
+        //   channelId   — @username or -100xxx used for getChatMember verification
+        const channelLink = await storage.getSetting("telegram_required_channel_link", "https://t.me/+CiKKet6kWmBmYzU5");
+        const channelId   = await storage.getSetting("telegram_required_channel_id", "");
+        const rewardCents = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
 
         const res = await fetch(
           `${TG(token)}/getUpdates?offset=${offset}&timeout=25` +
@@ -172,7 +187,6 @@ export function startTelegramBot() {
         for (const update of data.result) {
           offset = update.update_id + 1;
 
-          // ── Stars: pre_checkout_query ─────────────────────────────────
           if (update.pre_checkout_query) {
             await handlePreCheckout(token, update.pre_checkout_query);
             continue;
@@ -181,7 +195,6 @@ export function startTelegramBot() {
           const msg = update.message;
           if (!msg?.from) continue;
 
-          // ── Stars: successful_payment ─────────────────────────────────
           if (msg.successful_payment) {
             await handleSuccessfulPayment(msg.successful_payment);
             continue;
@@ -194,7 +207,7 @@ export function startTelegramBot() {
           const text: string = msg.text ?? "";
           const dname  = displayName(from);
 
-          // ── Admin commands ────────────────────────────────────────────
+          // ── Admin commands ──────────────────────────────────────────────
           if (adminId && String(from.id) === adminId) {
             if (text.startsWith("/earn ")) {
               await cmdEarn(token, chatId, text); continue;
@@ -207,7 +220,7 @@ export function startTelegramBot() {
             }
           }
 
-          // ── Name-tag removal → auto-disconnect ────────────────────────
+          // ── Name-tag removal → auto-disconnect ──────────────────────────
           const linked = await getByTelegramId(String(from.id));
           if (linked?.telegramConnected && !hasTag(dname, nameTag)) {
             await db.update(users)
@@ -217,21 +230,18 @@ export function startTelegramBot() {
             continue;
           }
 
-          // ── /start ────────────────────────────────────────────────────
           if (text === "/start" || text.startsWith("/start ")) {
-            await cmdStart(token, chatId, from, dname, nameTag, requiredChan, linked);
+            await cmdStart(token, chatId, from, dname, nameTag, channelLink, channelId, linked);
             continue;
           }
 
-          // ── /referral <CODE> ─────────────────────────────────────────
           if (text.startsWith("/referral ")) {
             await cmdReferral(token, chatId, text, rewardCents, linked);
             continue;
           }
 
-          // ── Free text → account linking ───────────────────────────────
           if (!linked && !text.startsWith("/")) {
-            await cmdLink(token, chatId, from, text, dname, nameTag, requiredChan);
+            await cmdLink(token, chatId, from, text, dname, nameTag, channelLink, channelId);
             continue;
           }
         }
@@ -275,76 +285,62 @@ async function handleSuccessfulPayment(sp: { invoice_payload: string }) {
   }
 }
 
-// ─── Command handlers ─────────────────────────────────────────────────────────
-
+// ─── Channel membership gate ──────────────────────────────────────────────────
 /**
- * Channel membership gate — applied consistently to both /start and free-text linking.
+ * channelId (@username / -100xxx) → getChatMember enforced; hard-block if not member.
+ * channelLink only (no channelId)  → join button shown; gate passes (no API block).
+ * neither                          → gate passes.
  *
- * Returns true (gate passed) or false (gate blocked — message already sent to user).
- *
- * requiredChan is the single telegram_required_channel value:
- *   • @username / -100xxx → verifiable: getChatMember enforced
- *   • invite link         → not verifiable: join CTA shown, linking blocked until
- *                           admin sets a verifiable identifier via /chan
- *   • empty               → no channel requirement; gate always passes
+ * Returns true if user may proceed, false if blocked (message already sent).
  */
 async function checkChannelGate(
   token: string,
   chatId: number,
   from: TelegramUser,
-  requiredChan: string
+  channelLink: string,
+  channelId: string
 ): Promise<boolean> {
-  if (!requiredChan) return true;
+  if (!channelId && !channelLink) return true;
 
-  const channelId = toVerifiableChannelId(requiredChan);
-
-  if (!channelId) {
-    // Invite link: cannot verify via API — block with actionable message
-    const joinBtn = { inline_keyboard: [[{ text: "📢 Join Channel", url: requiredChan }]] };
+  if (channelId) {
+    // Strict getChatMember verification
+    const inChannel = await isMember(token, channelId, from.id);
+    if (!inChannel) {
+      const joinUrl = channelLink || (channelId.startsWith("@") ? `https://t.me/${channelId.slice(1)}` : "");
+      const extra = joinUrl
+        ? { reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "📢 Join Channel", url: joinUrl }]] }) }
+        : {};
+      await send(token, chatId,
+        `🔒 *Channel membership required*\n\nJoin our channel first, then send \\/start again\\.`,
+        extra
+      );
+      return false;
+    }
+  } else {
+    // Link-only: show join button but do not hard-block (honor system join step)
+    const joinBtn = { inline_keyboard: [[{ text: "📢 Join Channel", url: channelLink }]] };
     await send(token, chatId,
-      `🔒 *Channel membership required*\n\n` +
-      `Please join our channel first:\n`,
+      `📢 *Join our channel* to be part of the community\\:`,
       { reply_markup: JSON.stringify(joinBtn) }
     );
-    await send(token, chatId,
-      `⚠️ *Verification setup pending*\n\nThe admin has not yet configured the channel ID for API verification\\.\n\nContact the admin and ask them to run:\n\`/chan @channelname\` or \`/chan \\-100XXXX\`\\.`
-    );
-    return false;
-  }
-
-  // Verifiable — enforce getChatMember
-  const inChannel = await isMember(token, channelId, from.id);
-  if (!inChannel) {
-    const chanUrl = channelId.startsWith("@")
-      ? `https://t.me/${channelId.slice(1)}`
-      : requiredChan;
-    const joinBtn = { inline_keyboard: [[{ text: "📢 Join Channel", url: chanUrl }]] };
-    await send(token, chatId,
-      `🔒 *Channel membership required*\n\nJoin our channel first, then send \\/start again\\.`,
-      { reply_markup: JSON.stringify(joinBtn) }
-    );
-    return false;
+    // Gate passes — continue onboarding
   }
 
   return true;
 }
 
-/**
- * /start onboarding:
- *   1. Channel membership (getChatMember when @username/-100xxx; blocked when invite link)
- *   2. Name tag present in Telegram display name
- *   3. Account link prompt (user sends username/email as free text)
- */
+// ─── Command handlers ─────────────────────────────────────────────────────────
+
 async function cmdStart(
   token: string,
   chatId: number,
   from: TelegramUser,
   dname: string,
   nameTag: string,
-  requiredChan: string,
+  channelLink: string,
+  channelId: string,
   linked: User | null
 ) {
-  // Already linked
   if (linked?.telegramConnected) {
     await send(token, chatId,
       `✅ *Already Connected\\!*\n\nLinked to *${escMd(linked.username)}*\\.\n` +
@@ -355,13 +351,13 @@ async function cmdStart(
     return;
   }
 
-  // Gate 1: channel
-  if (!await checkChannelGate(token, chatId, from, requiredChan)) return;
+  // Gate 1: channel (strict if channelId set, show-and-pass if link-only)
+  if (!await checkChannelGate(token, chatId, from, channelLink, channelId)) return;
 
-  // Gate 2: name tag
+  // Gate 2: name tag in display name
   if (!hasTag(dname, nameTag)) {
     await send(token, chatId,
-      `✅ *Channel verified\\!*\n\n` +
+      `🔥 *Welcome to NYCHQ\\!*\n\n` +
       `*Next —* Add \`${escMd(nameTag)}\` to your Telegram display name\\.\n\n` +
       `📌 *How:* Telegram → Settings → Edit Profile → First\\/Last Name\n\n` +
       `Once your name includes \`${escMd(nameTag)}\`, send your NYCHQ *username or email* here\\.`
@@ -369,15 +365,16 @@ async function cmdStart(
     return;
   }
 
-  // All gates passed — prompt for credentials
   await send(token, chatId,
-    `✅ *Channel verified\\!*\n✅ *Name tag found\\!*\n\n` +
+    `🔥 *Welcome to NYCHQ\\!*\n\n` +
+    `✅ Name tag found\\!\n\n` +
     `Send your NYCHQ *username or email* to link your account\\.`
   );
 }
 
 /**
- * Free-text account linking — applies the same gates as /start.
+ * Account linking: applies channel gate + name-tag gate, then generates a
+ * one-time code that the user must enter on nychq.cc to confirm ownership.
  */
 async function cmdLink(
   token: string,
@@ -386,12 +383,11 @@ async function cmdLink(
   text: string,
   dname: string,
   nameTag: string,
-  requiredChan: string
+  channelLink: string,
+  channelId: string
 ) {
-  // Gate 1: channel (same logic as /start)
-  if (!await checkChannelGate(token, chatId, from, requiredChan)) return;
+  if (!await checkChannelGate(token, chatId, from, channelLink, channelId)) return;
 
-  // Gate 2: name tag
   if (!hasTag(dname, nameTag)) {
     await send(token, chatId,
       `⚠️ *Name tag missing*\n\nYour display name must contain \`${escMd(nameTag)}\`\\.\n` +
@@ -400,28 +396,30 @@ async function cmdLink(
     return;
   }
 
-  // Lookup site account
   const query = text.trim();
   let siteUser = await storage.getUserByUsername(query);
   if (!siteUser) siteUser = await storage.getUserByEmail(query);
   if (!siteUser) {
     await send(token, chatId,
-      `❌ *Not found*\n\nNo account matches \`${escMd(query)}\`\\.\n` +
-      `Send your exact site *username or email*\\.`
+      `❌ *Not found*\n\nNo account matches \`${escMd(query)}\`\\.\nSend your exact site *username or email*\\.`
     );
     return;
   }
 
-  await db.update(users)
-    .set({ telegramId: String(from.id), telegramConnected: true })
-    .where(eq(users.id, siteUser.id));
+  // Generate one-time link code — user must enter it on the website to confirm ownership
+  const code = generateCode();
+  pendingLinks.set(code, {
+    telegramId: String(from.id),
+    userId: siteUser.id,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  });
 
   await send(token, chatId,
-    `✅ *Account Linked\\!*\n\n🎉 Welcome, *${escMd(siteUser.username)}*\\!\n` +
-    `💰 Balance: *\\$${escMd((siteUser.balance / 100).toFixed(2))}*\n\n` +
-    `📎 Referral code: \`${escMd(siteUser.referralCode ?? "N/A")}\`\n` +
-    `_Share it — you earn a reward every time someone uses it\\._\n\n` +
-    `Use \\/referral CODE to redeem a friend's code\\.`
+    `🔐 *Confirm Account Ownership*\n\n` +
+    `To link your NYCHQ account, enter this code on the website:\n\n` +
+    `\`${escMd(code)}\`\n\n` +
+    `Go to *nychq\\.cc* → Profile → Dashboard → *Link Telegram*\n\n` +
+    `_Code expires in 10 minutes\\._`
   );
 }
 
@@ -456,7 +454,6 @@ async function cmdReferral(
     return;
   }
 
-  // Per-(redeemer, code) uniqueness — same user cannot redeem the same code twice
   const used = await db.select().from(referralUsages)
     .where(and(eq(referralUsages.redeemerId, linked.id), eq(referralUsages.code, code)))
     .limit(1);
@@ -552,23 +549,32 @@ async function cmdAnnounce(token: string, chatId: number, text: string) {
 }
 
 /**
- * /chan VALUE — sets telegram_required_channel.
- * @username or -100xxx → verifiable identifier; getChatMember will be enforced.
- * invite link          → display-only; linking blocked until admin sets verifiable ID.
+ * /chan VALUE — auto-detects and sets the right setting:
+ *   URL (https://...)        → telegram_required_channel_link
+ *   @username or -100xxx     → telegram_required_channel_id
  */
 async function cmdChan(token: string, chatId: number, text: string) {
   const val = text.slice(5).trim();
-  await storage.setSetting("telegram_required_channel", val);
-  const isVerifiable = toVerifiableChannelId(val) !== null;
-  if (isVerifiable) {
+  const isUrl = val.startsWith("http");
+  const isVerifiable = /^-\d+$/.test(val) || val.startsWith("@");
+
+  if (isUrl) {
+    await storage.setSetting("telegram_required_channel_link", val);
+    await send(token, chatId,
+      `✅ Channel join link updated\\.\n\nThis link is shown on the join button\\.\nTo also enable verified membership checks, run:\n\`/chan @channelname\` or \`/chan \\-100XXXX\``
+    );
+  } else if (isVerifiable) {
+    await storage.setSetting("telegram_required_channel_id", val);
+    // Also update the link to a t.me URL so the join button works
+    if (val.startsWith("@")) {
+      await storage.setSetting("telegram_required_channel_link", `https://t.me/${val.slice(1)}`);
+    }
     await send(token, chatId,
       `✅ Channel set to \`${escMd(val)}\`\\.\nMembership is now *verified via getChatMember* before linking\\.`
     );
   } else {
     await send(token, chatId,
-      `✅ Channel invite link saved\\.\n\n` +
-      `⚠️ *Linking is blocked* until a verifiable ID is configured\\.\n` +
-      `Run \\/chan @channelname or \\/chan \\-100XXXX to enable verified membership\\.`
+      `❌ Unrecognized format\\.\nProvide a join URL: \`/chan https://t\\.me/\\+xxx\`\nOr a verifiable ID: \`/chan @channelname\` or \`/chan \\-100XXXX\``
     );
   }
 }
@@ -576,8 +582,6 @@ async function cmdChan(token: string, chatId: number, text: string) {
 function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
 }
-
-// ─── Telegram API type definitions ───────────────────────────────────────────
 
 interface TelegramUser {
   id: number;
