@@ -2,29 +2,29 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 const MENU = [
-  { name: "Panda Express",          emoji: "🐼" },
-  { name: "Smoothie King",          emoji: "🥤" },
-  { name: "Jack in the Box",        emoji: "🍔" },
-  { name: "Dairy Queen",            emoji: "🍦" },
-  { name: "Insomnia Cookies",       emoji: "🍪" },
-  { name: "Dominos Pizza",          emoji: "🍕" },
-  { name: "Zaxbys",                 emoji: "🍗" },
-  { name: "Applebees",              emoji: "🍽️" },
-  { name: "Little Caesars",         emoji: "👑" },
-  { name: "Raising Canes (Pick Up)",emoji: "🐔" },
-  { name: "Papa Johns",             emoji: "🍕" },
-  { name: "Wawa",                   emoji: "☕" },
-  { name: "Sonic (Pick Up)",        emoji: "🌭" },
-  { name: "Olive Garden",           emoji: "🫒" },
-  { name: "Jersey Mikes",           emoji: "🥖" },
-  { name: "Tropical Smoothie Café", emoji: "🌴" },
-  { name: "Subway",                 emoji: "🥙" },
-  { name: "Chilis",                 emoji: "🌶️" },
-  { name: "Buffalo Wild Wings",     emoji: "🦅" },
-  { name: "Wingstop",               emoji: "🔥" },
-  { name: "Firehouse Subs",         emoji: "🚒" },
-  { name: "Pizza Hut",              emoji: "🏠" },
-  { name: "Auntie Annes",           emoji: "🥨" },
+  { name: "Panda Express",           emoji: "🐼" },
+  { name: "Smoothie King",           emoji: "🥤" },
+  { name: "Jack in the Box",         emoji: "🍔" },
+  { name: "Dairy Queen",             emoji: "🍦" },
+  { name: "Insomnia Cookies",        emoji: "🍪" },
+  { name: "Dominos Pizza",           emoji: "🍕" },
+  { name: "Zaxbys",                  emoji: "🍗" },
+  { name: "Applebees",               emoji: "🍽️" },
+  { name: "Little Caesars",          emoji: "👑" },
+  { name: "Raising Canes (Pick Up)", emoji: "🐔" },
+  { name: "Papa Johns",              emoji: "🍕" },
+  { name: "Wawa",                    emoji: "☕" },
+  { name: "Sonic (Pick Up)",         emoji: "🌭" },
+  { name: "Olive Garden",            emoji: "🫒" },
+  { name: "Jersey Mikes",            emoji: "🥖" },
+  { name: "Tropical Smoothie Café",  emoji: "🌴" },
+  { name: "Subway",                  emoji: "🥙" },
+  { name: "Chilis",                  emoji: "🌶️" },
+  { name: "Buffalo Wild Wings",      emoji: "🦅" },
+  { name: "Wingstop",                emoji: "🔥" },
+  { name: "Firehouse Subs",          emoji: "🚒" },
+  { name: "Pizza Hut",               emoji: "🏠" },
+  { name: "Auntie Annes",            emoji: "🥨" },
 ];
 
 export default function EatzPage() {
@@ -76,10 +76,7 @@ export default function EatzPage() {
 
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{MENU.find(m => m.name === selected)?.emoji}</span>
-                <span className="text-sm font-bold text-white">{selected}</span>
-              </div>
+              <span className="text-sm font-bold text-white">{selected}</span>
               <button
                 onClick={() => setSelected(null)}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
@@ -90,28 +87,14 @@ export default function EatzPage() {
 
             {/* Rules */}
             <div className="px-5 py-4 space-y-3">
-              <div className="flex items-start gap-3 bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.06]">
-                <span className="text-lg mt-0.5">📍</span>
-                <div>
-                  <p className="text-xs font-bold text-white">Address must be provided</p>
-                  <p className="text-[11px] text-white/40 mt-0.5">Send your full delivery address when contacting.</p>
-                </div>
+              <div className="bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
+                <p className="text-xs font-bold text-white">Payment comes first</p>
+                <p className="text-[11px] text-white/40 mt-0.5">Order is placed only after payment is confirmed.</p>
               </div>
 
-              <div className="flex items-start gap-3 bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.06]">
-                <span className="text-lg mt-0.5">💳</span>
-                <div>
-                  <p className="text-xs font-bold text-white">Payment comes first</p>
-                  <p className="text-[11px] text-white/40 mt-0.5">Order is placed only after payment is confirmed.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 bg-red-500/10 rounded-xl p-3.5 border border-red-500/20">
-                <span className="text-lg mt-0.5">⚠️</span>
-                <div>
-                  <p className="text-xs font-bold text-red-400">No time wasters</p>
-                  <p className="text-[11px] text-red-400/60 mt-0.5">Contact to waste time may result in a block.</p>
-                </div>
+              <div className="bg-red-500/10 rounded-xl px-4 py-3 border border-red-500/20">
+                <p className="text-xs font-bold text-red-400">No time wasters</p>
+                <p className="text-[11px] text-red-400/60 mt-0.5">Contact to waste time may result in a block.</p>
               </div>
             </div>
 

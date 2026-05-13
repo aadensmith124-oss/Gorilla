@@ -60,7 +60,7 @@ function Router() {
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/ranks" component={RanksPage} />
-        <Route path="/eatz" component={EatzPage} />
+        <Route path="/eats" component={EatzPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>
