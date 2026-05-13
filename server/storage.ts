@@ -207,25 +207,24 @@ export class DatabaseStorage implements IStorage {
         variantsWithStock.push({ ...v, stockCount: Number(count.count) });
 
         try {
-          // Admin-added stock (no seller_id) = top seller automatically
+          // Admin-added stock (no seller_id) = top tier
+          // Show if ANY admin stock exists (even all sold) so tier badge stays visible after tier changes
           const [adminStock] = await db
             .select({ count: sql<number>`count(*)` })
             .from(stockItems)
             .where(and(
               eq(stockItems.variantId, v.id),
-              eq(stockItems.isSold, false),
-              eq(stockItems.isReserved, false),
               sql`seller_id IS NULL`
             ));
           if (Number(adminStock.count) > 0) sellerTypeSet.add("top");
 
+          // Include every seller who has EVER uploaded to this variant so their tier
+          // badge updates immediately when an admin changes their sellerType.
           const { rows } = await db.execute(sql`
             SELECT DISTINCT u.seller_type as "sellerType"
             FROM stock_items si
             JOIN users u ON u.id = si.seller_id
             WHERE si.variant_id = ${v.id}
-              AND si.is_sold = false
-              AND si.is_reserved = false
               AND si.seller_id IS NOT NULL
           `) as any;
           for (const r of rows) {

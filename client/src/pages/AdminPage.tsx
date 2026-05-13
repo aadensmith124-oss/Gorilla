@@ -2462,7 +2462,12 @@ function SellerApplicationsSection() {
       const res = await apiRequest("PATCH", `/api/admin/active-sellers/${userId}/type`, { sellerType, sellerDisplayName });
       return res.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/active-sellers"] }); toast({ title: "Seller type updated" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/active-sellers"] });
+      qc.invalidateQueries({ queryKey: ["/api/products"] });
+      qc.invalidateQueries({ queryKey: ["/api/seller/status"] });
+      toast({ title: "Seller type updated" });
+    },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
   const removeMutation = useMutation({
