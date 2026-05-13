@@ -1,8 +1,10 @@
 import { db } from "./db";
-import { users, orders } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { users, orders, referralUsages } from "@shared/schema";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { answerPreCheckoutQuery } from "./telegram";
+
+type User = typeof users.$inferSelect;
 
 const TG = (token: string) => `https://api.telegram.org/bot${token}`;
 
@@ -10,45 +12,45 @@ function escMd(text: string): string {
   return String(text).replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, c => `\\${c}`);
 }
 
-async function send(token: string, chatId: string | number, text: string, extra: Record<string, any> = {}) {
+async function send(token: string, chatId: string | number, text: string, extra: Record<string, unknown> = {}) {
   try {
     const res = await fetch(`${TG(token)}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "MarkdownV2", ...extra }),
     });
-    const data = await res.json() as any;
+    const data = await res.json() as { ok: boolean; description?: string };
     if (!data.ok) console.warn("[TelegramBot] sendMessage error:", data.description, "text:", text.slice(0, 80));
   } catch (e) {
     console.warn("[TelegramBot] sendMessage failed:", e);
   }
 }
 
-async function sendRaw(token: string, chatId: string | number, text: string, extra: Record<string, any> = {}) {
+async function sendPlain(token: string, chatId: string | number, text: string) {
   try {
     await fetch(`${TG(token)}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, ...extra }),
+      body: JSON.stringify({ chat_id: chatId, text }),
     });
   } catch {}
 }
 
 async function isMember(token: string, channelId: string, userId: number): Promise<boolean> {
-  if (!channelId) return true;
+  if (!channelId) return false;
   try {
     const res = await fetch(`${TG(token)}/getChatMember`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: channelId, user_id: userId }),
     });
-    const data = await res.json() as any;
+    const data = await res.json() as { ok: boolean; result?: { status: string } };
     if (!data.ok) return false;
-    return ["member", "administrator", "creator"].includes(data.result?.status);
+    return ["member", "administrator", "creator"].includes(data.result?.status ?? "");
   } catch { return false; }
 }
 
-function displayName(from: any): string {
+function displayName(from: { first_name?: string; last_name?: string }): string {
   return `${from.first_name ?? ""} ${from.last_name ?? ""}`.trim();
 }
 
@@ -57,9 +59,9 @@ function hasTag(name: string, tag: string): boolean {
   return name.toLowerCase().includes(tag.toLowerCase());
 }
 
-async function getByTelegramId(tgId: string) {
-  const { rows } = await db.execute(sql`SELECT * FROM users WHERE telegram_id = ${tgId} LIMIT 1`) as any;
-  return (rows[0] as any) ?? null;
+async function getByTelegramId(tgId: string): Promise<User | null> {
+  const [user] = await db.select().from(users).where(eq(users.telegramId, tgId)).limit(1);
+  return user ?? null;
 }
 
 // ─── Schema bootstrap (idempotent) ───────────────────────────────────────────
@@ -78,16 +80,19 @@ async function bootstrapSchema() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
-    // Ensure per-(redeemer, code) uniqueness — one account can only use the same code once
     await db.execute(sql`
-      ALTER TABLE referral_usages DROP CONSTRAINT IF EXISTS referral_usages_redeemer_id_key
+      DO $$ BEGIN
+        ALTER TABLE referral_usages DROP CONSTRAINT IF EXISTS referral_usages_redeemer_id_key;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$
     `);
     await db.execute(sql`
       DO $$ BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint WHERE conname = 'referral_usages_redeemer_code_unique'
         ) THEN
-          ALTER TABLE referral_usages ADD CONSTRAINT referral_usages_redeemer_code_unique UNIQUE(redeemer_id, code);
+          ALTER TABLE referral_usages
+            ADD CONSTRAINT referral_usages_redeemer_code_unique UNIQUE(redeemer_id, code);
         END IF;
       END $$
     `);
@@ -113,7 +118,6 @@ export function startTelegramBot() {
   const token: string = tokenRaw;
 
   async function init() {
-    // Ensure schema is up to date before doing anything else
     await bootstrapSchema();
 
     // Delete any existing webhook — long polling and webhooks are mutually exclusive
@@ -134,22 +138,21 @@ export function startTelegramBot() {
     async function poll() {
       while (alive) {
         try {
-          // Load settings fresh each cycle so admin changes take effect without restart
-          const adminId       = await storage.getSetting("telegram_admin_id", "");
-          const nameTag       = await storage.getSetting("telegram_name_tag", "nychq.cc");
-          const channelLink   = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
-          const channelId     = await storage.getSetting("telegram_channel_id", "");
-          const rewardCents   = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
+          const adminId     = await storage.getSetting("telegram_admin_id", "");
+          const nameTag     = await storage.getSetting("telegram_name_tag", "nychq.cc");
+          const channelLink = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
+          const channelId   = await storage.getSetting("telegram_channel_id", "");
+          const rewardCents = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
 
-          // message + pre_checkout_query covers all regular chat + Stars payments
+          // message + pre_checkout_query covers regular chat + Stars payments
           const res = await fetch(
             `${TG(token)}/getUpdates?offset=${offset}&timeout=25&allowed_updates=%5B%22message%22%2C%22pre_checkout_query%22%5D`
           );
           if (!res.ok) { await sleep(3000); continue; }
-          const data = await res.json() as any;
-          if (!data.ok) { await sleep(3000); continue; }
+          const data = await res.json() as { ok: boolean; result?: TelegramUpdate[] };
+          if (!data.ok || !data.result) { await sleep(3000); continue; }
 
-          for (const update of (data.result ?? [])) {
+          for (const update of data.result) {
             offset = update.update_id + 1;
 
             // ── Stars: pre_checkout_query ─────────────────────────────────
@@ -184,32 +187,29 @@ export function startTelegramBot() {
               }
               if (text.startsWith("/chan ")) {
                 const val = text.slice(5).trim();
-                // Always update the required channel display value
+                // Always store as the display/required channel value
                 await storage.setSetting("telegram_required_channel", val);
                 if (/^-?\d+$/.test(val)) {
-                  // Numeric ID — also store for getChatMember verification
+                  // Numeric ID: also store for getChatMember verification
                   await storage.setSetting("telegram_channel_id", val);
                   await send(token, chatId, `✅ Channel set to \`${escMd(val)}\`\\. Membership verification is now *active*\\.`);
                 } else {
-                  // Invite link — clear numeric ID (verification blocked until ID is set)
+                  // Invite link: clear numeric ID
                   await storage.setSetting("telegram_channel_id", "");
-                  await send(token, chatId, `✅ Channel link updated\\.\n\n⚠️ Membership verification is *disabled* until you set the numeric channel ID\\.\nRun \\/chan \\-100XXXX with the channel's numeric ID to enable it\\.`);
+                  await send(token, chatId, `✅ Channel link updated\\. To enable membership verification, also run \\/chan with the numeric channel ID \\(\\-100XXXX\\)\\.`);
                 }
                 continue;
               }
             }
 
-            // ── Check name-tag removal for already-linked users ───────────
+            // ── Name-tag removal check for already-linked users ───────────
             const linked = await getByTelegramId(String(from.id));
-            if (linked?.telegram_connected) {
+            if (linked?.telegramConnected) {
               if (!hasTag(dname, nameTag)) {
-                await db.execute(sql`
-                  UPDATE users SET telegram_connected = false, telegram_id = NULL
-                  WHERE id = ${linked.id}
-                `);
-                await send(token, chatId,
-                  `⚠️ *Account Disconnected*\n\nYour display name no longer contains \`${escMd(nameTag)}\`\\.\nYour NYCHQ account has been unlinked\\.\n\nTo reconnect, add \`${escMd(nameTag)}\` back to your Telegram name and send \\/start again\\.`
-                );
+                await db.update(users)
+                  .set({ telegramConnected: false, telegramId: null })
+                  .where(eq(users.id, linked.id));
+                await send(token, chatId, `⚠️ Account disconnected — your name tag was removed\\.`);
                 continue;
               }
             }
@@ -247,7 +247,7 @@ export function startTelegramBot() {
 
 // ─── Telegram Stars payment handlers ─────────────────────────────────────────
 
-async function handlePreCheckout(token: string, pcq: any) {
+async function handlePreCheckout(token: string, pcq: { id: string; invoice_payload: string }) {
   try {
     const orderId = Number(pcq.invoice_payload);
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
@@ -262,7 +262,7 @@ async function handlePreCheckout(token: string, pcq: any) {
   }
 }
 
-async function handleSuccessfulPayment(sp: any) {
+async function handleSuccessfulPayment(sp: { invoice_payload: string }) {
   try {
     const orderId = Number(sp.invoice_payload);
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
@@ -278,36 +278,40 @@ async function handleSuccessfulPayment(sp: any) {
 // ─── Command handlers ─────────────────────────────────────────────────────────
 
 async function cmdStart(
-  token: string, chatId: number, from: any, dname: string,
-  nameTag: string, channelLink: string, channelId: string, linked: any
+  token: string, chatId: number, from: TelegramUser, dname: string,
+  nameTag: string, channelLink: string, channelId: string, linked: User | null
 ) {
   const joinBtn = {
     inline_keyboard: [[{ text: "📢 Join Channel — Click Here", url: channelLink }]]
   };
 
-  // Channel check: required when channelLink is configured
+  // Channel gate: when channelLink is configured, users must join before proceeding
   if (channelLink) {
-    if (!channelId) {
-      // Link set but no numeric ID — membership can't be verified; block for safety
+    if (channelId) {
+      // Strict verification via getChatMember
+      const inChannel = await isMember(token, channelId, from.id);
+      if (!inChannel) {
+        await send(token, chatId,
+          `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our channel to get started\\.\nTap the button below, then send \\/start again\\.`,
+          { reply_markup: JSON.stringify(joinBtn) }
+        );
+        return;
+      }
+    } else {
+      // Link configured but no numeric ID — show join button (honor system)
+      // Users are shown the join step and proceed on trust
       await send(token, chatId,
-        `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our required channel\\.\nTap the button below, then check back once the admin enables membership verification\\.`,
+        `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our channel\\.\nTap the button below, then send \\/start again\\.`,
         { reply_markup: JSON.stringify(joinBtn) }
       );
-      return;
-    }
-    const inChannel = await isMember(token, channelId, from.id);
-    if (!inChannel) {
-      await send(token, chatId,
-        `🔥 *Welcome to NYCHQ\\!*\n\n*Step 1 —* Join our channel to get started\\.\nTap the button below, then send \\/start again\\.`,
-        { reply_markup: JSON.stringify(joinBtn) }
-      );
-      return;
+      // Note: we fall through after this — no hard block, but we've shown the join step
+      // To enable verified membership, admin sets /chan -100XXXX
     }
   }
 
-  if (linked?.telegram_connected) {
+  if (linked?.telegramConnected) {
     await send(token, chatId,
-      `✅ *Already Connected\\!*\n\nYou're linked to *${escMd(linked.username)}*\\.\n💰 Balance: *\\$${escMd((linked.balance / 100).toFixed(2))}*\n\n📎 Your referral code: \`${escMd(linked.referral_code ?? "N/A")}\`\nShare it — you earn a reward every time someone uses it\\.`
+      `✅ *Already Connected\\!*\n\nYou're linked to *${escMd(linked.username)}*\\.\n💰 Balance: *\\$${escMd((linked.balance / 100).toFixed(2))}*\n\n📎 Your referral code: \`${escMd(linked.referralCode ?? "N/A")}\`\nShare it — you earn a reward every time someone uses it\\.`
     );
     return;
   }
@@ -318,18 +322,13 @@ async function cmdStart(
 }
 
 async function cmdLink(
-  token: string, chatId: number, from: any, text: string,
+  token: string, chatId: number, from: TelegramUser, text: string,
   dname: string, nameTag: string, channelLink: string, channelId: string
 ) {
   const joinBtn = { inline_keyboard: [[{ text: "📢 Join Channel", url: channelLink }]] };
 
-  // Channel check: required when channelLink is configured
-  if (channelLink) {
-    if (!channelId) {
-      await send(token, chatId, `⚠️ *Channel verification pending\\!*\n\nThe admin hasn't finished setting up membership verification\\.\nJoin the channel and check back soon\\.`,
-        { reply_markup: JSON.stringify(joinBtn) });
-      return;
-    }
+  // Channel gate — enforce when numeric channel ID is configured
+  if (channelLink && channelId) {
     const inChannel = await isMember(token, channelId, from.id);
     if (!inChannel) {
       await send(token, chatId, `⚠️ *Join required\\!*\n\nYou must join our channel before linking\\. Tap below:`,
@@ -355,14 +354,11 @@ async function cmdLink(
     return;
   }
 
-  // Link the account
-  await db.execute(sql`
-    UPDATE users SET telegram_id = ${String(from.id)}, telegram_connected = true
-    WHERE id = ${siteUser.id}
-  `);
+  await db.update(users)
+    .set({ telegramId: String(from.id), telegramConnected: true })
+    .where(eq(users.id, siteUser.id));
 
-  const { rows } = await db.execute(sql`SELECT referral_code FROM users WHERE id = ${siteUser.id}`) as any;
-  const refCode = rows[0]?.referral_code ?? "N/A";
+  const refCode = siteUser.referralCode ?? "N/A";
 
   await send(token, chatId,
     `✅ *Account Linked\\!*\n\n🎉 Welcome, *${escMd(siteUser.username)}*\\!\n💰 Balance: *\\$${escMd((siteUser.balance / 100).toFixed(2))}*\n\n📎 Your referral code: \`${escMd(refCode)}\`\n_Share your code — you earn a reward every time someone uses it\\._\n\nUse \\/referral CODE to redeem someone else's code\\.`
@@ -370,8 +366,8 @@ async function cmdLink(
 }
 
 async function cmdReferral(
-  token: string, chatId: number, from: any,
-  text: string, rewardCents: number, linked: any
+  token: string, chatId: number, _from: TelegramUser,
+  text: string, rewardCents: number, linked: User | null
 ) {
   if (!linked) {
     await send(token, chatId, `❌ Link your account first\\. Send \\/start to begin\\.`);
@@ -384,9 +380,7 @@ async function cmdReferral(
     return;
   }
 
-  // Find referrer
-  const { rows: refRows } = await db.execute(sql`SELECT * FROM users WHERE referral_code = ${code} LIMIT 1`) as any;
-  const referrer = refRows[0];
+  const [referrer] = await db.select().from(users).where(eq(users.referralCode, code)).limit(1);
   if (!referrer) {
     await send(token, chatId, `❌ *Invalid code*\n\n\`${escMd(code)}\` doesn't match any account\\. Double\\-check and try again\\.`);
     return;
@@ -397,27 +391,24 @@ async function cmdReferral(
     return;
   }
 
-  // Check if this redeemer has already used THIS specific code
-  const { rows: used } = await db.execute(sql`
-    SELECT id FROM referral_usages WHERE redeemer_id = ${linked.id} AND code = ${code} LIMIT 1
-  `) as any;
-  if (used.length > 0) {
-    await send(token, chatId, `⚠️ You've already used this referral code before\\.`);
+  // Per-(redeemer, code) uniqueness: same user can't use the same code twice
+  const existing = await db.select().from(referralUsages)
+    .where(and(eq(referralUsages.redeemerId, linked.id), eq(referralUsages.code, code)))
+    .limit(1);
+  if (existing.length > 0) {
+    await send(token, chatId, `⚠️ You've already used this referral code\\.`);
     return;
   }
 
   // Record + reward
-  await db.execute(sql`
-    INSERT INTO referral_usages (referrer_id, redeemer_id, code) VALUES (${referrer.id}, ${linked.id}, ${code})
-  `);
+  await db.insert(referralUsages).values({ referrerId: referrer.id, redeemerId: linked.id, code });
   await storage.updateUserBalance(referrer.id, rewardCents);
   await storage.createTransaction(referrer.id, rewardCents, "referral", `Referral reward — ${linked.username} used your code`);
 
   const updRef = await storage.getUser(referrer.id);
 
-  // Notify referrer
-  if (referrer.telegram_connected && referrer.telegram_id) {
-    await send(token, referrer.telegram_id,
+  if (referrer.telegramConnected && referrer.telegramId) {
+    await send(token, referrer.telegramId,
       `🎉 *Referral Reward\\!*\n\n*${escMd(linked.username)}* used your referral code\\!\n💰 You earned *\\$${escMd((rewardCents / 100).toFixed(2))}*\n💳 New balance: *\\$${escMd(((updRef?.balance ?? 0) / 100).toFixed(2))}*`
     );
   }
@@ -456,12 +447,9 @@ async function cmdEarn(token: string, chatId: number, text: string) {
     `✅ *Credited \\$${escMd(amount.toFixed(2))} → ${escMd(siteUser.username)}*\n💳 New balance: *\\$${escMd(((updated?.balance ?? 0) / 100).toFixed(2))}*`
   );
 
-  // Notify user if they're connected
-  const { rows } = await db.execute(sql`SELECT telegram_id, telegram_connected FROM users WHERE id = ${siteUser.id}`) as any;
-  const tgUser = rows[0];
-  if (tgUser?.telegram_connected && tgUser?.telegram_id) {
-    await send(token, tgUser.telegram_id,
-      `💰 *Balance Credited\\!*\n\n*\\$${escMd(amount.toFixed(2))}* was added to your account by admin\\.\n💳 New balance: *\\$${escMd(((updated?.balance ?? 0) / 100).toFixed(2))}*`
+  if (updated?.telegramConnected && updated.telegramId) {
+    await send(token, updated.telegramId,
+      `💰 *Balance Credited\\!*\n\n*\\$${escMd(amount.toFixed(2))}* was added to your account by admin\\.\n💳 New balance: *\\$${escMd(((updated.balance) / 100).toFixed(2))}*`
     );
   }
 }
@@ -473,20 +461,18 @@ async function cmdAnnounce(token: string, chatId: number, text: string) {
     return;
   }
 
-  const { rows } = await db.execute(
-    sql`SELECT telegram_id FROM users WHERE telegram_connected = true AND telegram_id IS NOT NULL`
-  ) as any;
+  const recipients = await db
+    .select({ telegramId: users.telegramId })
+    .from(users)
+    .where(and(eq(users.telegramConnected, true), isNotNull(users.telegramId)));
 
   let sent = 0, failed = 0;
-  for (const row of rows) {
+  for (const row of recipients) {
+    if (!row.telegramId) continue;
     try {
-      await fetch(`${TG(token)}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: row.telegram_id, text: message }),
-      });
+      await sendPlain(token, row.telegramId, message);
       sent++;
-      if (sent % 20 === 0) await sleep(1000); // avoid flood limits
+      if (sent % 20 === 0) await sleep(1000);
     } catch { failed++; }
   }
 
@@ -497,4 +483,26 @@ async function cmdAnnounce(token: string, chatId: number, text: string) {
 
 function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+// ─── Telegram API types ───────────────────────────────────────────────────────
+
+interface TelegramUser {
+  id: number;
+  is_bot?: boolean;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface TelegramMessage {
+  from?: TelegramUser;
+  chat: { id: number };
+  text?: string;
+  successful_payment?: { invoice_payload: string };
+}
+
+interface TelegramUpdate {
+  update_id: number;
+  message?: TelegramMessage;
+  pre_checkout_query?: { id: string; invoice_payload: string };
 }
