@@ -761,14 +761,15 @@ export class DatabaseStorage implements IStorage {
     return cancelled;
   }
 
-  async markStaleCashappDepositsUnpaid(maxAgeMs: number = 2 * 60 * 60 * 1000): Promise<number> {
+  async expireStaleCryptoPayments(maxAgeMs: number = 2 * 60 * 60 * 1000): Promise<number> {
     const cutoff = new Date(Date.now() - maxAgeMs);
-    const staleOrders = await db.select().from(orders)
-      .where(and(eq(orders.status, "pending"), eq(orders.paymentMethod, "CashApp"), lt(orders.createdAt, cutoff)));
-    for (const order of staleOrders) {
-      await this.markOrderUnpaid(order.id);
-    }
-    return staleOrders.length;
+    const stale = await db.select().from(cryptoPayments)
+      .where(and(eq(cryptoPayments.status, "pending"), lt(cryptoPayments.createdAt, cutoff)));
+    if (stale.length === 0) return 0;
+    await db.update(cryptoPayments)
+      .set({ status: "expired" })
+      .where(and(eq(cryptoPayments.status, "pending"), lt(cryptoPayments.createdAt, cutoff)));
+    return stale.length;
   }
 
   async getOrders(userId: number): Promise<(Order & { items: (OrderItem & { stockItem: StockItem | null, variant: Variant | null })[] })[]> {
