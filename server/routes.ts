@@ -2125,7 +2125,11 @@ export async function registerRoutes(
   });
 
   // ── Register Telegram webhook on server start ─────────────────────────────
+  // Only set up webhook when NOT running in long-poll bot mode.
+  // If TELEGRAM_BOT_TOKEN is set, startTelegramBot() in server/index.ts
+  // calls deleteWebhook first and handles all updates via long polling.
   (async () => {
+    if (process.env.TELEGRAM_BOT_TOKEN) return; // long-poll bot handles everything
     const domain = process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
     if (domain) {
       await setupTelegramWebhook(`https://${domain}/api/telegram/webhook`);

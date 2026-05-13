@@ -1,7 +1,8 @@
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users, orders } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "./storage";
+import { answerPreCheckoutQuery } from "./telegram";
 
 const TG = (token: string) => `https://api.telegram.org/bot${token}`;
 
@@ -61,6 +62,34 @@ async function getByTelegramId(tgId: string) {
   return (rows[0] as any) ?? null;
 }
 
+// ─── Schema bootstrap (idempotent) ───────────────────────────────────────────
+
+async function bootstrapSchema() {
+  try {
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_id TEXT UNIQUE`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_connected BOOLEAN NOT NULL DEFAULT FALSE`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE`);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS referral_usages (
+        id SERIAL PRIMARY KEY,
+        referrer_id INTEGER NOT NULL REFERENCES users(id),
+        redeemer_id INTEGER NOT NULL REFERENCES users(id),
+        code TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(redeemer_id)
+      )
+    `);
+    await db.execute(sql`
+      UPDATE users
+      SET referral_code = UPPER(SUBSTRING(MD5(RANDOM()::TEXT || id::TEXT) FROM 1 FOR 8))
+      WHERE referral_code IS NULL
+    `);
+    console.log("[TelegramBot] Schema bootstrap complete");
+  } catch (e) {
+    console.warn("[TelegramBot] Schema bootstrap warning:", e);
+  }
+}
+
 // ─── Start the bot ────────────────────────────────────────────────────────────
 
 export function startTelegramBot() {
@@ -70,115 +99,164 @@ export function startTelegramBot() {
     return;
   }
   const token: string = tokenRaw;
-  console.log("[TelegramBot] Starting long-poll loop...");
 
-  let offset = 0;
-  let alive = true;
+  async function init() {
+    // Ensure schema is up to date before doing anything else
+    await bootstrapSchema();
 
-  async function poll() {
-    while (alive) {
-      try {
-        // Load settings fresh each cycle so admin changes take effect without restart
-        const adminId       = await storage.getSetting("telegram_admin_id", "");
-        const nameTag       = await storage.getSetting("telegram_name_tag", "nychq.cc");
-        const channelLink   = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
-        const channelId     = await storage.getSetting("telegram_channel_id", "");
-        const rewardCents   = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
+    // Delete any existing webhook — long polling and webhooks are mutually exclusive
+    try {
+      await fetch(`${TG(token)}/deleteWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ drop_pending_updates: false }),
+      });
+      console.log("[TelegramBot] Webhook deleted — starting long-poll loop...");
+    } catch (e) {
+      console.warn("[TelegramBot] deleteWebhook error:", e);
+    }
 
-        const res = await fetch(
-          `${TG(token)}/getUpdates?offset=${offset}&timeout=25&allowed_updates=%5B%22message%22%5D`
-        );
-        if (!res.ok) { await sleep(3000); continue; }
-        const data = await res.json() as any;
-        if (!data.ok) { await sleep(3000); continue; }
+    let offset = 0;
+    let alive = true;
 
-        for (const update of (data.result ?? [])) {
-          offset = update.update_id + 1;
-          const msg = update.message;
-          if (!msg?.from || msg.from.is_bot) continue;
+    async function poll() {
+      while (alive) {
+        try {
+          // Load settings fresh each cycle so admin changes take effect without restart
+          const adminId       = await storage.getSetting("telegram_admin_id", "");
+          const nameTag       = await storage.getSetting("telegram_name_tag", "nychq.cc");
+          const channelLink   = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
+          const channelId     = await storage.getSetting("telegram_channel_id", "");
+          const rewardCents   = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
 
-          const from    = msg.from;
-          const chatId  = msg.chat.id;
-          const text: string = msg.text ?? "";
-          const dname   = displayName(from);
+          // message + pre_checkout_query covers all regular chat + Stars payments
+          const res = await fetch(
+            `${TG(token)}/getUpdates?offset=${offset}&timeout=25&allowed_updates=%5B%22message%22%2C%22pre_checkout_query%22%5D`
+          );
+          if (!res.ok) { await sleep(3000); continue; }
+          const data = await res.json() as any;
+          if (!data.ok) { await sleep(3000); continue; }
 
-          // ── Admin commands ────────────────────────────────────────────────
-          if (adminId && String(from.id) === adminId) {
-            if (text.startsWith("/earn ")) {
-              await cmdEarn(token, chatId, text); continue;
+          for (const update of (data.result ?? [])) {
+            offset = update.update_id + 1;
+
+            // ── Stars: pre_checkout_query ─────────────────────────────────
+            if (update.pre_checkout_query) {
+              await handlePreCheckout(token, update.pre_checkout_query);
+              continue;
             }
-            if (text.startsWith("/announce ")) {
-              await cmdAnnounce(token, chatId, text); continue;
+
+            const msg = update.message;
+            if (!msg?.from) continue;
+
+            // ── Stars: successful_payment inside a message ────────────────
+            if (msg.successful_payment) {
+              await handleSuccessfulPayment(msg.successful_payment);
+              continue;
             }
-            if (text.startsWith("/chan ")) {
-              const val = text.slice(5).trim();
-              if (/^-?\d+$/.test(val)) {
-                await storage.setSetting("telegram_channel_id", val);
-                await send(token, chatId, `✅ Channel ID set to \`${escMd(val)}\`\\.`);
-              } else {
-                await storage.setSetting("telegram_required_channel", val);
-                await send(token, chatId, `✅ Channel link set to \`${escMd(val)}\`\\.`);
+
+            if (msg.from.is_bot) continue;
+
+            const from    = msg.from;
+            const chatId  = msg.chat.id;
+            const text: string = msg.text ?? "";
+            const dname   = displayName(from);
+
+            // ── Admin commands ────────────────────────────────────────────
+            if (adminId && String(from.id) === adminId) {
+              if (text.startsWith("/earn ")) {
+                await cmdEarn(token, chatId, text); continue;
               }
+              if (text.startsWith("/announce ")) {
+                await cmdAnnounce(token, chatId, text); continue;
+              }
+              if (text.startsWith("/chan ")) {
+                const val = text.slice(5).trim();
+                if (/^-?\d+$/.test(val)) {
+                  await storage.setSetting("telegram_channel_id", val);
+                  await send(token, chatId, `✅ Channel ID set to \`${escMd(val)}\`\\.`);
+                } else {
+                  await storage.setSetting("telegram_required_channel", val);
+                  await send(token, chatId, `✅ Channel link set to \`${escMd(val)}\`\\.`);
+                }
+                continue;
+              }
+            }
+
+            // ── Check name-tag removal for already-linked users ───────────
+            const linked = await getByTelegramId(String(from.id));
+            if (linked?.telegram_connected) {
+              if (!hasTag(dname, nameTag)) {
+                await db.execute(sql`
+                  UPDATE users SET telegram_connected = false, telegram_id = NULL
+                  WHERE id = ${linked.id}
+                `);
+                await send(token, chatId,
+                  `⚠️ *Account Disconnected*\n\nYour display name no longer contains \`${escMd(nameTag)}\`\\.\nYour NYCHQ account has been unlinked\\.\n\nTo reconnect, add \`${escMd(nameTag)}\` back to your Telegram name and send \\/start again\\.`
+                );
+                continue;
+              }
+            }
+
+            // ── /start ────────────────────────────────────────────────────
+            if (text === "/start" || text.startsWith("/start ")) {
+              await cmdStart(token, chatId, from, dname, nameTag, channelLink, channelId, linked);
+              continue;
+            }
+
+            // ── /referral <CODE> ──────────────────────────────────────────
+            if (text.startsWith("/referral ")) {
+              await cmdReferral(token, chatId, from, text, rewardCents, linked);
+              continue;
+            }
+
+            // ── Text message → account linking attempt ────────────────────
+            if (!linked && !text.startsWith("/")) {
+              await cmdLink(token, chatId, from, text, dname, nameTag, channelLink, channelId);
               continue;
             }
           }
-
-          // ── Check name-tag removal for already-linked users ───────────────
-          const linked = await getByTelegramId(String(from.id));
-          if (linked?.telegram_connected) {
-            if (!hasTag(dname, nameTag)) {
-              await db.execute(sql`
-                UPDATE users SET telegram_connected = false, telegram_id = NULL
-                WHERE id = ${linked.id}
-              `);
-              await send(token, chatId,
-                `⚠️ *Account Disconnected*\n\nYour display name no longer contains \`${escMd(nameTag)}\`\\.\nYour NYCHQ account has been unlinked\\.\n\nTo reconnect, add \`${escMd(nameTag)}\` back to your Telegram name and send \\/start again\\.`
-              );
-              continue;
-            }
-          }
-
-          // ── /start ────────────────────────────────────────────────────────
-          if (text === "/start" || text.startsWith("/start ")) {
-            await cmdStart(token, chatId, from, dname, nameTag, channelLink, channelId, linked);
-            continue;
-          }
-
-          // ── /referral <CODE> ──────────────────────────────────────────────
-          if (text.startsWith("/referral ")) {
-            await cmdReferral(token, chatId, from, text, rewardCents, linked);
-            continue;
-          }
-
-          // ── Text message → account linking attempt ────────────────────────
-          if (!linked && !text.startsWith("/")) {
-            await cmdLink(token, chatId, from, text, dname, nameTag, channelLink, channelId);
-            continue;
-          }
+        } catch (err) {
+          console.warn("[TelegramBot] Poll error:", err);
+          await sleep(5000);
         }
-      } catch (err) {
-        console.warn("[TelegramBot] Poll error:", err);
-        await sleep(5000);
       }
     }
+
+    poll();
   }
 
-  poll();
+  init();
+}
 
-  // Auto-generate referral codes for any new users that don't have one
-  async function ensureReferralCodes() {
-    try {
-      await db.execute(sql`
-        UPDATE users
-        SET referral_code = UPPER(SUBSTRING(MD5(RANDOM()::TEXT || id::TEXT) FROM 1 FOR 8))
-        WHERE referral_code IS NULL
-      `);
-    } catch {}
+// ─── Telegram Stars payment handlers ─────────────────────────────────────────
+
+async function handlePreCheckout(token: string, pcq: any) {
+  try {
+    const orderId = Number(pcq.invoice_payload);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!order || order.status !== "pending") {
+      await answerPreCheckoutQuery(pcq.id, false, "Order no longer available");
+    } else {
+      await answerPreCheckoutQuery(pcq.id, true);
+    }
+  } catch (e) {
+    console.warn("[TelegramBot] handlePreCheckout error:", e);
+    try { await answerPreCheckoutQuery(pcq.id, false, "Internal error"); } catch {}
   }
-  ensureReferralCodes();
-  setInterval(ensureReferralCodes, 60 * 60 * 1000); // hourly
+}
 
-  return () => { alive = false; };
+async function handleSuccessfulPayment(sp: any) {
+  try {
+    const orderId = Number(sp.invoice_payload);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (order && order.status === "pending") {
+      await storage.fulfillPendingOrder(orderId);
+      console.log(`[TelegramBot] Stars: order ${orderId} fulfilled`);
+    }
+  } catch (e) {
+    console.warn("[TelegramBot] handleSuccessfulPayment error:", e);
+  }
 }
 
 // ─── Command handlers ─────────────────────────────────────────────────────────

@@ -345,6 +345,18 @@ export const cryptoPayments = pgTable("crypto_payments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// === REFERRAL USAGES ===
+export const referralUsages = pgTable("referral_usages", {
+  id: serial("id").primaryKey(),
+  referrerId: integer("referrer_id").notNull().references(() => users.id),
+  redeemerId: integer("redeemer_id").notNull().references(() => users.id),
+  code: text("code").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export const insertReferralUsageSchema = createInsertSchema(referralUsages).omit({ id: true, createdAt: true });
+export type InsertReferralUsage = z.infer<typeof insertReferralUsageSchema>;
+export type ReferralUsage = typeof referralUsages.$inferSelect;
+
 // === TYPES ===
 export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;
