@@ -1843,7 +1843,7 @@ export async function registerRoutes(
       const existing = await db.select({ id: stockItems.id }).from(stockItems)
         .where(eq(stockItems.content, item)).limit(1);
       if (existing.length > 0) { skipped++; continue; }
-      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id } as any);
+      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id });
       added++;
     }
     res.json({ ok: true, added, skipped });

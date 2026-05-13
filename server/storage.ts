@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
       const existing = await db.select({ id: stockItems.id }).from(stockItems)
         .where(eq(stockItems.content, itemContent)).limit(1);
       if (existing.length > 0) { skipped++; continue; }
-      await db.insert(stockItems).values({ variantId, content: itemContent, isSold: false, sellerId: sellerId ?? null } as any);
+      await db.insert(stockItems).values({ variantId, content: itemContent, isSold: false, sellerId: sellerId ?? null });
       added++;
     }
     return { added, skipped };
