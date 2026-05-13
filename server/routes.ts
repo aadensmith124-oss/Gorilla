@@ -1513,7 +1513,7 @@ export async function registerRoutes(
     res.json({
       adminId:         await storage.getSetting("telegram_admin_id", ""),
       nameTag:         await storage.getSetting("telegram_name_tag", "nychq.cc"),
-      requiredChannel: await storage.getSetting("telegram_required_channel", ""),
+      requiredChannel: await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5"),
       rewardAmount:    await storage.getSetting("referral_reward_amount", "500"),
     });
   });

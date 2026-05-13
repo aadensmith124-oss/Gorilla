@@ -132,6 +132,8 @@ async function bootstrapSchema() {
 
 // ─── Start the bot ────────────────────────────────────────────────────────────
 
+export { bootstrapSchema };
+
 export function startTelegramBot() {
   const tokenRaw = process.env.TELEGRAM_BOT_TOKEN;
   if (!tokenRaw) {
@@ -141,7 +143,6 @@ export function startTelegramBot() {
   const token: string = tokenRaw;
 
   async function init() {
-    await bootstrapSchema();
 
     // Delete any existing webhook — long polling and webhooks are mutually exclusive
     try {
@@ -161,7 +162,7 @@ export function startTelegramBot() {
       try {
         const adminId      = await storage.getSetting("telegram_admin_id", "");
         const nameTag      = await storage.getSetting("telegram_name_tag", "nychq.cc");
-        const requiredChan = await storage.getSetting("telegram_required_channel", "");
+        const requiredChan = await storage.getSetting("telegram_required_channel", "https://t.me/+CiKKet6kWmBmYzU5");
         const rewardCents  = parseInt(await storage.getSetting("referral_reward_amount", "500"), 10) || 500;
 
         // Derive getChatMember-compatible identifier (null if invite link / not set)
