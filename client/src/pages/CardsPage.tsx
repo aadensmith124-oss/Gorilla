@@ -18,7 +18,7 @@ const SELLER_BADGE: Record<string, string> = {
 };
 
 function getSellerLabel(card: any): string {
-  if (!card.userId) return "🔥 NYCHQ (Admin) 🔥";
+  if (!card.userId) return "🔥 TOP SELLER 🔥";
   const type = card.sellerType ?? "bronze";
   const name = card.sellerDisplayName?.trim();
   if (name) {
