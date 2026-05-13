@@ -691,7 +691,6 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
             <div key={item.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-mono text-white/50 truncate">{(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}</p>
-                <p className="text-[9px] font-mono text-white/20 mt-0.5">#{item.id}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-[9px] text-white/20">avail</span>

@@ -409,7 +409,9 @@ function StockItemRow({ item }: { item: any }) {
     <div className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
       <div className="min-w-0 flex-1">
         <p className="text-[9px] text-white/30 uppercase tracking-widest truncate">{item.product_name} — {item.variant_name}</p>
-        <p className="text-[9px] font-mono text-white/20 mt-0.5">#{item.id}</p>
+        <p className="text-[10px] font-mono text-white/50 truncate mt-0.5">
+          {(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}
+        </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className={`text-[9px] ${isSold ? "text-green-400" : "text-white/20"}`}>{isSold ? "sold" : "avail"}</span>
