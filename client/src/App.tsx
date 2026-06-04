@@ -12,7 +12,6 @@ import { useEffect } from "react";
 import AuthPage from "@/pages/AuthPage";
 import ShopPage from "@/pages/ShopPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
-import ProfilePage from "@/pages/ProfilePageFix";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
@@ -51,7 +50,6 @@ function Router() {
         <Route path="/orders" component={OrdersPage} />
         <Route path="/my-code" component={MyCodePage} />
         <Route path="/cart" component={CartPage} />
-        <Route path="/profile" component={ProfilePage} />
         <Route path="/ranks" component={RanksPage} />
         <Route path="/worker" component={WorkerDashboardPage} />
         <Route path="/acctplug" component={CardsPage} />
