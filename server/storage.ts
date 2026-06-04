@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
-  type Card, type InsertCard, type SellerApplication, type Ach, type InsertAch
+  type Card, type InsertCard, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
 } from "@shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
 
@@ -107,6 +107,13 @@ export interface IStorage {
   getAllSellerApplications(): Promise<(SellerApplication & { username: string })[]>;
   approveSellerApplication(id: number): Promise<void>;
   rejectSellerApplication(id: number): Promise<void>;
+
+  // CashApp (with optional paidAmount)
+  fulfillCashappOrder(orderId: number, paidAmount?: number): Promise<Order>;
+
+  // Crypto Addresses
+  getCryptoAddresses(userId: number): Promise<CryptoAddress[]>;
+  setCryptoAddress(userId: number, currency: string, address: string): Promise<CryptoAddress>;
 
 }
 
@@ -232,7 +239,7 @@ export class DatabaseStorage implements IStorage {
           }
         } catch {}
       }
-      result.push({ ...prod, variants: variantsWithStock, sellerTypes: [...sellerTypeSet] });
+      result.push({ ...prod, variants: variantsWithStock, sellerTypes: Array.from(sellerTypeSet) });
     }
     return result;
   }
@@ -672,7 +679,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, orderId));
   }
 
-  async fulfillCashappOrder(orderId: number): Promise<Order> {
+  async fulfillCashappOrder(orderId: number, paidAmount?: number): Promise<Order> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) throw new Error("Order not found");
     if (order.status !== "pending") {
@@ -688,16 +695,13 @@ export class DatabaseStorage implements IStorage {
       if (!deliveryParts[key]) deliveryParts[key] = [];
 
       if (item.stockItemId) {
-        // Stock was already held at order time — use it
         const [stock] = await db.select().from(stockItems).where(eq(stockItems.id, item.stockItemId));
         if (!stock) throw new Error(`Reserved stock item missing for order item ${item.id}`);
-        // Mark as sold, clear reservation flag
         await db.update(stockItems)
           .set({ isSold: true, isReserved: false })
           .where(eq(stockItems.id, stock.id));
         deliveryParts[key].push(stock.content);
       } else {
-        // Fallback: try to grab stock now (for legacy orders without pre-reservation)
         const [variant] = await db.select().from(variants).where(eq(variants.id, item.variantId));
         for (let i = 0; i < (item.quantity ?? 1); i++) {
           const stock = await this.reserveStockItem(item.variantId);
@@ -708,20 +712,21 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Deposit-only order (no items) — credit user's wallet balance
+    // Deposit-only order (no items) — credit user's wallet balance with paidAmount
     if (items.length === 0) {
+      const creditAmount = paidAmount !== undefined ? paidAmount : order.total;
       await db.update(users)
-        .set({ balance: sql`balance + ${order.total}` })
+        .set({ balance: sql`balance + ${creditAmount}` })
         .where(eq(users.id, order.userId));
       await db.insert(transactions).values({
         userId: order.userId,
-        amount: order.total,
+        amount: creditAmount,
         type: "deposit",
         description: `CashApp deposit confirmed (${order.orderId})`,
         paymentMethod: "CashApp",
       });
       const [updated] = await db.update(orders)
-        .set({ status: "fulfilled", paidAmount: order.total })
+        .set({ status: "fulfilled", paidAmount: creditAmount, total: creditAmount })
         .where(eq(orders.id, orderId))
         .returning();
       return updated;
@@ -731,27 +736,28 @@ export class DatabaseStorage implements IStorage {
       Object.fromEntries(Object.entries(deliveryParts).map(([k, v]) => [k, v.join("\n\n")]))
     );
     const [updated] = await db.update(orders)
-      .set({ status: "delivering", deliveryContent, paidAmount: order.total })
+      .set({ status: "delivering", deliveryContent, paidAmount: paidAmount ?? order.total })
       .where(eq(orders.id, orderId))
       .returning();
     return updated;
   }
 
-  async refundOrder(orderId: number): Promise<Order> {
-    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-    if (!order) throw new Error("Order not found");
-    if (order.status === "refunded") throw new Error("Order already refunded");
-    // Add total back to user balance
-    await db.update(users).set({ balance: sql`balance + ${order.total}` }).where(eq(users.id, order.userId));
-    // Record transaction
-    await db.insert(transactions).values({
-      userId: order.userId,
-      amount: order.total,
-      type: "refund",
-      description: `Refund for order ${order.orderId}`,
-    });
-    const [updated] = await db.update(orders).set({ status: "refunded" }).where(eq(orders.id, orderId)).returning();
-    return updated;
+  async getCryptoAddresses(userId: number): Promise<CryptoAddress[]> {
+    return db.select().from(cryptoAddresses).where(eq(cryptoAddresses.userId, userId));
+  }
+
+  async setCryptoAddress(userId: number, currency: string, address: string): Promise<CryptoAddress> {
+    const existing = await db.select().from(cryptoAddresses)
+      .where(and(eq(cryptoAddresses.userId, userId), eq(cryptoAddresses.currency, currency)));
+    if (existing.length > 0) {
+      const [updated] = await db.update(cryptoAddresses)
+        .set({ address })
+        .where(and(eq(cryptoAddresses.userId, userId), eq(cryptoAddresses.currency, currency)))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(cryptoAddresses).values({ userId, currency, address }).returning();
+    return created;
   }
 
   async replaceOrder(orderId: number): Promise<Order> {

@@ -11,21 +11,17 @@ import { useEffect } from "react";
 // Pages
 import AuthPage from "@/pages/AuthPage";
 import ShopPage from "@/pages/ShopPage";
-import CardsPage from "@/pages/CardsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import ProfilePage from "@/pages/ProfilePageFix";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
 import DepositPage from "@/pages/DepositPage";
-import BecomeSellerPage from "@/pages/BecomeSellerPage";
-import SellerDashboardPage from "@/pages/SellerDashboardPage";
 import OrdersPage from "@/pages/OrdersPage";
 import MyCodePage from "@/pages/MyCodePage";
-import AchPage from "@/pages/AchPage";
 import CartPage from "@/pages/CartPage";
 import RanksPage from "@/pages/RanksPage";
-import EatzPage from "@/pages/EatzPage";
+import WorkerDashboardPage from "@/pages/WorkerDashboardPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -49,18 +45,14 @@ function Router() {
         <Route path="/" component={DepositPage} />
         <Route path="/deposit" component={DepositPage} />
         <Route path="/shop" component={ShopPage} />
-        <Route path="/cards" component={CardsPage} />
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/my-code" component={MyCodePage} />
-        <Route path="/become-seller" component={BecomeSellerPage} />
-        <Route path="/seller" component={SellerDashboardPage} />
-        <Route path="/ach" component={AchPage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/ranks" component={RanksPage} />
-        <Route path="/eats" component={EatzPage} />
+        <Route path="/worker" component={WorkerDashboardPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,16 @@ type Deposit = {
   createdAt: string;
 };
 
-function CopyButton({ value }: { value: string }) {
+const CRYPTO_COINS = [
+  { value: "BTC", label: "Bitcoin (BTC)" },
+  { value: "ETH", label: "Ethereum (ETH)" },
+  { value: "USDT_TRC20", label: "USDT (TRC-20)" },
+  { value: "USDT_ERC20", label: "USDT (ERC-20)" },
+  { value: "LTC", label: "Litecoin (LTC)" },
+  { value: "XRP", label: "XRP" },
+];
+
+function CopyButton({ value, label }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   const handle = () => {
     navigator.clipboard.writeText(value);
@@ -27,8 +36,13 @@ function CopyButton({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={handle} className="ml-1 text-white/40 hover:text-white transition-colors flex-shrink-0" data-testid="btn-copy-note">
+    <button
+      onClick={handle}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/60 hover:text-white transition-colors"
+      data-testid="btn-copy"
+    >
       {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied!" : (label || "Copy")}
     </button>
   );
 }
@@ -55,7 +69,6 @@ function StatusBadge({ status, type }: { status: string; type: string }) {
       </span>
     );
   }
-  // pending / waiting_payment
   return (
     <span className="flex items-center gap-1 text-[10px] font-mono text-white/40 animate-pulse">
       <Clock className="h-3 w-3" /> {type === "cashapp" ? "awaiting admin" : "pending"}
@@ -64,33 +77,8 @@ function StatusBadge({ status, type }: { status: string; type: string }) {
 }
 
 function DepositRow({ deposit, onStatusRefresh }: { deposit: Deposit; onStatusRefresh: () => void }) {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const isPending = !["completed", "delivering", "fulfilled", "failed", "expired"].includes(deposit.status);
-
-  const checkMutation = useMutation({
-    mutationFn: async () => {
-      if (!deposit.paymentId) throw new Error("No payment ID");
-      const res = await apiRequest("GET", `/api/payments/forebit/${deposit.paymentId}/status`);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.status === "completed" || data.status === "fulfilled") {
-        toast({ title: "Deposit credited!", description: `$${(deposit.amount / 100).toFixed(2)} added to your balance` });
-        qc.invalidateQueries({ queryKey: ["/api/user"] });
-        qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-        qc.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-      } else {
-        toast({ title: "Not confirmed yet", description: `Status: ${data.status}` });
-        onStatusRefresh();
-      }
-    },
-    onError: () => {
-      toast({ title: "Could not check status", variant: "destructive" });
-    },
-  });
-
   const isCredited = ["completed", "delivering", "fulfilled"].includes(deposit.status);
+  const amountLabel = deposit.amount > 0 ? `$${(deposit.amount / 100).toFixed(2)}` : "any amount";
 
   return (
     <div className={`flex items-center justify-between px-3 py-2.5 rounded border transition-colors ${
@@ -108,7 +96,7 @@ function DepositRow({ deposit, onStatusRefresh }: { deposit: Deposit; onStatusRe
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-white">${(deposit.amount / 100).toFixed(2)}</span>
+            <span className="text-xs font-mono font-bold text-white">{amountLabel}</span>
             <StatusBadge status={deposit.status} type={deposit.type} />
           </div>
           <div className="flex items-center gap-2 mt-0.5">
@@ -121,32 +109,6 @@ function DepositRow({ deposit, onStatusRefresh }: { deposit: Deposit; onStatusRe
           </div>
         </div>
       </div>
-
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {deposit.type === "crypto" && isPending && deposit.checkoutUrl && (
-          <a
-            href={deposit.checkoutUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-mono text-white/30 hover:text-white transition-colors border border-white/10 px-2 py-0.5 rounded"
-          >
-            pay
-          </a>
-        )}
-        {deposit.type === "crypto" && isPending && deposit.paymentId && (
-          <button
-            onClick={() => checkMutation.mutate()}
-            disabled={checkMutation.isPending}
-            className="text-white/30 hover:text-white transition-colors"
-            title="Check payment status"
-            data-testid={`btn-check-status-${deposit.id}`}
-          >
-            {checkMutation.isPending
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <RefreshCw className="h-3.5 w-3.5" />}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -155,71 +117,28 @@ export default function DepositPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [method, setMethod] = useState<Method>("crypto");
-  const [amount, setAmount] = useState(5);
+  const [method, setMethod] = useState<Method>("cashapp");
+  const [selectedCoin, setSelectedCoin] = useState("BTC");
   const [cashappResult, setCashappResult] = useState<{ note: string; tag: string } | null>(null);
 
   const { data: cashappTagData } = useQuery<{ tag: string }>({
     queryKey: ["/api/site-settings/cashapp-tag"],
   });
 
+  const { data: cryptoAddresses = [] } = useQuery<{ currency: string; address: string }[]>({
+    queryKey: ["/api/user/crypto-addresses"],
+    enabled: !!user && method === "crypto",
+  });
+
   const { data: deposits, refetch: refetchDeposits } = useQuery<Deposit[]>({
     queryKey: ["/api/deposits"],
     enabled: !!user,
-    refetchInterval: 15000, // poll every 15s
-  });
-
-  const fee = 0.05;
-  const youSend = (amount * (1 + fee)).toFixed(2);
-  const minAmount = 5;
-
-  // Auto-check pending crypto payments every 20s
-  const pendingCrypto = deposits?.filter(d => d.type === "crypto" && d.status === "pending" && d.paymentId) ?? [];
-
-  useEffect(() => {
-    if (pendingCrypto.length === 0) return;
-    const timer = setInterval(async () => {
-      for (const dep of pendingCrypto) {
-        try {
-          const res = await apiRequest("GET", `/api/payments/forebit/${dep.paymentId}/status`);
-          const data = await res.json();
-          if (data.status === "completed") {
-            qc.invalidateQueries({ queryKey: ["/api/user"] });
-            qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-            qc.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-            toast({ title: "Deposit credited!", description: `$${(dep.amount / 100).toFixed(2)} added to your balance` });
-          }
-        } catch {}
-      }
-    }, 20000);
-    return () => clearInterval(timer);
-  }, [pendingCrypto.length]);
-
-  const cryptoMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/payments/forebit/create", {
-        amount: Math.round(amount * 100),
-        purpose: "deposit",
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        toast({ title: "Invoice created" });
-      }
-      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-      qc.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    refetchInterval: 15000,
   });
 
   const cashappMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/orders/cashapp", {
-        amount: Math.round(amount * 100),
-      });
+      const res = await apiRequest("POST", "/api/orders/cashapp", {});
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Failed to create deposit");
@@ -236,21 +155,12 @@ export default function DepositPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const isLoading = cryptoMutation.isPending || cashappMutation.isPending;
+  const currentCryptoAddress = cryptoAddresses.find(a => a.currency === selectedCoin)?.address;
 
-  const handleCreate = () => {
-    if (method === "crypto") {
-      cryptoMutation.mutate();
-    } else {
-      setCashappResult(null);
-      cashappMutation.mutate();
-    }
-  };
-
+  const recentDeposits = deposits?.slice(0, 20) ?? [];
   const pendingDeposits = deposits?.filter(d =>
     !["completed", "delivering", "fulfilled", "failed", "expired"].includes(d.status)
   ) ?? [];
-  const recentDeposits = deposits?.slice(0, 20) ?? [];
 
   return (
     <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
@@ -275,22 +185,8 @@ export default function DepositPage() {
         </div>
       )}
 
-      {/* Method cards */}
+      {/* Method selector */}
       <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => { setMethod("crypto"); setCashappResult(null); }}
-          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-white/30 bg-white/5" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
-          data-testid="btn-method-crypto"
-        >
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-white" : "bg-white/10"}`}>
-            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-black" : "text-white/60"}`} />
-          </div>
-          <div className="text-center">
-            <p className={`text-xs font-bold ${method === "crypto" ? "text-white" : "text-white/50"}`}>Crypto</p>
-            <p className="text-[10px] text-white/25 font-mono">5% fee</p>
-          </div>
-        </button>
-
         <button
           onClick={() => { setMethod("cashapp"); setCashappResult(null); }}
           className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
@@ -301,108 +197,135 @@ export default function DepositPage() {
           </div>
           <div className="text-center">
             <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00D632]" : "text-white/50"}`}>CashApp</p>
-            <p className="text-[10px] text-white/25 font-mono">5% fee</p>
+            <p className="text-[10px] text-white/25 font-mono">any amount</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => { setMethod("crypto"); setCashappResult(null); }}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-white/30 bg-white/5" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+          data-testid="btn-method-crypto"
+        >
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-white" : "bg-white/10"}`}>
+            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-black" : "text-white/60"}`} />
+          </div>
+          <div className="text-center">
+            <p className={`text-xs font-bold ${method === "crypto" ? "text-white" : "text-white/50"}`}>Crypto</p>
+            <p className="text-[10px] text-white/25 font-mono">permanent address</p>
           </div>
         </button>
       </div>
 
-      {/* Form */}
-      <div className="space-y-2">
-        {method === "crypto" && (
-          <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
-            you'll choose your coin on the checkout page · 5% fee applies
-          </div>
-        )}
-
-        {method === "cashapp" && (
-          <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
-            send exact amount via cashapp · 5% processing fee applies
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">AMOUNT TO RECEIVE (USD)</label>
-          <div className="flex items-center border border-white/8 rounded bg-[#0e0e0e] overflow-hidden h-10">
-            <button onClick={() => setAmount(Math.max(minAmount, amount - 5))} className="px-3 h-full text-white/40 hover:text-white hover:bg-white/5 transition-colors border-r border-white/8 text-sm" data-testid="btn-minus">−</button>
-            <input
-              type="number"
-              value={amount}
-              onChange={e => setAmount(Math.max(minAmount, Number(e.target.value)))}
-              className="flex-1 bg-transparent text-center text-lg font-mono text-white outline-none"
-              data-testid="input-amount"
-            />
-            <button onClick={() => setAmount(amount + 5)} className="px-3 h-full text-white/40 hover:text-white hover:bg-white/5 transition-colors border-l border-white/8 text-sm" data-testid="btn-plus">+</button>
-          </div>
-          <p className="text-[9px] text-white/20 font-mono">min ${minAmount}.00 · {Math.round(fee * 100)}% fee</p>
-        </div>
-
-        <div className="flex items-center justify-between px-3 py-2 bg-[#0e0e0e] border border-white/8 rounded text-xs font-mono">
-          <span className="text-white/30">you send</span>
-          <span className="text-white">${youSend}</span>
-        </div>
-
-        {!cashappResult && (
-          <button
-            onClick={handleCreate}
-            disabled={isLoading}
-            className={`w-full flex items-center justify-center gap-2 py-2 border rounded text-xs font-mono transition-all disabled:opacity-40 ${
-              method === "cashapp"
-                ? "border-[#00D632]/30 text-[#00D632]/70 hover:text-[#00D632] hover:border-[#00D632]/50"
-                : "border-white/10 text-white/50 hover:text-white hover:border-white/20"
-            }`}
-            data-testid="btn-create-invoice"
-          >
-            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : method === "cashapp" ? "create cashapp deposit →" : "create deposit invoice →"}
-          </button>
-        )}
-      </div>
-
-      {/* CashApp result — show note + cashtag */}
-      {cashappResult && (
-        <div className="border border-[#00D632]/30 bg-[#00D632]/5 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <SiCashapp className="h-4 w-4 text-[#00D632]" />
-            <p className="text-xs font-bold text-[#00D632]">Send via CashApp</p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="bg-black/40 rounded px-3 py-2">
-              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Send to</p>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-white font-mono">{cashappResult.tag || "(no cashtag set)"}</p>
-                {cashappResult.tag && <CopyButton value={cashappResult.tag} />}
+      {/* CashApp section */}
+      {method === "cashapp" && (
+        <div className="space-y-2">
+          {!cashappResult ? (
+            <>
+              <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
+                click below to generate a unique payment note · send any amount via cashapp · admin will credit your balance after confirming
               </div>
-            </div>
-
-            <div className="bg-black/40 rounded px-3 py-2">
-              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Amount</p>
-              <p className="text-sm font-bold text-white font-mono">${youSend}</p>
-            </div>
-
-            <div className="bg-black/40 rounded px-3 py-2">
-              <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-[#00D632] font-mono">{cashappResult.note}</p>
-                <CopyButton value={cashappResult.note} />
+              <button
+                onClick={() => { setCashappResult(null); cashappMutation.mutate(); }}
+                disabled={cashappMutation.isPending}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#00D632]/30 rounded text-xs font-mono text-[#00D632]/70 hover:text-[#00D632] hover:border-[#00D632]/50 transition-all disabled:opacity-40"
+                data-testid="btn-generate-note"
+              >
+                {cashappMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "generate payment note →"}
+              </button>
+            </>
+          ) : (
+            <div className="border border-[#00D632]/30 bg-[#00D632]/5 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <SiCashapp className="h-4 w-4 text-[#00D632]" />
+                <p className="text-xs font-bold text-[#00D632]">Send via CashApp</p>
               </div>
+
+              <div className="space-y-2">
+                <div className="bg-black/40 rounded px-3 py-2">
+                  <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Send to</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-white font-mono">{cashappResult.tag || "(no cashtag set)"}</p>
+                    {cashappResult.tag && <CopyButton value={cashappResult.tag} />}
+                  </div>
+                </div>
+
+                <div className="bg-black/40 rounded px-3 py-2">
+                  <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Amount</p>
+                  <p className="text-xs text-white/60 font-mono">any amount you want to deposit</p>
+                </div>
+
+                <div className="bg-black/40 rounded px-3 py-2">
+                  <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-[#00D632] font-mono">{cashappResult.note}</p>
+                    <CopyButton value={cashappResult.note} />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-white/25 font-mono leading-relaxed">
+                include the exact note when sending · admin will confirm and credit your balance
+              </p>
+
+              <button
+                onClick={() => { setCashappResult(null); cashappMutation.reset(); }}
+                className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors font-mono"
+                data-testid="btn-new-deposit"
+              >
+                ← create new deposit
+              </button>
             </div>
-          </div>
-
-          <p className="text-[10px] text-white/25 font-mono leading-relaxed">
-            include the exact note when sending · admin will confirm and credit your balance
-          </p>
-
-          <button
-            onClick={() => { setCashappResult(null); cashappMutation.reset(); }}
-            className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors font-mono"
-            data-testid="btn-new-deposit"
-          >
-            ← create new deposit
-          </button>
+          )}
         </div>
       )}
 
-      {/* Topup List */}
+      {/* Crypto section */}
+      {method === "crypto" && (
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Select Coin</label>
+            <select
+              value={selectedCoin}
+              onChange={e => setSelectedCoin(e.target.value)}
+              className="w-full h-9 rounded-md bg-[#0e0e0e] border border-white/10 text-sm text-white px-3 focus:outline-none focus:border-white/20"
+              data-testid="select-coin"
+            >
+              {CRYPTO_COINS.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {currentCryptoAddress ? (
+            <div className="border border-white/10 bg-[#0e0e0e] rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <SiBitcoin className="h-4 w-4 text-white/50" />
+                <p className="text-xs font-bold text-white">Your {selectedCoin} Address</p>
+              </div>
+              <div className="bg-black/40 rounded px-3 py-2.5 space-y-2">
+                <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Deposit Address</p>
+                <p className="text-xs font-mono text-white break-all leading-relaxed">{currentCryptoAddress}</p>
+                <CopyButton value={currentCryptoAddress} label="Copy Address" />
+              </div>
+              <p className="text-[10px] text-white/25 font-mono leading-relaxed">
+                send any amount to this address · contact support after sending so admin can credit your balance
+              </p>
+            </div>
+          ) : (
+            <div className="border border-white/8 bg-[#0e0e0e] rounded-xl p-4 text-center space-y-2">
+              <p className="text-xs text-white/40 font-mono">No {selectedCoin} address assigned yet</p>
+              <p className="text-[10px] text-white/25 font-mono">contact support to get your personal deposit address set up</p>
+              <a href="https://t.me/nychqsupport" target="_blank" rel="noopener noreferrer">
+                <button className="mt-1 px-3 py-1.5 border border-white/10 rounded text-xs text-white/50 hover:text-white hover:border-white/20 transition-colors font-mono" data-testid="btn-contact-support">
+                  contact support →
+                </button>
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Topup History */}
       {recentDeposits.length > 0 && (
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">

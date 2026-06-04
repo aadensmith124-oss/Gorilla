@@ -221,7 +221,7 @@ function SettingsTab({ user }: { user: any }) {
           </div>
           
           <div className="flex items-center gap-3 pt-4">
-            <Button variant="outline" className="border-destructive/30 text-destructive" onClick={logout} data-testid="button-logout">
+            <Button variant="outline" className="border-destructive/30 text-destructive" onClick={() => logout()} data-testid="button-logout">
               <LogOut className="h-4 w-4 mr-2" /> Logout
             </Button>
           </div>
@@ -366,18 +366,18 @@ function OrdersTab() {
                       <td className="p-4 text-green-500">${(order.total / 100).toFixed(2)}</td>
                       <td className="p-4">
                         <span className={`flex items-center gap-2 ${
-                          order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced' ? 'text-green-500' 
-                          : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'text-red-500'
-                          : order.status === 'refunded' ? 'text-orange-400'
+                          (order.status as string) === 'fulfilled' || (order.status as string) === 'paid' || (order.status as string) === 'delivering' || (order.status as string) === 'replaced' ? 'text-green-500' 
+                          : (order.status as string) === 'unpaid' || (order.status as string) === 'waiting_payment' ? 'text-red-500'
+                          : (order.status as string) === 'refunded' ? 'text-orange-400'
                           : 'text-primary'
                         }`}>
                           <span className={`w-2 h-2 rounded-full ${
-                            order.status === 'fulfilled' || order.status === 'paid' || order.status === 'delivering' || order.status === 'replaced' ? 'bg-green-500'
-                            : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'bg-red-500'
-                            : order.status === 'refunded' ? 'bg-orange-400'
+                            (order.status as string) === 'fulfilled' || (order.status as string) === 'paid' || (order.status as string) === 'delivering' || (order.status as string) === 'replaced' ? 'bg-green-500'
+                            : (order.status as string) === 'unpaid' || (order.status as string) === 'waiting_payment' ? 'bg-red-500'
+                            : (order.status as string) === 'refunded' ? 'bg-orange-400'
                             : 'bg-primary'
                           }`} />
-                          {order.status === 'fulfilled' || order.status === 'delivering' ? 'Fulfilled' : order.status === 'paid' ? 'Paid' : order.status === 'replaced' ? 'Replaced' : order.status === 'refunded' ? 'Refunded' : order.status === 'pending' ? 'Pending' : order.status === 'unpaid' || order.status === 'waiting_payment' ? 'Unpaid' : order.status}
+                          {(order.status as string) === 'fulfilled' || (order.status as string) === 'delivering' ? 'Fulfilled' : (order.status as string) === 'paid' ? 'Paid' : (order.status as string) === 'replaced' ? 'Replaced' : (order.status as string) === 'refunded' ? 'Refunded' : (order.status as string) === 'pending' ? 'Pending' : (order.status as string) === 'unpaid' || (order.status as string) === 'waiting_payment' ? 'Unpaid' : order.status}
                           <br />
                           <span className="text-xs text-muted-foreground">on {new Date(order.createdAt).toLocaleDateString()}</span>
                         </span>
@@ -442,7 +442,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
                 onClick={() => copyToClipboard(content)}
                 data-testid="stock-content-box"
               >
-                {content.split(/\n\n+/).filter(Boolean).map((chunk, ci, arr) => (
+                {content.split(/\n\n+/).filter(Boolean).map((chunk: string, ci: number, arr: string[]) => (
                   <div key={ci}>
                     <span className="whitespace-pre-wrap">{chunk.trim()}</span>
                     {ci < arr.length - 1 && <div className="mt-3 border-t border-white/10" />}

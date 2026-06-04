@@ -1,9 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, CreditCard, FileText, Send, Home, Package, Store, LayoutDashboard, Building2, User, Trophy } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, Send, Home, Package, Store, LayoutDashboard, User, Trophy, Briefcase } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +15,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  const { data: sellerStatus } = useQuery<{ isSeller: boolean; sellerBalance: number; application?: any }>({
-    queryKey: ["/api/seller/status"],
-    enabled: !!user,
-  });
 
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
 
@@ -36,10 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "SHOP",
       items: [
-        { href: "/shop", icon: FileText, label: "Logs" },
-        { href: "/cards", icon: CreditCard, label: "Cards" },
-        { href: "/ach", icon: Building2, label: "ACH" },
-        { href: "/eats", icon: Store, label: "EATS" },
+        { href: "/shop", icon: Store, label: "Logs" },
       ],
     },
     {
@@ -54,17 +45,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { href: "/admin", icon: Settings, label: "Admin Panel" },
       ],
     }] : []),
-    ...((sellerStatus?.isSeller) ? [{
-      label: "SELLER",
+    ...((user as any)?.isWorker && user?.role !== "admin" ? [{
+      label: "WORKER",
       items: [
-        { href: "/seller", icon: LayoutDashboard, label: "Seller Dashboard" },
+        { href: "/worker", icon: Briefcase, label: "Worker Dashboard" },
       ],
-    }] : (!sellerStatus?.isSeller && user ? [{
-      label: "SELLER",
-      items: [
-        { href: "/become-seller", icon: Store, label: "Become Seller" },
-      ],
-    }] : [])),
+    }] : []),
   ];
 
   const NavContent = () => (
@@ -179,8 +165,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     </Link>
                   </DropdownMenuItem>
+                  {(user as any)?.isWorker && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/worker">
+                        <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
+                          <Briefcase className="h-3 w-3" />
+                          Worker Dashboard
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={logout} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
+                  <DropdownMenuItem onClick={() => logout()} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
                     <LogOut className="h-3 w-3 mr-2" />
                     log out
                   </DropdownMenuItem>

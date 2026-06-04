@@ -14,6 +14,11 @@ import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 
+function isAdminOrWorker(req: any): boolean {
+  const u = req.user as any;
+  return req.isAuthenticated() && (u?.role === 'admin' || u?.isWorker === true);
+}
+
 // In-memory store for email bomb jobs
 const emailBombJobs = new Map<string, { sent: number; total: number; status: "running" | "done" | "failed" }>();
 
@@ -585,7 +590,7 @@ export async function registerRoutes(
       for (const row of rows) {
         if (!row.u_id) continue;
         const { rows: ipRows } = await db.execute(sql`SELECT ip FROM user_ips WHERE user_id = ${row.user_id} ORDER BY logged_at DESC`) as any;
-        const uniqueIps = [...new Set(ipRows.map((i: any) => i.ip))];
+        const uniqueIps = Array.from(new Set(ipRows.map((i: any) => i.ip)));
         result.push({
           id: row.id, userId: row.user_id, telegramUsername: row.telegram_username,
           channelLink: row.channel_link, channelName: row.channel_name,
@@ -745,83 +750,63 @@ export async function registerRoutes(
 
   // Admin Products (all products including hidden)
   app.get("/api/admin/products", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const products = await storage.getAllProducts();
     res.json(products);
   });
 
   app.patch("/api/admin/products/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const product = await storage.updateProduct(Number(req.params.id), req.body);
     res.json(product);
   });
 
   app.delete("/api/admin/products/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     await storage.deleteProduct(Number(req.params.id));
     res.json({ success: true });
   });
 
   app.patch("/api/admin/variants/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const variant = await storage.updateVariant(Number(req.params.id), req.body);
     res.json(variant);
   });
 
   app.delete("/api/admin/variants/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     await storage.deleteVariant(Number(req.params.id));
     res.json({ success: true });
   });
 
   app.post("/api/admin/stock", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const item = await storage.addSingleStockItem(req.body.variantId, req.body.content);
     res.status(201).json(item);
   });
 
   app.post("/api/admin/stock/bulk", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const sellerId = req.body.sellerId ? Number(req.body.sellerId) : undefined;
     const result = await storage.addStockItems(req.body.variantId, req.body.rawContent, sellerId);
     res.json({ addedCount: result.added, skippedCount: result.skipped });
   });
 
   app.get("/api/admin/stock/:variantId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const items = await storage.getStockItems(Number(req.params.variantId));
     res.json(items);
   });
 
   app.delete("/api/admin/stock/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     await storage.deleteStockItem(Number(req.params.id));
     res.json({ success: true });
   });
 
-  // Admin - Get all orders for admin
+  // Admin/Worker - Get all orders
   app.get("/api/admin/orders", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allOrders = await storage.getAllOrders();
     res.json(allOrders);
   });
@@ -912,6 +897,46 @@ export async function registerRoutes(
     await db.update(users).set({ role } as any).where(eq(users.id, userId));
     const updated = await storage.getUser(userId);
     res.json(updated);
+  });
+
+  // Toggle worker status
+  app.post("/api/admin/users/:id/set-worker", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = Number(req.params.id);
+    const { isWorker } = req.body;
+    await db.update(users).set({ isWorker: Boolean(isWorker) } as any).where(eq(users.id, userId));
+    const updated = await storage.getUser(userId);
+    res.json(updated);
+  });
+
+  // Admin: get crypto addresses for a user
+  app.get("/api/admin/users/:id/crypto-addresses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const addresses = await storage.getCryptoAddresses(Number(req.params.id));
+    res.json(addresses);
+  });
+
+  // Admin: set crypto address for a user
+  app.post("/api/admin/users/:id/crypto-addresses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { currency, address } = req.body;
+    if (!currency || !address) return res.status(400).json({ message: "currency and address required" });
+    const result = await storage.setCryptoAddress(Number(req.params.id), currency, address);
+    res.json(result);
+  });
+
+  // User: get own crypto addresses
+  app.get("/api/user/crypto-addresses", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const addresses = await storage.getCryptoAddresses(userId);
+    res.json(addresses);
   });
 
   // Admin Balance Codes (list)
@@ -1060,9 +1085,9 @@ export async function registerRoutes(
     `) as any;
 
     // Collect unique BINs
-    const uniqueBins = [...new Set(rows.map((r: any) =>
+    const uniqueBins = Array.from(new Set(rows.map((r: any) =>
       (r.card_number ?? "").replace(/\D/g, "").substring(0, 6)
-    ).filter((b: string) => b.length === 6))] as string[];
+    ).filter((b: string) => b.length === 6))) as string[];
 
     // Return cached BINs instantly; kick off background lookups for uncached ones
     const binDataMap: Record<string, any> = {};
@@ -1601,20 +1626,20 @@ export async function registerRoutes(
       const paymentNote = `${noteWord} - ${noteNum}`;
       const cashappTag = await storage.getSetting("cashapp_tag", "");
 
-      // Deposit-only mode: no items, just an amount (e.g. Chime deposit)
-      if (productItems.length === 0 && amount && Number(amount) >= 100) {
+      // Deposit-only mode: no items — just generate a note, no amount required
+      if (productItems.length === 0) {
         const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         const [order] = await db.insert(orders).values({
           userId,
           orderId: publicOrderId,
-          total: Number(amount),
+          total: 0,
           paidAmount: 0,
           status: "pending",
           paymentMethod: "CashApp",
-          paymentNote: note || paymentNote,
+          paymentNote: paymentNote,
           deliveryContent: "",
         }).returning();
-        return res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote: note || paymentNote }, paymentNote: note || paymentNote, cashappTag });
+        return res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
       }
 
       // Use createPendingOrder to reserve stock immediately
@@ -1643,7 +1668,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const order = await storage.fulfillCashappOrder(Number(req.params.id));
+      const paidAmount = req.body.paidAmount !== undefined
+        ? Math.round(Number(req.body.paidAmount) * 100)
+        : undefined;
+      const order = await storage.fulfillCashappOrder(Number(req.params.id), paidAmount);
       res.json(order);
     } catch (e: any) {
       res.status(400).json({ message: e.message });

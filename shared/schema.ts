@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   telegramUsername: text("telegram_username").default("").notNull(),
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
+  isWorker: boolean("is_worker").default(false).notNull(),
   balance: integer("balance").default(0).notNull(),
   protectedBalance: integer("protected_balance").default(0).notNull(),
   lastDailySpin: timestamp("last_daily_spin"),
@@ -392,6 +393,17 @@ export const achs = pgTable("achs", {
 export const insertAchSchema = createInsertSchema(achs).omit({ id: true, isSold: true, sellerId: true, createdAt: true });
 export type Ach = typeof achs.$inferSelect;
 export type InsertAch = z.infer<typeof insertAchSchema>;
+
+// === CRYPTO ADDRESSES ===
+export const cryptoAddresses = pgTable("crypto_addresses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  currency: text("currency").notNull(),
+  address: text("address").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CryptoAddress = typeof cryptoAddresses.$inferSelect;
 
 // === SITE SETTINGS ===
 export const siteSettings = pgTable("site_settings", {

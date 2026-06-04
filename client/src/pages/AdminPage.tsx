@@ -25,13 +25,10 @@ import { useToast } from "@/hooks/use-toast";
 const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
-  { id: "cards", label: "Cards" },
-  { id: "ach", label: "ACH" },
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "deposits", label: "Deposits" },
   { id: "users", label: "Users" },
-  { id: "sellers", label: "Sellers" },
   { id: "codes", label: "Codes" },
   { id: "integrations", label: "Integrations" },
 ];
@@ -105,9 +102,6 @@ export default function AdminPage() {
           {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}
           {activeSection === "codes" && <CodesSection />}
-          {activeSection === "cards" && <AdminCardsSection />}
-          {activeSection === "ach" && <AdminAchSection />}
-          {activeSection === "sellers" && <SellerApplicationsSection />}
           {activeSection === "deposits" && <DepositsSection />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
@@ -1214,6 +1208,20 @@ function UsersSection() {
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
+  const setWorkerMutation = useMutation({
+    mutationFn: async ({ userId, isWorker }: { userId: number; isWorker: boolean }) => {
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/set-worker`, { isWorker });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed'); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setSelectedUser((u: any) => u ? { ...u, isWorker: data.isWorker } : null);
+      toast({ title: data.isWorker ? 'Worker access granted' : 'Worker access removed' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   const filtered = (users ?? []).filter((u: any) =>
@@ -1296,6 +1304,25 @@ function UsersSection() {
                 data-testid={`btn-remove-admin-${selectedUser.id}`}
               >
                 Remove Admin
+              </button>
+            )}
+            {selectedUser.isWorker ? (
+              <button
+                onClick={() => setWorkerMutation.mutate({ userId: selectedUser.id, isWorker: false })}
+                disabled={setWorkerMutation.isPending}
+                className="h-7 px-3 border border-blue-700/40 text-blue-400 text-xs font-bold rounded hover:bg-blue-900/20 transition-colors disabled:opacity-40"
+                data-testid={`btn-remove-worker-${selectedUser.id}`}
+              >
+                Remove Worker
+              </button>
+            ) : (
+              <button
+                onClick={() => setWorkerMutation.mutate({ userId: selectedUser.id, isWorker: true })}
+                disabled={setWorkerMutation.isPending}
+                className="h-7 px-3 bg-blue-700/80 hover:bg-blue-700 text-white text-xs font-bold rounded transition-colors disabled:opacity-40"
+                data-testid={`btn-make-worker-${selectedUser.id}`}
+              >
+                Make Worker
               </button>
             )}
             {selectedUser.isBanned ? (
@@ -1847,6 +1874,8 @@ function CashAppSection() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paidAmountInput, setPaidAmountInput] = useState("");
+  const [showPaidForm, setShowPaidForm] = useState(false);
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -1878,12 +1907,21 @@ function CashAppSection() {
   });
 
   const cashappFulfillMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, {});
+    mutationFn: async ({ orderId, paidAmount }: { orderId: number; paidAmount?: number }) => {
+      const body: any = {};
+      if (paidAmount !== undefined) body.paidAmount = paidAmount;
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, body);
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
-    ...mutationOpts("Order fulfilled — stock delivered to user"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      setShowPaidForm(false);
+      setPaidAmountInput("");
+      toast({ title: "Order confirmed — balance credited" });
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   });
 
   const markUnpaidMutation = useMutation({
@@ -1931,15 +1969,14 @@ function CashAppSection() {
             <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
           </div>
 
-          {isPending && (
+          {isPending && !showPaidForm && (
             <div className="flex gap-3">
               <button
-                onClick={() => cashappFulfillMutation.mutate(current.id)}
-                disabled={cashappFulfillMutation.isPending}
-                className="flex-1 h-11 rounded-xl bg-[#00D632]/20 border border-[#00D632]/40 text-[#00D632] text-sm font-black hover:bg-[#00D632]/30 transition-colors disabled:opacity-50"
+                onClick={() => { setShowPaidForm(true); setPaidAmountInput(""); }}
+                className="flex-1 h-11 rounded-xl bg-[#00D632]/20 border border-[#00D632]/40 text-[#00D632] text-sm font-black hover:bg-[#00D632]/30 transition-colors"
                 data-testid={`button-cashapp-paid-${current.id}`}
               >
-                {cashappFulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "✓ Paid — Deliver Stock"}
+                ✓ Paid
               </button>
               <button
                 onClick={() => markUnpaidMutation.mutate(current.id)}
@@ -1949,6 +1986,47 @@ function CashAppSection() {
               >
                 ✕ Unpaid
               </button>
+            </div>
+          )}
+
+          {isPending && showPaidForm && (
+            <div className="space-y-3 p-4 bg-[#00D632]/5 border border-[#00D632]/20 rounded-xl">
+              <p className="text-xs font-bold text-[#00D632]">How much did the user pay?</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/60 font-mono">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  value={paidAmountInput}
+                  onChange={e => setPaidAmountInput(e.target.value)}
+                  className="flex-1 h-9 bg-black/50 border border-white/10 rounded px-2 text-sm text-white font-mono outline-none focus:border-[#00D632]/40"
+                  data-testid="input-paid-amount"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const amt = parseFloat(paidAmountInput);
+                    if (!amt || amt <= 0) return;
+                    cashappFulfillMutation.mutate({ orderId: current.id, paidAmount: amt });
+                  }}
+                  disabled={cashappFulfillMutation.isPending || !paidAmountInput || parseFloat(paidAmountInput) <= 0}
+                  className="flex-1 h-9 rounded-lg bg-[#00D632]/80 hover:bg-[#00D632] text-white text-xs font-black transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                  data-testid="btn-confirm-paid"
+                >
+                  {cashappFulfillMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirm & Credit"}
+                </button>
+                <button
+                  onClick={() => { setShowPaidForm(false); setPaidAmountInput(""); }}
+                  className="h-9 px-3 rounded-lg border border-white/10 text-white/50 hover:text-white text-xs font-bold transition-colors"
+                  data-testid="btn-cancel-paid"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
