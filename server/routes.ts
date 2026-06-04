@@ -1273,6 +1273,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/orders/crypto", async (req, res) => {
+    return res.status(400).json({ message: "Crypto payments are currently unavailable." });
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     let pendingOrderId: number | null = null;
     try {
@@ -1337,8 +1338,8 @@ export async function registerRoutes(
       // amount arrives in cents from the frontend (e.g. 500 = $5.00)
       const amountUsd = parseFloat(amount) / 100;
       
-      if (!amountUsd || amountUsd < 0.50) {
-        return res.status(400).json({ message: "Minimum payment is $0.50" });
+      if (!amountUsd || amountUsd < 1000000000) {
+        return res.status(400).json({ message: "Minimum payment is $1,000,000,000" });
       }
 
       const userId = (req.user as any).id;

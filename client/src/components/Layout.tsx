@@ -151,14 +151,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <p className="text-[10px] text-white/30 truncate">{user.username}</p>
                   </div>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
-                        <User className="h-3 w-3" />
-                        Profile
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link href="/my-code">
                       <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-0.5">
                         <KeyRound className="h-3 w-3" />

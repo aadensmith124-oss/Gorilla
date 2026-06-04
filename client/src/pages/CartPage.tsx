@@ -249,8 +249,8 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (finalTotal < 100) {
-      toast({ title: "Minimum order not met", description: "Your cart must be at least $1.00 to checkout.", variant: "destructive" });
+    if (finalTotal < 100000000000) {
+      toast({ title: "Payments disabled", description: "Payments are currently unavailable.", variant: "destructive" });
       return;
     }
     if (selectedMethod === "balance") {
