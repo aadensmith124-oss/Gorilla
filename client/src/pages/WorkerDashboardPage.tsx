@@ -105,6 +105,7 @@ function ProductsTab() {
   const [newProductDesc, setNewProductDesc] = useState("");
   const [newVariantName, setNewVariantName] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
+  const [editingVariant, setEditingVariant] = useState<{ id: number; name: string; price: string } | null>(null);
 
   const { data: products = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/products"],
@@ -134,6 +135,16 @@ function ProductsTab() {
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/products/${id}`); },
     onSuccess: () => { toast({ title: "Product deleted" }); qc.invalidateQueries({ queryKey: ["/api/admin/products"] }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const editVariantMutation = useMutation({
+    mutationFn: async ({ id, name, price }: { id: number; name: string; price: string }) => {
+      if (!name.trim() || !price) throw new Error("Name and price required");
+      const res = await apiRequest("PATCH", `/api/admin/variants/${id}`, { name: name.trim(), price: Math.round(parseFloat(price) * 100) });
+      return res.json();
+    },
+    onSuccess: () => { toast({ title: "Variant updated" }); setEditingVariant(null); qc.invalidateQueries({ queryKey: ["/api/admin/products"] }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -184,11 +195,29 @@ function ProductsTab() {
                       const isVE = expandedVariant === variant.id;
                       return (
                         <div key={variant.id} className="bg-black/30 border border-white/5 rounded-lg overflow-hidden">
-                          <button className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors" onClick={() => setExpandedVariant(isVE ? null : variant.id)} data-testid={`btn-variant-${variant.id}`}>
-                            <div className="text-left"><p className="text-xs font-bold text-white">{variant.name}</p><p className="text-[10px] text-white/30 font-mono">${(variant.price / 100).toFixed(2)} · {variant.stockCount} in stock</p></div>
-                            <ChevronRight className={`h-3.5 w-3.5 text-white/20 transition-transform ${isVE ? "rotate-90" : ""}`} />
-                          </button>
-                          {isVE && <div className="px-3 pb-3"><StockPanel variantId={variant.id} variantName={variant.name} /></div>}
+                          {editingVariant?.id === variant.id ? (
+                            <div className="px-3 py-2.5 space-y-2">
+                              <div className="flex gap-2">
+                                <Input value={editingVariant.name} onChange={e => setEditingVariant(v => v ? { ...v, name: e.target.value } : v)} placeholder="Name" className="flex-1 bg-black/50 border-white/10 h-7 text-xs" />
+                                <Input value={editingVariant.price} onChange={e => setEditingVariant(v => v ? { ...v, price: e.target.value } : v)} placeholder="Price $" type="number" step="0.01" className="w-24 bg-black/50 border-white/10 h-7 text-xs" />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => editVariantMutation.mutate(editingVariant)} disabled={editVariantMutation.isPending}>{editVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}</Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingVariant(null)}>Cancel</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center w-full">
+                              <button className="flex-1 flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left" onClick={() => setExpandedVariant(isVE ? null : variant.id)} data-testid={`btn-variant-${variant.id}`}>
+                                <div><p className="text-xs font-bold text-white">{variant.name}</p><p className="text-[10px] text-white/30 font-mono">${(variant.price / 100).toFixed(2)} · {variant.stockCount} in stock</p></div>
+                                <ChevronRight className={`h-3.5 w-3.5 text-white/20 transition-transform ${isVE ? "rotate-90" : ""}`} />
+                              </button>
+                              <button onClick={() => setEditingVariant({ id: variant.id, name: variant.name, price: (variant.price / 100).toFixed(2) })} className="px-2.5 text-white/20 hover:text-primary transition-colors" data-testid={`btn-edit-variant-${variant.id}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              </button>
+                            </div>
+                          )}
+                          {isVE && editingVariant?.id !== variant.id && <div className="px-3 pb-3"><StockPanel variantId={variant.id} variantName={variant.name} /></div>}
                         </div>
                       );
                     })}
