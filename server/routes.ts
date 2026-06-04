@@ -110,18 +110,14 @@ export async function registerRoutes(
   });
 
   app.post(api.products.create.path, async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const product = await storage.createProduct(req.body);
     res.status(201).json(product);
   });
 
   // Variants
   app.post(api.variants.create.path, async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const variant = await storage.createVariant(req.body);
     res.status(201).json(variant);
   });

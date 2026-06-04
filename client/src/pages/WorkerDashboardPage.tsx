@@ -131,6 +131,12 @@ function ProductsTab() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/products/${id}`); },
+    onSuccess: () => { toast({ title: "Product deleted" }); qc.invalidateQueries({ queryKey: ["/api/admin/products"] }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
 
   return (
@@ -158,16 +164,19 @@ function ProductsTab() {
           const totalStock = product.variants?.reduce((sum: number, v: any) => sum + (v.stockCount || 0), 0) ?? 0;
           return (
             <div key={product.id} className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
-              <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors" onClick={() => setExpandedProduct(isExpanded ? null : product.id)} data-testid={`btn-product-${product.id}`}>
-                <div className="flex items-center gap-3 text-left">
+              <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                <button className="flex items-center gap-3 text-left flex-1" onClick={() => setExpandedProduct(isExpanded ? null : product.id)} data-testid={`btn-product-${product.id}`}>
                   <Package className="h-4 w-4 text-white/30 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">{product.name}</p>
                     <p className="text-[10px] text-white/30 font-mono mt-0.5">{product.variants?.length ?? 0} variants · {totalStock} in stock</p>
                   </div>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${product.name}"?`)) deleteProductMutation.mutate(product.id); }} className="text-white/20 hover:text-red-400 transition-colors p-1" data-testid={`btn-delete-product-${product.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                  <ChevronRight className={`h-4 w-4 text-white/20 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                 </div>
-                <ChevronRight className={`h-4 w-4 text-white/20 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-              </button>
+              </div>
               {isExpanded && (
                 <div className="px-4 pb-4 space-y-3 border-t border-white/5">
                   <div className="space-y-2 pt-3">

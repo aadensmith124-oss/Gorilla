@@ -134,7 +134,7 @@ export default function DepositPage() {
       if (!amount || amount < 1) throw new Error("Minimum deposit is $1");
       if (amount > 1000000000) throw new Error("Maximum deposit is $1,000,000,000");
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
-        amount: amount.toFixed(2),
+        amount: String(Math.round(amount * 100)),
         purpose: "deposit",
       });
       if (!res.ok) {

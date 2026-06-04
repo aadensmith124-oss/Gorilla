@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
-  { id: "acctplug", label: "ACCTPLUG" },
+  { id: "acctplug", label: "Cards" },
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "deposits", label: "Deposits" },
@@ -2164,7 +2164,7 @@ function AdminCardsSection() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-white">ACCTPLUG — Cards</h2>
+      <h2 className="text-base font-bold text-white">Cards</h2>
 
       <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
