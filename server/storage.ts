@@ -198,12 +198,11 @@ export class DatabaseStorage implements IStorage {
     return this.enrichProductsWithVariants(allProducts);
   }
 
-  private async enrichProductsWithVariants(allProducts: Product[]): Promise<(Product & { variants: (Variant & { stockCount: number })[]; sellerTypes: string[] })[]> {
+  private async enrichProductsWithVariants(allProducts: Product[]): Promise<(Product & { variants: (Variant & { stockCount: number })[] })[]> {
     const result = [];
     for (const prod of allProducts) {
       const prodVariants = await db.select().from(variants).where(eq(variants.productId, prod.id));
       const variantsWithStock = [];
-      const sellerTypeSet = new Set<string>();
 
       for (const v of prodVariants) {
         const [count] = await db
@@ -212,34 +211,8 @@ export class DatabaseStorage implements IStorage {
           .where(and(eq(stockItems.variantId, v.id), eq(stockItems.isSold, false), eq(stockItems.isReserved, false)));
 
         variantsWithStock.push({ ...v, stockCount: Number(count.count) });
-
-        try {
-          // Admin-added stock (no seller_id) = top tier
-          // Show if ANY admin stock exists (even all sold) so tier badge stays visible after tier changes
-          const [adminStock] = await db
-            .select({ count: sql<number>`count(*)` })
-            .from(stockItems)
-            .where(and(
-              eq(stockItems.variantId, v.id),
-              sql`seller_id IS NULL`
-            ));
-          if (Number(adminStock.count) > 0) sellerTypeSet.add("top");
-
-          // Include every seller who has EVER uploaded to this variant so their tier
-          // badge updates immediately when an admin changes their sellerType.
-          const { rows } = await db.execute(sql`
-            SELECT DISTINCT u.seller_type as "sellerType"
-            FROM stock_items si
-            JOIN users u ON u.id = si.seller_id
-            WHERE si.variant_id = ${v.id}
-              AND si.seller_id IS NOT NULL
-          `) as any;
-          for (const r of rows) {
-            if (r.sellerType) sellerTypeSet.add(r.sellerType);
-          }
-        } catch {}
       }
-      result.push({ ...prod, variants: variantsWithStock, sellerTypes: Array.from(sellerTypeSet) });
+      result.push({ ...prod, variants: variantsWithStock });
     }
     return result;
   }
@@ -559,16 +532,6 @@ export class DatabaseStorage implements IStorage {
       const originalSellerId = originalCard?.userId;
       await db.update(cards).set({ isSold: true, userId }).where(eq(cards.id, cp.cardId));
 
-      // Credit seller 80% of sale
-      if (originalSellerId && originalSellerId !== userId) {
-        const sellerCut = Math.floor(cp.price * 0.8);
-        await db.update(users)
-          .set({
-            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
-            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
-          })
-          .where(eq(users.id, originalSellerId));
-      }
     }
 
     return order;
@@ -1150,7 +1113,6 @@ export class DatabaseStorage implements IStorage {
     const [app] = await db.select().from(sellerApplications).where(eq(sellerApplications.id, id));
     if (!app) return;
     await db.update(sellerApplications).set({ status: "approved" }).where(eq(sellerApplications.id, id));
-    await db.update(users).set({ isSeller: true }).where(eq(users.id, app.userId));
   }
 
   async rejectSellerApplication(id: number): Promise<void> {

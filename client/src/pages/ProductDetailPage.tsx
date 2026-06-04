@@ -35,17 +35,6 @@ export default function ProductDetailPage() {
     ? Math.round(totalAmount * (1 - rankDiscountPct / 100))
     : totalAmount;
 
-  // Load all sellers for the selected variant — used to pick one randomly at purchase
-  const { data: variantSellers } = useQuery<any[]>({
-    queryKey: ["/api/variants", selectedVariantId, "sellers"],
-    queryFn: async () => {
-      const res = await fetch(`/api/variants/${selectedVariantId}/sellers`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!selectedVariantId,
-  });
-
   useEffect(() => {
     if (selectedVariant) setQuantity(Math.min(Math.max(minQty, 1), maxQty));
   }, [selectedVariantId, minQty, maxQty]);
@@ -61,11 +50,6 @@ export default function ProductDetailPage() {
         items: [{ variantId: selectedVariant.id, quantity }],
         cardIds: [],
       };
-      // Pick a random seller from all available sellers for this variant
-      const available = (variantSellers ?? []).filter((s: any) => (s.stockCount ?? 0) > 0);
-      if (available.length > 0) {
-        body.sellerId = available[Math.floor(Math.random() * available.length)].id;
-      }
       const res = await apiRequest("POST", "/api/orders", body);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

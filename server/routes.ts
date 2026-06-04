@@ -1111,7 +1111,6 @@ export async function registerRoutes(
         expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
         price: r.price, hrPercent: r.hr_percent ?? 80, isSold: r.is_sold, isFirstHand: r.is_first_hand,
         userId: r.user_id, createdAt: r.created_at,
-        sellerType: r.seller_type, sellerDisplayName: r.seller_display_name, sellerUsername: r.seller_username,
         binData: binDataMap[bin] ?? null,
       };
     }));
@@ -1180,20 +1179,7 @@ export async function registerRoutes(
       await storage.updateUserBalance(userId, -finalPrice);
       await storage.createTransaction(userId, -finalPrice, "purchase", `Purchased card ${card.maskedCard}`);
 
-      // Credit seller 80% of the ORIGINAL price (not discounted)
-      const originalSellerId = card.userId;
       const updatedCard = await storage.purchaseCard(cardId, userId, finalPrice);
-
-      if (originalSellerId && originalSellerId !== userId) {
-        const sellerCut = Math.floor(card.price * 0.8);
-        await db.update(users)
-          .set({
-            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
-            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
-          })
-          .where(eq(users.id, originalSellerId));
-      }
-
       res.json(updatedCard);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -1315,8 +1301,8 @@ export async function registerRoutes(
       });
     } catch (e: any) {
       console.error("Crypto order creation failed:", e);
-      if (pendingOrderId) {
-        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      if (pendingOrderId != null) {
+        try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {}
       }
       res.status(400).json({ message: e.message });
     }
@@ -1601,8 +1587,8 @@ export async function registerRoutes(
       res.status(201).json({ order, invoiceLink });
     } catch (e: any) {
       console.error("Stars order creation failed:", e);
-      if (pendingOrderId) {
-        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      if (pendingOrderId != null) {
+        try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {}
       }
       res.status(400).json({ message: e.message });
     }
@@ -1656,8 +1642,8 @@ export async function registerRoutes(
       res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
-      if (pendingOrderId) {
-        try { await storage.cancelPendingOrder(pendingOrderId); } catch {}
+      if (pendingOrderId != null) {
+        try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {}
       }
       res.status(400).json({ message: e.message });
     }
@@ -1731,412 +1717,6 @@ export async function registerRoutes(
     } catch (e) {
       console.error("Telegram webhook error:", e);
     }
-  });
-
-  // ── Seller Application Routes ─────────────────────────────────────────────
-  app.post("/api/seller/apply", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const existing = await storage.getSellerApplication(userId);
-    if (existing) return res.status(400).json({ error: "Application already submitted", application: existing });
-    const sellerCode = `TRENT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const app = await storage.createSellerApplication(userId, sellerCode);
-    res.json(app);
-  });
-
-  app.get("/api/seller/status", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    const application = await storage.getSellerApplication(userId);
-    res.json({ isSeller: user?.isSeller ?? false, sellerBalance: user?.sellerBalance ?? 0, totalEarned: user?.totalSellerEarned ?? 0, sellerType: user?.sellerType ?? "bronze", sellerDisplayName: user?.sellerDisplayName ?? "", application });
-  });
-
-  app.get("/api/admin/seller-applications", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const apps = await storage.getAllSellerApplications();
-    res.json(apps);
-  });
-
-  app.post("/api/admin/seller-applications/:id/approve", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    await storage.approveSellerApplication(Number(req.params.id));
-    res.json({ ok: true });
-  });
-
-  app.post("/api/admin/seller-applications/:id/reject", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    await storage.rejectSellerApplication(Number(req.params.id));
-    res.json({ ok: true });
-  });
-
-  // ── Admin Seller Management ───────────────────────────────────────────────
-
-  // Get all active sellers
-  app.get("/api/admin/active-sellers", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const { rows } = await db.execute(sql`
-      SELECT u.id, u.username, u.email, u.seller_balance, u.total_seller_earned,
-             u.seller_type, u.seller_display_name, u.created_at,
-             sa.seller_code, sa.id as app_id
-      FROM users u
-      LEFT JOIN seller_applications sa ON sa.user_id = u.id
-      WHERE u.is_seller = true
-      ORDER BY u.total_seller_earned DESC
-    `) as any;
-    res.json(rows.map((r: any) => ({
-      id: r.id, username: r.username, email: r.email,
-      sellerBalance: r.seller_balance, totalEarned: r.total_seller_earned,
-      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name,
-      sellerCode: r.seller_code, appId: r.app_id, createdAt: r.created_at,
-    })));
-  });
-
-  // Get seller detail (cards, stock, transactions)
-  app.get("/api/admin/active-sellers/:userId/detail", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = Number(req.params.userId);
-    const user = await storage.getUser(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    const [cardsRes, txRes] = await Promise.all([
-      db.execute(sql`SELECT id, masked_card, price, is_sold, created_at FROM cards WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 50`) as any,
-      db.execute(sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 50`) as any,
-    ]);
-    const stockRes = await db.execute(sql`
-      SELECT si.id, si.variant_id, si.is_sold, si.created_at, v.name as variant_name, p.name as product_name
-      FROM stock_items si
-      JOIN variants v ON v.id = si.variant_id
-      JOIN products p ON p.id = v.product_id
-      WHERE si.seller_id = ${userId}
-      ORDER BY si.created_at DESC LIMIT 50
-    `) as any;
-    res.json({
-      user: { id: user.id, username: user.username, sellerBalance: user.sellerBalance, totalEarned: user.totalSellerEarned, sellerType: user.sellerType, sellerDisplayName: user.sellerDisplayName },
-      cards: cardsRes.rows,
-      transactions: txRes.rows,
-      stock: stockRes.rows,
-    });
-  });
-
-  // Set seller type + display name
-  app.patch("/api/admin/active-sellers/:userId/type", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = Number(req.params.userId);
-    const { sellerType, sellerDisplayName } = req.body;
-    await db.update(users).set({ sellerType: sellerType || "bronze", sellerDisplayName: sellerDisplayName || "" }).where(eq(users.id, userId));
-    res.json({ ok: true });
-  });
-
-  // Remove seller
-  app.delete("/api/admin/active-sellers/:userId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = Number(req.params.userId);
-    await db.update(users).set({ isSeller: false } as any).where(eq(users.id, userId));
-    res.json({ ok: true });
-  });
-
-  // Payout seller
-  app.post("/api/admin/active-sellers/:userId/payout", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = Number(req.params.userId);
-    const user = await storage.getUser(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    if (user.sellerBalance <= 0) return res.status(400).json({ error: "No balance to payout" });
-    const amount = user.sellerBalance;
-    await db.update(users).set({ sellerBalance: 0 } as any).where(eq(users.id, userId));
-    await db.insert(transactions).values({ userId, type: "seller_payout", amount, paymentMethod: "manual", status: "completed", reference: `PAYOUT-${Date.now()}` } as any);
-    res.json({ ok: true, amount });
-  });
-
-  // ── Seller Product Permissions ────────────────────────────────────────────
-
-  // Get allowed product IDs for a seller
-  app.get("/api/admin/seller-permissions/products/:sellerId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const sellerId = Number(req.params.sellerId);
-    const raw = await storage.getSetting(`seller_product_perms_${sellerId}`, "");
-    const ids = raw ? raw.split(",").map(Number).filter(Boolean) : [];
-    res.json({ productIds: ids });
-  });
-
-  // Set allowed product IDs for a seller
-  app.post("/api/admin/seller-permissions/products/:sellerId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const sellerId = Number(req.params.sellerId);
-    const { productIds } = req.body;
-    const value = (productIds as number[]).join(",");
-    await storage.setSetting(`seller_product_perms_${sellerId}`, value);
-    res.json({ ok: true });
-  });
-
-  // ── Seller Stock / Card Routes ────────────────────────────────────────────
-
-  // Seller add card
-  app.post("/api/seller/cards", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const user = await storage.getUser((req.user as any).id);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
-    if (!perms.split(",").includes("cards")) return res.status(403).json({ error: "You don't have permission to add cards" });
-    const { cardNumber, price } = req.body;
-    if (!cardNumber || !price) return res.status(400).json({ error: "Card number and price required" });
-    const digits = cardNumber.replace(/\D/g, "");
-    const bin = digits.substring(0, 6);
-    let country = "Unknown";
-    try {
-      const r = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
-      if (r.ok) { const d = await r.json() as any; country = d.country?.name || "Unknown"; }
-    } catch {}
-    const masked = digits.replace(/\d(?=\d{4})/g, "*");
-    const card = await storage.createCard({
-      cardNumber: cardNumber.trim(), maskedCard: masked || cardNumber.substring(0, 4) + "****",
-      expiry: "", cvv: "", country, extras: req.body.extras || "", price: Math.round(parseFloat(price) * 100),
-      isFirstHand: req.body.isFirstHand || false, userId: user.id,
-    } as any);
-    res.status(201).json(card);
-  });
-
-  // Seller get their cards
-  app.get("/api/seller/cards", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const { rows } = await db.execute(sql`SELECT * FROM cards WHERE user_id = ${userId} ORDER BY created_at DESC`) as any;
-    res.json(rows);
-  });
-
-  // ── Seller Permissions ──────────────────────────────────────────────────
-  app.get("/api/seller/permissions", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const perms = await storage.getSetting(`seller_perms_${userId}`, "cards,ach,logs");
-    const list = perms.split(",").map((s: string) => s.trim()).filter(Boolean);
-    res.json({ cards: list.includes("cards"), ach: list.includes("ach"), logs: list.includes("logs") });
-  });
-
-  app.get("/api/admin/seller-permissions/:userId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = req.params.userId;
-    const perms = await storage.getSetting(`seller_perms_${userId}`, "cards,ach,logs");
-    const list = perms.split(",").map((s: string) => s.trim()).filter(Boolean);
-    res.json({ cards: list.includes("cards"), ach: list.includes("ach"), logs: list.includes("logs") });
-  });
-
-  app.post("/api/admin/seller-permissions/:userId", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    const userId = req.params.userId;
-    const { cards, ach, logs } = req.body;
-    const list = [cards && "cards", ach && "ach", logs && "logs"].filter(Boolean).join(",");
-    await storage.setSetting(`seller_perms_${userId}`, list);
-    res.json({ ok: true });
-  });
-
-  // Seller add stock to existing variant
-  app.post("/api/seller/stock", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const user = await storage.getUser((req.user as any).id);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const { variantId, content } = req.body;
-    if (!variantId || !content) return res.status(400).json({ error: "variantId and content required" });
-    // Check logs permission
-    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
-    if (!perms.split(",").includes("logs")) return res.status(403).json({ error: "You don't have permission to add logs" });
-    // Check product-level permission
-    const [variantRow] = await db.select({ productId: variants.productId }).from(variants).where(eq(variants.id, Number(variantId)));
-    if (variantRow) {
-      const productPermsRaw = await storage.getSetting(`seller_product_perms_${user.id}`, "");
-      if (productPermsRaw) {
-        const allowedIds = productPermsRaw.split(",").map(Number).filter(Boolean);
-        if (allowedIds.length > 0 && !allowedIds.includes(variantRow.productId)) {
-          return res.status(403).json({ error: "You don't have permission to sell in this product" });
-        }
-      }
-    }
-    // Items separated by blank lines (\n\n) — skip duplicates
-    const items = content.split("\n\n").map((s: string) => s.trim()).filter(Boolean);
-    let added = 0;
-    let skipped = 0;
-    for (const item of items) {
-      const existing = await db.select({ id: stockItems.id }).from(stockItems)
-        .where(eq(stockItems.content, item)).limit(1);
-      if (existing.length > 0) { skipped++; continue; }
-      await db.insert(stockItems).values({ variantId: Number(variantId), content: item, sellerId: user.id });
-      added++;
-    }
-    res.json({ ok: true, added, skipped });
-  });
-
-  // Seller get transactions
-  app.get("/api/seller/transactions", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const { rows } = await db.execute(sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 100`) as any;
-    res.json(rows);
-  });
-
-  // Get all active products/variants for seller stock adding
-  app.get("/api/seller/products", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const user = await storage.getUser((req.user as any).id);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const prods = await storage.getAllProducts();
-    res.json(prods);
-  });
-
-  // ── Sellers across ALL variants of a product (shown immediately on product open) ──
-  app.get("/api/products/:productId/sellers", async (req, res) => {
-    const productId = Number(req.params.productId);
-    if (!productId) return res.status(400).json({ message: "Invalid product" });
-    try {
-      const { rows } = await db.execute(sql`
-        SELECT id, "sellerType", "sellerDisplayName", username, "stockCount" FROM (
-          SELECT
-            -1 as id,
-            'top' as "sellerType",
-            'ACCTPLUG' as "sellerDisplayName",
-            'acctplug' as username,
-            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
-          FROM stock_items si
-          JOIN variants v ON v.id = si.variant_id
-          WHERE v.product_id = ${productId} AND si.seller_id IS NULL
-          HAVING COUNT(*) > 0
-          UNION ALL
-          SELECT
-            u.id,
-            u.seller_type as "sellerType",
-            u.seller_display_name as "sellerDisplayName",
-            u.username,
-            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
-          FROM stock_items si
-          JOIN variants v ON v.id = si.variant_id
-          JOIN users u ON u.id = si.seller_id
-          WHERE v.product_id = ${productId} AND si.seller_id IS NOT NULL
-          GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
-        ) combined
-        ORDER BY "stockCount" DESC
-      `) as any;
-      res.json(rows);
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  // ── Sellers per variant (for variant-specific stock counts after variant is picked) ──
-  app.get("/api/variants/:variantId/sellers", async (req, res) => {
-    const variantId = Number(req.params.variantId);
-    if (!variantId) return res.status(400).json({ message: "Invalid variant" });
-    try {
-      const { rows } = await db.execute(sql`
-        SELECT id, "sellerType", "sellerDisplayName", username, "stockCount" FROM (
-          -- Admin stock (seller_id IS NULL) — show if ANY admin stock exists for this variant
-          SELECT
-            -1 as id,
-            'top' as "sellerType",
-            'ACCTPLUG' as "sellerDisplayName",
-            'acctplug' as username,
-            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
-          FROM stock_items si
-          WHERE si.variant_id = ${variantId}
-            AND si.seller_id IS NULL
-          HAVING COUNT(*) > 0
-          UNION ALL
-          -- Seller stock — show each seller who has ever uploaded stock to this variant
-          SELECT
-            u.id,
-            u.seller_type as "sellerType",
-            u.seller_display_name as "sellerDisplayName",
-            u.username,
-            COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
-          FROM stock_items si
-          JOIN users u ON u.id = si.seller_id
-          WHERE si.variant_id = ${variantId}
-            AND si.seller_id IS NOT NULL
-          GROUP BY u.id, u.seller_type, u.seller_display_name, u.username
-        ) combined
-        ORDER BY "stockCount" DESC
-      `) as any;
-      res.json(rows);
-    } catch (e: any) {
-      res.status(500).json({ message: e.message });
-    }
-  });
-
-  // ── Seller: get own allowed product IDs ───────────────────────────────────
-  app.get("/api/seller/product-permissions", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const raw = await storage.getSetting(`seller_product_perms_${userId}`, "");
-    const allowedIds = raw ? raw.split(",").map(Number).filter(Boolean) : [];
-    res.json({ allowedIds });
-  });
-
-  // ── Seller: view own log stock items ──────────────────────────────────────
-  app.get("/api/seller/stock", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    try {
-      const { rows } = await db.execute(sql`
-        SELECT si.id, si.variant_id, si.content, si.is_sold, si.created_at,
-               v.name as variant_name, p.name as product_name
-        FROM stock_items si
-        JOIN variants v ON v.id = si.variant_id
-        JOIN products p ON p.id = v.product_id
-        WHERE si.seller_id = ${userId}
-        ORDER BY si.created_at DESC
-        LIMIT 300
-      `) as any;
-      res.json(rows);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  // ── Seller: delete own unsold log stock item ──────────────────────────────
-  app.delete("/api/seller/stock/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const id = Number(req.params.id);
-    const [item] = await db.select().from(stockItems).where(and(eq(stockItems.id, id)));
-    if (!item) return res.status(404).json({ error: "Not found" });
-    if ((item as any).sellerId !== userId) return res.status(403).json({ error: "Not yours" });
-    if (item.isSold) return res.status(400).json({ error: "Already sold" });
-    await db.delete(stockItems).where(eq(stockItems.id, id));
-    res.json({ ok: true });
-  });
-
-  // ── Seller: delete own unsold card ────────────────────────────────────────
-  app.delete("/api/seller/cards/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const id = Number(req.params.id);
-    const [card] = await db.select().from(cards).where(eq(cards.id, id));
-    if (!card) return res.status(404).json({ error: "Not found" });
-    if ((card as any).userId !== userId) return res.status(403).json({ error: "Not yours" });
-    if (card.isSold) return res.status(400).json({ error: "Already sold" });
-    await db.delete(cards).where(eq(cards.id, id));
-    res.json({ ok: true });
-  });
-
-  // ── Seller: delete own unsold ACH ─────────────────────────────────────────
-  app.delete("/api/seller/ach/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
-    const userId = (req.user as any).id;
-    const user = await storage.getUser(userId);
-    if (!user?.isSeller) return res.status(403).json({ error: "Not a seller" });
-    const id = Number(req.params.id);
-    const [ach] = await db.select().from(achs).where(eq(achs.id, id));
-    if (!ach) return res.status(404).json({ error: "Not found" });
-    if ((ach as any).sellerId !== userId) return res.status(403).json({ error: "Not yours" });
-    if ((ach as any).isSold) return res.status(400).json({ error: "Already sold" });
-    await db.delete(achs).where(eq(achs.id, id));
-    res.json({ ok: true });
   });
 
   // ── BIN Lookup ───────────────────────────────────────────────────────────
@@ -2277,17 +1857,14 @@ export async function registerRoutes(
   app.get("/api/ach", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const { rows } = await db.execute(sql`
-      SELECT a.id, a.bank_name, a.balance, a.price, a.is_sold, a.seller_id, a.created_at,
-             u.seller_type, u.seller_display_name
+      SELECT a.id, a.bank_name, a.balance, a.price, a.is_sold, a.seller_id, a.created_at
       FROM achs a
-      LEFT JOIN users u ON u.id = a.seller_id
       WHERE a.is_sold = false
       ORDER BY a.created_at DESC
     `) as any;
     res.json(rows.map((r: any) => ({
       id: r.id, bankName: r.bank_name, balance: r.balance,
       price: r.price, isSold: r.is_sold, sellerId: r.seller_id, createdAt: r.created_at,
-      sellerType: r.seller_type, sellerDisplayName: r.seller_display_name,
     })));
   });
 
@@ -2332,18 +1909,7 @@ export async function registerRoutes(
       await storage.updateUserBalance(userId, -finalPrice);
       await storage.createTransaction(userId, -finalPrice, "purchase", `Purchased ACH: ${ach.bankName}`);
 
-      const originalSellerId = ach.sellerId;
       await storage.purchaseAch(achId);
-
-      if (originalSellerId && originalSellerId !== userId) {
-        const sellerCut = Math.floor(ach.price * 0.8);
-        await db.update(users)
-          .set({
-            sellerBalance: sql`${users.sellerBalance} + ${sellerCut}`,
-            totalSellerEarned: sql`${users.totalSellerEarned} + ${sellerCut}`,
-          })
-          .where(eq(users.id, originalSellerId));
-      }
 
       const publicOrderId = Math.random().toString(36).substring(2, 15);
       const [achOrder] = await db.insert(orders).values({
@@ -2380,33 +1946,6 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.post("/api/seller/ach", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const user = req.user as any;
-    if (!user.isSeller) return res.status(403).json({ message: "Not a seller" });
-    const perms = await storage.getSetting(`seller_perms_${user.id}`, "cards,ach,logs");
-    if (!perms.split(",").includes("ach")) return res.status(403).json({ message: "You don't have permission to add ACH" });
-    const { bankName, balance, fullItem, price } = req.body;
-    if (!bankName || !balance || !fullItem || !price) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
-    const ach = await storage.createAch({
-      bankName: String(bankName).trim(),
-      balance: String(balance).trim(),
-      fullItem: String(fullItem).trim(),
-      price: Math.round(parseFloat(String(price)) * 100),
-      sellerId: user.id,
-    });
-    res.status(201).json(ach);
-  });
-
-  app.get("/api/seller/ach", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const user = req.user as any;
-    if (!user.isSeller) return res.status(403).json({ message: "Not a seller" });
-    const list = await storage.getSellerAchs(user.id);
-    res.json(list);
-  });
 
   // ── SMTP Settings (admin) ──────────────────────────────────────
   app.get("/api/admin/smtp", async (req, res) => {

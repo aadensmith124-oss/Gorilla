@@ -198,11 +198,11 @@ function ProductsTab() {
                           {editingVariant?.id === variant.id ? (
                             <div className="px-3 py-2.5 space-y-2">
                               <div className="flex gap-2">
-                                <Input value={editingVariant.name} onChange={e => setEditingVariant(v => v ? { ...v, name: e.target.value } : v)} placeholder="Name" className="flex-1 bg-black/50 border-white/10 h-7 text-xs" />
-                                <Input value={editingVariant.price} onChange={e => setEditingVariant(v => v ? { ...v, price: e.target.value } : v)} placeholder="Price $" type="number" step="0.01" className="w-24 bg-black/50 border-white/10 h-7 text-xs" />
+                                <Input value={editingVariant!.name} onChange={e => setEditingVariant(v => v ? { ...v, name: e.target.value } : v)} placeholder="Name" className="flex-1 bg-black/50 border-white/10 h-7 text-xs" />
+                                <Input value={editingVariant!.price} onChange={e => setEditingVariant(v => v ? { ...v, price: e.target.value } : v)} placeholder="Price $" type="number" step="0.01" className="w-24 bg-black/50 border-white/10 h-7 text-xs" />
                               </div>
                               <div className="flex gap-2">
-                                <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => editVariantMutation.mutate(editingVariant)} disabled={editVariantMutation.isPending}>{editVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}</Button>
+                                <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => editVariantMutation.mutate(editingVariant!)} disabled={editVariantMutation.isPending}>{editVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}</Button>
                                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingVariant(null)}>Cancel</Button>
                               </div>
                             </div>

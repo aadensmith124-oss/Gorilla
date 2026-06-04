@@ -6,21 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-const SELLER_BADGE: Record<string, string> = { bronze: "🍟", fresh: "🍺", top: "🔥" };
-
-function getSellerLabel(ach: any): string | null {
-  if (!ach.sellerId) return null;
-  const type = ach.sellerType ?? "bronze";
-  const name = ach.sellerDisplayName?.trim();
-  const emoji = SELLER_BADGE[type] ?? "🍟";
-  if (name) return `${emoji} ${name} ${emoji}`;
-  return `${emoji} SELLER ${emoji}`;
-}
-
 function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onToggleCart: (a: any) => void }) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const sellerLabel = getSellerLabel(ach);
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
@@ -49,7 +37,7 @@ function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onTo
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
             <p className="text-sm font-bold text-white font-mono uppercase tracking-wide">
-              {sellerLabel ?? ach.bankName}
+              {ach.bankName}
             </p>
             <p className="text-xs text-white/40 font-mono">
               {ach.bankName} · Balance ${String(ach.balance).replace(/^\$/, "")}
@@ -87,7 +75,6 @@ function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onTo
 
 export default function AchPage() {
   const [search, setSearch] = useState("");
-  const [sellerFilter, setSellerFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
@@ -97,30 +84,18 @@ export default function AchPage() {
 
   const { data: achList, isLoading } = useQuery<any[]>({ queryKey: ["/api/ach"] });
 
-  const sellers = useMemo(() => {
-    if (!achList) return [];
-    const seen = new Map<string, string>();
-    for (const a of achList) {
-      if (a.sellerId && !seen.has(String(a.sellerId))) {
-        seen.set(String(a.sellerId), getSellerLabel(a) || `Seller ${a.sellerId}`);
-      }
-    }
-    return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
-  }, [achList]);
-
   const filtered = useMemo(() => {
     if (!achList) return [];
     return achList.filter((a: any) => {
-      const matchSeller = sellerFilter === "all" || String(a.sellerId) === sellerFilter;
       const matchSearch = !search
         || a.bankName?.toLowerCase().includes(search.toLowerCase())
         || a.balance?.toLowerCase().includes(search.toLowerCase());
       const priceDollars = a.price / 100;
       const matchPriceMin = !priceMin || priceDollars >= parseFloat(priceMin);
       const matchPriceMax = !priceMax || priceDollars <= parseFloat(priceMax);
-      return matchSeller && matchSearch && matchPriceMin && matchPriceMax;
+      return matchSearch && matchPriceMin && matchPriceMax;
     });
-  }, [achList, sellerFilter, search, priceMin, priceMax]);
+  }, [achList, search, priceMin, priceMax]);
 
   const cartItems = useMemo(() => (achList ?? []).filter((a: any) => cartIds.has(a.id)), [achList, cartIds]);
   const cartTotal = cartItems.reduce((sum: number, a: any) => sum + a.price, 0);
@@ -186,19 +161,6 @@ export default function AchPage() {
           data-testid="input-search-ach"
         />
       </div>
-
-      {/* Seller filter */}
-      {sellers.length > 0 && (
-        <Select value={sellerFilter} onValueChange={setSellerFilter}>
-          <SelectTrigger className="w-full bg-[#111] border-white/5 text-white/60 h-9 text-xs" data-testid="select-ach-seller">
-            <SelectValue placeholder="All Sellers" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#111] border-white/10 text-white text-xs">
-            <SelectItem value="all">All Sellers</SelectItem>
-            {sellers.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      )}
 
       {/* Filters toggle */}
       <button
