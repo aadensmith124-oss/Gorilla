@@ -1,6 +1,6 @@
 import { useRoute, useLocation } from "wouter";
 import { useOrders } from "@/hooks/use-orders";
-import { Loader2, X, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -117,13 +117,14 @@ export default function OrderDetailPageNew() {
   return (
     <div className="min-h-screen bg-[#0a0a0c] flex flex-col pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-white">Order Info</h1>
+        <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => setLocation("/orders")}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+            className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm"
+            data-testid="btn-back"
           >
-            <X className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
+            Back
           </button>
         </div>
 

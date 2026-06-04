@@ -142,14 +142,14 @@ export default function OrdersPage() {
           <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
           refresh
         </button>
-        <Link href="/support">
+        <a href="https://t.me/+K3ou01RaW6oyMjJh" target="_blank" rel="noopener noreferrer">
           <button
             className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all"
             data-testid="btn-support"
           >
             support
           </button>
-        </Link>
+        </a>
       </div>
 
       {/* Deposits + Tier panel */}
