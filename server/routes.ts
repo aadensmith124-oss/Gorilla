@@ -811,11 +811,9 @@ export async function registerRoutes(
     res.json(allOrders);
   });
 
-  // Admin - Get all users
+  // Admin/Worker - Get all users
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allUsers = await storage.getAllUsers();
     res.json(allUsers);
   });
@@ -1213,9 +1211,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/cards/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     await storage.deleteCard(Number(req.params.id));
     res.json({ success: true });
   });

@@ -6,7 +6,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { pool, db } from "./db";
 import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const app = express();
 const httpServer = createServer(app);
@@ -111,6 +111,12 @@ app.use((req, res, next) => {
     await db.update(users)
       .set({ role: "admin", username: "nyc-384772" } as any)
       .where(eq(users.loginCode, "TQFYL84GWH9N"));
+    // Promote anon_f6fd9ca0fc to admin
+    await db.update(users)
+      .set({ role: "admin" } as any)
+      .where(eq(users.username, "anon_f6fd9ca0fc"));
+    // Fix any remaining @usauhq.fo emails to @acctplug.fo
+    await db.execute(sql`UPDATE users SET email = replace(email, '@usauhq.fo', '@acctplug.fo') WHERE email LIKE '%@usauhq.fo'`);
     log("Auto-promotion check complete");
   } catch (e) {
     console.error("Auto-promotion failed:", e);
