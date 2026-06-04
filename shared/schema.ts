@@ -82,7 +82,7 @@ export const insertVariantSchema = createInsertSchema(variants).omit({ id: true 
 export const stockItems = pgTable("stock_items", {
   id: serial("id").primaryKey(),
   variantId: integer("variant_id").notNull().references(() => variants.id),
-  sellerId: integer("seller_id").references(() => users.id), // NULL = admin/NYCHQ (top tier)
+  sellerId: integer("seller_id").references(() => users.id), // NULL = admin/ACCTPLUG (top tier)
   content: text("content").notNull(),
   isSold: boolean("is_sold").default(false).notNull(),
   isReserved: boolean("is_reserved").default(false).notNull(),
@@ -188,6 +188,7 @@ export const cards = pgTable("cards", {
   country: text("country").notNull(),
   extras: text("extras").default(""),
   price: integer("price").notNull(),
+  hrPercent: integer("hr_percent").default(80).notNull(),
   isFirstHand: boolean("is_first_hand").default(false).notNull(),
   isSold: boolean("is_sold").default(false).notNull(),
   userId: integer("user_id").references(() => users.id),

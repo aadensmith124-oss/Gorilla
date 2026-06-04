@@ -31,13 +31,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       label: "SHOP",
       items: [
         { href: "/shop", icon: Store, label: "Logs" },
-        { href: "/acctplug", icon: LayoutDashboard, label: "ACCTPLUG" },
+        { href: "/acctplug", icon: LayoutDashboard, label: "Cards" },
       ],
     },
     {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/nychqsupport", icon: Send, label: "Telegram Support", external: true },
+        { href: "https://t.me/acctplugsupport", icon: Send, label: "Telegram Support", external: true },
       ],
     },
     ...(user?.role === "admin" ? [{
@@ -57,7 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <div className="flex flex-col h-full bg-[#0e0e0e] text-white overflow-y-auto">
       <div className="px-4 py-5 border-b border-white/5">
-        <span className="text-lg font-bold tracking-tight text-white">NYC<span className="text-white/40">HQ</span></span>
+        <span className="text-lg font-bold tracking-tight text-white">ACCT<span className="text-white/40">PLUG</span></span>
       </div>
 
       <div className="flex flex-col gap-6 p-4 flex-1">

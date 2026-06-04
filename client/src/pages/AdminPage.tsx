@@ -2119,76 +2119,58 @@ function CashAppSection() {
 function AdminCardsSection() {
   const { toast } = useToast();
   const qc = queryClient;
-  const [cardNumber, setCardNumber] = useState("");
   const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
+  const [hrPercent, setHrPercent] = useState("80");
 
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
 
-  const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
+  // Auto-extract BIN preview from full item
+  const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
+
+  // Validate HR: strip non-numeric, clamp 1-100
+  const handleHrChange = (val: string) => {
+    const stripped = val.replace(/[^0-9]/g, "");
+    if (stripped === "") { setHrPercent(""); return; }
+    const n = Math.max(1, Math.min(100, parseInt(stripped, 10)));
+    setHrPercent(String(n));
+  };
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const digits = cardNumber.replace(/\D/g, "");
-      const masked = digits.length >= 4
-        ? digits.substring(0, 4) + "*".repeat(Math.max(0, digits.length - 8)) + digits.slice(-4)
-        : cardNumber;
+      if (!fullItem.trim()) throw new Error("Full item is required");
+      if (!price || parseFloat(price) <= 0) throw new Error("Valid price is required");
       const res = await apiRequest("POST", "/api/cards", {
-        cardNumber: cardNumber.trim(),
-        maskedCard: masked,
-        expiry: "",
-        cvv: "",
-        country: "",
         extras: fullItem.trim(),
-        price: Math.round(parseFloat(price) * 100),
-        isFirstHand: false,
+        price: parseFloat(price),
+        hrPercent: hrPercent || "1",
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to add card");
-      }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed to add card"); }
       return res.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      setCardNumber(""); setFullItem(""); setPrice("");
+      setFullItem(""); setPrice(""); setHrPercent("80");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/cards/${id}`);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      toast({ title: "Card deleted" });
-    },
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/cards/${id}`); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/cards"] }); toast({ title: "Card deleted" }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-white">Cards Management</h2>
+      <h2 className="text-base font-bold text-white">ACCTPLUG — Cards</h2>
 
       <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Card Number</label>
-          <Input
-            value={cardNumber}
-            onChange={e => setCardNumber(e.target.value)}
-            placeholder="4111111111111111"
-            className="bg-black/50 border-white/10 font-mono"
-            data-testid="input-card-number"
-          />
-          {bin.length === 6 && <p className="text-[10px] text-white/30 font-mono">BIN: {bin}</p>}
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Item</label>
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Delivery Item</label>
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
@@ -2197,25 +2179,43 @@ function AdminCardsSection() {
             className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
             data-testid="input-full-item"
           />
-          <p className="text-[9px] text-white/20">only shown to buyer after purchase</p>
+          {previewBin.length === 6 && (
+            <p className="text-[10px] text-primary/60 font-mono">BIN detected: {previewBin} (auto-lookup on save)</p>
+          )}
+          <p className="text-[9px] text-white/20">BIN is extracted automatically from the first segment · shown to buyer after purchase</p>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-          <Input
-            value={price}
-            onChange={e => setPrice(e.target.value)}
-            placeholder="5.00"
-            type="number"
-            step="0.01"
-            className="bg-black/50 border-white/10"
-            data-testid="input-card-price"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+            <Input
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              placeholder="5.00"
+              type="number"
+              step="0.01"
+              className="bg-black/50 border-white/10"
+              data-testid="input-card-price"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/40 uppercase tracking-widest">HR %</label>
+            <Input
+              value={hrPercent}
+              onChange={e => handleHrChange(e.target.value)}
+              placeholder="80"
+              className="bg-black/50 border-white/10 font-mono"
+              data-testid="input-hr-percent"
+            />
+            <p className="text-[9px] text-white/20">Hit rate % (1–100)</p>
+          </div>
         </div>
+
+        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">Label: 🔥 ACCTPLUG | {hrPercent}% HR 🔥</p>}
 
         <Button
           onClick={() => addMutation.mutate()}
-          disabled={addMutation.isPending || !cardNumber || !price}
+          disabled={addMutation.isPending || !fullItem.trim() || !price}
           size="sm"
           className="w-full h-8 text-xs"
           data-testid="btn-add-card"
@@ -2234,11 +2234,12 @@ function AdminCardsSection() {
             return (
               <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div className="space-y-0.5 min-w-0 flex-1">
-                  <p className="text-sm font-mono text-white">{card.maskedCard}</p>
+                  <p className="text-xs font-mono font-bold text-primary">🔥 ACCTPLUG | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
+                    {card.binData?.bank && <span className="text-[10px] text-white/30 font-mono">{card.binData.bank}</span>}
                   </div>
-                  {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras}</p>}
+                  {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras.substring(0, 50)}...</p>}
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-2">
                   <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>

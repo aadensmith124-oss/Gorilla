@@ -859,7 +859,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/users/:id/balance", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+    if (!req.isAuthenticated() || ((req.user as any).role !== 'admin' && !(req.user as any).isWorker)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const user = await storage.updateUserBalance(Number(req.params.id), req.body.amount);
@@ -1076,7 +1076,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const { rows } = await db.execute(sql`
       SELECT c.id, c.card_number, c.masked_card, c.expiry, c.cvv, c.country, c.extras,
-             c.price, c.is_sold, c.is_first_hand, c.user_id, c.created_at,
+             c.price, c.hr_percent, c.is_sold, c.is_first_hand, c.user_id, c.created_at,
              u.seller_type, u.seller_display_name, u.username as seller_username
       FROM cards c
       LEFT JOIN users u ON u.id = c.user_id
@@ -1115,7 +1115,7 @@ export async function registerRoutes(
       return {
         id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
         expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
-        price: r.price, isSold: r.is_sold, isFirstHand: r.is_first_hand,
+        price: r.price, hrPercent: r.hr_percent ?? 80, isSold: r.is_sold, isFirstHand: r.is_first_hand,
         userId: r.user_id, createdAt: r.created_at,
         sellerType: r.seller_type, sellerDisplayName: r.seller_display_name, sellerUsername: r.seller_username,
         binData: binDataMap[bin] ?? null,
@@ -1124,36 +1124,41 @@ export async function registerRoutes(
   });
 
   app.post("/api/cards", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+    if (!req.isAuthenticated() || ((req.user as any).role !== 'admin' && !(req.user as any).isWorker)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const cardNumber = req.body.cardNumber || "";
-    let country = req.body.country || "";
+    // Extract card number from the full delivery item (first pipe-delimited segment)
+    const fullItem = req.body.extras || "";
+    const firstSegment = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").trim();
+    const cardNumber = firstSegment || req.body.cardNumber || "";
+    const masked = cardNumber.length >= 4
+      ? cardNumber.substring(0, 6) + "*".repeat(Math.max(0, cardNumber.length - 10)) + cardNumber.slice(-4)
+      : cardNumber;
+    let country = "Unknown";
 
-    if (!country && cardNumber.length >= 6) {
+    if (cardNumber.length >= 6) {
       const bin = cardNumber.substring(0, 6);
       try {
-        const binRes = await fetch(`https://lookup.binlist.net/${bin}`, {
-          headers: { "Accept-Version": "3" }
-        });
-        if (binRes.ok) {
-          const binData = await binRes.json();
-          country = binData.country?.name || "Unknown";
-        } else {
-          country = "Unknown";
-        }
-      } catch {
-        country = "Unknown";
-      }
+        const binRes = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
+        if (binRes.ok) { const d = await binRes.json(); country = d.country?.name || "Unknown"; }
+      } catch {}
     }
 
-    if (!country) country = "Unknown";
+    // Validate hrPercent: strip non-numeric, clamp 1-100, default 1
+    const rawHr = String(req.body.hrPercent ?? "80").replace(/[^0-9]/g, "");
+    const hrPercent = rawHr ? Math.max(1, Math.min(100, parseInt(rawHr, 10))) : 1;
 
-    const cardData = {
-      ...req.body,
+    const card = await storage.createCard({
+      cardNumber,
+      maskedCard: masked,
+      expiry: "",
+      cvv: "",
       country,
-    };
-    const card = await storage.createCard(cardData);
+      extras: fullItem.trim(),
+      price: Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price,
+      isFirstHand: false,
+      hrPercent,
+    });
     res.status(201).json(card);
   });
 
@@ -1991,8 +1996,8 @@ export async function registerRoutes(
           SELECT
             -1 as id,
             'top' as "sellerType",
-            'NYCHQ' as "sellerDisplayName",
-            'nychq' as username,
+            'ACCTPLUG' as "sellerDisplayName",
+            'acctplug' as username,
             COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
           FROM stock_items si
           JOIN variants v ON v.id = si.variant_id
@@ -2030,8 +2035,8 @@ export async function registerRoutes(
           SELECT
             -1 as id,
             'top' as "sellerType",
-            'NYCHQ' as "sellerDisplayName",
-            'nychq' as username,
+            'ACCTPLUG' as "sellerDisplayName",
+            'acctplug' as username,
             COUNT(CASE WHEN si.is_sold = false AND si.is_reserved = false THEN 1 END)::int as "stockCount"
           FROM stock_items si
           WHERE si.variant_id = ${variantId}

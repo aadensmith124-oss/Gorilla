@@ -180,7 +180,7 @@ export default function DepositPage() {
   return (
     <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
       {/* Payment issues banner */}
-      <a href="https://t.me/nychqsupport" target="_blank" rel="noopener noreferrer">
+      <a href="https://t.me/acctplugsupport" target="_blank" rel="noopener noreferrer">
         <button className="w-full flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded text-xs text-white/50 hover:bg-white/8 transition-colors" data-testid="btn-payment-issues">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse flex-shrink-0" />
