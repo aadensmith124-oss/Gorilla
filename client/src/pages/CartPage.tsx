@@ -249,10 +249,6 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) return setLocation("/auth");
-    if (finalTotal < 100000000000) {
-      toast({ title: "Payments disabled", description: "Payments are currently unavailable.", variant: "destructive" });
-      return;
-    }
     if (selectedMethod === "balance") {
       if (!hasEnoughBalance) {
         toast({ title: "Insufficient balance", description: `You need $${(finalTotal / 100).toFixed(2)} but have $${(userBalance / 100).toFixed(2)}.`, variant: "destructive" });

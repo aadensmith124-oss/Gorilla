@@ -1334,8 +1334,11 @@ export async function registerRoutes(
       // amount arrives in cents from the frontend (e.g. 500 = $5.00)
       const amountUsd = parseFloat(amount) / 100;
       
-      if (!amountUsd || amountUsd < 1000000000) {
-        return res.status(400).json({ message: "Minimum payment is $1,000,000,000" });
+      if (!amountUsd || amountUsd < 1) {
+        return res.status(400).json({ message: "Minimum deposit is $1" });
+      }
+      if (amountUsd > 1000000000) {
+        return res.status(400).json({ message: "Maximum deposit is $1,000,000,000" });
       }
 
       const userId = (req.user as any).id;

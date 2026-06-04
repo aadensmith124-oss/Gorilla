@@ -131,7 +131,8 @@ export default function DepositPage() {
   const cryptoMutation = useMutation({
     mutationFn: async () => {
       const amount = parseFloat(amountInput);
-      if (!amount || amount < 1000000000) throw new Error("Payments are currently unavailable");
+      if (!amount || amount < 1) throw new Error("Minimum deposit is $1");
+      if (amount > 1000000000) throw new Error("Maximum deposit is $1,000,000,000");
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
         amount: amount.toFixed(2),
         purpose: "deposit",
