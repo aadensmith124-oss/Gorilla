@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 const adminSections = [
   { id: "dashboard", label: "Dashboard" },
   { id: "products", label: "Products" },
+  { id: "acctplug", label: "ACCTPLUG" },
   { id: "orders", label: "Orders" },
   { id: "cashapp", label: "CashApp" },
   { id: "deposits", label: "Deposits" },
@@ -98,6 +99,7 @@ export default function AdminPage() {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {activeSection === "dashboard" && <DashboardSection />}
           {activeSection === "products" && <ProductsSection />}
+          {activeSection === "acctplug" && <AdminCardsSection />}
           {activeSection === "orders" && <OrdersSection />}
           {activeSection === "cashapp" && <CashAppSection />}
           {activeSection === "users" && <UsersSection />}

@@ -22,6 +22,7 @@ import MyCodePage from "@/pages/MyCodePage";
 import CartPage from "@/pages/CartPage";
 import RanksPage from "@/pages/RanksPage";
 import WorkerDashboardPage from "@/pages/WorkerDashboardPage";
+import CardsPage from "@/pages/CardsPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -53,6 +54,7 @@ function Router() {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/ranks" component={RanksPage} />
         <Route path="/worker" component={WorkerDashboardPage} />
+        <Route path="/acctplug" component={CardsPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>
