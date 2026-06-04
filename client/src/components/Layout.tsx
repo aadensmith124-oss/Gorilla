@@ -37,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/acctplugsupport", icon: Send, label: "Telegram Support", external: true },
+        { href: "https://t.me/+K3ou01RaW6oyMjJh", icon: Send, label: "Telegram Support", external: true },
       ],
     },
     ...(user?.role === "admin" ? [{
