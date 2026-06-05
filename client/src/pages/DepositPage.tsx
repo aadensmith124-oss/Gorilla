@@ -147,6 +147,11 @@ export default function DepositPage() {
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
       if (data.checkoutUrl || data.url) {
         const url = data.checkoutUrl || data.url;
+        if (data.paymentId) {
+          sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
+          sessionStorage.setItem("lastForebitPurpose", "deposit");
+          sessionStorage.removeItem("lastForebitOrderId");
+        }
         window.location.href = url;
       } else {
         toast({ title: "Payment created", description: "Check your email for the payment link" });

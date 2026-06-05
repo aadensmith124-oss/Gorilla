@@ -23,7 +23,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
   const createPaymentMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
-        amount: (total / 100).toFixed(2),
+        amount: String(total),
         purpose,
         orderId,
       });

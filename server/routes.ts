@@ -1325,9 +1325,15 @@ export async function registerRoutes(
 
       const userId = (req.user as any).id;
 
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const returnUrl = purpose === "order"
+        ? `${baseUrl}/orders`
+        : `${baseUrl}/deposit`;
+
       const forebitPayment = await createForebitPayment({
         amount: amountUsd,
         currency: "USD",
+        returnUrl,
       });
 
       if (!forebitPayment.id) {
