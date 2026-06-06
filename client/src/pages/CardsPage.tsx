@@ -8,7 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 function getCardLabel(card: any): string {
   const hr = card.hrPercent ?? 80;
-  return `🔥 ACCTPLUG | ${hr}% HR 🔥`;
+  return `🔥 NYCHQ | ${hr}% HR 🔥`;
 }
 
 function extractBin(cardNumber: string): string {

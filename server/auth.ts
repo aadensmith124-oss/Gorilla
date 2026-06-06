@@ -133,7 +133,7 @@ export function setupAuth(app: Express) {
       const loginCode = generateLoginCode();
       const username = generateAnonUsername();
       // Generate a unique internal email so the unique constraint doesn't fail
-      const internalEmail = `${username}@acctplug.fo`;
+      const internalEmail = `${username}@nychq.fo`;
 
       const user = await storage.createUser({
         username,

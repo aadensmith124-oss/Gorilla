@@ -119,8 +119,8 @@ app.use((req, res, next) => {
     await db.update(users)
       .set({ role: "admin" } as any)
       .where(eq(users.username, "anon_4344841a4b"));
-    // Fix any remaining @usauhq.fo emails to @acctplug.fo
-    await db.execute(sql`UPDATE users SET email = replace(email, '@usauhq.fo', '@acctplug.fo') WHERE email LIKE '%@usauhq.fo'`);
+    // Fix any remaining @usauhq.fo emails to @nychq.fo
+    await db.execute(sql`UPDATE users SET email = replace(email, '@usauhq.fo', '@nychq.fo') WHERE email LIKE '%@usauhq.fo'`);
     log("Auto-promotion check complete");
   } catch (e) {
     console.error("Auto-promotion failed:", e);

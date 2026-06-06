@@ -804,7 +804,9 @@ export async function registerRoutes(
   app.get("/api/admin/orders", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allOrders = await storage.getAllOrders();
-    res.json(allOrders);
+    // Exclude deposit-only orders (CashApp deposits with no items and zero total)
+    const productOrders = allOrders.filter((o: any) => o.items.length > 0 || o.total > 0);
+    res.json(productOrders);
   });
 
   // Admin/Worker - Get all users

@@ -147,7 +147,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-white/20 text-[11px]">
-          Ray ID: {rayId.current} · Protected by ACCTPLUG Security
+          Ray ID: {rayId.current} · Protected by NYCHQ Security
         </p>
       </div>
     </div>

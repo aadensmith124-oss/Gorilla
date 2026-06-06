@@ -2211,7 +2211,7 @@ function AdminCardsSection() {
           </div>
         </div>
 
-        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">Label: 🔥 ACCTPLUG | {hrPercent}% HR 🔥</p>}
+        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">Label: 🔥 NYCHQ | {hrPercent}% HR 🔥</p>}
 
         <Button
           onClick={() => addMutation.mutate()}
@@ -2234,7 +2234,7 @@ function AdminCardsSection() {
             return (
               <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div className="space-y-0.5 min-w-0 flex-1">
-                  <p className="text-xs font-mono font-bold text-primary">🔥 ACCTPLUG | {card.hrPercent ?? 80}% HR 🔥</p>
+                  <p className="text-xs font-mono font-bold text-primary">🔥 NYCHQ | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
                     {card.binData?.bank && <span className="text-[10px] text-white/30 font-mono">{card.binData.bank}</span>}
