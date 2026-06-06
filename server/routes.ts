@@ -9,7 +9,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
 import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
