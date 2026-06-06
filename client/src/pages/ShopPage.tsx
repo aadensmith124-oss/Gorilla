@@ -1,6 +1,7 @@
 import { useProducts } from "@/hooks/use-products";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Loader2, ShieldX } from "lucide-react";
+import { Loader2, ShieldX, Trophy, Flame } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
@@ -19,9 +20,56 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
   return result;
 }
 
+const RANK_ICONS = [Trophy, Flame];
+const RANK_COLORS = [
+  { border: "border-amber-500/60", badge: "bg-amber-500/15 text-amber-400 border-amber-500/30", icon: "text-amber-400" },
+  { border: "border-white/10",     badge: "bg-white/5 text-white/50 border-white/10",           icon: "text-orange-400/70" },
+];
+
+function TopProductCard({ product, rank }: { product: any; rank: number }) {
+  const Icon = RANK_ICONS[rank] ?? Flame;
+  const colors = RANK_COLORS[rank] ?? RANK_COLORS[1];
+  const lowestVariant = product.variants?.length > 0
+    ? product.variants.reduce((a: any, b: any) => a.price < b.price ? a : b)
+    : null;
+  const lowestPrice = lowestVariant?.price ?? 0;
+  const totalStock = product.variants?.reduce((s: number, v: any) => s + (v.stockCount ?? 0), 0) ?? 0;
+
+  return (
+    <Link href={`/product/${encodeURIComponent(product.name)}`}>
+      <div className={`border ${colors.border} rounded-xl p-4 cursor-pointer hover:bg-white/[0.02] transition-colors`}
+           data-testid={`card-top-product-${product.id}`}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-full px-2.5 py-0.5 ${colors.badge}`}>
+            <Icon className={`h-3 w-3 ${colors.icon}`} />
+            #{rank + 1} Last 1H
+          </span>
+          <span className="text-[10px] text-white/25 font-mono">{product.variants?.length ?? 0} variant{product.variants?.length !== 1 ? "s" : ""}</span>
+        </div>
+
+        <p className="text-sm font-bold text-white leading-tight mb-1">{product.name}</p>
+        {product.description && (
+          <p className="text-[11px] text-white/35 leading-relaxed line-clamp-2">{product.description}</p>
+        )}
+
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
+          <span className="text-[10px] text-white/25 font-mono">{totalStock.toLocaleString()} in stock</span>
+          {lowestPrice > 0 && (
+            <span className="text-sm font-bold text-white font-mono">${(lowestPrice / 100).toFixed(2)}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function ShopPage() {
   const { user } = useAuth();
   const { data: products, isLoading } = useProducts();
+  const { data: topProducts } = useQuery<any[]>({
+    queryKey: ["/api/products/top-selling"],
+    refetchInterval: 60_000,
+  });
   const [search, setSearch] = useState("");
   const [shuffleSeed] = useState(() => Math.random() * 233280);
 
@@ -38,6 +86,8 @@ export default function ShopPage() {
       p.description?.toLowerCase().includes(search.toLowerCase())
     );
   }, [shuffledProducts, search]);
+
+  const topProductIds = useMemo(() => new Set((topProducts ?? []).map((p: any) => p.id)), [topProducts]);
 
   if (isLoading) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>;
@@ -62,6 +112,14 @@ export default function ShopPage() {
         <p className="text-xs text-white/30">Premium marketplace</p>
       </div>
 
+      {topProducts && topProducts.length > 0 && !search && (
+        <div className="space-y-2 mb-1">
+          {topProducts.map((product: any, i: number) => (
+            <TopProductCard key={product.id} product={product} rank={i} />
+          ))}
+        </div>
+      )}
+
       <div className="relative">
         <Input
           placeholder="Search logs..."
@@ -84,6 +142,7 @@ export default function ShopPage() {
             const comparePrice = lowestVariant?.comparePrice ?? null;
             const variantCount = product.variants?.length ?? 0;
             const inStock = product.variants?.some((v: any) => v.stockCount > 0);
+            const isTop = topProductIds.has(product.id);
 
             return (
               <Link key={product.id} href={`/product/${encodeURIComponent(product.name)}`}>

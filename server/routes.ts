@@ -103,6 +103,46 @@ export async function registerRoutes(
     res.json(products);
   });
 
+  // Top selling products in the past hour
+  app.get("/api/products/top-selling", async (req, res) => {
+    try {
+      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const rows = await db
+        .select({
+          productId: variants.productId,
+          salesCount: sql<number>`cast(sum(${orderItems.quantity}) as int)`,
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .innerJoin(variants, eq(orderItems.variantId, variants.id))
+        .where(
+          and(
+            sql`${orders.createdAt} >= ${since}`,
+            sql`${orders.status} in ('fulfilled','delivering')`
+          )
+        )
+        .groupBy(variants.productId)
+        .orderBy(desc(sql`sum(${orderItems.quantity})`))
+        .limit(2);
+
+      if (rows.length === 0) return res.json([]);
+
+      const allProducts = await storage.getProducts();
+      const result = rows
+        .map((r) => {
+          const product = allProducts.find((p: any) => p.id === r.productId);
+          if (!product) return null;
+          return { ...product, salesCount: r.salesCount };
+        })
+        .filter(Boolean);
+
+      res.json(result);
+    } catch (err) {
+      console.error("top-selling error:", err);
+      res.json([]);
+    }
+  });
+
   app.get(api.products.get.path, async (req, res) => {
     const product = await storage.getProduct(Number(req.params.id));
     if (!product) return res.status(404).json({ message: "Product not found" });
