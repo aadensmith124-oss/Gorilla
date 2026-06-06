@@ -763,6 +763,26 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.post("/api/admin/clear-all-data", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      await db.delete(orderItems);
+      await db.delete(cryptoPayments);
+      await db.delete(stockItems);
+      await db.delete(orders);
+      await db.delete(variants);
+      await db.delete(products);
+      await db.delete(cards);
+      await db.delete(transactions);
+      await db.update(users).set({ balance: 0, protectedBalance: 0 });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.patch("/api/admin/variants/:id", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const variant = await storage.updateVariant(Number(req.params.id), req.body);

@@ -113,6 +113,9 @@ export default function AdminPage() {
 }
 
 function DashboardSection() {
+  const { toast } = useToast();
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: [api.admin.dashboard.path],
     queryFn: async () => {
@@ -120,6 +123,20 @@ function DashboardSection() {
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     }
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/clear-all-data", {});
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      setConfirmClear(false);
+      queryClient.invalidateQueries();
+      toast({ title: "All data cleared", description: "Products, orders, cards, and balances have been wiped." });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
@@ -133,6 +150,40 @@ function DashboardSection() {
         <StatCard title="Total Sales" value={`$${((stats?.totalSales || 0) / 100).toFixed(2)}`} icon={DollarSign} color="green" />
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
         <StatCard title="Stock Worth" value={`$${((stats?.stockWorth || 0) / 100).toFixed(2)}`} icon={Package} color="gold" />
+      </div>
+
+      <div className="border border-red-500/20 bg-red-950/10 rounded-xl p-4 space-y-3">
+        <div>
+          <p className="text-sm font-bold text-red-400">Danger Zone</p>
+          <p className="text-xs text-white/40 mt-0.5">Permanently wipe all products, orders, cards, and reset all user balances to $0.</p>
+        </div>
+        {!confirmClear ? (
+          <button
+            onClick={() => setConfirmClear(true)}
+            className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors"
+            data-testid="btn-clear-all-data"
+          >
+            Clear All Site Data
+          </button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-red-300 font-mono">Are you sure? This cannot be undone.</p>
+            <button
+              onClick={() => clearAllMutation.mutate()}
+              disabled={clearAllMutation.isPending}
+              className="px-3 py-1.5 rounded bg-red-500 text-white text-xs font-black hover:bg-red-600 transition-colors disabled:opacity-50"
+              data-testid="btn-clear-confirm"
+            >
+              {clearAllMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Yes, wipe everything"}
+            </button>
+            <button
+              onClick={() => setConfirmClear(false)}
+              className="px-3 py-1.5 rounded bg-white/5 text-white/50 text-xs hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
