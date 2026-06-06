@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
+import { pollPendingCryptoPayments } from "./crypto-poller";
 
 const app = express();
 const httpServer = createServer(app);
@@ -153,6 +154,11 @@ app.use((req, res, next) => {
   };
   expireStaleCrypto();
   setInterval(expireStaleCrypto, 5 * 60 * 1000);
+
+  // Poll Forebit API every 30 seconds to auto-credit completed crypto payments
+  // This runs server-side so balance is credited even if user closes their browser
+  pollPendingCryptoPayments();
+  setInterval(pollPendingCryptoPayments, 30 * 1000);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
