@@ -1132,7 +1132,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const { rows } = await db.execute(sql`
       SELECT c.id, c.card_number, c.masked_card, c.expiry, c.cvv, c.country, c.extras,
-             c.price, c.hr_percent, c.is_sold, c.is_first_hand, c.user_id, c.created_at,
+             c.price, c.hr_percent, c.is_sold, c.is_first_hand, c.user_id, c.created_at, c.bin_data,
              u.seller_type, u.seller_display_name, u.username as seller_username
       FROM cards c
       LEFT JOIN users u ON u.id = c.user_id
@@ -1140,42 +1140,28 @@ export async function registerRoutes(
       ORDER BY c.created_at DESC
     `) as any;
 
-    // Collect unique BINs
-    const uniqueBins = Array.from(new Set(rows.map((r: any) =>
-      (r.card_number ?? "").replace(/\D/g, "").substring(0, 6)
-    ).filter((b: string) => b.length === 6))) as string[];
-
-    // Return cached BINs instantly; kick off background lookups for uncached ones
-    const binDataMap: Record<string, any> = {};
-    const uncached: string[] = [];
-    for (const bin of uniqueBins) {
-      if (binCache.has(bin)) {
-        binDataMap[bin] = binCache.get(bin);
-      } else {
-        uncached.push(bin);
-      }
-    }
-    // Fire background lookups so they're cached for next request
-    if (uncached.length > 0) {
-      // Await up to 5 cards worth of BIN lookups (3.5s max) to seed the cache
-      const eagerLimit = uncached.splice(0, 5);
-      Promise.allSettled(eagerLimit.map(bin =>
-        lookupBin(bin).then(d => { binDataMap[bin] = d; }).catch(() => {})
-      )).catch(() => {});
-      // Queue the rest in background without blocking
-      uncached.forEach(bin => lookupBin(bin).catch(() => {}));
-    }
-
-    res.json(rows.map((r: any) => {
+    // For cards missing bin_data in DB, kick off background lookups + save results
+    const needsLookup = rows.filter((r: any) => !r.bin_data && (r.card_number ?? "").replace(/\D/g, "").length >= 6);
+    const seenBins = new Set<string>();
+    needsLookup.forEach((r: any) => {
       const bin = (r.card_number ?? "").replace(/\D/g, "").substring(0, 6);
-      return {
-        id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
-        expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
-        price: r.price, hrPercent: r.hr_percent ?? 80, isSold: r.is_sold, isFirstHand: r.is_first_hand,
-        userId: r.user_id, createdAt: r.created_at,
-        binData: binDataMap[bin] ?? null,
-      };
-    }));
+      if (bin.length === 6 && !seenBins.has(bin)) {
+        seenBins.add(bin);
+        lookupBin(bin).then(async (data) => {
+          if (data?.bank || data?.scheme || data?.type) {
+            await db.execute(sql`UPDATE cards SET bin_data = ${JSON.stringify(data)}::jsonb WHERE card_number LIKE ${bin + '%'} AND bin_data IS NULL`);
+          }
+        }).catch(() => {});
+      }
+    });
+
+    res.json(rows.map((r: any) => ({
+      id: r.id, cardNumber: r.card_number, maskedCard: r.masked_card,
+      expiry: r.expiry, cvv: r.cvv, country: r.country, extras: r.extras,
+      price: r.price, hrPercent: r.hr_percent ?? 80, isSold: r.is_sold, isFirstHand: r.is_first_hand,
+      userId: r.user_id, createdAt: r.created_at,
+      binData: r.bin_data ?? null,
+    })));
   });
 
   app.post("/api/cards", async (req, res) => {
@@ -1190,12 +1176,16 @@ export async function registerRoutes(
       ? cardNumber.substring(0, 6) + "*".repeat(Math.max(0, cardNumber.length - 10)) + cardNumber.slice(-4)
       : cardNumber;
     let country = "Unknown";
+    let storedBinData: any = null;
 
     if (cardNumber.length >= 6) {
       const bin = cardNumber.substring(0, 6);
       try {
-        const binRes = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
-        if (binRes.ok) { const d = await binRes.json(); country = d.country?.name || "Unknown"; }
+        const binResult = await lookupBin(bin);
+        if (binResult) {
+          storedBinData = binResult;
+          country = binResult.country || "Unknown";
+        }
       } catch {}
     }
 
@@ -1214,7 +1204,13 @@ export async function registerRoutes(
       isFirstHand: false,
       hrPercent,
     });
-    res.status(201).json(card);
+
+    // Save binData to DB immediately so it's always available
+    if (storedBinData) {
+      await db.execute(sql`UPDATE cards SET bin_data = ${JSON.stringify(storedBinData)}::jsonb WHERE id = ${card.id}`);
+    }
+
+    res.status(201).json({ ...card, binData: storedBinData });
   });
 
   app.post("/api/cards/:id/purchase", async (req, res) => {
