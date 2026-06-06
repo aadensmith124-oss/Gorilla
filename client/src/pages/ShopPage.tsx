@@ -20,49 +20,6 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
   return result;
 }
 
-const RANK_ICONS = [Trophy, Flame];
-const RANK_COLORS = [
-  { border: "border-amber-500/60", badge: "bg-amber-500/15 text-amber-400 border-amber-500/30", icon: "text-amber-400" },
-  { border: "border-white/10",     badge: "bg-white/5 text-white/50 border-white/10",           icon: "text-orange-400/70" },
-];
-
-function TopProductCard({ product, rank }: { product: any; rank: number }) {
-  const Icon = RANK_ICONS[rank] ?? Flame;
-  const colors = RANK_COLORS[rank] ?? RANK_COLORS[1];
-  const lowestVariant = product.variants?.length > 0
-    ? product.variants.reduce((a: any, b: any) => a.price < b.price ? a : b)
-    : null;
-  const lowestPrice = lowestVariant?.price ?? 0;
-  const totalStock = product.variants?.reduce((s: number, v: any) => s + (v.stockCount ?? 0), 0) ?? 0;
-
-  return (
-    <Link href={`/product/${encodeURIComponent(product.name)}`}>
-      <div className={`border ${colors.border} rounded-xl p-4 cursor-pointer hover:bg-white/[0.02] transition-colors`}
-           data-testid={`card-top-product-${product.id}`}>
-        <div className="flex items-center gap-2 mb-3">
-          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-full px-2.5 py-0.5 ${colors.badge}`}>
-            <Icon className={`h-3 w-3 ${colors.icon}`} />
-            #{rank + 1} Last 1H
-          </span>
-          <span className="text-[10px] text-white/25 font-mono">{product.variants?.length ?? 0} variant{product.variants?.length !== 1 ? "s" : ""}</span>
-        </div>
-
-        <p className="text-sm font-bold text-white leading-tight mb-1">{product.name}</p>
-        {product.description && (
-          <p className="text-[11px] text-white/35 leading-relaxed line-clamp-2">{product.description}</p>
-        )}
-
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-          <span className="text-[10px] text-white/25 font-mono">{totalStock.toLocaleString()} in stock</span>
-          {lowestPrice > 0 && (
-            <span className="text-sm font-bold text-white font-mono">${(lowestPrice / 100).toFixed(2)}</span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default function ShopPage() {
   const { user } = useAuth();
   const { data: products, isLoading } = useProducts();
@@ -73,21 +30,23 @@ export default function ShopPage() {
   const [search, setSearch] = useState("");
   const [shuffleSeed] = useState(() => Math.random() * 233280);
 
-  const shuffledProducts = useMemo(() => {
+  const topIds: number[] = useMemo(() => (topProducts ?? []).map((p: any) => p.id), [topProducts]);
+
+  const sortedProducts = useMemo(() => {
     if (!products) return [];
-    const pinned = products.filter((p: any) => p.pinned).slice(0, 4);
-    const rest = seededShuffle(products.filter((p: any) => !p.pinned), shuffleSeed);
-    return [...pinned, ...rest];
-  }, [products, shuffleSeed]);
+    const shuffled = seededShuffle([...products], shuffleSeed);
+    if (topIds.length === 0) return shuffled;
+    const top = topIds.map((id) => shuffled.find((p: any) => p.id === id)).filter(Boolean);
+    const rest = shuffled.filter((p: any) => !topIds.includes(p.id));
+    return [...top, ...rest];
+  }, [products, shuffleSeed, topIds]);
 
   const filtered = useMemo(() => {
-    return shuffledProducts.filter((p: any) =>
+    return sortedProducts.filter((p: any) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase())
     );
-  }, [shuffledProducts, search]);
-
-  const topProductIds = useMemo(() => new Set((topProducts ?? []).map((p: any) => p.id)), [topProducts]);
+  }, [sortedProducts, search]);
 
   if (isLoading) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>;
@@ -112,14 +71,6 @@ export default function ShopPage() {
         <p className="text-xs text-white/30">Premium marketplace</p>
       </div>
 
-      {topProducts && topProducts.length > 0 && !search && (
-        <div className="space-y-2 mb-1">
-          {topProducts.map((product: any, i: number) => (
-            <TopProductCard key={product.id} product={product} rank={i} />
-          ))}
-        </div>
-      )}
-
       <div className="relative">
         <Input
           placeholder="Search logs..."
@@ -135,6 +86,9 @@ export default function ShopPage() {
       ) : (
         <div className="divide-y divide-white/[0.05]">
           {filtered.map((product: any) => {
+            const rank = !search ? topIds.indexOf(product.id) : -1;
+            const isTop = rank === 0;
+            const isSecond = rank === 1;
             const lowestVariant = product.variants?.length > 0
               ? product.variants.reduce((a: any, b: any) => a.price < b.price ? a : b)
               : null;
@@ -142,16 +96,44 @@ export default function ShopPage() {
             const comparePrice = lowestVariant?.comparePrice ?? null;
             const variantCount = product.variants?.length ?? 0;
             const inStock = product.variants?.some((v: any) => v.stockCount > 0);
-            const isTop = topProductIds.has(product.id);
 
             return (
               <Link key={product.id} href={`/product/${encodeURIComponent(product.name)}`}>
                 <div
-                  className="flex items-center justify-between py-3 cursor-pointer hover:bg-white/[0.02] transition-colors rounded px-1"
+                  className={`flex items-center justify-between py-3 cursor-pointer transition-all rounded px-1
+                    ${isTop
+                      ? "hover:bg-amber-500/5"
+                      : isSecond
+                      ? "hover:bg-amber-500/[0.03]"
+                      : "hover:bg-white/[0.02]"
+                    }`}
+                  style={
+                    isTop
+                      ? { boxShadow: "0 0 14px 1px rgba(251,191,36,0.18), 0 0 4px 0 rgba(251,191,36,0.10)" }
+                      : isSecond
+                      ? { boxShadow: "0 0 8px 0px rgba(251,191,36,0.09), 0 0 2px 0 rgba(251,191,36,0.06)" }
+                      : {}
+                  }
                   data-testid={`card-product-${product.id}`}
                 >
-                  <div className="space-y-0.5 min-w-0">
-                    <p className="text-sm font-bold text-white leading-tight">{product.name}</p>
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className={`text-sm font-bold leading-tight ${isTop || isSecond ? "text-amber-100" : "text-white"}`}>
+                        {product.name}
+                      </p>
+                      {isTop && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full px-1.5 py-0.5 flex-shrink-0">
+                          <Trophy className="h-2.5 w-2.5" />
+                          #1
+                        </span>
+                      )}
+                      {isSecond && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500/70 border border-amber-500/20 rounded-full px-1.5 py-0.5 flex-shrink-0">
+                          <Flame className="h-2.5 w-2.5" />
+                          #2
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-white/30 font-mono">
                       {variantCount} variant{variantCount !== 1 ? "s" : ""}
                       {!inStock && <span className="ml-2 text-red-400/60">· out of stock</span>}
@@ -162,7 +144,9 @@ export default function ShopPage() {
                       <span className="text-[10px] line-through text-white/25 font-mono">${(comparePrice / 100).toFixed(2)}</span>
                     )}
                     {lowestPrice > 0 && (
-                      <span className="text-xs font-bold text-white font-mono">${(lowestPrice / 100).toFixed(2)}</span>
+                      <span className={`text-xs font-bold font-mono ${isTop ? "text-amber-300" : isSecond ? "text-amber-400/80" : "text-white"}`}>
+                        ${(lowestPrice / 100).toFixed(2)}
+                      </span>
                     )}
                   </div>
                 </div>
