@@ -25,7 +25,7 @@ export default function ShopPage() {
   const { data: products, isLoading } = useProducts();
   const { data: topProducts } = useQuery<any[]>({
     queryKey: ["/api/products/top-selling"],
-    refetchInterval: 60_000,
+    refetchInterval: 60 * 60 * 1000,
   });
   const [search, setSearch] = useState("");
   const [shuffleSeed] = useState(() => Math.random() * 233280);

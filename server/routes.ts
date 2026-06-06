@@ -106,25 +106,30 @@ export async function registerRoutes(
   // Top selling products in the past hour
   app.get("/api/products/top-selling", async (req, res) => {
     try {
-      const since = new Date(Date.now() - 60 * 60 * 1000);
-      const rows = await db
-        .select({
-          productId: variants.productId,
-          salesCount: sql<number>`cast(sum(${orderItems.quantity}) as int)`,
-        })
-        .from(orderItems)
-        .innerJoin(orders, eq(orderItems.orderId, orders.id))
-        .innerJoin(variants, eq(orderItems.variantId, variants.id))
-        .where(
-          and(
-            sql`${orders.createdAt} >= ${since}`,
-            sql`${orders.status} in ('fulfilled','delivering')`
-          )
-        )
-        .groupBy(variants.productId)
-        .orderBy(desc(sql`sum(${orderItems.quantity})`))
-        .limit(2);
+      const queryTop = async (windowMs: number | null) => {
+        const base = db
+          .select({
+            productId: variants.productId,
+            salesCount: sql<number>`cast(sum(${orderItems.quantity}) as int)`,
+          })
+          .from(orderItems)
+          .innerJoin(orders, eq(orderItems.orderId, orders.id))
+          .innerJoin(variants, eq(orderItems.variantId, variants.id));
 
+        const q = windowMs
+          ? base.where(and(
+              sql`${orders.createdAt} >= ${new Date(Date.now() - windowMs)}`,
+              sql`${orders.status} in ('fulfilled','delivering')`
+            ))
+          : base.where(sql`${orders.status} in ('fulfilled','delivering')`);
+
+        return q.groupBy(variants.productId).orderBy(desc(sql`sum(${orderItems.quantity})`)).limit(2);
+      };
+
+      // Try 1h → 24h → all-time so top 2 are always shown
+      let rows = await queryTop(60 * 60 * 1000);
+      if (rows.length < 2) rows = await queryTop(24 * 60 * 60 * 1000);
+      if (rows.length < 2) rows = await queryTop(null);
       if (rows.length === 0) return res.json([]);
 
       const allProducts = await storage.getProducts();
