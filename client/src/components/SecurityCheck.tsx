@@ -128,7 +128,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
           <div className="text-right flex-shrink-0">
             <p className="text-white/80 text-xs font-bold tracking-widest uppercase">
-              ACCT<span style={{ color: "#888" }}>PLUG</span>
+              NYC<span style={{ color: "#888" }}>HQ</span>
             </p>
             <p className="text-white/30 text-[10px] mt-0.5">Security · Protected</p>
           </div>

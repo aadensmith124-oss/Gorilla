@@ -58,7 +58,7 @@ export default function ShopPage() {
   return (
     <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
       <div className="space-y-1 mb-4">
-        <h1 className="text-xl font-bold text-white">ACCT<span className="text-white/40">PLUG</span></h1>
+        <h1 className="text-xl font-bold text-white">NYC<span className="text-white/40">HQ</span></h1>
         <p className="text-xs text-white/30">Premium marketplace</p>
       </div>
 
