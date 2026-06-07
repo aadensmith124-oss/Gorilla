@@ -124,13 +124,13 @@ export default function ShopPage() {
                       {isTop && (
                         <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full px-1.5 py-0.5 flex-shrink-0">
                           <Trophy className="h-2.5 w-2.5" />
-                          #1
+                          #1 Last 1H
                         </span>
                       )}
                       {isSecond && (
                         <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500/70 border border-amber-500/20 rounded-full px-1.5 py-0.5 flex-shrink-0">
                           <Flame className="h-2.5 w-2.5" />
-                          #2
+                          #2 Last 1H
                         </span>
                       )}
                     </div>
