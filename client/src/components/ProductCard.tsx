@@ -2,6 +2,12 @@ import { Link } from "wouter";
 import { useState } from "react";
 import type { Product, Variant } from "@shared/schema";
 
+const P    = "hsl(186 100% 50%)";
+const BG   = "hsl(214 50% 4%)";
+const CARD = "hsl(214 45% 7%)";
+const BDR  = "hsl(210 40% 16%)";
+const TEXT = "hsl(195 60% 88%)";
+
 interface ProductWithVariants extends Product {
   variants: (Variant & { stockCount: number })[];
 }
@@ -16,26 +22,18 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
 
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
-      <div
-        className="group cursor-pointer overflow-hidden transition-all flex flex-col"
-        style={{
-          background: "hsl(35 12% 7%)",
-          border: "1px solid hsl(36 18% 18%)",
-        }}
-        data-testid={`card-product-${product.id}`}
-      >
+      <div className="group cursor-pointer overflow-hidden transition-all flex flex-col"
+        style={{ background: CARD, border: `1px solid ${BDR}` }}
+        data-testid={`card-product-${product.id}`}>
         {/* Square image */}
-        <div className="w-full relative" style={{ aspectRatio: '1 / 1', background: "hsl(35 13% 5%)" }}>
+        <div className="w-full relative" style={{ aspectRatio: "1 / 1", background: BG }}>
           {product.image && !imgError ? (
-            <img
-              src={product.image}
-              alt={product.name}
+            <img src={product.image} alt={product.name}
               className="w-full h-full object-contain p-3 transform group-hover:scale-105 transition-transform duration-500"
-              onError={() => setImgError(true)}
-            />
+              onError={() => setImgError(true)} />
           ) : (
-            <div className="w-full h-full flex items-center justify-center" style={{ background: "hsl(35 13% 5%)" }}>
-              <span className="text-2xl font-bold" style={{ color: "hsl(40 55% 82% / 0.2)", fontFamily: "'VT323', monospace" }}>
+            <div className="w-full h-full flex items-center justify-center" style={{ background: BG }}>
+              <span style={{ fontSize: "28px", color: `${P}40`, fontFamily: "'Press Start 2P', monospace" }}>
                 {product.name?.charAt(0)?.toUpperCase()}
               </span>
             </div>
@@ -44,18 +42,16 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
 
         {/* Info */}
         <div className="px-2 py-1.5 flex flex-col gap-1.5">
-          <p className="text-[10px] font-bold leading-tight text-center line-clamp-2 min-h-[28px] flex items-center justify-center" style={{ color: "hsl(40 55% 82%)" }}>
+          <p className="text-[10px] font-bold leading-tight text-center line-clamp-2 min-h-[28px] flex items-center justify-center" style={{ color: TEXT }}>
             {product.name}
           </p>
-
           <button
             className="w-full h-7 text-[10px] font-bold flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98]"
-            style={{ background: "hsl(42 72% 55%)", color: "hsl(35 15% 4%)" }}
-          >
-            <span>Buy Now</span>
+            style={{ background: P, color: BG, boxShadow: `2px 2px 0 hsl(186 100% 30%)` }}>
+            <span>BUY</span>
             <span className="flex items-center gap-1">
               {comparePrice && comparePrice > lowestPrice && (
-                <span className="line-through opacity-60 text-[9px]">${(comparePrice / 100).toFixed(2)}</span>
+                <span className="line-through opacity-50 text-[9px]">${(comparePrice / 100).toFixed(2)}</span>
               )}
               {lowestPrice > 0 && <span>${(lowestPrice / 100).toFixed(2)}</span>}
             </span>

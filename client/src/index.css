@@ -1,33 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 35 15% 4%;
-  --foreground: 40 55% 82%;
-  --card: 35 12% 7%;
-  --card-foreground: 40 55% 82%;
-  --popover: 35 12% 7%;
-  --popover-foreground: 40 55% 82%;
-  --primary: 42 72% 55%;
-  --primary-foreground: 35 15% 4%;
-  --secondary: 35 10% 12%;
-  --secondary-foreground: 40 55% 82%;
-  --muted: 35 10% 12%;
-  --muted-foreground: 38 20% 48%;
-  --accent: 42 72% 55%;
-  --accent-foreground: 35 15% 4%;
-  --destructive: 0 70% 52%;
-  --destructive-foreground: 40 55% 82%;
-  --border: 36 18% 20%;
-  --input: 35 12% 9%;
-  --ring: 42 72% 55%;
+  --background: 214 50% 4%;
+  --foreground: 195 60% 88%;
+  --card: 214 45% 7%;
+  --card-foreground: 195 60% 88%;
+  --popover: 214 45% 7%;
+  --popover-foreground: 195 60% 88%;
+  --primary: 186 100% 50%;
+  --primary-foreground: 214 50% 4%;
+  --secondary: 214 40% 11%;
+  --secondary-foreground: 195 60% 88%;
+  --muted: 214 40% 11%;
+  --muted-foreground: 205 30% 45%;
+  --accent: 186 100% 50%;
+  --accent-foreground: 214 50% 4%;
+  --destructive: 0 80% 58%;
+  --destructive-foreground: 195 60% 88%;
+  --border: 210 40% 16%;
+  --input: 214 45% 8%;
+  --ring: 186 100% 50%;
   --radius: 0rem;
   --font-body: 'Share Tech Mono', 'Courier New', monospace;
   --font-mono: 'Share Tech Mono', 'Courier New', monospace;
-  --font-display: 'VT323', monospace;
+  --font-pixel: 'Press Start 2P', monospace;
 }
 
 @layer base {
@@ -35,7 +35,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    font-size: 15px;
+    font-size: 14px;
+    image-rendering: pixelated;
   }
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-body); }
 }
@@ -44,24 +45,42 @@
   .btn-pro { @apply h-9 px-4 text-xs font-semibold transition-all hover:scale-[0.98] active:scale-[0.95]; }
   .btn-buy { @apply bg-green-600 hover:bg-green-700 text-white font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
   .mono { font-family: var(--font-mono); }
-  .retro-heading { font-family: var(--font-display); letter-spacing: 0.05em; }
+  .pixel { font-family: var(--font-pixel); }
+
+  /* Neon glow effect for primary elements */
+  .neon-primary {
+    color: hsl(var(--primary));
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.4);
+  }
+  .neon-border {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 6px hsl(var(--primary) / 0.4), inset 0 0 6px hsl(var(--primary) / 0.1);
+  }
+  /* Pixel hard-shadow buttons */
+  .pixel-btn {
+    box-shadow: 3px 3px 0 hsl(var(--primary) / 0.5);
+    transition: box-shadow 0.1s, transform 0.1s;
+  }
+  .pixel-btn:active {
+    box-shadow: 1px 1px 0 hsl(var(--primary) / 0.5);
+    transform: translate(2px, 2px);
+  }
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { @apply bg-transparent; }
-::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--primary) / 0.3); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.6); }
 
-.glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl; }
+.glass { @apply backdrop-blur-xl shadow-2xl; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
 .pro-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
 .item-row { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); @apply p-3 hover:brightness-110 transition-all; }
 
 /* =====================================================
    GLOBAL RETRO THEME OVERRIDES
-   Convert hardcoded Tailwind white/gray classes → warm
    ===================================================== */
 
-/* Text overrides */
+/* Text overrides — white → cyan-tinted light */
 .text-white          { color: hsl(var(--foreground)) !important; }
 .text-white\/5       { color: hsl(var(--foreground) / 0.05) !important; }
 .text-white\/10      { color: hsl(var(--foreground) / 0.10) !important; }
@@ -75,50 +94,48 @@
 .text-white\/70      { color: hsl(var(--foreground) / 0.70) !important; }
 .text-white\/80      { color: hsl(var(--foreground) / 0.80) !important; }
 
-/* Background overrides */
-.bg-\[#111\]         { background-color: hsl(35 12% 7%) !important; }
-.bg-\[#111111\]      { background-color: hsl(35 12% 7%) !important; }
-.bg-\[#0c0c0c\]      { background-color: hsl(35 15% 4%) !important; }
-.bg-\[#0e0e0e\]      { background-color: hsl(35 14% 5%) !important; }
-.bg-\[#090a0c\]      { background-color: hsl(35 15% 4%) !important; }
-.bg-\[#0d1017\]      { background-color: hsl(35 14% 5%) !important; }
-.bg-\[#161616\]      { background-color: hsl(35 12% 9%) !important; }
-.bg-\[#1a1a1a\]      { background-color: hsl(35 12% 10%) !important; }
-.bg-black\/50        { background-color: hsl(35 15% 4% / 0.5) !important; }
-.bg-black\/70        { background-color: hsl(35 15% 4% / 0.7) !important; }
+/* Background overrides → dark blue */
+.bg-\[#111\]         { background-color: hsl(214 45% 7%) !important; }
+.bg-\[#111111\]      { background-color: hsl(214 45% 7%) !important; }
+.bg-\[#0c0c0c\]      { background-color: hsl(214 50% 4%) !important; }
+.bg-\[#0e0e0e\]      { background-color: hsl(214 48% 5%) !important; }
+.bg-\[#090a0c\]      { background-color: hsl(214 50% 4%) !important; }
+.bg-\[#0d1017\]      { background-color: hsl(214 48% 5%) !important; }
+.bg-\[#161616\]      { background-color: hsl(214 42% 9%) !important; }
+.bg-\[#1a1a1a\]      { background-color: hsl(214 40% 10%) !important; }
+.bg-\[#111318\]      { background-color: hsl(214 45% 7%) !important; }
+.bg-\[#0c0e13\]      { background-color: hsl(214 48% 5%) !important; }
+.bg-\[#13151a\]      { background-color: hsl(214 44% 8%) !important; }
+.bg-\[#1c1c1c\]      { background-color: hsl(214 40% 10%) !important; }
+.bg-black\/50        { background-color: hsl(214 50% 3% / 0.5) !important; }
+.bg-black\/70        { background-color: hsl(214 50% 3% / 0.7) !important; }
 
 /* Border overrides */
-.border-white\/5     { border-color: hsl(var(--border) / 0.4) !important; }
-.border-white\/8     { border-color: hsl(var(--border) / 0.5) !important; }
-.border-white\/10    { border-color: hsl(var(--border) / 0.7) !important; }
+.border-white\/5     { border-color: hsl(var(--border) / 0.5) !important; }
+.border-white\/8     { border-color: hsl(var(--border) / 0.6) !important; }
+.border-white\/10    { border-color: hsl(var(--border) / 0.75) !important; }
 .border-white\/15    { border-color: hsl(var(--border)) !important; }
-.border-white\/20    { border-color: hsl(var(--border) / 1.2) !important; }
+.border-white\/20    { border-color: hsl(var(--border)) !important; }
 
-/* White/5 bg overlay → warm tint */
-.bg-white\/5         { background-color: hsl(36 15% 15% / 0.25) !important; }
-.bg-white\/8         { background-color: hsl(36 15% 15% / 0.30) !important; }
-.bg-white\/10        { background-color: hsl(36 15% 15% / 0.35) !important; }
+/* White bg overlay → blue tint */
+.bg-white\/5         { background-color: hsl(210 50% 20% / 0.18) !important; }
+.bg-white\/8         { background-color: hsl(210 50% 20% / 0.25) !important; }
+.bg-white\/10        { background-color: hsl(210 50% 20% / 0.30) !important; }
 
 /* Placeholder text */
-.placeholder\:text-white\/25::placeholder { color: hsl(var(--foreground) / 0.28) !important; }
-.placeholder\:text-white\/30::placeholder { color: hsl(var(--foreground) / 0.32) !important; }
+.placeholder\:text-white\/25::placeholder { color: hsl(var(--foreground) / 0.25) !important; }
+.placeholder\:text-white\/30::placeholder { color: hsl(var(--foreground) / 0.30) !important; }
 
-/* Hover states */
-.hover\:text-white:hover { color: hsl(var(--foreground)) !important; }
-.hover\:bg-white\/5:hover { background-color: hsl(36 15% 15% / 0.20) !important; }
-.hover\:bg-white\/8:hover { background-color: hsl(36 15% 15% / 0.28) !important; }
+/* Hover */
+.hover\:text-white:hover   { color: hsl(var(--foreground)) !important; }
+.hover\:bg-white\/5:hover  { background-color: hsl(210 50% 20% / 0.15) !important; }
+.hover\:bg-white\/8:hover  { background-color: hsl(210 50% 20% / 0.22) !important; }
 .hover\:border-white\/15:hover { border-color: hsl(var(--border)) !important; }
-.hover\:border-white\/20:hover { border-color: hsl(var(--border)) !important; }
-.hover\:bg-\[#161616\]:hover { background-color: hsl(35 12% 9%) !important; }
+.hover\:border-white\/20:hover { border-color: hsl(var(--primary) / 0.4) !important; }
+.hover\:bg-\[#161616\]:hover { background-color: hsl(214 42% 9%) !important; }
 
-/* Additional bg overrides */
-.bg-\[#111318\]   { background-color: hsl(35 12% 7%) !important; }
-.bg-\[#0c0e13\]   { background-color: hsl(35 13% 5%) !important; }
-.bg-\[#13151a\]   { background-color: hsl(35 12% 8%) !important; }
-.bg-\[#1c1c1c\]   { background-color: hsl(35 10% 11%) !important; }
+/* Active tab underline → cyan */
+.border-white { border-color: hsl(var(--primary)) !important; }
 
 /* Divide lines */
-.divide-white\/\[0\.05\] > * + * { border-color: hsl(var(--border) / 0.5) !important; }
-
-/* Active tab underline → amber */
-.border-white { border-color: hsl(var(--primary)) !important; }
+.divide-white\/\[0\.05\] > * + * { border-color: hsl(var(--border) / 0.6) !important; }

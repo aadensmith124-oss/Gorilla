@@ -85,7 +85,8 @@ export default {
         sans: ["'Share Tech Mono'", "monospace"],
         serif: ["'Share Tech Mono'", "monospace"],
         mono: ["'Share Tech Mono'", "'JetBrains Mono'", "monospace"],
-        display: ["'VT323'", "monospace"],
+        display: ["'Press Start 2P'", "monospace"],
+        pixel: ["'Press Start 2P'", "monospace"],
         body: ["'Share Tech Mono'", "monospace"],
       },
       keyframes: {
