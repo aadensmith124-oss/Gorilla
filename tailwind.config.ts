@@ -6,12 +6,11 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".5625rem", /* 9px */
-        md: ".375rem", /* 6px */
-        sm: ".1875rem", /* 3px */
+        lg: "0px",
+        md: "0px",
+        sm: "0px",
       },
       colors: {
-        // Flat / base colors (regular buttons)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
@@ -83,11 +82,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
-        display: ["'Orbitron', sans-serif"],
-        body: ["'Rajdhani', sans-serif"],
+        sans: ["'Share Tech Mono'", "monospace"],
+        serif: ["'Share Tech Mono'", "monospace"],
+        mono: ["'Share Tech Mono'", "'JetBrains Mono'", "monospace"],
+        display: ["'VT323'", "monospace"],
+        body: ["'Share Tech Mono'", "monospace"],
       },
       keyframes: {
         "accordion-down": {
