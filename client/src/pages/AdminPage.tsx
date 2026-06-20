@@ -1764,22 +1764,6 @@ function IntegrationsSection() {
     queryKey: ["/api/admin/integrations/status"],
   });
 
-  const { data: sellerFeature } = useQuery<{ enabled: boolean }>({
-    queryKey: ["/api/settings/seller-feature"],
-  });
-
-  const sellerToggleMutation = useMutation({
-    mutationFn: async (enabled: boolean) => {
-      const res = await apiRequest("POST", "/api/admin/settings/seller-feature", { enabled });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings/seller-feature"] });
-      toast({ title: "Seller feature updated" });
-    },
-    onError: () => toast({ title: "Failed to update", variant: "destructive" }),
-  });
-
   const { data: paymentMethods, isLoading: methodsLoading } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/admin/payment-methods"],
   });
@@ -1836,32 +1820,6 @@ function IntegrationsSection() {
           <Link2 className="h-5 w-5 text-primary" /> Integrations
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Enable or disable payment methods and manage your bot token.</p>
-      </div>
-
-      {/* Seller Feature Toggle */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-3">Seller Feature</p>
-        <Card className="bg-[#0f1115] border-white/5" data-testid="card-seller-toggle">
-          <CardContent className="p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold text-sm text-white">Seller Verification</p>
-                <p className="text-xs text-muted-foreground">
-                  {sellerFeature?.enabled !== false ? "Users must verify before purchasing" : "Open shop — no verification required"}
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={sellerFeature?.enabled !== false}
-              disabled={sellerToggleMutation.isPending}
-              onCheckedChange={(val) => sellerToggleMutation.mutate(val)}
-              data-testid="switch-seller-feature"
-            />
-          </CardContent>
-        </Card>
       </div>
 
       {/* Payment Method Toggles */}

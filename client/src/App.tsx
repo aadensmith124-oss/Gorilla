@@ -23,6 +23,7 @@ import RanksPage from "@/pages/RanksPage";
 import WorkerDashboardPage from "@/pages/WorkerDashboardPage";
 import CardsPage from "@/pages/CardsPage";
 import CheckerPage from "@/pages/CheckerPage";
+import BecomeSellerPage from "@/pages/BecomeSellerPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -55,6 +56,7 @@ function Router() {
         <Route path="/worker" component={WorkerDashboardPage} />
         <Route path="/acctplug" component={CardsPage} />
         <Route path="/checker" component={CheckerPage} />
+        <Route path="/become-seller" component={BecomeSellerPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

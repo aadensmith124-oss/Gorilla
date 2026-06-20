@@ -2043,21 +2043,6 @@ export async function registerRoutes(
     res.json({ message: "SMTP settings saved" });
   });
 
-  // === SELLER FEATURE TOGGLE ===
-  app.get("/api/settings/seller-feature", async (_req, res) => {
-    const val = await storage.getSetting("seller_feature_enabled", "true");
-    res.json({ enabled: val !== "false" });
-  });
-
-  app.post("/api/admin/settings/seller-feature", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const { enabled } = req.body;
-    await storage.setSetting("seller_feature_enabled", enabled ? "true" : "false");
-    res.json({ enabled });
-  });
-
   // === CARD CHECKER ===
   app.post("/api/checker/check", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
