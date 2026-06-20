@@ -30,6 +30,7 @@ const adminSections = [
   { id: "cashapp", label: "CashApp" },
   { id: "deposits", label: "Deposits" },
   { id: "users", label: "Users" },
+  { id: "sellers", label: "Sellers" },
   { id: "codes", label: "Codes" },
   { id: "integrations", label: "Integrations" },
 ];
@@ -105,6 +106,7 @@ export default function AdminPage() {
           {activeSection === "users" && <UsersSection />}
           {activeSection === "codes" && <CodesSection />}
           {activeSection === "deposits" && <DepositsSection />}
+          {activeSection === "sellers" && <SellersSection />}
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
       </div>
@@ -2544,6 +2546,266 @@ function SmtpSection() {
           >
             {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save SMTP Settings"}
           </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SellersSection() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "denied" | "termed">("pending");
+  const [selected, setSelected] = useState<any | null>(null);
+  const [noteInput, setNoteInput] = useState("");
+  const [termMsg, setTermMsg] = useState("");
+
+  const { data: sellers, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/sellers"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/sellers", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/approve`, { note });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Seller approved" });
+      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setSelected(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const denyMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/deny`, { note });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Seller denied" });
+      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setSelected(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const termMutation = useMutation({
+    mutationFn: async ({ id, message }: { id: number; message: string }) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/term`, { message });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Seller termed" });
+      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setSelected(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const unverifyMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/admin/verifications/${id}/unverify`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Verification revoked" });
+      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      setSelected(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const filtered = (sellers || []).filter((s: any) => filter === "all" || s.status === filter);
+  const pendingCount = (sellers || []).filter((s: any) => s.status === "pending").length;
+
+  function statusBadge(status: string) {
+    if (status === "approved") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-mono">approved</span>;
+    if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">pending</span>;
+    if (status === "denied") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">denied</span>;
+    if (status === "termed") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive font-mono">termed</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">{status}</span>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Sellers</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage seller verification applications</p>
+        </div>
+        {pendingCount > 0 && (
+          <span className="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded-full font-mono">
+            {pendingCount} pending
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-1 flex-wrap">
+        {(["pending", "all", "approved", "denied", "termed"] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`text-xs px-3 py-1.5 rounded-lg font-mono transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}
+          >
+            {f}{f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">No {filter === "all" ? "" : filter} applications</div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((seller: any) => (
+            <div
+              key={seller.verification_id}
+              onClick={() => { setSelected(seller); setNoteInput(""); setTermMsg(""); }}
+              className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/5 hover:bg-white/5 hover:border-white/10 cursor-pointer transition-colors"
+              data-testid={`row-seller-${seller.verification_id}`}
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-primary">{(seller.username || "?")[0].toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{seller.username ?? "Unknown"}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{seller.telegram_username ?? "—"} · {seller.channel_name ?? "—"}</p>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                {statusBadge(seller.status)}
+                <span className="text-[10px] text-white/30">{new Date(seller.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-[#0f1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-white/5">
+              <h2 className="text-base font-bold">Seller Application</h2>
+              <button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-white/5 text-muted-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-white/40 mb-0.5">Username</p>
+                  <p className="text-sm text-white font-mono">{selected.username ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-white/40 mb-0.5">Status</p>
+                  {statusBadge(selected.status)}
+                </div>
+                <div>
+                  <p className="text-[10px] text-white/40 mb-0.5">Telegram</p>
+                  <p className="text-sm text-white font-mono">{selected.telegram_username ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-white/40 mb-0.5">Channel</p>
+                  <p className="text-sm text-white truncate">{selected.channel_name ?? "—"}</p>
+                </div>
+                {selected.channel_link && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-white/40 mb-0.5">Channel Link</p>
+                    <a href={selected.channel_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{selected.channel_link}</a>
+                  </div>
+                )}
+                {selected.admin_note && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-white/40 mb-0.5">Admin Note</p>
+                    <p className="text-xs text-white/70">{selected.admin_note}</p>
+                  </div>
+                )}
+                {selected.term_message && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-white/40 mb-0.5">Term Message</p>
+                    <p className="text-xs text-destructive">{selected.term_message}</p>
+                  </div>
+                )}
+              </div>
+
+              {selected.status !== "approved" && (
+                <div className="space-y-2 border-t border-white/5 pt-3">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Approve or Deny</p>
+                  <Input
+                    placeholder="Note (optional)"
+                    value={noteInput}
+                    onChange={e => setNoteInput(e.target.value)}
+                    className="bg-black/50 border-white/10 text-xs h-8"
+                    data-testid="input-seller-note"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => approveMutation.mutate({ id: selected.verification_id, note: noteInput })}
+                      disabled={approveMutation.isPending}
+                      data-testid="btn-seller-approve"
+                    >
+                      {approveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => denyMutation.mutate({ id: selected.verification_id, note: noteInput })}
+                      disabled={denyMutation.isPending}
+                      data-testid="btn-seller-deny"
+                    >
+                      {denyMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Deny"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {selected.status === "approved" && (
+                <div className="space-y-2 border-t border-white/5 pt-3">
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Revoke Access</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-8 text-xs border-white/10 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                    onClick={() => unverifyMutation.mutate(selected.verification_id)}
+                    disabled={unverifyMutation.isPending}
+                    data-testid="btn-seller-unverify"
+                  >
+                    {unverifyMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Revoke Verification"}
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-2 border-t border-white/5 pt-3">
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">Term Seller</p>
+                <Input
+                  placeholder="Term message (shown to seller)"
+                  value={termMsg}
+                  onChange={e => setTermMsg(e.target.value)}
+                  className="bg-black/50 border-white/10 text-xs h-8"
+                  data-testid="input-seller-term-msg"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="w-full h-8 text-xs opacity-80"
+                  onClick={() => termMutation.mutate({ id: selected.verification_id, message: termMsg })}
+                  disabled={termMutation.isPending || !termMsg}
+                  data-testid="btn-seller-term"
+                >
+                  {termMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Term Seller"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
