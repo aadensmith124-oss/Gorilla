@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, Send, Home, Package, Store, LayoutDashboard, User, Trophy, Briefcase } from "lucide-react";
+import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, Send, Home, Package, Store, LayoutDashboard, User, Trophy, Briefcase, Bot } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import {
@@ -32,6 +32,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/shop", icon: Store, label: "Logs" },
         { href: "/acctplug", icon: LayoutDashboard, label: "Cards" },
+      ],
+    },
+    {
+      label: "BOT",
+      items: [
+        { href: "/checker", icon: Bot, label: "Checker" },
       ],
     },
     {

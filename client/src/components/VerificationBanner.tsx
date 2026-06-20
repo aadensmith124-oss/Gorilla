@@ -6,6 +6,7 @@ import { useVerification, useSubmitVerification } from "@/hooks/use-verification
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { RulesModal, RulesLink } from "@/components/RulesModal";
+import { useQuery } from "@tanstack/react-query";
 
 const TERMS = `By purchasing from this store, you automatically agree to the following terms:
 
@@ -27,6 +28,10 @@ By using this store or purchasing any product, you confirm that you accept and a
 export function VerificationBanner() {
   const { user, isLoading: isUserLoading } = useAuth();
   const { verification, isLoading, isApproved, isDenied, isPending, isTermed } = useVerification(!!user && !isUserLoading);
+  const { data: sellerFeature } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/seller-feature"],
+    enabled: !!user && !isUserLoading,
+  });
   const [showForm, setShowForm] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -38,6 +43,7 @@ export function VerificationBanner() {
 
   if (isUserLoading || isLoading) return null;
   if (user?.role === "admin") return null;
+  if (sellerFeature?.enabled === false) return null;
   if (isApproved) return null;
 
   const handleSubmit = async () => {

@@ -2043,5 +2043,147 @@ export async function registerRoutes(
     res.json({ message: "SMTP settings saved" });
   });
 
+  // === SELLER FEATURE TOGGLE ===
+  app.get("/api/settings/seller-feature", async (_req, res) => {
+    const val = await storage.getSetting("seller_feature_enabled", "true");
+    res.json({ enabled: val !== "false" });
+  });
+
+  app.post("/api/admin/settings/seller-feature", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { enabled } = req.body;
+    await storage.setSetting("seller_feature_enabled", enabled ? "true" : "false");
+    res.json({ enabled });
+  });
+
+  // === CARD CHECKER ===
+  app.post("/api/checker/check", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const { cards: cardList } = req.body;
+    if (!Array.isArray(cardList) || cardList.length === 0) {
+      return res.status(400).json({ message: "No cards provided" });
+    }
+
+    const costPerCard = 10;
+    const totalCost = cardList.length * costPerCard;
+
+    const [dbUser] = await db.select().from(users).where(eq(users.id, userId));
+    if (!dbUser || dbUser.balance < totalCost) {
+      return res.status(400).json({ message: `Insufficient balance. Need $${(totalCost / 100).toFixed(2)}, have $${((dbUser?.balance ?? 0) / 100).toFixed(2)}` });
+    }
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) return res.status(500).json({ message: "Card checker not configured. Contact admin." });
+
+    await db.update(users).set({ balance: sql`balance - ${totalCost}` }).where(eq(users.id, userId));
+    await db.insert(transactions).values({
+      userId, amount: -totalCost, type: "purchase",
+      description: `Card checker — ${cardList.length} card${cardList.length !== 1 ? "s" : ""}`,
+      paymentMethod: "Wallet",
+    });
+
+    const { default: Stripe } = await import("stripe");
+    const stripe = new Stripe(stripeKey);
+
+    const results: any[] = [];
+    for (const card of cardList) {
+      try {
+        const num = String(card.number ?? "").replace(/[\s\-]/g, "");
+        const dateRaw = String(card.date ?? "").replace(/\//g, "").trim();
+        const cvv = String(card.cvv ?? "").trim();
+
+        let expMonth: number, expYear: number;
+        if (dateRaw.length === 4) { expMonth = parseInt(dateRaw.slice(0, 2)); expYear = 2000 + parseInt(dateRaw.slice(2)); }
+        else if (dateRaw.length === 6) { expMonth = parseInt(dateRaw.slice(0, 2)); expYear = parseInt(dateRaw.slice(2)); }
+        else throw new Error("Invalid date format (use MM/YY)");
+
+        const pm = await stripe.paymentMethods.create({ type: "card", card: { number: num, exp_month: expMonth, exp_year: expYear, cvc: cvv } } as any);
+        const pi = await stripe.paymentIntents.create({
+          amount: 80, currency: "usd", payment_method: pm.id,
+          confirm: true, capture_method: "manual", return_url: "https://nychq.cc",
+        } as any);
+        if ((pi as any).status === "requires_capture") await stripe.paymentIntents.cancel(pi.id);
+        results.push({ number: card.number, date: card.date, cvv: card.cvv, status: "approved" });
+      } catch (err: any) {
+        const errMsg = err?.raw?.message || err?.message || "Declined";
+        results.push({ number: card.number, date: card.date, cvv: card.cvv, status: "declined", error: errMsg });
+      }
+    }
+
+    res.json({ results, charged: totalCost });
+  });
+
+  // === LIVE CHECK (card orders) ===
+  app.post("/api/orders/:id/live-check", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const order = await storage.getOrder(Number(req.params.id));
+    if (!order || order.userId !== userId) return res.status(404).json({ message: "Order not found" });
+
+    const isCard = (order.orderId ?? "").startsWith("CARD-") || order.items?.some((i: any) => i.itemType === "card");
+    if (!isCard) return res.status(400).json({ message: "Not a card order" });
+
+    if (Date.now() - new Date(order.createdAt).getTime() > 15 * 60 * 1000) {
+      return res.status(400).json({ message: "Live check window expired (15 minutes after purchase)" });
+    }
+
+    const fee = 50;
+    const [dbUser] = await db.select().from(users).where(eq(users.id, userId));
+    if (!dbUser || dbUser.balance < fee) {
+      return res.status(400).json({ message: "Insufficient balance. Live check costs $0.50" });
+    }
+
+    let cardContent = order.deliveryContent || "";
+    if (!cardContent) {
+      const cardItem = order.items?.find((i: any) => i.itemType === "card" && i.card);
+      if (cardItem?.card) {
+        cardContent = [cardItem.card.cardNumber, cardItem.card.expiry, cardItem.card.cvv].filter(Boolean).join("|");
+      }
+    }
+    if (!cardContent) return res.status(400).json({ message: "No card data found on this order" });
+
+    const parts = cardContent.split(/[|]+/).map((s: string) => s.trim()).filter(Boolean);
+    const num = (parts[0] ?? "").replace(/\D/g, "");
+    const dateRaw = (parts[1] ?? "").replace(/\//g, "").trim();
+    const cvv = (parts[2] ?? "").trim();
+
+    let expMonth: number, expYear: number;
+    if (dateRaw.length === 4) { expMonth = parseInt(dateRaw.slice(0, 2)); expYear = 2000 + parseInt(dateRaw.slice(2)); }
+    else if (dateRaw.length === 6) { expMonth = parseInt(dateRaw.slice(0, 2)); expYear = parseInt(dateRaw.slice(2)); }
+    else return res.status(400).json({ message: "Could not parse card expiry date" });
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) return res.status(500).json({ message: "Live check not configured. Contact admin." });
+
+    await db.update(users).set({ balance: sql`balance - ${fee}` }).where(eq(users.id, userId));
+    await db.insert(transactions).values({
+      userId, amount: -fee, type: "purchase",
+      description: `Live check fee — ${order.orderId}`, paymentMethod: "Wallet",
+    });
+
+    const { default: Stripe } = await import("stripe");
+    const stripe = new Stripe(stripeKey);
+
+    try {
+      const pm = await stripe.paymentMethods.create({ type: "card", card: { number: num, exp_month: expMonth, exp_year: expYear, cvc: cvv } } as any);
+      const pi = await stripe.paymentIntents.create({
+        amount: 50, currency: "usd", payment_method: pm.id,
+        confirm: true, capture_method: "manual", return_url: "https://nychq.cc",
+      } as any);
+      if ((pi as any).status === "requires_capture") await stripe.paymentIntents.cancel(pi.id);
+      return res.json({ live: true, message: "Card is Live! ✅" });
+    } catch (err: any) {
+      await db.update(users).set({ balance: sql`balance + ${fee}` }).where(eq(users.id, userId));
+      await db.insert(transactions).values({
+        userId, amount: fee, type: "refund",
+        description: `Live check refund — ${order.orderId}`, paymentMethod: "Wallet",
+      });
+      return res.json({ live: false, message: "Card Declined — $0.50 refunded to your wallet." });
+    }
+  });
+
   return httpServer;
 }
