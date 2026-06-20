@@ -1,16 +1,11 @@
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Copy, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Copy, Check, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const P    = "hsl(186 100% 50%)";
-const PBG  = "hsl(186 100% 50% / 0.1)";
-const BG   = "hsl(214 50% 4%)";
-const CARD = "hsl(214 45% 7%)";
-const BDR  = "hsl(210 40% 16%)";
-const TEXT = "hsl(195 60% 88%)";
-const MUT  = "hsl(205 30% 45%)";
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -19,45 +14,39 @@ export default function AuthPage() {
   if (user) return <Redirect to="/" />;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: BG }}>
-      <div className="w-full max-w-sm space-y-6">
-        {/* Pixel logo */}
-        <div className="text-center space-y-2">
-          <h1 style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: "18px",
-            color: P,
-            textShadow: `0 0 12px ${P}, 0 0 30px hsl(186 100% 50% / 0.5)`,
-            letterSpacing: "0.05em",
-          }}>
-            NYC<span style={{ color: TEXT, textShadow: "none" }}>HQ</span>
-          </h1>
-          <p className="text-[10px] tracking-widest" style={{ color: MUT }}>PREMIUM DIGITAL MARKETPLACE</p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#0c0c0c]">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="z-10 w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">NYC<span className="text-white/40">HQ</span></h1>
+          <p className="text-white/30 text-xs mt-1">Premium digital marketplace</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex" style={{ border: `1px solid ${BDR}` }}>
-          {(["login", "register"] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className="flex-1 text-[10px] py-2.5 transition-all tracking-widest"
-              style={tab === t
-                ? { background: PBG, color: P, borderBottom: `2px solid ${P}` }
-                : { color: MUT, borderRight: t === "login" ? `1px solid ${BDR}` : undefined }
-              }
-              data-testid={`tab-${t}`}>
-              {t === "login" ? "[ SIGN IN ]" : "[ REGISTER ]"}
-            </button>
-          ))}
+        <div className="flex bg-white/5 rounded-lg p-0.5">
+          <button
+            onClick={() => setTab("login")}
+            className={`flex-1 text-xs font-medium py-2 rounded-md transition-colors ${tab === "login" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"}`}
+            data-testid="tab-login"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setTab("register")}
+            className={`flex-1 text-xs font-medium py-2 rounded-md transition-colors ${tab === "register" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"}`}
+            data-testid="tab-register"
+          >
+            Create Account
+          </button>
         </div>
 
-        {/* Card */}
-        <div style={{ background: CARD, border: `1px solid ${BDR}`, padding: "20px" }}>
+        <div className="bg-[#111] border border-white/5 rounded-xl p-5">
           {tab === "login" ? <LoginForm /> : <RegisterForm />}
         </div>
-
-        <p className="text-center text-[9px]" style={{ color: "hsl(210 40% 20%)" }}>
-          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-        </p>
       </div>
     </div>
   );
@@ -70,39 +59,35 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginCode.trim()) return;
-    try { await login({ loginCode: loginCode.trim().toUpperCase() }); } catch {}
+    try {
+      await login({ loginCode: loginCode.trim().toUpperCase() });
+    } catch {}
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-[9px] tracking-widest" style={{ color: MUT }}>LOGIN CODE</label>
-        <input
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Login Code</Label>
+        <Input
           value={loginCode}
           onChange={e => setLoginCode(e.target.value.toUpperCase())}
           placeholder="XXXXXXXXXXXX"
           disabled={isLoggingIn}
           autoComplete="off"
-          className="w-full h-10 text-base font-mono tracking-[0.25em] text-center outline-none transition-all"
-          style={{
-            background: BG,
-            border: `1px solid ${loginCode.length === 12 ? P : BDR}`,
-            color: TEXT,
-            boxShadow: loginCode.length === 12 ? `0 0 6px ${P}` : "none",
-          }}
+          className="h-10 text-base bg-black/50 border-white/10 focus:border-primary/50 font-mono tracking-[0.25em] text-center"
           maxLength={12}
           data-testid="input-login-code"
         />
-        <p className="text-[9px] text-center" style={{ color: "hsl(195 60% 88% / 0.25)" }}>
-          enter your 12-character code
-        </p>
+        <p className="text-[10px] text-white/25 text-center">Enter the 12-character code from when you registered</p>
       </div>
-      <button type="submit" disabled={isLoggingIn || loginCode.length < 12}
-        className="w-full h-9 text-[10px] tracking-widest transition-all disabled:opacity-40 pixel-btn"
-        style={{ background: P, color: BG, fontFamily: "'Share Tech Mono', monospace" }}
-        data-testid="btn-login">
-        {isLoggingIn ? "..." : "▶ SIGN IN"}
-      </button>
+      <Button
+        type="submit"
+        disabled={isLoggingIn || loginCode.length < 12}
+        className="w-full h-9 text-xs"
+        data-testid="btn-login"
+      >
+        {isLoggingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Sign In"}
+      </Button>
     </form>
   );
 }
@@ -130,53 +115,69 @@ function RegisterForm() {
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Code copied!" });
+    toast({ title: "Code copied to clipboard!" });
   };
 
   if (generatedCode) {
     return (
       <div className="space-y-4">
         <div className="text-center space-y-1">
-          <p className="text-[10px] tracking-widest" style={{ color: P, textShadow: `0 0 6px ${P}` }}>✓ ACCOUNT CREATED</p>
-          {username && <p className="text-[10px] font-mono" style={{ color: MUT }}>{username}</p>}
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 mx-auto">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+          </div>
+          <p className="text-sm font-bold text-white mt-2">Account Created!</p>
+          {username && (
+            <p className="text-[10px] text-white/30 font-mono">{username}</p>
+          )}
         </div>
 
-        <div className="p-4 text-center space-y-2" style={{ background: BG, border: `2px solid ${P}`, boxShadow: `0 0 12px ${P}` }}>
-          <p className="text-[9px] tracking-widest" style={{ color: MUT }}>YOUR LOGIN CODE</p>
-          <p className="font-mono text-2xl font-black tracking-[0.2em] select-all" style={{ color: P, textShadow: `0 0 8px ${P}` }}>{generatedCode}</p>
-          <button onClick={copyCode} className="flex items-center gap-1.5 mx-auto text-[10px] transition-colors mt-1"
-            style={{ color: copied ? P : MUT }} data-testid="btn-copy-code">
+        {/* Code display */}
+        <div className="bg-black/70 border-2 border-primary/30 rounded-xl p-4 space-y-2 text-center">
+          <p className="text-[9px] uppercase tracking-widest text-white/30">Your Login Code</p>
+          <p className="font-mono text-2xl font-black text-white tracking-[0.25em] select-all">{generatedCode}</p>
+          <button
+            onClick={copyCode}
+            className="flex items-center gap-1.5 mx-auto text-xs text-primary hover:text-primary/80 transition-colors mt-1"
+            data-testid="btn-copy-code"
+          >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "COPIED!" : "COPY CODE"}
+            {copied ? "Copied!" : "Copy code"}
           </button>
         </div>
 
-        <div className="flex items-start gap-2.5 p-3" style={{ background: "hsl(186 100% 50% / 0.06)", border: `1px solid ${P}` }}>
-          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: P }} />
-          <div>
-            <p className="text-[9px] tracking-widest mb-1" style={{ color: P }}>SAVE THIS — DON'T LOSE IT</p>
-            <p className="text-[10px] leading-relaxed" style={{ color: MUT }}>
-              This is your only way to sign in. No reset exists.
+        {/* Warning */}
+        <div className="flex items-start gap-2.5 bg-yellow-950/40 border border-yellow-600/30 rounded-lg p-3">
+          <AlertTriangle className="h-4 w-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-yellow-400">Save this code — don't lose it!</p>
+            <p className="text-[11px] text-yellow-400/70 leading-relaxed">
+              This is the <span className="font-bold">only way</span> to sign in. There is no password reset. If you lose it, your account is gone.
             </p>
           </div>
         </div>
+
+        <p className="text-[10px] text-white/20 text-center leading-relaxed">
+          Write it down, screenshot it, or save it in a password manager.
+        </p>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleCreate} className="space-y-4">
-      <div className="text-center py-3">
-        <p className="text-[10px] leading-relaxed" style={{ color: MUT }}>
-          No email needed.<br />We generate a unique code for you.
+      <div className="text-center space-y-2 py-2">
+        <p className="text-xs text-white/60 leading-relaxed">
+          No email or password needed.<br />We'll generate a unique login code for you.
         </p>
       </div>
-      <button type="submit" disabled={isRegistering}
-        className="w-full h-9 text-[10px] tracking-widest transition-all disabled:opacity-40 pixel-btn"
-        style={{ background: P, color: BG }}
-        data-testid="btn-register">
-        {isRegistering ? "..." : "▶ GENERATE CODE"}
-      </button>
+      <Button
+        type="submit"
+        disabled={isRegistering}
+        className="w-full h-9 text-xs"
+        data-testid="btn-register"
+      >
+        {isRegistering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate My Login Code"}
+      </Button>
     </form>
   );
 }

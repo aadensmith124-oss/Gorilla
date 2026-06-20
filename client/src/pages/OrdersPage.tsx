@@ -3,7 +3,7 @@ import { useOrders } from "@/hooks/use-orders";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Loader2, RefreshCw, Send } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 
@@ -123,50 +123,33 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
-      {/* Telegram banner — like the reference */}
-      <a href="https://t.me/+K3ou01RaW6oyMjJh" target="_blank" rel="noopener noreferrer">
-        <div
-          className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold tracking-widest transition-opacity hover:opacity-90"
-          style={{ background: "#1A47B8", color: "#fff" }}
-          data-testid="btn-telegram-banner"
-        >
-          <div className="flex items-center gap-2">
-            <Send className="h-3.5 w-3.5" />
-            JOIN OUR TELEGRAM
-          </div>
-          <span style={{ opacity: 0.7 }}>↗</span>
-        </div>
-      </a>
-
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-bold" style={{ color: "hsl(40 55% 82%)" }}>Order History</h1>
-          <p className="text-xs" style={{ color: "hsl(38 20% 48%)" }}>
-            {formatDateTime(now)}
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-white">Order History</h1>
+        <p className="text-xs text-white/30">
+          {allOrders.length} total · ${(totalSpentCents / 100).toFixed(2)} spent · {formatDateTime(now)}
+        </p>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all disabled:opacity-50"
+          data-testid="btn-refresh"
+        >
+          <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
+          refresh
+        </button>
+        <a href="https://t.me/+K3ou01RaW6oyMjJh" target="_blank" rel="noopener noreferrer">
           <button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all disabled:opacity-50"
-            style={{ border: "1px solid hsl(36 18% 20%)", color: "hsl(38 20% 48%)" }}
-            data-testid="btn-refresh"
+            className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all"
+            data-testid="btn-support"
           >
-            <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
-            refresh
+            support
           </button>
-          <a href="https://t.me/+K3ou01RaW6oyMjJh" target="_blank" rel="noopener noreferrer">
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all"
-              style={{ border: "1px solid hsl(36 18% 20%)", color: "hsl(38 20% 48%)" }}
-              data-testid="btn-support"
-            >
-              ⚙ support
-            </button>
-          </a>
-        </div>
+        </a>
       </div>
 
       {/* Deposits + Tier panel */}
