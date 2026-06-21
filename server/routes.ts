@@ -2043,6 +2043,59 @@ export async function registerRoutes(
     res.json({ message: "SMTP settings saved" });
   });
 
+  // === SELLER APPLICATIONS ===
+  app.get("/api/seller/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const app = await storage.getSellerApplication(userId);
+    res.json(app || null);
+  });
+
+  app.post("/api/seller/apply", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const userId = (req.user as any).id;
+    const existing = await storage.getSellerApplication(userId);
+    if (existing && existing.status === "pending") {
+      return res.status(400).json({ message: "You already have a pending application" });
+    }
+    const { note } = req.body;
+    const code = "SELL-" + Math.random().toString(36).toUpperCase().slice(2, 8);
+    const app = await storage.createSellerApplication(userId, code);
+    // store note in the application
+    if (note) {
+      await db.execute(sql`UPDATE seller_applications SET note = ${String(note)} WHERE id = ${app.id}`);
+    }
+    res.json({ ok: true });
+  });
+
+  app.get("/api/admin/seller-applications", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const apps = await storage.getAllSellerApplications();
+    res.json(apps);
+  });
+
+  app.post("/api/admin/seller-applications/:id/approve", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.approveSellerApplication(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.post("/api/admin/seller-applications/:id/reject", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { note } = req.body;
+    await storage.rejectSellerApplication(Number(req.params.id));
+    if (note) {
+      await db.execute(sql`UPDATE seller_applications SET note = ${String(note)} WHERE id = ${Number(req.params.id)}`);
+    }
+    res.json({ ok: true });
+  });
+
   // === FEATURE FLAGS ===
   app.get("/api/settings/features", async (_req, res) => {
     const checker = await storage.getSetting("feature_checker", "true");

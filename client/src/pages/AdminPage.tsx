@@ -2611,67 +2611,40 @@ function SmtpSection() {
 function SellersSection() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "denied" | "termed">("pending");
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [selected, setSelected] = useState<any | null>(null);
   const [noteInput, setNoteInput] = useState("");
-  const [termMsg, setTermMsg] = useState("");
 
   const { data: sellers, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/sellers"],
+    queryKey: ["/api/admin/seller-applications"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/sellers", { credentials: "include" });
+      const res = await fetch("/api/admin/seller-applications", { credentials: "include" });
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
   });
 
   const approveMutation = useMutation({
-    mutationFn: async ({ id, note }: { id: number; note: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/approve`, { note });
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/admin/seller-applications/${id}/approve`, {});
       return res.json();
     },
     onSuccess: () => {
       toast({ title: "Seller approved" });
-      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/seller-applications"] });
       setSelected(null);
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const denyMutation = useMutation({
+  const rejectMutation = useMutation({
     mutationFn: async ({ id, note }: { id: number; note: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/deny`, { note });
+      const res = await apiRequest("POST", `/api/admin/seller-applications/${id}/reject`, { note });
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "Seller denied" });
-      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      setSelected(null);
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const termMutation = useMutation({
-    mutationFn: async ({ id, message }: { id: number; message: string }) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/term`, { message });
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Seller termed" });
-      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
-      setSelected(null);
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const unverifyMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("POST", `/api/admin/verifications/${id}/unverify`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Verification revoked" });
-      qc.invalidateQueries({ queryKey: ["/api/admin/sellers"] });
+      toast({ title: "Application rejected" });
+      qc.invalidateQueries({ queryKey: ["/api/admin/seller-applications"] });
       setSelected(null);
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -2683,8 +2656,7 @@ function SellersSection() {
   function statusBadge(status: string) {
     if (status === "approved") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-mono">approved</span>;
     if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">pending</span>;
-    if (status === "denied") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">denied</span>;
-    if (status === "termed") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive font-mono">termed</span>;
+    if (status === "rejected") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">rejected</span>;
     return <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">{status}</span>;
   }
 
@@ -2693,7 +2665,7 @@ function SellersSection() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Sellers</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage seller verification applications</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage seller applications</p>
         </div>
         {pendingCount > 0 && (
           <span className="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded-full font-mono">
@@ -2703,7 +2675,7 @@ function SellersSection() {
       </div>
 
       <div className="flex gap-1 flex-wrap">
-        {(["pending", "all", "approved", "denied", "termed"] as const).map(f => (
+        {(["pending", "all", "approved", "rejected"] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -2722,21 +2694,21 @@ function SellersSection() {
         <div className="space-y-2">
           {filtered.map((seller: any) => (
             <div
-              key={seller.verification_id}
-              onClick={() => { setSelected(seller); setNoteInput(""); setTermMsg(""); }}
+              key={seller.id}
+              onClick={() => { setSelected(seller); setNoteInput(""); }}
               className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/5 hover:bg-white/5 hover:border-white/10 cursor-pointer transition-colors"
-              data-testid={`row-seller-${seller.verification_id}`}
+              data-testid={`row-seller-${seller.id}`}
             >
               <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-primary">{(seller.username || "?")[0].toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">{seller.username ?? "Unknown"}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{seller.telegram_username ?? "—"} · {seller.channel_name ?? "—"}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{seller.note ? seller.note.slice(0, 60) : "No note"}</p>
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 {statusBadge(seller.status)}
-                <span className="text-[10px] text-white/30">{new Date(seller.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                <span className="text-[10px] text-white/30">{new Date(seller.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
               </div>
             </div>
           ))}
@@ -2762,39 +2734,25 @@ function SellersSection() {
                   <p className="text-[10px] text-white/40 mb-0.5">Status</p>
                   {statusBadge(selected.status)}
                 </div>
-                <div>
-                  <p className="text-[10px] text-white/40 mb-0.5">Telegram</p>
-                  <p className="text-sm text-white font-mono">{selected.telegram_username ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-white/40 mb-0.5">Channel</p>
-                  <p className="text-sm text-white truncate">{selected.channel_name ?? "—"}</p>
-                </div>
-                {selected.channel_link && (
+                {selected.sellerCode && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-white/40 mb-0.5">Channel Link</p>
-                    <a href={selected.channel_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{selected.channel_link}</a>
+                    <p className="text-[10px] text-white/40 mb-0.5">Seller Code</p>
+                    <p className="text-sm text-primary font-mono font-bold">{selected.sellerCode}</p>
                   </div>
                 )}
-                {selected.admin_note && (
+                {selected.note && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-white/40 mb-0.5">Admin Note</p>
-                    <p className="text-xs text-white/70">{selected.admin_note}</p>
-                  </div>
-                )}
-                {selected.term_message && (
-                  <div className="col-span-2">
-                    <p className="text-[10px] text-white/40 mb-0.5">Term Message</p>
-                    <p className="text-xs text-destructive">{selected.term_message}</p>
+                    <p className="text-[10px] text-white/40 mb-0.5">Applicant Note</p>
+                    <p className="text-xs text-white/70 leading-relaxed">{selected.note}</p>
                   </div>
                 )}
               </div>
 
-              {selected.status !== "approved" && (
+              {selected.status === "pending" && (
                 <div className="space-y-2 border-t border-white/5 pt-3">
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Approve or Deny</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Approve or Reject</p>
                   <Input
-                    placeholder="Note (optional)"
+                    placeholder="Rejection reason (optional)"
                     value={noteInput}
                     onChange={e => setNoteInput(e.target.value)}
                     className="bg-black/50 border-white/10 text-xs h-8"
@@ -2804,7 +2762,7 @@ function SellersSection() {
                     <Button
                       size="sm"
                       className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => approveMutation.mutate({ id: selected.verification_id, note: noteInput })}
+                      onClick={() => approveMutation.mutate(selected.id)}
                       disabled={approveMutation.isPending}
                       data-testid="btn-seller-approve"
                     >
@@ -2814,11 +2772,11 @@ function SellersSection() {
                       size="sm"
                       variant="destructive"
                       className="flex-1 h-8 text-xs"
-                      onClick={() => denyMutation.mutate({ id: selected.verification_id, note: noteInput })}
-                      disabled={denyMutation.isPending}
-                      data-testid="btn-seller-deny"
+                      onClick={() => rejectMutation.mutate({ id: selected.id, note: noteInput })}
+                      disabled={rejectMutation.isPending}
+                      data-testid="btn-seller-reject"
                     >
-                      {denyMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Deny"}
+                      {rejectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reject"}
                     </Button>
                   </div>
                 </div>
@@ -2826,40 +2784,18 @@ function SellersSection() {
 
               {selected.status === "approved" && (
                 <div className="space-y-2 border-t border-white/5 pt-3">
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Revoke Access</p>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="w-full h-8 text-xs border-white/10 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
-                    onClick={() => unverifyMutation.mutate(selected.verification_id)}
-                    disabled={unverifyMutation.isPending}
-                    data-testid="btn-seller-unverify"
+                    variant="destructive"
+                    className="w-full h-8 text-xs opacity-80"
+                    onClick={() => rejectMutation.mutate({ id: selected.id, note: "Access revoked by admin" })}
+                    disabled={rejectMutation.isPending}
+                    data-testid="btn-seller-revoke"
                   >
-                    {unverifyMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Revoke Verification"}
+                    {rejectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Revoke Seller Access"}
                   </Button>
                 </div>
               )}
-
-              <div className="space-y-2 border-t border-white/5 pt-3">
-                <p className="text-[10px] text-white/40 uppercase tracking-widest">Term Seller</p>
-                <Input
-                  placeholder="Term message (shown to seller)"
-                  value={termMsg}
-                  onChange={e => setTermMsg(e.target.value)}
-                  className="bg-black/50 border-white/10 text-xs h-8"
-                  data-testid="input-seller-term-msg"
-                />
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="w-full h-8 text-xs opacity-80"
-                  onClick={() => termMutation.mutate({ id: selected.verification_id, message: termMsg })}
-                  disabled={termMutation.isPending || !termMsg}
-                  data-testid="btn-seller-term"
-                >
-                  {termMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Term Seller"}
-                </Button>
-              </div>
             </div>
           </div>
         </div>
