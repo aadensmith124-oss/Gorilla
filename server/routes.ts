@@ -2043,6 +2043,23 @@ export async function registerRoutes(
     res.json({ message: "SMTP settings saved" });
   });
 
+  // === FEATURE FLAGS ===
+  app.get("/api/settings/features", async (_req, res) => {
+    const checker = await storage.getSetting("feature_checker", "true");
+    const reseller = await storage.getSetting("feature_reseller", "true");
+    res.json({ checker: checker !== "false", reseller: reseller !== "false" });
+  });
+
+  app.post("/api/admin/settings/features", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { checker, reseller } = req.body;
+    if (checker !== undefined) await storage.setSetting("feature_checker", checker ? "true" : "false");
+    if (reseller !== undefined) await storage.setSetting("feature_reseller", reseller ? "true" : "false");
+    res.json({ ok: true });
+  });
+
   // === CARD CHECKER ===
   app.post("/api/checker/check", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

@@ -85,9 +85,9 @@ export default function BecomeSellerPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <BadgeCheck className="h-5 w-5 text-primary" />
-            <h1 className="text-xl font-bold text-white">Become a Seller</h1>
+            <h1 className="text-xl font-bold text-white">Become a Reseller</h1>
           </div>
-          <p className="text-xs text-white/40">Apply to become a verified reseller and unlock exclusive pricing</p>
+          <p className="text-xs text-white/40">Apply to become a verified reseller and unlock exclusive wholesale pricing</p>
         </div>
 
         {/* Perks */}
@@ -109,8 +109,8 @@ export default function BecomeSellerPage() {
             <div className="flex items-center gap-4 bg-green-500/8 border border-green-500/25 rounded-2xl px-5 py-5">
               <CheckCircle2 className="h-8 w-8 text-green-400 shrink-0" />
               <div>
-                <p className="text-base font-black text-green-400">You're a Verified Seller!</p>
-                <p className="text-xs text-white/50 mt-0.5">Your account has full seller access and reseller pricing.</p>
+                <p className="text-base font-black text-green-400">You're a Verified Reseller!</p>
+                <p className="text-xs text-white/50 mt-0.5">Your account has full reseller access and wholesale pricing.</p>
               </div>
             </div>
             <div className="space-y-2">

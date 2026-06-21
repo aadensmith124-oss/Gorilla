@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, Send, Home, Package, Store, LayoutDashboard, Trophy, Briefcase, Bot, BadgeCheck } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
+
+  const { data: features } = useQuery<{ checker: boolean; reseller: boolean }>({
+    queryKey: ["/api/settings/features"],
+    staleTime: 30000,
+  });
 
   const navSections = [
     {
@@ -34,24 +40,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { href: "/acctplug", icon: LayoutDashboard, label: "Cards" },
       ],
     },
-    {
+    ...(features?.checker !== false ? [{
       label: "BOT",
       items: [
         { href: "/checker", icon: Bot, label: "Checker" },
       ],
-    },
-    {
-      label: "SELLER",
-      items: [
-        { href: "/become-seller", icon: BadgeCheck, label: "Become Seller" },
-      ],
-    },
+    }] : []),
     {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/+K3ou01RaW6oyMjJh", icon: Send, label: "Telegram Support", external: true },
+        { href: "https://t.me/+xgVCi_EMsq1iZTRh", icon: Send, label: "Telegram Support", external: true },
       ],
     },
+    ...(features?.reseller !== false ? [{
+      label: "RESELLER",
+      items: [
+        { href: "/become-reseller", icon: BadgeCheck, label: "Become Reseller" },
+      ],
+    }] : []),
     ...(user?.role === "admin" ? [{
       label: "ADMIN",
       items: [

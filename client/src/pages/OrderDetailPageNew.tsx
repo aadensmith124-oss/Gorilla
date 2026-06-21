@@ -173,51 +173,6 @@ export default function OrderDetailPageNew() {
               <span className={`font-bold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
             } />
 
-            {/* Live Check — card orders within 15 min */}
-            {isFulfilled && ((order.orderId ?? "").startsWith("CARD-") || order.items?.some((i: any) => i.itemType === "card")) && (() => {
-              const minsAgo = (Date.now() - new Date(order.createdAt).getTime()) / 60000;
-              const withinWindow = minsAgo < 15;
-              const minsLeft = Math.max(0, Math.ceil(15 - minsAgo));
-              if (!withinWindow && !liveCheckResult) return null;
-              return (
-                <div className="pt-2 border-t border-white/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-white/40 font-semibold uppercase tracking-wide">Live Check</p>
-                    {withinWindow && !liveCheckResult && (
-                      <span className="text-[10px] text-yellow-400/70 font-mono">{minsLeft}m remaining</span>
-                    )}
-                  </div>
-
-                  {liveCheckResult ? (
-                    <div className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${liveCheckResult.live ? "bg-green-500/10 border-green-500/25" : "bg-white/3 border-white/10"}`}>
-                      <ShieldCheck className={`h-4 w-4 mt-0.5 shrink-0 ${liveCheckResult.live ? "text-green-400" : "text-white/40"}`} />
-                      <p className={`text-sm font-semibold ${liveCheckResult.live ? "text-green-400" : "text-white/70"}`}>
-                        {liveCheckResult.message}
-                      </p>
-                    </div>
-                  ) : withinWindow ? (
-                    <button
-                      onClick={() => liveCheckMutation.mutate(order.id)}
-                      disabled={liveCheckMutation.isPending}
-                      className="w-full h-11 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-primary/30 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                      data-testid="btn-live-check"
-                    >
-                      {liveCheckMutation.isPending ? (
-                        <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</>
-                      ) : (
-                        <><ShieldCheck className="h-4 w-4 text-primary" /> Request Refund — $0.50</>
-                      )}
-                    </button>
-                  ) : null}
-
-                  {!liveCheckResult && withinWindow && (
-                    <p className="text-[10px] text-white/25 leading-relaxed">
-                      Charges $0.50 to verify this card is live. If declined, the $0.50 is refunded to your wallet.
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
           </div>
         )}
 

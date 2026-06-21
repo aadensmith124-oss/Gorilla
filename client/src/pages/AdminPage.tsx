@@ -1920,6 +1920,62 @@ function IntegrationsSection() {
           </ol>
         </CardContent>
       </Card>
+
+      {/* Feature Visibility Toggles */}
+      <FeatureTogglesCard />
+    </div>
+  );
+}
+
+function FeatureTogglesCard() {
+  const { toast } = useToast();
+  const { data: features, isLoading: featuresLoading } = useQuery<{ checker: boolean; reseller: boolean }>({
+    queryKey: ["/api/settings/features"],
+  });
+
+  const toggleFeature = useMutation({
+    mutationFn: async (body: { checker?: boolean; reseller?: boolean }) => {
+      const res = await apiRequest("POST", "/api/admin/settings/features", body);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings/features"] });
+      toast({ title: "Feature updated" });
+    },
+    onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+  });
+
+  const FEATURES = [
+    { key: "checker" as const, label: "Card Checker", desc: "Show/hide the Checker page and nav link" },
+    { key: "reseller" as const, label: "Become Reseller", desc: "Show/hide the Reseller application page" },
+  ];
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground mb-3">Feature Visibility</p>
+      <div className="space-y-2">
+        {featuresLoading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
+        ) : FEATURES.map((f) => {
+          const enabled = features?.[f.key] !== false;
+          return (
+            <Card key={f.key} className="bg-[#0f1115] border-white/5" data-testid={`card-feature-${f.key}`}>
+              <CardContent className="p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-bold text-sm text-white">{f.label}</p>
+                  <p className="text-xs text-muted-foreground">{enabled ? "Visible to users" : "Hidden — nobody can see it"}</p>
+                </div>
+                <Switch
+                  checked={enabled}
+                  disabled={toggleFeature.isPending}
+                  onCheckedChange={(val) => toggleFeature.mutate({ [f.key]: val })}
+                  data-testid={`switch-feature-${f.key}`}
+                />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
