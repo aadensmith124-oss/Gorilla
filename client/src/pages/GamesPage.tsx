@@ -49,7 +49,7 @@ export default function GamesPage() {
           <Card 
             key={game.id} 
             className={cn(
-              "bg-[#0f1115] border-white/5 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden",
+              "bg-[#0e0f1e] border-white/5 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden",
               "before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-0 group-hover:before:opacity-100 before:transition-opacity",
               game.id === 'dice' ? "before:from-primary/10 before:to-transparent" : "before:from-destructive/10 before:to-transparent"
             )}

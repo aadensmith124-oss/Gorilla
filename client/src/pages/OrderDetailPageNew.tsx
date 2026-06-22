@@ -61,12 +61,12 @@ export default function OrderDetailPageNew() {
   const order = orders?.find((o: any) => o.orderId === params?.id || o.id.toString() === params?.id);
 
   if (!orders) {
-    return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-[#09091a]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4 gap-4">
+      <div className="min-h-screen bg-[#09091a] flex flex-col items-center justify-center p-4 gap-4">
         <p className="text-white font-bold">Order not found</p>
         <button onClick={() => setLocation("/orders")} className="text-sm text-primary hover:underline">← Back to Orders</button>
       </div>

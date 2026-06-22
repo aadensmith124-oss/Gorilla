@@ -84,7 +84,7 @@ export default function SupportPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-[#0f1115] border border-white/5 p-1">
+        <TabsList className="bg-[#0e0f1e] border border-white/5 p-1">
           <TabsTrigger value="new" className="gap-2 data-[state=active]:bg-primary">
             <MessageSquare className="h-4 w-4" /> New Ticket
           </TabsTrigger>
@@ -94,7 +94,7 @@ export default function SupportPage() {
         </TabsList>
 
         <TabsContent value="new" className="mt-6">
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-[#0e0f1e] border-white/5">
             <CardHeader>
               <CardTitle className="text-xl">Open a Ticket</CardTitle>
             </CardHeader>
@@ -118,7 +118,7 @@ export default function SupportPage() {
                             <SelectValue placeholder="Select a reason" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                        <SelectContent className="bg-[#0e0f1e] border-white/10 text-white">
                           <SelectItem value="Refund">Refund</SelectItem>
                           <SelectItem value="Replace">Replace</SelectItem>
                           <SelectItem value="Nothing">Nothing</SelectItem>
@@ -175,13 +175,13 @@ export default function SupportPage() {
             {ticketsLoading ? (
               <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
             ) : !tickets || tickets.length === 0 ? (
-              <div className="text-center py-20 bg-[#0f1115] rounded-xl border border-white/5">
+              <div className="text-center py-20 bg-[#0e0f1e] rounded-xl border border-white/5">
                 <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
                 <p className="text-muted-foreground font-bold">No support history found</p>
               </div>
             ) : (
               tickets.map((ticket) => (
-                <Card key={ticket.id} className="bg-[#0f1115] border-white/5 hover:border-white/10 transition-colors">
+                <Card key={ticket.id} className="bg-[#0e0f1e] border-white/5 hover:border-white/10 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between py-4">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-lg", ticket.status === 'open' ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500")}>

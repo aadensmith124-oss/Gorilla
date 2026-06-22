@@ -29,7 +29,7 @@ export default function RanksPage() {
     : 100;
 
   return (
-    <div className="min-h-screen bg-[#090a0c] pb-20">
+    <div className="min-h-screen bg-[#09091a] pb-20">
       <div className="max-w-md mx-auto px-4 pt-6">
 
         <div className="flex items-center gap-3 mb-8">

@@ -136,7 +136,7 @@ export default function OrdersPage() {
         <button
           onClick={() => refetch()}
           disabled={isRefetching}
-          className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all disabled:opacity-50"
+          className="flex items-center gap-1.5 border border-white/8 bg-[#0e0f1e] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all disabled:opacity-50"
           data-testid="btn-refresh"
         >
           <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
@@ -144,7 +144,7 @@ export default function OrdersPage() {
         </button>
         <a href="https://t.me/+K3ou01RaW6oyMjJh" target="_blank" rel="noopener noreferrer">
           <button
-            className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all"
+            className="flex items-center gap-1.5 border border-white/8 bg-[#0e0f1e] rounded px-3 py-1.5 text-xs text-white/50 hover:text-white hover:border-white/15 transition-all"
             data-testid="btn-support"
           >
             support
@@ -153,7 +153,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Deposits + Tier panel */}
-      <div className="border border-white/8 bg-[#111] rounded-lg p-4 flex items-center justify-between">
+      <div className="border border-white/8 bg-[#0e0f1e] rounded-lg p-4 flex items-center justify-between">
         <div>
           <p className="text-[10px] text-white/30 uppercase tracking-widest mb-1">Total Deposits</p>
           <p className="text-2xl font-mono font-bold text-white">${(totalDepositsCents / 100).toFixed(2)}</p>
@@ -188,7 +188,7 @@ export default function OrdersPage() {
         placeholder="search orders..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full bg-[#111] border border-white/5 rounded py-2 px-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
+        className="w-full bg-[#0e0f1e] border border-white/5 rounded py-2 px-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
         data-testid="input-search-orders"
       />
 
@@ -204,7 +204,7 @@ export default function OrdersPage() {
               <button
                 key={order.id}
                 onClick={() => setLocation(`/order/${order.orderId}`)}
-                className="w-full text-left border border-white/5 bg-[#111] rounded-lg px-4 py-3 hover:bg-[#161616] hover:border-white/10 transition-all"
+                className="w-full text-left border border-white/5 bg-[#0e0f1e] rounded-lg px-4 py-3 hover:bg-[#161616] hover:border-white/10 transition-all"
                 data-testid={`btn-order-${order.id}`}
               >
                 <div className="flex items-start justify-between gap-3">

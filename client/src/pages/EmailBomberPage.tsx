@@ -61,7 +61,7 @@ export default function EmailBomberPage() {
 
   return (
     <div className="max-w-sm mx-auto px-3 py-4">
-      <div className="bg-[#0e0e0e] border border-white/8 rounded-xl p-4 space-y-3">
+      <div className="bg-[#0c0d1a] border border-white/8 rounded-xl p-4 space-y-3">
         <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Email Bomber</p>
 
         <input

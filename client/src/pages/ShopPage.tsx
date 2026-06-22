@@ -74,7 +74,7 @@ export default function ShopPage() {
       <div className="relative">
         <Input
           placeholder="Search logs..."
-          className="bg-[#111] border-white/5 text-white placeholder:text-white/25 focus-visible:ring-0 focus-visible:border-white/10"
+          className="bg-[#0e0f1e] border-white/5 text-white placeholder:text-white/25 focus-visible:ring-0 focus-visible:border-white/10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           data-testid="input-search"

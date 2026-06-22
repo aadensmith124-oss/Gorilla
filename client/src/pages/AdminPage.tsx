@@ -44,12 +44,12 @@ export default function AdminPage() {
   const isAdmin = user?.role === 'admin';
 
   if (authLoading) {
-    return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-[#09091a]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#090a0c] gap-4">
+      <div className="flex h-screen flex-col items-center justify-center bg-[#09091a] gap-4">
         <ShieldX className="h-16 w-16 text-destructive" />
         <h1 className="text-xl font-bold text-white">Access Denied</h1>
       </div>
@@ -79,7 +79,7 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="flex h-screen bg-[#090a0c] text-white overflow-hidden">
+    <div className="flex h-screen bg-[#09091a] text-white overflow-hidden">
       <aside className="hidden md:flex w-64 border-r border-white/5 bg-[#0d0f12] flex-col">
         <SidebarContent />
       </aside>
@@ -224,7 +224,7 @@ function DepositsSection() {
       ) : !deposits?.length ? (
         <div className="text-center py-20 text-white/30 text-sm">No deposits yet</div>
       ) : (
-        <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-white/5 hover:bg-transparent">
@@ -262,7 +262,7 @@ function DepositsSection() {
 function StatCard({ title, value, icon: Icon, color }: any) {
   const colorClass = color === "green" ? "text-green-500" : color === "orange" ? "text-orange-500" : "text-primary";
   return (
-    <Card className="bg-[#0f1115] border-white/5">
+    <Card className="bg-[#0e0f1e] border-white/5">
       <CardContent className="p-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">{title}</p>
@@ -421,7 +421,7 @@ function ProductsSection() {
       </div>
 
       {showAddForm && (
-        <Card className="bg-[#0f1115] border-primary/20">
+        <Card className="bg-[#0e0f1e] border-primary/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Add Product</CardTitle>
@@ -460,7 +460,7 @@ function ProductsSection() {
       )}
 
       {editingProduct && (
-        <Card className="bg-[#0f1115] border-primary/20">
+        <Card className="bg-[#0e0f1e] border-primary/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Edit: {editingProduct.name}</CardTitle>
@@ -500,7 +500,7 @@ function ProductsSection() {
 
       <div className="space-y-3">
         {products?.map((product: any) => (
-          <div key={product.id} className="bg-[#0f1115] border border-white/5 rounded-lg overflow-hidden">
+          <div key={product.id} className="bg-[#0e0f1e] border border-white/5 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div>
@@ -737,7 +737,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       ) : items?.length > 0 ? (
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {items.map((item: any) => (
-            <div key={item.id} className="bg-[#111] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
+            <div key={item.id} className="bg-[#0e0f1e] border border-white/5 rounded px-3 py-2 flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-mono text-white/50 truncate">{(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}</p>
               </div>
@@ -867,7 +867,7 @@ function OrdersSection() {
       <div className="space-y-4">
         <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
 
-        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
+        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-white">Order Detail</h2>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
@@ -1016,7 +1016,7 @@ function OrdersSection() {
         <div className="text-center py-12 text-muted-foreground text-sm">No orders here.</div>
       )}
 
-      <div className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+      <div className="bg-[#0e0f1e] border border-white/5 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2 border-b border-white/5 gap-2">
           <span className="text-[10px] font-bold text-white/40">$</span>
           <span className="text-[10px] font-bold text-white/40">Note / Method</span>
@@ -1089,7 +1089,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
         <p className="text-sm text-muted-foreground mt-1">Create a fake order to test the delivery flow — no payment needed.</p>
       </div>
 
-      <Card className="bg-[#0f1115] border-primary/20">
+      <Card className="bg-[#0e0f1e] border-primary/20">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -1103,7 +1103,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
               <SelectTrigger className="bg-black/50 border-white/10">
                 <SelectValue placeholder="Select a product" />
               </SelectTrigger>
-              <SelectContent className="bg-[#0f1115] border-white/10">
+              <SelectContent className="bg-[#0e0f1e] border-white/10">
                 {products?.map((p: any) => (
                   <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                 ))}
@@ -1118,7 +1118,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
                 <SelectTrigger className="bg-black/50 border-white/10">
                   <SelectValue placeholder="Select a variant" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f1115] border-white/10">
+                <SelectContent className="bg-[#0e0f1e] border-white/10">
                   {product.variants?.map((v: any) => (
                     <SelectItem key={v.id} value={v.id.toString()}>
                       {v.name} — ${(v.price / 100).toFixed(2)} (min {v.minQuantity || 1})
@@ -1288,7 +1288,7 @@ function UsersSection() {
       <div className="space-y-3">
         <button onClick={() => setSelectedUser(null)} className="text-xs text-white/40 hover:text-white transition-colors">← Back to Users</button>
 
-        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-4">
+        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <p className="font-bold text-white">{selectedUser.username}</p>
@@ -1419,7 +1419,7 @@ function UsersSection() {
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Search by username or email..."
-        className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none"
+        className="w-full h-8 bg-[#0e0f1e] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none"
         data-testid="input-users-search"
       />
       <div className="space-y-1.5">
@@ -1427,7 +1427,7 @@ function UsersSection() {
           <button
             key={user.id}
             onClick={() => { setSelectedUser(user); setBalanceInput(""); }}
-            className="w-full text-left bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors"
+            className="w-full text-left bg-[#0e0f1e] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors"
             data-testid={`btn-user-${user.id}`}
           >
             <div className="flex items-center justify-between gap-3">
@@ -1550,7 +1550,7 @@ function CodesSection() {
       {/* ── BALANCE CODES TAB ── */}
       {tab === "balance" && (
         <>
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-[#0e0f1e] border-white/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Create Balance Code</CardTitle>
             </CardHeader>
@@ -1600,7 +1600,7 @@ function CodesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-[#0e0f1e] border-white/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Balance Codes ({balanceCodes?.length ?? 0})</CardTitle>
             </CardHeader>
@@ -1635,7 +1635,7 @@ function CodesSection() {
       {/* ── DISCOUNT CODES TAB ── */}
       {tab === "discount" && (
         <>
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-[#0e0f1e] border-white/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Create Discount Code</CardTitle>
             </CardHeader>
@@ -1705,7 +1705,7 @@ function CodesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-[#0e0f1e] border-white/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Discount Codes ({discountList.length})</CardTitle>
             </CardHeader>
@@ -1831,7 +1831,7 @@ function IntegrationsSection() {
           ) : METHODS.map((m) => {
             const enabled = paymentMethods?.[m.id] !== false;
             return (
-              <Card key={m.id} className="bg-[#0f1115] border-white/5" data-testid={`card-payment-toggle-${m.id}`}>
+              <Card key={m.id} className="bg-[#0e0f1e] border-white/5" data-testid={`card-payment-toggle-${m.id}`}>
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full ${m.bg} flex items-center justify-center flex-shrink-0`}>
@@ -1858,7 +1858,7 @@ function IntegrationsSection() {
       {/* CashApp Tag */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground mb-3">CashApp Settings</p>
-        <Card className="bg-[#0f1115] border-white/5">
+        <Card className="bg-[#0e0f1e] border-white/5">
           <CardContent className="p-4 space-y-3">
             <div>
               <p className="font-bold text-sm text-white mb-1">Your CashApp $Cashtag</p>
@@ -1891,7 +1891,7 @@ function IntegrationsSection() {
         {statusLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
-          <Card className="bg-[#0f1115] border-white/5" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
+          <Card className="bg-[#0e0f1e] border-white/5" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
             <CardContent className="p-4 flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <p className="font-mono text-sm text-white">TELEGRAM_BOT_TOKEN</p>
@@ -1909,7 +1909,7 @@ function IntegrationsSection() {
         )}
       </div>
 
-      <Card className="bg-[#0f1115] border-primary/20">
+      <Card className="bg-[#0e0f1e] border-primary/20">
         <CardContent className="p-4 space-y-2">
           <p className="text-xs font-semibold text-primary">How to set the token</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
@@ -1959,7 +1959,7 @@ function FeatureTogglesCard() {
         ) : FEATURES.map((f) => {
           const enabled = features?.[f.key] !== false;
           return (
-            <Card key={f.key} className="bg-[#0f1115] border-white/5" data-testid={`card-feature-${f.key}`}>
+            <Card key={f.key} className="bg-[#0e0f1e] border-white/5" data-testid={`card-feature-${f.key}`}>
               <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="font-bold text-sm text-white">{f.label}</p>
@@ -2062,7 +2062,7 @@ function CashAppSection() {
     return (
       <div className="space-y-4">
         <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
-        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
+        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <SiCashapp className="h-5 w-5 text-[#00D632]" />
@@ -2204,7 +2204,7 @@ function CashAppSection() {
           {displayedOrders.map((order: any) => (
             <div
               key={order.id}
-              className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              className="bg-[#0e0f1e] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
               onClick={() => setSelectedOrder(order)}
             >
               <div className="flex-1 min-w-0">
@@ -2275,7 +2275,7 @@ function AdminCardsSection() {
     <div className="space-y-5">
       <h2 className="text-base font-bold text-white">Cards</h2>
 
-      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
+      <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
 
         <div className="space-y-1">
@@ -2341,7 +2341,7 @@ function AdminCardsSection() {
           (cards ?? []).map((card: any) => {
             const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
             return (
-              <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div key={card.id} className="bg-[#0e0f1e] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div className="space-y-0.5 min-w-0 flex-1">
                   <p className="text-xs font-mono font-bold text-primary">🔥 NYCHQ | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
@@ -2409,7 +2409,7 @@ function AdminAchSection() {
     <div className="space-y-5">
       <h2 className="text-base font-bold text-white">ACH Management</h2>
 
-      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
+      <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add ACH</p>
 
         <div className="space-y-1">
@@ -2469,7 +2469,7 @@ function AdminAchSection() {
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
           (achList ?? []).map((a: any) => (
-            <div key={a.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div key={a.id} className="bg-[#0e0f1e] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
               <div className="space-y-0.5 min-w-0 flex-1">
                 <p className="text-sm font-bold text-white">{a.bankName}</p>
                 <p className="text-[10px] text-white/30 font-mono">{a.balance}</p>
@@ -2543,7 +2543,7 @@ function SmtpSection() {
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : (
-        <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4 max-w-md">
+        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-5 space-y-4 max-w-md">
           <div className="space-y-1">
             <label className="text-[10px] text-white/40 uppercase tracking-widest">SMTP Host</label>
             <Input
@@ -2717,7 +2717,7 @@ function SellersSection() {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#0f1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="w-full max-w-md bg-[#0e0f1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <h2 className="text-base font-bold">Seller Application</h2>
               <button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-white/5 text-muted-foreground">

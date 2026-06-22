@@ -158,7 +158,7 @@ function ProductsTab() {
       </div>
 
       {showNewProduct && (
-        <div className="bg-[#0f1115] border border-white/8 rounded-xl p-4 space-y-3">
+        <div className="bg-[#0e0f1e] border border-white/8 rounded-xl p-4 space-y-3">
           <p className="text-xs font-bold text-white/40 uppercase tracking-widest">New Product</p>
           <Input placeholder="Product name" value={newProductName} onChange={e => setNewProductName(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-name" />
           <Input placeholder="Description (optional)" value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-desc" />
@@ -174,7 +174,7 @@ function ProductsTab() {
           const isExpanded = expandedProduct === product.id;
           const totalStock = product.variants?.reduce((sum: number, v: any) => sum + (v.stockCount || 0), 0) ?? 0;
           return (
-            <div key={product.id} className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+            <div key={product.id} className="bg-[#0e0f1e] border border-white/5 rounded-xl overflow-hidden">
               <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
                 <button className="flex items-center gap-3 text-left flex-1" onClick={() => setExpandedProduct(isExpanded ? null : product.id)} data-testid={`btn-product-${product.id}`}>
                   <Package className="h-4 w-4 text-white/30 flex-shrink-0" />
@@ -289,7 +289,7 @@ function CardsTab() {
     <div className="space-y-4">
       <h2 className="text-sm font-bold text-white">Cards ({cards.length})</h2>
 
-      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
+      <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
         <div className="space-y-1">
           <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Delivery Item</label>
@@ -317,7 +317,7 @@ function CardsTab() {
           {(cards as any[]).map((card: any) => {
             const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
             return (
-              <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between" data-testid={`row-card-${card.id}`}>
+              <div key={card.id} className="bg-[#0e0f1e] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between" data-testid={`row-card-${card.id}`}>
                 <div className="space-y-0.5 min-w-0 flex-1">
                   <p className="text-xs font-mono font-bold text-primary">🔥 NYCHQ | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
@@ -353,10 +353,10 @@ function OrdersTab() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-white">Orders ({orders.length})</h2>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID or username..." className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-orders-search" />
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID or username..." className="w-full h-8 bg-[#0e0f1e] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-orders-search" />
       <div className="space-y-1.5">
         {filtered.slice(0, 50).map((order: any) => (
-          <div key={order.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5" data-testid={`row-order-${order.id}`}>
+          <div key={order.id} className="bg-[#0e0f1e] border border-white/5 rounded-xl px-3 py-2.5" data-testid={`row-order-${order.id}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <Badge className={`text-[10px] flex-shrink-0 ${statusClass(order.status)}`}>{statusLabel(order.status)}</Badge>
@@ -411,10 +411,10 @@ function UsersBalanceTab() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-white">Add Balance to User</h2>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search username or email..." className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-user-search" />
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search username or email..." className="w-full h-8 bg-[#0e0f1e] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-user-search" />
 
       {selectedUser ? (
-        <div className="bg-[#0f1115] border border-white/8 rounded-xl p-4 space-y-3">
+        <div className="bg-[#0e0f1e] border border-white/8 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-white">@{selectedUser.username}</p>
@@ -454,7 +454,7 @@ function UsersBalanceTab() {
         <div className="space-y-1.5 max-h-96 overflow-y-auto">
           {isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div> :
             filtered.slice(0, 30).map((u: any) => (
-              <button key={u.id} onClick={() => setSelectedUser(u)} className="w-full flex items-center justify-between bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors text-left" data-testid={`btn-select-user-${u.id}`}>
+              <button key={u.id} onClick={() => setSelectedUser(u)} className="w-full flex items-center justify-between bg-[#0e0f1e] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors text-left" data-testid={`btn-select-user-${u.id}`}>
                 <div>
                   <p className="text-xs font-bold text-white">@{u.username}</p>
                   <p className="text-[10px] text-white/30 font-mono">${(u.balance / 100).toFixed(2)}</p>
