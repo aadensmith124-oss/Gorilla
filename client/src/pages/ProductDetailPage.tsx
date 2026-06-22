@@ -39,7 +39,7 @@ export default function ProductDetailPage() {
     if (selectedVariant) setQuantity(Math.min(Math.max(minQty, 1), maxQty));
   }, [selectedVariantId, minQty, maxQty]);
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#09091a]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!product) return <div className="p-8 text-center text-white/50 text-sm">Product not found</div>;
 
   const purchaseMutation = useMutation({
@@ -69,7 +69,7 @@ export default function ProductDetailPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#09091a] flex items-start justify-center p-4 pt-8">
+    <div className="min-h-screen bg-[#090a0c] flex items-start justify-center p-4 pt-8">
       <div className="w-full max-w-sm bg-[#111318] rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl">
 
         {/* Header */}

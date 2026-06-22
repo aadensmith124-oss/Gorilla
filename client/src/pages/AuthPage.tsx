@@ -14,7 +14,7 @@ export default function AuthPage() {
   if (user) return <Redirect to="/" />;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#09091a]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#0c0c0c]">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
@@ -44,7 +44,7 @@ export default function AuthPage() {
           </button>
         </div>
 
-        <div className="bg-[#0e0f1e] border border-white/5 rounded-xl p-5">
+        <div className="bg-[#111] border border-white/5 rounded-xl p-5">
           {tab === "login" ? <LoginForm /> : <RegisterForm />}
         </div>
       </div>

@@ -201,7 +201,7 @@ export default function CardsPage() {
         <button
           onClick={purchaseCart}
           disabled={cartCardIds.size === 0 || !!cartPurchasing}
-          className="flex items-center gap-1.5 border border-white/8 bg-[#0e0f1e] rounded px-3 py-1.5 text-xs text-white/60 hover:text-white hover:border-white/15 transition-all disabled:opacity-50"
+          className="flex items-center gap-1.5 border border-white/8 bg-[#111] rounded px-3 py-1.5 text-xs text-white/60 hover:text-white hover:border-white/15 transition-all disabled:opacity-50"
           data-testid="btn-cart"
         >
           {cartPurchasing && !cartPurchasing.done ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
@@ -225,7 +225,7 @@ export default function CardsPage() {
           placeholder="Search BIN, bank, country..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-[#0e0f1e] border border-white/5 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
+          className="w-full bg-[#111] border border-white/5 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
           data-testid="input-search"
         />
       </div>
@@ -234,7 +234,7 @@ export default function CardsPage() {
       <button
         onClick={() => setShowFilters(!showFilters)}
         className={`w-full border rounded py-2 text-xs transition-all flex items-center justify-center gap-2 ${
-          showFilters || activeFilters > 0 ? "border-primary/40 text-primary bg-primary/5" : "border-white/8 text-white/50 bg-[#0e0f1e] hover:text-white hover:border-white/15"
+          showFilters || activeFilters > 0 ? "border-primary/40 text-primary bg-primary/5" : "border-white/8 text-white/50 bg-[#111] hover:text-white hover:border-white/15"
         }`}
         data-testid="btn-filters"
       >
@@ -243,7 +243,7 @@ export default function CardsPage() {
       </button>
 
       {showFilters && (
-        <div className="border border-white/8 bg-[#0e0f1e] rounded p-3 space-y-3">
+        <div className="border border-white/8 bg-[#111] rounded p-3 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-white/40 uppercase tracking-widest">Price Range</p>
             <button onClick={() => { setPriceMin(""); setPriceMax(""); setShowFilters(false); }} className="text-[10px] text-white/30 hover:text-white flex items-center gap-1">

@@ -35,7 +35,7 @@ export default function EatzPage() {
     : "#";
 
   return (
-    <div className="min-h-screen bg-[#09091a] pb-24">
+    <div className="min-h-screen bg-[#090a0c] pb-24">
       <div className="max-w-lg mx-auto px-4 pt-6">
 
         {/* Header banner */}

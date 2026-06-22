@@ -77,7 +77,7 @@ function DepositRow({ deposit }: { deposit: Deposit }) {
     <div className={`flex items-center justify-between px-3 py-2.5 rounded border ${
       isCredited ? "bg-green-950/10 border-green-900/30" :
       deposit.status === "failed" || deposit.status === "expired" ? "bg-red-950/10 border-red-900/20" :
-      "bg-[#0c0d1a] border-white/5"
+      "bg-[#0e0e0e] border-white/5"
     }`}>
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="flex-shrink-0">
@@ -210,7 +210,7 @@ export default function DepositPage() {
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => { setMethod("crypto"); setCashappResult(null); }}
-          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-primary/50 bg-primary/10" : "border-white/8 bg-[#0c0d1a] hover:border-white/15"}`}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-primary/50 bg-primary/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
           data-testid="btn-method-crypto"
         >
           <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-primary" : "bg-white/10"}`}>
@@ -224,7 +224,7 @@ export default function DepositPage() {
 
         <button
           onClick={() => { setMethod("cashapp"); setCashappResult(null); }}
-          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0c0d1a] hover:border-white/15"}`}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
           data-testid="btn-method-cashapp"
         >
           <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "cashapp" ? "bg-[#00D632]" : "bg-white/10"}`}>
@@ -277,7 +277,7 @@ export default function DepositPage() {
                     key={coin.id}
                     onClick={() => setSelectedCoin(coin.id)}
                     className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${
-                      isSelected ? "border-white/30 bg-white/8" : "border-white/8 bg-[#0c0d1a] hover:border-white/15"
+                      isSelected ? "border-white/30 bg-white/8" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"
                     }`}
                     data-testid={`btn-coin-${coin.id}`}
                   >
@@ -312,7 +312,7 @@ export default function DepositPage() {
                   placeholder="0.00"
                   value={amountInput}
                   onChange={e => setAmountInput(e.target.value)}
-                  className="w-full h-10 bg-[#0c0d1a] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-primary/40 transition-colors"
+                  className="w-full h-10 bg-[#0e0e0e] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-primary/40 transition-colors"
                   data-testid="input-amount"
                 />
               </div>
@@ -345,7 +345,7 @@ export default function DepositPage() {
         <div className="space-y-2">
           {!cashappResult ? (
             <>
-              <div className="px-3 py-2.5 bg-[#0c0d1a] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
+              <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
                 click below to generate a unique payment note · send any amount via cashapp · admin will credit your balance after confirming
               </div>
               <button

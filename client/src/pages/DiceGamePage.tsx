@@ -20,7 +20,7 @@ export default function DiceGamePage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8">
-      <Card className="border-primary/20 bg-[#0e0f1e] backdrop-blur-sm overflow-hidden">
+      <Card className="border-primary/20 bg-[#0f1115] backdrop-blur-sm overflow-hidden">
         <CardHeader className="text-center border-b border-white/5 bg-white/5">
           <CardTitle className="text-3xl font-black italic tracking-tighter uppercase text-white">Double or Nothing</CardTitle>
           <CardDescription className="italic">Roll higher than 7 to win 2x your bet.</CardDescription>

@@ -63,7 +63,7 @@ export default function CheckerPage() {
   const canCheck = cards.length > 0 && balance >= totalCost && !checkMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-[#09091a] pb-20">
+    <div className="min-h-screen bg-[#090a0c] pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 space-y-5">
 
         {/* Header */}

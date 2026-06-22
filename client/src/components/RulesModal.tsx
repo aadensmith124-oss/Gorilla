@@ -46,7 +46,7 @@ export function RulesLink({ onClick }: { onClick: () => void }) {
 export function RulesModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-[#0e0f1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="w-full max-w-lg bg-[#0f1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-white/5">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-destructive" />

@@ -5,25 +5,25 @@
 @tailwind utilities;
 
 :root {
-  --background: 234 15% 6%;
-  --foreground: 220 15% 94%;
-  --card: 234 13% 8%;
-  --card-foreground: 220 15% 94%;
-  --popover: 234 13% 8%;
-  --popover-foreground: 220 15% 94%;
-  --primary: 239 84% 67%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 234 13% 13%;
-  --secondary-foreground: 220 15% 94%;
-  --muted: 234 13% 13%;
-  --muted-foreground: 234 10% 50%;
-  --accent: 239 84% 67%;
-  --accent-foreground: 0 0% 100%;
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 0 0% 95%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 95%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 50%;
+  --accent: 0 0% 95%;
+  --accent-foreground: 0 0% 5%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 234 13% 14%;
-  --input: 234 13% 12%;
-  --ring: 239 84% 67%;
+  --border: 0 0% 14%;
+  --input: 0 0% 12%;
+  --ring: 0 0% 50%;
   --radius: 0.5rem;
   --font-display: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -46,5 +46,5 @@
 ::-webkit-scrollbar-track { @apply bg-transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors; }
 .glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl; }
-.pro-card { @apply bg-[#0e0f1a] border border-white/5 rounded shadow-xl; }
-.item-row { @apply border border-white/5 bg-[#0e0f1a] rounded p-3 hover:bg-[#12132a] transition-colors; }
+.pro-card { @apply bg-[#111111] border border-white/5 rounded shadow-xl; }
+.item-row { @apply border border-white/5 bg-[#111111] rounded p-3 hover:bg-[#161616] transition-colors; }

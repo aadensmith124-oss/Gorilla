@@ -93,7 +93,7 @@ export default function ProfilePage() {
     if (tabFromUrl) setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#09091a]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6 pb-20">

@@ -13,7 +13,6 @@ import {
   BadgeCheck,
   Store,
   Zap,
-  ShieldCheck,
   Copy,
   Check,
 } from "lucide-react";
@@ -69,14 +68,14 @@ export default function BecomeSellerPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#09091a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#090a0c] flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09091a] pb-20">
+    <div className="min-h-screen bg-[#090a0c] pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 space-y-6">
 
         {/* Header */}
