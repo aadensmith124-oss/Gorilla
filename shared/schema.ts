@@ -174,6 +174,14 @@ export const announcements = pgTable("announcements", {
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
 
 // === CARDS ===
+// === CARD BASES ===
+export const cardBases = pgTable("card_bases", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CardBase = typeof cardBases.$inferSelect;
+
 export const cards = pgTable("cards", {
   id: serial("id").primaryKey(),
   cardNumber: text("card_number").notNull(),
@@ -188,6 +196,7 @@ export const cards = pgTable("cards", {
   isSold: boolean("is_sold").default(false).notNull(),
   userId: integer("user_id").references(() => users.id),
   binData: jsonb("bin_data").$type<{ bin: string; bank: string | null; scheme: string | null; type: string | null; brand: string | null; country: string | null; countryCode: string | null } | null>().default(null),
+  baseId: integer("base_id").references(() => cardBases.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

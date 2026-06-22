@@ -1,9 +1,9 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
-  type Card, type InsertCard, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
+  type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
 } from "@shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
 
@@ -100,6 +100,12 @@ export interface IStorage {
   getPaymentMethodsConfig(): Promise<Record<string, boolean>>;
   getUserCards(userId: number): Promise<Card[]>;
   deleteCard(id: number): Promise<void>;
+
+  // Card Bases
+  getCardBasesWithCount(): Promise<(CardBase & { count: number })[]>;
+  createCardBase(name: string): Promise<CardBase>;
+  deleteCardBase(id: number): Promise<void>;
+  getCardsByBase(baseId: number): Promise<Card[]>;
 
   // Seller Applications
   createSellerApplication(userId: number, sellerCode: string): Promise<SellerApplication>;
@@ -1088,6 +1094,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCard(id: number): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
+  }
+
+  async getCardBasesWithCount(): Promise<(CardBase & { count: number })[]> {
+    const result = await db.execute(sql`
+      SELECT cb.id, cb.name, cb.created_at,
+             COUNT(c.id) FILTER (WHERE c.is_sold = false) as count
+      FROM card_bases cb
+      LEFT JOIN cards c ON c.base_id = cb.id
+      GROUP BY cb.id, cb.name, cb.created_at
+      ORDER BY cb.name
+    `);
+    return (result.rows as any[]).map((r: any) => ({
+      id: r.id, name: r.name, createdAt: r.created_at, count: Number(r.count)
+    }));
+  }
+
+  async createCardBase(name: string): Promise<CardBase> {
+    const [base] = await db.insert(cardBases).values({ name }).returning();
+    return base;
+  }
+
+  async deleteCardBase(id: number): Promise<void> {
+    const result = await db.execute(sql`SELECT COUNT(*) as n FROM cards WHERE base_id = ${id} AND is_sold = false`);
+    const count = Number((result.rows[0] as any).n);
+    if (count > 0) throw new Error("Cannot delete base with cards in stock");
+    await db.delete(cardBases).where(eq(cardBases.id, id));
+  }
+
+  async getCardsByBase(baseId: number): Promise<Card[]> {
+    return db.select().from(cards).where(and(eq(cards.baseId, baseId), eq(cards.isSold, false))).orderBy(desc(cards.createdAt));
   }
 
   async createSellerApplication(userId: number, sellerCode: string): Promise<SellerApplication> {

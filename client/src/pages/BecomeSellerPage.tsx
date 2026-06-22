@@ -15,6 +15,7 @@ import {
   Zap,
   Copy,
   Check,
+  ShieldCheck,
 } from "lucide-react";
 
 const PERKS = [

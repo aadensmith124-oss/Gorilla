@@ -1135,15 +1135,52 @@ export async function registerRoutes(
   });
 
   // Cards
+  // === CARD BASES ===
+  app.get("/api/card-bases", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const bases = await storage.getCardBasesWithCount();
+    res.json(bases);
+  });
+
+  app.post("/api/admin/card-bases", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Name required" });
+    try {
+      const base = await storage.createCardBase(name.trim());
+      res.status(201).json(base);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/card-bases/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    try {
+      await storage.deleteCardBase(Number(req.params.id));
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/card-bases/:id/cards", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const cards = await storage.getCardsByBase(Number(req.params.id));
+    res.json(cards);
+  });
+
   app.get("/api/cards", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const baseId = req.query.baseId ? Number(req.query.baseId) : null;
+    const baseFilter = baseId ? sql`AND c.base_id = ${baseId}` : sql``;
     const { rows } = await db.execute(sql`
       SELECT c.id, c.card_number, c.masked_card, c.expiry, c.cvv, c.country, c.extras,
              c.price, c.hr_percent, c.is_sold, c.is_first_hand, c.user_id, c.created_at, c.bin_data,
-             u.seller_type, u.seller_display_name, u.username as seller_username
+             c.base_id, cb.name as base_name
       FROM cards c
-      LEFT JOIN users u ON u.id = c.user_id
-      WHERE c.is_sold = false
+      LEFT JOIN card_bases cb ON cb.id = c.base_id
+      WHERE c.is_sold = false ${baseFilter}
       ORDER BY c.created_at DESC
     `) as any;
 
@@ -1168,6 +1205,7 @@ export async function registerRoutes(
       price: r.price, hrPercent: r.hr_percent ?? 80, isSold: r.is_sold, isFirstHand: r.is_first_hand,
       userId: r.user_id, createdAt: r.created_at,
       binData: r.bin_data ?? null,
+      baseId: r.base_id ?? null, baseName: r.base_name ?? null,
     })));
   });
 
@@ -1200,6 +1238,8 @@ export async function registerRoutes(
     const rawHr = String(req.body.hrPercent ?? "80").replace(/[^0-9]/g, "");
     const hrPercent = rawHr ? Math.max(1, Math.min(100, parseInt(rawHr, 10))) : 1;
 
+    const baseId = req.body.baseId ? Number(req.body.baseId) : undefined;
+
     const card = await storage.createCard({
       cardNumber,
       maskedCard: masked,
@@ -1210,7 +1250,8 @@ export async function registerRoutes(
       price: Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price,
       isFirstHand: false,
       hrPercent,
-    });
+      ...(baseId ? { baseId } : {}),
+    } as any);
 
     // Save binData to DB immediately so it's always available
     if (storedBinData) {

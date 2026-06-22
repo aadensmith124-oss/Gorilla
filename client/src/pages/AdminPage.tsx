@@ -2225,19 +2225,180 @@ function CashAppSection() {
   );
 }
 
+function extractZipPreview(extras: string): string {
+  if (!extras) return "";
+  const parts = extras.split(/[|\t]/);
+  for (let i = 3; i < parts.length; i++) {
+    const t = parts[i].trim();
+    if (/^\d{5}(-\d{4})?$/.test(t)) return t.substring(0, 5);
+  }
+  return "";
+}
+
+function AdminBasesTab() {
+  const { toast } = useToast();
+  const qc = queryClient;
+  const [newBaseName, setNewBaseName] = useState("");
+  const [expandedBase, setExpandedBase] = useState<number | null>(null);
+
+  const { data: bases, isLoading } = useQuery<any[]>({ queryKey: ["/api/card-bases"], refetchInterval: 5000 });
+  const { data: baseCards } = useQuery<any[]>({
+    queryKey: ["/api/admin/card-bases", expandedBase, "cards"],
+    queryFn: async () => {
+      if (!expandedBase) return [];
+      const res = await fetch(`/api/admin/card-bases/${expandedBase}/cards`, { credentials: "include" });
+      return res.json();
+    },
+    enabled: !!expandedBase,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!newBaseName.trim()) throw new Error("Name required");
+      const res = await apiRequest("POST", "/api/admin/card-bases", { name: newBaseName.trim() });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+      return res.json();
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/card-bases"] }); setNewBaseName(""); toast({ title: "Base created" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/card-bases/${id}`);
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/card-bases"] }); if (expandedBase) setExpandedBase(null); toast({ title: "Base deleted" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteCardMutation = useMutation({
+    mutationFn: async (cardId: number) => { await apiRequest("DELETE", `/api/admin/cards/${cardId}`); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/cards"] });
+      qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/card-bases", expandedBase, "cards"] });
+      toast({ title: "Card removed" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Create base */}
+      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Create Base</p>
+        <div className="flex gap-2">
+          <Input
+            value={newBaseName}
+            onChange={e => setNewBaseName(e.target.value)}
+            placeholder="Base name (e.g. OG CLOVER)"
+            className="bg-black/50 border-white/10 text-sm flex-1"
+            data-testid="input-base-name"
+          />
+          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !newBaseName.trim()} size="sm" className="h-9" data-testid="btn-create-base">
+            {createMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Create"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Bases list */}
+      <div className="space-y-2">
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : (bases ?? []).length === 0 ? (
+          <p className="text-xs text-white/25 text-center py-6">No bases yet</p>
+        ) : (
+          (bases ?? []).map((b: any) => (
+            <div key={b.id} className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 flex items-center justify-between">
+                <button
+                  onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
+                  className="flex items-center gap-3 text-left flex-1 min-w-0"
+                  data-testid={`btn-expand-base-${b.id}`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white font-mono">{b.name}</p>
+                    <p className="text-[10px] text-white/30">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
+                  </div>
+                </button>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <button
+                    onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
+                    className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${expandedBase === b.id ? "border-primary/40 text-primary" : "border-white/10 text-white/40 hover:border-white/20"}`}
+                    data-testid={`btn-view-base-${b.id}`}
+                  >
+                    {expandedBase === b.id ? "close" : "view"}
+                  </button>
+                  <button
+                    onClick={() => { if (b.count > 0) { toast({ title: "Cannot delete", description: "Remove all cards first", variant: "destructive" }); return; } deleteMutation.mutate(b.id); }}
+                    disabled={deleteMutation.isPending}
+                    className="text-white/20 hover:text-destructive transition-colors"
+                    data-testid={`btn-delete-base-${b.id}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              {expandedBase === b.id && (
+                <div className="border-t border-white/5 px-4 py-3 space-y-2">
+                  {!baseCards || baseCards.length === 0 ? (
+                    <p className="text-xs text-white/25 text-center py-3">No cards in this base</p>
+                  ) : (
+                    baseCards.map((card: any) => {
+                      const bin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
+                      const zip = extractZipPreview(card.extras ?? "");
+                      return (
+                        <div key={card.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono bg-black/40 border border-white/8 px-1.5 py-0.5 rounded text-white/50">{bin}</span>
+                              {zip && <span className="text-[10px] text-white/30 font-mono">ZIP {zip}</span>}
+                              <span className="text-[10px] text-white/30">{card.hrPercent ?? 80}% HR</span>
+                            </div>
+                            {card.extras && <p className="text-[9px] text-white/20 font-mono truncate">{card.extras.substring(0, 55)}...</p>}
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-2">
+                            <span className="font-mono text-xs text-white/60">${(card.price / 100).toFixed(2)}</span>
+                            <button
+                              onClick={() => deleteCardMutation.mutate(card.id)}
+                              disabled={deleteCardMutation.isPending}
+                              className="text-white/20 hover:text-destructive transition-colors"
+                              data-testid={`btn-delete-base-card-${card.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AdminCardsSection() {
   const { toast } = useToast();
   const qc = queryClient;
+  const [tab, setTab] = useState<"stock" | "bases">("stock");
   const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
   const [hrPercent, setHrPercent] = useState("80");
+  const [selectedBaseId, setSelectedBaseId] = useState<string>("");
 
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
+  const { data: bases } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
-  // Auto-extract BIN preview from full item
+  // Auto-extract BIN + ZIP preview from full item
   const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
+  const previewZip = extractZipPreview(fullItem);
 
-  // Validate HR: strip non-numeric, clamp 1-100
   const handleHrChange = (val: string) => {
     const stripped = val.replace(/[^0-9]/g, "");
     if (stripped === "") { setHrPercent(""); return; }
@@ -2249,17 +2410,16 @@ function AdminCardsSection() {
     mutationFn: async () => {
       if (!fullItem.trim()) throw new Error("Full item is required");
       if (!price || parseFloat(price) <= 0) throw new Error("Valid price is required");
-      const res = await apiRequest("POST", "/api/cards", {
-        extras: fullItem.trim(),
-        price: parseFloat(price),
-        hrPercent: hrPercent || "1",
-      });
+      const body: any = { extras: fullItem.trim(), price: parseFloat(price), hrPercent: hrPercent || "1" };
+      if (selectedBaseId) body.baseId = Number(selectedBaseId);
+      const res = await apiRequest("POST", "/api/cards", body);
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed to add card"); }
       return res.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
-      setFullItem(""); setPrice(""); setHrPercent("80");
+      qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
+      setFullItem(""); setPrice(""); setHrPercent("80"); setSelectedBaseId("");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -2267,7 +2427,7 @@ function AdminCardsSection() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/cards/${id}`); },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/cards"] }); toast({ title: "Card deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/cards"] }); qc.invalidateQueries({ queryKey: ["/api/card-bases"] }); toast({ title: "Card deleted" }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -2275,6 +2435,7 @@ function AdminCardsSection() {
     <div className="space-y-5">
       <h2 className="text-base font-bold text-white">Cards</h2>
 
+      {/* Add Card form */}
       <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
 
@@ -2283,15 +2444,35 @@ function AdminCardsSection() {
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
-            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St"}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|ST|12345"}
             rows={3}
             className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
             data-testid="input-full-item"
           />
-          {previewBin.length === 6 && (
-            <p className="text-[10px] text-primary/60 font-mono">BIN detected: {previewBin} (auto-lookup on save)</p>
-          )}
-          <p className="text-[9px] text-white/20">BIN is extracted automatically from the first segment · shown to buyer after purchase</p>
+          <div className="flex gap-3">
+            {previewBin.length === 6 && (
+              <p className="text-[10px] text-primary/60 font-mono">BIN: {previewBin}</p>
+            )}
+            {previewZip && (
+              <p className="text-[10px] text-green-400/60 font-mono">ZIP: {previewZip}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Base selector */}
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Base</label>
+          <select
+            value={selectedBaseId}
+            onChange={e => setSelectedBaseId(e.target.value)}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white py-2 px-2 outline-none focus:border-white/20"
+            data-testid="select-card-base"
+          >
+            <option value="">No base</option>
+            {(bases ?? []).map((b: any) => (
+              <option key={b.id} value={String(b.id)}>{b.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -2320,8 +2501,6 @@ function AdminCardsSection() {
           </div>
         </div>
 
-        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">Label: 🔥 NYCHQ | {hrPercent}% HR 🔥</p>}
-
         <Button
           onClick={() => addMutation.mutate()}
           disabled={addMutation.isPending || !fullItem.trim() || !price}
@@ -2333,39 +2512,59 @@ function AdminCardsSection() {
         </Button>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-xs text-white/30">{(cards ?? []).length} cards total</p>
-        {isLoading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
-        ) : (
-          (cards ?? []).map((card: any) => {
-            const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
-            return (
-              <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
-                <div className="space-y-0.5 min-w-0 flex-1">
-                  <p className="text-xs font-mono font-bold text-primary">🔥 NYCHQ | {card.hrPercent ?? 80}% HR 🔥</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
-                    {card.binData?.bank && <span className="text-[10px] text-white/30 font-mono">{card.binData.bank}</span>}
-                  </div>
-                  {card.extras && <p className="text-[10px] text-white/20 truncate">{card.extras.substring(0, 50)}...</p>}
-                </div>
-                <div className="flex items-center gap-3 shrink-0 ml-2">
-                  <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
-                  <button
-                    onClick={() => deleteMutation.mutate(card.id)}
-                    disabled={deleteMutation.isPending}
-                    className="text-white/20 hover:text-destructive transition-colors"
-                    data-testid={`btn-delete-card-${card.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
+      {/* Tabs */}
+      <div className="flex border-b border-white/5">
+        {(["stock", "bases"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 text-xs font-mono transition-all capitalize ${tab === t ? "text-primary border-b border-primary -mb-px" : "text-white/30 hover:text-white"}`}
+            data-testid={`tab-cards-${t}`}
+          >
+            {t}
+          </button>
+        ))}
       </div>
+
+      {tab === "stock" && (
+        <div className="space-y-2">
+          <p className="text-xs text-white/30">{(cards ?? []).length} cards in stock</p>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : (
+            (cards ?? []).map((card: any) => {
+              const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
+              const zip = extractZipPreview(card.extras ?? "");
+              return (
+                <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {card.baseName && <span className="text-[10px] font-mono font-bold text-primary/70">{card.baseName}</span>}
+                      <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
+                      {zip && <span className="text-[10px] text-white/30 font-mono">ZIP {zip}</span>}
+                    </div>
+                    <p className="text-[10px] text-white/30 font-mono">{card.hrPercent ?? 80}% HR</p>
+                    {card.extras && <p className="text-[9px] text-white/20 truncate font-mono">{card.extras.substring(0, 55)}...</p>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
+                    <button
+                      onClick={() => deleteMutation.mutate(card.id)}
+                      disabled={deleteMutation.isPending}
+                      className="text-white/20 hover:text-destructive transition-colors"
+                      data-testid={`btn-delete-card-${card.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {tab === "bases" && <AdminBasesTab />}
     </div>
   );
 }
