@@ -286,6 +286,7 @@ function ProductsSection() {
   const productSchema = z.object({
     name: z.string().min(1, "Name required"),
     description: z.string().optional(),
+    image: z.string().optional(),
   });
 
   const variantSchema = z.object({
@@ -296,12 +297,12 @@ function ProductsSection() {
 
   const addForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: { name: "", description: "", image: "" },
   });
 
   const editForm = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: { name: "", description: "", image: "" },
   });
 
   const variantForm = useForm<z.infer<typeof variantSchema>>({
@@ -407,7 +408,7 @@ function ProductsSection() {
 
   const startEdit = (product: any) => {
     setEditingProduct(product);
-    editForm.reset({ name: product.name, description: product.description || "" });
+    editForm.reset({ name: product.name, description: product.description || "", image: product.image || "" });
     setShowAddForm(false);
   };
 
@@ -450,6 +451,17 @@ function ProductsSection() {
                     </FormControl>
                   </FormItem>
                 )} />
+                <FormField control={addForm.control} name="image" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL <span className="text-white/30 font-normal">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="https://..." className="bg-black/50 border-white/10" data-testid="input-product-image" />
+                    </FormControl>
+                    {field.value && (
+                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
+                    )}
+                  </FormItem>
+                )} />
                 <Button type="submit" size="sm" className="w-full text-xs" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}Save Product
                 </Button>
@@ -487,6 +499,17 @@ function ProductsSection() {
                         className="bg-black/50 border-white/10 resize-none text-sm"
                       />
                     </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={editForm.control} name="image" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL <span className="text-white/30 font-normal">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="https://..." className="bg-black/50 border-white/10" data-testid="input-edit-product-image" />
+                    </FormControl>
+                    {field.value && (
+                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
+                    )}
                   </FormItem>
                 )} />
                 <Button type="submit" size="sm" className="w-full text-xs" disabled={editMutation.isPending}>

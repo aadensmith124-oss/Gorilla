@@ -103,6 +103,7 @@ function ProductsTab() {
   const [showNewVariant, setShowNewVariant] = useState<number | null>(null);
   const [newProductName, setNewProductName] = useState("");
   const [newProductDesc, setNewProductDesc] = useState("");
+  const [newProductImage, setNewProductImage] = useState("");
   const [newVariantName, setNewVariantName] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
   const [editingVariant, setEditingVariant] = useState<{ id: number; name: string; price: string } | null>(null);
@@ -115,10 +116,10 @@ function ProductsTab() {
   const createProductMutation = useMutation({
     mutationFn: async () => {
       if (!newProductName.trim()) throw new Error("Name required");
-      const res = await apiRequest("POST", "/api/products", { name: newProductName.trim(), description: newProductDesc.trim(), active: true });
+      const res = await apiRequest("POST", "/api/products", { name: newProductName.trim(), description: newProductDesc.trim(), image: newProductImage.trim(), active: true });
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Product created" }); setNewProductName(""); setNewProductDesc(""); setShowNewProduct(false); qc.invalidateQueries({ queryKey: ["/api/admin/products"] }); },
+    onSuccess: () => { toast({ title: "Product created" }); setNewProductName(""); setNewProductDesc(""); setNewProductImage(""); setShowNewProduct(false); qc.invalidateQueries({ queryKey: ["/api/admin/products"] }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -162,6 +163,7 @@ function ProductsTab() {
           <p className="text-xs font-bold text-white/40 uppercase tracking-widest">New Product</p>
           <Input placeholder="Product name" value={newProductName} onChange={e => setNewProductName(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-name" />
           <Input placeholder="Description (optional)" value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-desc" />
+          <Input placeholder="Image URL (optional)" value={newProductImage} onChange={e => setNewProductImage(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-image" />
           <div className="flex gap-2">
             <Button size="sm" className="flex-1 h-8 text-xs" onClick={() => createProductMutation.mutate()} disabled={createProductMutation.isPending || !newProductName.trim()}>{createProductMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}</Button>
             <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowNewProduct(false)}>Cancel</Button>
