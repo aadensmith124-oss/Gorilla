@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart, SlidersHorizontal, X, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, ChevronDown, X, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -59,6 +59,69 @@ function formatCardType(binData: any): string {
     .join(" ");
 }
 
+function FilterDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1.5 border rounded px-3 py-2 text-xs font-mono shrink-0 transition-all w-full justify-between ${
+          value
+            ? "border-primary/50 text-primary bg-primary/5"
+            : "border-white/10 text-white/40 hover:text-white hover:border-white/20 bg-[#111]"
+        }`}
+      >
+        <span className="truncate max-w-[120px]">{value || placeholder}</span>
+        <div className="flex items-center gap-1 shrink-0">
+          {value && (
+            <span
+              onClick={e => { e.stopPropagation(); onChange(""); setOpen(false); }}
+              className="text-white/30 hover:text-white transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </span>
+          )}
+          <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-full min-w-[160px] bg-[#111] border border-white/10 rounded shadow-xl z-50 max-h-52 overflow-y-auto">
+          <button
+            onClick={() => { onChange(""); setOpen(false); }}
+            className="w-full text-left px-3 py-2 text-xs font-mono text-white/30 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            All {label}s
+          </button>
+          {options.map(opt => (
+            <button
+              key={opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors ${
+                value === opt ? "text-primary bg-primary/10" : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; onToggleCart: (c: any) => void }) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -70,7 +133,7 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
   const billing = hasBilling(card.extras ?? "");
   const cardType = formatCardType(card.binData);
   const bank = card.binData?.bank && card.binData.bank !== "Unknown" ? card.binData.bank : "";
-  const countryCode = card.binData?.countryCode ?? "US";
+  const countryCode = card.binData?.countryCode ?? "";
   const baseName = card.baseName ?? null;
 
   const purchaseMutation = useMutation({
@@ -110,12 +173,12 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           <p className="text-[11px] text-white/40 font-mono">{cardType}</p>
         )}
 
-        {/* Row 3: BIN + bank + city + state + ZIP + country — wraps naturally */}
+        {/* Row 3: BIN + bank + city + state + ZIP + country */}
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-white/40">
           {bin && (
             <span className="border border-white/20 px-1.5 py-0.5 rounded-sm text-white/60 shrink-0">{bin}</span>
           )}
-          <span>{bank}</span>
+          {bank && <span>{bank}</span>}
           {city && <span>{city}</span>}
           {state && <span>{state}</span>}
           {zip && <span>ZIP {zip}</span>}
@@ -156,7 +219,8 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
 export default function CardsPage() {
   const [search, setSearch] = useState("");
   const [selectedBase, setSelectedBase] = useState<number | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedBank, setSelectedBank] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [cartCardIds, setCartCardIds] = useState<Set<number>>(new Set());
@@ -180,6 +244,27 @@ export default function CardsPage() {
     refetchInterval: 20000,
   });
 
+  // Derive unique banks + countries from in-stock cards
+  const availableBanks = useMemo(() => {
+    if (!cards) return [];
+    const set = new Set<string>();
+    cards.forEach((c: any) => {
+      const b = c.binData?.bank;
+      if (b && b !== "Unknown") set.add(b);
+    });
+    return Array.from(set).sort();
+  }, [cards]);
+
+  const availableCountries = useMemo(() => {
+    if (!cards) return [];
+    const set = new Set<string>();
+    cards.forEach((c: any) => {
+      const code = c.binData?.countryCode;
+      if (code) set.add(code.toUpperCase());
+    });
+    return Array.from(set).sort();
+  }, [cards]);
+
   const filteredCards = useMemo(() => {
     if (!cards) return [];
     return cards.filter((card: any) => {
@@ -194,9 +279,11 @@ export default function CardsPage() {
       const cardPrice = card.price / 100;
       const matchMin = !priceMin || cardPrice >= parseFloat(priceMin);
       const matchMax = !priceMax || cardPrice <= parseFloat(priceMax);
-      return matchSearch && matchMin && matchMax;
+      const matchBank = !selectedBank || (card.binData?.bank === selectedBank);
+      const matchCountry = !selectedCountry || ((card.binData?.countryCode ?? "").toUpperCase() === selectedCountry);
+      return matchSearch && matchMin && matchMax && matchBank && matchCountry;
     });
-  }, [cards, search, priceMin, priceMax]);
+  }, [cards, search, priceMin, priceMax, selectedBank, selectedCountry]);
 
   const cartCards = useMemo(() => (cards ?? []).filter((c: any) => cartCardIds.has(c.id)), [cards, cartCardIds]);
   const cartTotal = cartCards.reduce((s: number, c: any) => s + c.price, 0);
@@ -232,65 +319,82 @@ export default function CardsPage() {
     }, 800);
   };
 
-  const activeFilters = (priceMin ? 1 : 0) + (priceMax ? 1 : 0);
+  const activeFilters = (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (selectedBank ? 1 : 0) + (selectedCountry ? 1 : 0);
+
+  const clearFilters = () => {
+    setPriceMin(""); setPriceMax(""); setSelectedBank(""); setSelectedCountry("");
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
 
-      {/* Search + Filters on same row */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
-          <input
-            type="text"
-            placeholder="Search cards, base name, BIN, brand..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#111] border border-white/8 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/12 transition-colors"
-            data-testid="input-search"
-          />
-        </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-1.5 border rounded px-3 py-2 text-xs font-mono shrink-0 transition-all ${
-            showFilters || activeFilters > 0
-              ? "border-primary/50 text-primary bg-primary/5"
-              : "border-white/10 text-white/40 hover:text-white hover:border-white/20 bg-[#111]"
-          }`}
-          data-testid="btn-filters"
-        >
-          <SlidersHorizontal className="h-3 w-3" />
-          filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
-        </button>
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+        <input
+          type="text"
+          placeholder="Search cards, base name, BIN, brand..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full bg-[#111] border border-white/8 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/12 transition-colors"
+          data-testid="input-search"
+        />
       </div>
 
-      {/* Filters panel */}
-      {showFilters && (
-        <div className="border border-white/8 bg-[#111] rounded p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] text-white/40 uppercase tracking-widest">Price Range</p>
-            <button onClick={() => { setPriceMin(""); setPriceMax(""); setShowFilters(false); }} className="text-[10px] text-white/30 hover:text-white flex items-center gap-1">
-              <X className="h-3 w-3" /> clear
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-[9px] text-white/30 uppercase tracking-widest">Min ($)</label>
-              <input type="number" step="0.01" placeholder="0.00" value={priceMin} onChange={e => setPriceMin(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none" data-testid="input-price-min" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[9px] text-white/30 uppercase tracking-widest">Max ($)</label>
-              <input type="number" step="0.01" placeholder="100.00" value={priceMax} onChange={e => setPriceMax(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none" data-testid="input-price-max" />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Filter row: Bank + Country + Price */}
+      <div className="grid grid-cols-2 gap-2">
+        <FilterDropdown
+          label="Bank"
+          value={selectedBank}
+          onChange={setSelectedBank}
+          options={availableBanks}
+          placeholder="Bank / Issuer"
+        />
+        <FilterDropdown
+          label="Country"
+          value={selectedCountry}
+          onChange={setSelectedCountry}
+          options={availableCountries}
+          placeholder="Country"
+        />
+      </div>
 
-      {/* Base filter tabs — flex-wrap, default "all bases" selected */}
+      {/* Price range row */}
+      <div className="flex gap-2 items-center">
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Min $"
+          value={priceMin}
+          onChange={e => setPriceMin(e.target.value)}
+          className="flex-1 bg-[#111] border border-white/8 rounded py-2 px-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-white/12"
+          data-testid="input-price-min"
+        />
+        <span className="text-white/20 text-xs font-mono shrink-0">—</span>
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Max $"
+          value={priceMax}
+          onChange={e => setPriceMax(e.target.value)}
+          className="flex-1 bg-[#111] border border-white/8 rounded py-2 px-3 text-xs text-white placeholder:text-white/20 outline-none focus:border-white/12"
+          data-testid="input-price-max"
+        />
+        {activeFilters > 0 && (
+          <button
+            onClick={clearFilters}
+            className="text-[10px] font-mono text-white/30 hover:text-white flex items-center gap-1 shrink-0 px-2 py-2 border border-white/8 rounded bg-[#111] transition-colors"
+          >
+            <X className="h-3 w-3" /> clear
+          </button>
+        )}
+      </div>
+
+      {/* Base filter tabs */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedBase(null)}
-          className={`text-xs px-3 py-1.5 border font-mono transition-all ${
+          className={`text-xs px-3 py-1.5 border font-mono transition-all rounded-sm ${
             selectedBase === null
               ? "border-primary text-primary font-bold"
               : "border-white/12 text-white/40 hover:border-white/20 hover:text-white"
@@ -303,7 +407,7 @@ export default function CardsPage() {
           <button
             key={b.id}
             onClick={() => setSelectedBase(b.id)}
-            className={`text-xs px-3 py-1.5 border font-mono transition-all ${
+            className={`text-xs px-3 py-1.5 border font-mono transition-all rounded-sm ${
               selectedBase === b.id
                 ? "border-primary text-primary font-bold"
                 : "border-white/12 text-white/40 hover:border-white/20 hover:text-white"
@@ -315,7 +419,7 @@ export default function CardsPage() {
         ))}
       </div>
 
-      {/* Add selected bar — always visible */}
+      {/* Add selected bar */}
       <button
         onClick={purchaseCart}
         disabled={cartCardIds.size === 0 || !!cartPurchasing}
@@ -335,12 +439,19 @@ export default function CardsPage() {
         )}
       </button>
 
-      {/* Cart total bar — shows when items selected */}
+      {/* Cart total */}
       {cartCardIds.size > 0 && (
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-white/40 font-mono">{cartCardIds.size} selected · ${(cartTotal / 100).toFixed(2)}</span>
           <button onClick={() => setCartCardIds(new Set())} className="text-[10px] text-white/25 hover:text-white/50 font-mono transition-colors">clear</button>
         </div>
+      )}
+
+      {/* Result count */}
+      {!isLoading && (cards ?? []).length > 0 && (
+        <p className="text-[10px] text-white/25 font-mono">
+          {filteredCards.length} of {(cards ?? []).length} cards{activeFilters > 0 ? ` (${activeFilters} filter${activeFilters > 1 ? "s" : ""} active)` : ""}
+        </p>
       )}
 
       {/* Cards list */}

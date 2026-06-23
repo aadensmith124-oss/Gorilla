@@ -2365,6 +2365,7 @@ function AdminBasesTab() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
+      qc.invalidateQueries({ queryKey: ["/api/cards"] });
       setEditingBaseId(null);
       setEditingBaseName("");
       toast({ title: "Base renamed" });
