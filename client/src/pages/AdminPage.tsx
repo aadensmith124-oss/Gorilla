@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -333,10 +333,6 @@ function ProductsSection() {
     defaultValues: { name: "", price: "", minQuantity: "1" },
   });
 
-  const editVariantForm = useForm<z.infer<typeof variantSchema>>({
-    resolver: zodResolver(variantSchema),
-    defaultValues: { name: "", price: "", minQuantity: "1" },
-  });
 
   const addMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productSchema>) => {
@@ -400,22 +396,6 @@ function ProductsSection() {
     }
   });
 
-  const updateVariantMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof variantSchema> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/variants/${id}`, {
-        name: data.name,
-        price: Math.round(parseFloat(data.price) * 100),
-        minQuantity: parseInt(data.minQuantity) || 1,
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
-      setEditingVariant(null);
-      toast({ title: "Variant updated" });
-    },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-  });
 
   const deleteVariantMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -618,9 +598,7 @@ function ProductsSection() {
                             <Button
                               variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
                               onClick={() => {
-                                if (editingVariant === v.id) { setEditingVariant(null); return; }
-                                setEditingVariant(v.id);
-                                editVariantForm.reset({ name: v.name, price: (v.price / 100).toFixed(2), minQuantity: String(v.minQuantity ?? 1) });
+                                setEditingVariant(editingVariant === v.id ? null : v.id);
                               }}
                               title="Edit variant"
                             >
@@ -640,39 +618,10 @@ function ProductsSection() {
                           </div>
                         </div>
                         {editingVariant === v.id && (
-                          <div className="mt-1 bg-black/40 border border-primary/20 rounded-lg p-3">
-                            <Form {...editVariantForm}>
-                              <form onSubmit={editVariantForm.handleSubmit((d) => updateVariantMutation.mutate({ id: v.id, data: d }))}
-                                className="grid grid-cols-2 gap-2 items-end">
-                                <FormField control={editVariantForm.control} name="name" render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-xs">Name</FormLabel>
-                                    <FormControl><Input {...field} className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                                  </FormItem>
-                                )} />
-                                <FormField control={editVariantForm.control} name="minQuantity" render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-xs">Min Qty</FormLabel>
-                                    <FormControl><Input {...field} type="number" min="1" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                                  </FormItem>
-                                )} />
-                                <FormField control={editVariantForm.control} name="price" render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-xs">Price ($)</FormLabel>
-                                    <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
-                                  </FormItem>
-                                )} />
-                                <div className="col-span-2 flex gap-2">
-                                  <Button type="submit" size="sm" className="flex-1 h-8 text-xs" disabled={updateVariantMutation.isPending}>
-                                    {updateVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
-                                  </Button>
-                                  <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setEditingVariant(null)}>
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </form>
-                            </Form>
-                          </div>
+                          <EditVariantForm
+                            variant={v}
+                            onClose={() => setEditingVariant(null)}
+                          />
                         )}
                         {managingStock === v.id && <VariantStockPanel variantId={v.id} />}
                       </div>
@@ -720,6 +669,81 @@ function ProductsSection() {
           <div className="text-center py-12 text-muted-foreground text-sm">No products yet. Add one above.</div>
         )}
       </div>
+    </div>
+  );
+}
+
+function EditVariantForm({ variant, onClose }: { variant: any; onClose: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const variantSchema = z.object({
+    name: z.string().min(1, "Name required"),
+    price: z.string().min(1, "Price required"),
+    minQuantity: z.string().default("1"),
+  });
+
+  const form = useForm<z.infer<typeof variantSchema>>({
+    resolver: zodResolver(variantSchema),
+    defaultValues: {
+      name: variant.name,
+      price: (variant.price / 100).toFixed(2),
+      minQuantity: String(variant.minQuantity ?? 1),
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (data: z.infer<typeof variantSchema>) => {
+      const res = await apiRequest("PATCH", `/api/admin/variants/${variant.id}`, {
+        name: data.name,
+        price: Math.round(parseFloat(data.price) * 100),
+        minQuantity: parseInt(data.minQuantity) || 1,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
+      toast({ title: "Variant updated" });
+      onClose();
+    },
+    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); },
+  });
+
+  return (
+    <div className="mt-1 bg-black/40 border border-primary/20 rounded-lg p-3">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="grid grid-cols-2 gap-2 items-end">
+          <FormField control={form.control} name="name" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Name</FormLabel>
+              <FormControl><Input {...field} className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="minQuantity" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Min Qty</FormLabel>
+              <FormControl><Input {...field} type="number" min="1" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="price" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Price ($)</FormLabel>
+              <FormControl><Input {...field} type="number" step="0.01" className="bg-black/50 border-white/10 h-8 text-xs" /></FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )} />
+          <div className="col-span-2 flex gap-2">
+            <Button type="submit" size="sm" className="flex-1 h-8 text-xs" disabled={mutation.isPending}>
+              {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }
