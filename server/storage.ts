@@ -1115,6 +1115,11 @@ export class DatabaseStorage implements IStorage {
     return base;
   }
 
+  async updateCardBase(id: number, name: string): Promise<CardBase> {
+    const [base] = await db.update(cardBases).set({ name }).where(eq(cardBases.id, id)).returning();
+    return base;
+  }
+
   async deleteCardBase(id: number): Promise<void> {
     const result = await db.execute(sql`SELECT COUNT(*) as n FROM cards WHERE base_id = ${id} AND is_sold = false`);
     const count = Number((result.rows[0] as any).n);

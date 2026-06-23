@@ -2332,6 +2332,8 @@ function AdminBasesTab() {
   const qc = queryClient;
   const [newBaseName, setNewBaseName] = useState("");
   const [expandedBase, setExpandedBase] = useState<number | null>(null);
+  const [editingBaseId, setEditingBaseId] = useState<number | null>(null);
+  const [editingBaseName, setEditingBaseName] = useState("");
 
   const { data: bases, isLoading } = useQuery<any[]>({ queryKey: ["/api/card-bases"], refetchInterval: 5000 });
   const { data: baseCards } = useQuery<any[]>({
@@ -2352,6 +2354,21 @@ function AdminBasesTab() {
       return res.json();
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/card-bases"] }); setNewBaseName(""); toast({ title: "Base created" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/card-bases/${id}`, { name });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
+      setEditingBaseId(null);
+      setEditingBaseName("");
+      toast({ title: "Base renamed" });
+    },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -2384,6 +2401,7 @@ function AdminBasesTab() {
           <Input
             value={newBaseName}
             onChange={e => setNewBaseName(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && newBaseName.trim()) createMutation.mutate(); }}
             placeholder="Base name (e.g. OG CLOVER)"
             className="bg-black/50 border-white/10 text-sm flex-1"
             data-testid="input-base-name"
@@ -2403,34 +2421,73 @@ function AdminBasesTab() {
         ) : (
           (bases ?? []).map((b: any) => (
             <div key={b.id} className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 flex items-center justify-between">
-                <button
-                  onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
-                  className="flex items-center gap-3 text-left flex-1 min-w-0"
-                  data-testid={`btn-expand-base-${b.id}`}
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-white font-mono">{b.name}</p>
-                    <p className="text-[10px] text-white/30">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
-                  </div>
-                </button>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <button
-                    onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
-                    className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${expandedBase === b.id ? "border-primary/40 text-primary" : "border-white/10 text-white/40 hover:border-white/20"}`}
-                    data-testid={`btn-view-base-${b.id}`}
-                  >
-                    {expandedBase === b.id ? "close" : "view"}
-                  </button>
-                  <button
-                    onClick={() => { if (b.count > 0) { toast({ title: "Cannot delete", description: "Remove all cards first", variant: "destructive" }); return; } deleteMutation.mutate(b.id); }}
-                    disabled={deleteMutation.isPending}
-                    className="text-white/20 hover:text-destructive transition-colors"
-                    data-testid={`btn-delete-base-${b.id}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+              <div className="px-4 py-3 flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  {editingBaseId === b.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editingBaseName}
+                        onChange={e => setEditingBaseName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && editingBaseName.trim()) renameMutation.mutate({ id: b.id, name: editingBaseName });
+                          if (e.key === "Escape") { setEditingBaseId(null); setEditingBaseName(""); }
+                        }}
+                        className="bg-black/50 border-white/10 h-7 text-xs font-mono flex-1"
+                        autoFocus
+                        data-testid={`input-rename-base-${b.id}`}
+                      />
+                      <button
+                        onClick={() => { if (editingBaseName.trim()) renameMutation.mutate({ id: b.id, name: editingBaseName }); }}
+                        disabled={renameMutation.isPending || !editingBaseName.trim()}
+                        className="text-[10px] font-mono px-2 py-1 rounded border border-primary/40 text-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+                        data-testid={`btn-save-rename-base-${b.id}`}
+                      >
+                        {renameMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "save"}
+                      </button>
+                      <button
+                        onClick={() => { setEditingBaseId(null); setEditingBaseName(""); }}
+                        className="text-[10px] font-mono px-2 py-1 rounded border border-white/10 text-white/40 hover:text-white transition-all"
+                      >
+                        cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
+                      className="text-left w-full"
+                      data-testid={`btn-expand-base-${b.id}`}
+                    >
+                      <p className="text-sm font-bold text-white font-mono">{b.name}</p>
+                      <p className="text-[10px] text-white/30">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
+                    </button>
+                  )}
                 </div>
+                {editingBaseId !== b.id && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => { setEditingBaseId(b.id); setEditingBaseName(b.name); setExpandedBase(null); }}
+                      className="text-[10px] font-mono px-2 py-1 rounded border border-white/10 text-white/40 hover:border-white/25 hover:text-white transition-all"
+                      data-testid={`btn-rename-base-${b.id}`}
+                    >
+                      rename
+                    </button>
+                    <button
+                      onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
+                      className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${expandedBase === b.id ? "border-primary/40 text-primary" : "border-white/10 text-white/40 hover:border-white/20"}`}
+                      data-testid={`btn-view-base-${b.id}`}
+                    >
+                      {expandedBase === b.id ? "close" : "view"}
+                    </button>
+                    <button
+                      onClick={() => { if (b.count > 0) { toast({ title: "Cannot delete", description: "Remove all cards first", variant: "destructive" }); return; } deleteMutation.mutate(b.id); }}
+                      disabled={deleteMutation.isPending}
+                      className="text-white/20 hover:text-destructive transition-colors"
+                      data-testid={`btn-delete-base-${b.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
               {expandedBase === b.id && (
                 <div className="border-t border-white/5 px-4 py-3 space-y-2">

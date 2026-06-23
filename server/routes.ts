@@ -1157,6 +1157,18 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/card-bases/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Name required" });
+    try {
+      const base = await storage.updateCardBase(Number(req.params.id), name.trim());
+      res.json(base);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/admin/card-bases/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {

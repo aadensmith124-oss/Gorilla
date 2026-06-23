@@ -69,7 +69,7 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
   const state = extractState(card.extras ?? "");
   const billing = hasBilling(card.extras ?? "");
   const cardType = formatCardType(card.binData);
-  const bank = card.binData?.bank || "Unknown";
+  const bank = card.binData?.bank && card.binData.bank !== "Unknown" ? card.binData.bank : "";
   const countryCode = card.binData?.countryCode ?? "US";
   const baseName = card.baseName ?? null;
 
