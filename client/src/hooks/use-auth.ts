@@ -7,7 +7,7 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading } = useQuery({
     queryKey: [api.auth.me.path],
     queryFn: async () => {
       const res = await fetch(api.auth.me.path);
@@ -19,7 +19,7 @@ export function useAuth() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { loginCode: string }) => {
+    mutationFn: async (credentials: { email: string; password: string }) => {
       const res = await fetch(api.auth.login.path, {
         method: api.auth.login.method,
         headers: { "Content-Type": "application/json" },
@@ -27,9 +27,9 @@ export function useAuth() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Invalid login code");
+        throw new Error(err.message || "Invalid email or password");
       }
-      return api.auth.login.responses[200].parse(await res.json());
+      return res.json() as Promise<User>;
     },
     onSuccess: (data) => {
       queryClient.setQueryData([api.auth.me.path], data);
@@ -41,17 +41,17 @@ export function useAuth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (_data: Record<string, never> | {}) => {
+    mutationFn: async (data: { email: string; password: string }) => {
       const res = await fetch(api.auth.register.path, {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Registration failed");
       }
-      return res.json() as Promise<User & { loginCode: string }>;
+      return res.json() as Promise<User>;
     },
     onSuccess: (data) => {
       queryClient.setQueryData([api.auth.me.path], data);

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Loader2, Copy, Check, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
@@ -26,7 +26,6 @@ export default function AuthPage() {
           <p className="text-white/30 text-xs mt-1">Premium digital marketplace</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-white/5 rounded-lg p-0.5">
           <button
             onClick={() => setTab("login")}
@@ -52,37 +51,74 @@ export default function AuthPage() {
   );
 }
 
+function PasswordInput({ value, onChange, placeholder, disabled, testId }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; disabled?: boolean; testId?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || "••••••••"}
+        disabled={disabled}
+        autoComplete="current-password"
+        className="h-10 bg-black/50 border-white/10 focus:border-primary/50 pr-9"
+        data-testid={testId}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(s => !s)}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+
 function LoginForm() {
   const { login, isLoggingIn } = useAuth();
-  const [loginCode, setLoginCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginCode.trim()) return;
+    if (!email.trim() || !password) return;
     try {
-      await login({ loginCode: loginCode.trim().toUpperCase() });
+      await login({ email: email.trim().toLowerCase(), password });
     } catch {}
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest text-white/40">Login Code</Label>
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Email</Label>
         <Input
-          value={loginCode}
-          onChange={e => setLoginCode(e.target.value.toUpperCase())}
-          placeholder="XXXXXXXXXXXX"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="you@example.com"
           disabled={isLoggingIn}
-          autoComplete="off"
-          className="h-10 text-base bg-black/50 border-white/10 focus:border-primary/50 font-mono tracking-[0.25em] text-center"
-          maxLength={12}
-          data-testid="input-login-code"
+          autoComplete="email"
+          className="h-10 bg-black/50 border-white/10 focus:border-primary/50"
+          data-testid="input-email"
         />
-        <p className="text-[10px] text-white/25 text-center">Enter the 12-character code from when you registered</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Password</Label>
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          disabled={isLoggingIn}
+          testId="input-password"
+        />
       </div>
       <Button
         type="submit"
-        disabled={isLoggingIn || loginCode.length < 12}
+        disabled={isLoggingIn || !email.trim() || !password}
         className="w-full h-9 text-xs"
         data-testid="btn-login"
       >
@@ -94,89 +130,83 @@ function LoginForm() {
 
 function RegisterForm() {
   const { register, isRegistering } = useAuth();
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [done, setDone] = useState(false);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirm) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      toast({ title: "Password too short", description: "At least 6 characters required", variant: "destructive" });
+      return;
+    }
     try {
-      const result = await register({});
-      if (result?.loginCode) {
-        setGeneratedCode(result.loginCode);
-        setUsername(result.username ?? null);
-      }
+      await register({ email: email.trim().toLowerCase(), password });
+      setDone(true);
     } catch {}
   };
 
-  const copyCode = () => {
-    if (!generatedCode) return;
-    navigator.clipboard.writeText(generatedCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Code copied to clipboard!" });
-  };
-
-  if (generatedCode) {
+  if (done) {
     return (
-      <div className="space-y-4">
-        <div className="text-center space-y-1">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 mx-auto">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-          </div>
-          <p className="text-sm font-bold text-white mt-2">Account Created!</p>
-          {username && (
-            <p className="text-[10px] text-white/30 font-mono">{username}</p>
-          )}
-        </div>
-
-        {/* Code display */}
-        <div className="bg-black/70 border-2 border-primary/30 rounded-xl p-4 space-y-2 text-center">
-          <p className="text-[9px] uppercase tracking-widest text-white/30">Your Login Code</p>
-          <p className="font-mono text-2xl font-black text-white tracking-[0.25em] select-all">{generatedCode}</p>
-          <button
-            onClick={copyCode}
-            className="flex items-center gap-1.5 mx-auto text-xs text-primary hover:text-primary/80 transition-colors mt-1"
-            data-testid="btn-copy-code"
-          >
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied!" : "Copy code"}
-          </button>
-        </div>
-
-        {/* Warning */}
-        <div className="flex items-start gap-2.5 bg-yellow-950/40 border border-yellow-600/30 rounded-lg p-3">
-          <AlertTriangle className="h-4 w-4 text-yellow-500 flex-shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <p className="text-xs font-bold text-yellow-400">Save this code — don't lose it!</p>
-            <p className="text-[11px] text-yellow-400/70 leading-relaxed">
-              This is the <span className="font-bold">only way</span> to sign in. There is no password reset. If you lose it, your account is gone.
-            </p>
-          </div>
-        </div>
-
-        <p className="text-[10px] text-white/20 text-center leading-relaxed">
-          Write it down, screenshot it, or save it in a password manager.
-        </p>
+      <div className="text-center space-y-3 py-2">
+        <div className="text-3xl">✓</div>
+        <p className="text-sm font-bold text-white">Account created!</p>
+        <p className="text-xs text-white/40">Your username was auto-generated. You can see it in your profile.</p>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleCreate} className="space-y-4">
-      <div className="text-center space-y-2 py-2">
-        <p className="text-xs text-white/60 leading-relaxed">
-          No email or password needed.<br />We'll generate a unique login code for you.
-        </p>
+      <div className="space-y-1.5">
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Email</Label>
+        <Input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          disabled={isRegistering}
+          autoComplete="email"
+          className="h-10 bg-black/50 border-white/10 focus:border-primary/50"
+          data-testid="input-reg-email"
+        />
       </div>
+      <div className="space-y-1.5">
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Password</Label>
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          placeholder="min. 6 characters"
+          disabled={isRegistering}
+          testId="input-reg-password"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-[10px] uppercase tracking-widest text-white/40">Confirm Password</Label>
+        <PasswordInput
+          value={confirm}
+          onChange={setConfirm}
+          placeholder="repeat password"
+          disabled={isRegistering}
+          testId="input-reg-confirm"
+        />
+      </div>
+      <p className="text-[10px] text-white/25 leading-relaxed">
+        Your username will be auto-generated as <span className="font-mono text-white/40">anon-xxxxxxxx</span>.
+      </p>
       <Button
         type="submit"
-        disabled={isRegistering}
+        disabled={isRegistering || !email.trim() || !password || !confirm}
         className="w-full h-9 text-xs"
         data-testid="btn-register"
       >
-        {isRegistering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate My Login Code"}
+        {isRegistering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
       </Button>
     </form>
   );

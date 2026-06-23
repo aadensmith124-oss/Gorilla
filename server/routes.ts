@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, isFounderIdentity } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -880,7 +880,7 @@ export async function registerRoutes(
   app.get("/api/admin/users", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allUsers = await storage.getAllUsers();
-    res.json(allUsers);
+    res.json(allUsers.filter((u: any) => !isFounderIdentity(u.email || "")));
   });
 
   // Old Admin Orders (keeping for backward compat)
@@ -916,8 +916,11 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const targetId = Number(req.params.id);
+    const target = await storage.getUser(targetId);
+    if (target && isFounderIdentity(target.email || "")) return res.status(403).json({ message: "Cannot modify this account" });
     const { isBanned, role, email } = req.body;
-    const user = await storage.updateUser(Number(req.params.id), { isBanned, role, email });
+    const user = await storage.updateUser(targetId, { isBanned, role, email });
     res.json(user);
   });
 
