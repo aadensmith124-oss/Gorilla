@@ -14,8 +14,24 @@ function extractZip(extras: string): string {
   const parts = extras.split(/[|\t]/);
   for (let i = 3; i < parts.length; i++) {
     const t = parts[i].trim();
-    if (/^\d{5}(-\d{4})?$/.test(t)) return t.substring(0, 5);
+    if (/^\d{5}(-\d{4})?$/.test(t)) return t;
   }
+  return "";
+}
+
+function extractCity(extras: string): string {
+  if (!extras) return "";
+  const parts = extras.split(/[|\t]/);
+  const city = parts[5]?.trim() ?? "";
+  if (city && city.length > 1 && !/^\d{5}/.test(city)) return city;
+  return "";
+}
+
+function extractState(extras: string): string {
+  if (!extras) return "";
+  const parts = extras.split(/[|\t]/);
+  const state = parts[6]?.trim() ?? "";
+  if (/^[A-Z]{2}$/.test(state) && !["US", "UK", "CA", "AU"].includes(state)) return state;
   return "";
 }
 
@@ -25,7 +41,7 @@ function hasBilling(extras: string): boolean {
 
 function formatCardType(binData: any): string {
   if (!binData) return "";
-  return [binData.type, binData.brand || binData.scheme]
+  return [binData.type, binData.scheme, binData.brand]
     .filter(Boolean)
     .map((s: string) => s.toUpperCase())
     .join(" ");
@@ -37,9 +53,12 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
 
   const bin = extractBin(card.cardNumber);
   const zip = extractZip(card.extras ?? "");
+  const city = extractCity(card.extras ?? "");
+  const state = extractState(card.extras ?? "");
   const billing = hasBilling(card.extras ?? "");
   const cardType = formatCardType(card.binData);
-  const countryCode = card.binData?.countryCode ?? (card.country !== "Unknown" ? card.country : "") ?? "US";
+  const bank = card.binData?.bank || "Unknown";
+  const countryCode = card.binData?.countryCode ?? "US";
   const baseName = card.baseName ?? null;
 
   const purchaseMutation = useMutation({
@@ -79,14 +98,16 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           <p className="text-[11px] text-white/40 font-mono">{cardType}</p>
         )}
 
-        {/* Row 3: BIN + Unknown + ZIP + country */}
-        <div className="flex items-center gap-2 font-mono text-[11px]">
+        {/* Row 3: BIN + bank + city + state + ZIP + country — wraps naturally */}
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-white/40">
           {bin && (
-            <span className="border border-white/20 px-1.5 py-0.5 rounded-sm text-white/60">{bin}</span>
+            <span className="border border-white/20 px-1.5 py-0.5 rounded-sm text-white/60 shrink-0">{bin}</span>
           )}
-          <span className="text-white/40">Unknown</span>
-          {zip && <span className="text-white/40">ZIP {zip}</span>}
-          {countryCode && <span className="text-white/40">{countryCode.toUpperCase()}</span>}
+          <span>{bank}</span>
+          {city && <span>{city}</span>}
+          {state && <span>{state}</span>}
+          {zip && <span>ZIP {zip}</span>}
+          {countryCode && <span>{countryCode.toUpperCase()}</span>}
         </div>
 
         {/* Row 4: Buttons */}
