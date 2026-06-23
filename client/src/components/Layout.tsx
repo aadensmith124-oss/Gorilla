@@ -148,11 +148,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
 
-        {/* Center: Brand (mobile) */}
-        <span className="absolute left-1/2 -translate-x-1/2 text-sm font-bold text-white/70 tracking-tight select-none pointer-events-none">
-          PiF
-        </span>
-
         {/* Right: Balance + User */}
         <div className="flex items-center gap-2">
           {user && (
