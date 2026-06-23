@@ -52,7 +52,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
     >
       <div className="max-w-lg">
         <p className="text-white text-2xl font-bold mb-6 tracking-tight opacity-90">
-          trenthq.com
+          pifmarket.com
         </p>
 
         <h1 className="text-white text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
@@ -128,7 +128,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
           <div className="text-right flex-shrink-0">
             <p className="text-white/80 text-xs font-bold tracking-widest uppercase">
-              NYC<span style={{ color: "#888" }}>HQ</span>
+              PiF<span style={{ color: "#888" }}> Market</span>
             </p>
             <p className="text-white/30 text-[10px] mt-0.5">Security · Protected</p>
           </div>
@@ -147,7 +147,7 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
 
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-white/20 text-[11px]">
-          Ray ID: {rayId.current} · Protected by NYCHQ Security
+          Ray ID: {rayId.current} · Protected by PiF Market Security
         </p>
       </div>
     </div>

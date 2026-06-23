@@ -22,7 +22,7 @@ export default function AuthPage() {
 
       <div className="z-10 w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">NYC<span className="text-white/40">HQ</span></h1>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">PiF<span className="text-white/40"> Market</span></h1>
           <p className="text-white/30 text-xs mt-1">Premium digital marketplace</p>
         </div>
 

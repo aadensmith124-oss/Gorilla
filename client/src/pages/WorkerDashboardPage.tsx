@@ -306,7 +306,7 @@ function CardsTab() {
             <Input value={hrPercent} onChange={e => handleHrChange(e.target.value)} placeholder="80" className="bg-black/50 border-white/10 h-8 font-mono" data-testid="input-hr-percent" />
           </div>
         </div>
-        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">🔥 NYCHQ | {hrPercent}% HR 🔥</p>}
+        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">🔥 PiF Market | {hrPercent}% HR 🔥</p>}
         <Button size="sm" className="w-full h-8 text-xs" onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !fullItem.trim() || !price} data-testid="btn-add-card">
           {addMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Card"}
         </Button>
@@ -319,7 +319,7 @@ function CardsTab() {
             return (
               <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between" data-testid={`row-card-${card.id}`}>
                 <div className="space-y-0.5 min-w-0 flex-1">
-                  <p className="text-xs font-mono font-bold text-primary">🔥 NYCHQ | {card.hrPercent ?? 80}% HR 🔥</p>
+                  <p className="text-xs font-mono font-bold text-primary">🔥 PiF Market | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
                     {card.binData?.bank && <span className="text-[10px] text-white/30 font-mono">{card.binData.bank}</span>}
