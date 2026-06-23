@@ -244,11 +244,11 @@ export async function registerRoutes(
         .orderBy(desc(cryptoPayments.createdAt))
         .limit(30);
 
-      // CashApp deposit-only orders (orders with no items, paymentMethod CashApp)
+      // Manual deposit orders (CashApp, Chime, Zelle)
       const cashappRows = await db
         .select()
         .from(orders)
-        .where(and(eq(orders.userId, userId), eq(orders.paymentMethod, "CashApp")))
+        .where(and(eq(orders.userId, userId), sql`${orders.paymentMethod} IN ('CashApp','Chime','Zelle')`))
         .orderBy(desc(orders.createdAt))
         .limit(30);
 
@@ -276,7 +276,7 @@ export async function registerRoutes(
 
       const cashappDeposits = depositOnlyCashapp.map(o => ({
         id: `cashapp_${o.id}`,
-        type: "cashapp" as const,
+        type: (o.paymentMethod?.toLowerCase() ?? "cashapp") as "cashapp" | "chime" | "zelle",
         amount: o.total,
         status: o.status,
         paymentNote: o.paymentNote,
@@ -315,11 +315,11 @@ export async function registerRoutes(
         .select({
           id: orders.id, userId: orders.userId, total: orders.total,
           status: orders.status, paymentNote: orders.paymentNote, createdAt: orders.createdAt,
-          username: users.username,
+          paymentMethod: orders.paymentMethod, username: users.username,
         })
         .from(orders)
         .leftJoin(users, eq(orders.userId, users.id))
-        .where(eq(orders.paymentMethod, "CashApp"))
+        .where(sql`${orders.paymentMethod} IN ('CashApp','Chime','Zelle')`)
         .orderBy(desc(orders.createdAt))
         .limit(200);
 
@@ -340,7 +340,7 @@ export async function registerRoutes(
           amount: p.amount, status: p.status, createdAt: p.createdAt,
         })),
         ...depositOnlyCashapp.map(o => ({
-          id: `cashapp_${o.id}`, type: "cashapp", username: o.username ?? "?",
+          id: `cashapp_${o.id}`, type: o.paymentMethod?.toLowerCase() ?? "cashapp", username: o.username ?? "?",
           amount: o.total, status: o.status, paymentNote: o.paymentNote, createdAt: o.createdAt,
         })),
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -869,9 +869,9 @@ export async function registerRoutes(
   app.get("/api/admin/orders", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allOrders = await storage.getAllOrders();
-    // Show all orders — include CashApp deposit-only orders (total=0, no items) so admin can confirm them
+    // Show all orders — include CashApp/Chime/Zelle deposit orders so admin can confirm them
     const productOrders = allOrders.filter((o: any) =>
-      o.items.length > 0 || o.total > 0 || o.paymentMethod === "CashApp"
+      o.items.length > 0 || o.total > 0 || ["CashApp", "Chime", "Zelle"].includes(o.paymentMethod)
     );
     res.json(productOrders);
   });
@@ -1645,7 +1645,7 @@ export async function registerRoutes(
     }
     const { method } = req.params;
     const { enabled } = req.body;
-    if (!["crypto", "stars"].includes(method) || typeof enabled !== "boolean") {
+    if (!["crypto", "stars", "cashapp", "wallet", "chime", "zelle"].includes(method) || typeof enabled !== "boolean") {
       return res.status(400).json({ message: "Invalid request" });
     }
     await storage.setSetting(`payment_method_${method}`, String(enabled));
@@ -1677,6 +1677,51 @@ export async function registerRoutes(
     res.json({ tag: tag.trim() });
   });
 
+  // ── Admin: Chime handle setting ────────────────────────────────────────────
+  app.get("/api/admin/settings/chime-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const handle = await storage.getSetting("chime_handle", "");
+    res.json({ handle });
+  });
+
+  app.post("/api/admin/settings/chime-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { handle } = req.body;
+    if (typeof handle !== "string") return res.status(400).json({ message: "Invalid handle" });
+    await storage.setSetting("chime_handle", handle.trim());
+    res.json({ handle: handle.trim() });
+  });
+
+  // ── Admin: Zelle handle setting ────────────────────────────────────────────
+  app.get("/api/admin/settings/zelle-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const handle = await storage.getSetting("zelle_handle", "");
+    res.json({ handle });
+  });
+
+  app.post("/api/admin/settings/zelle-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { handle } = req.body;
+    if (typeof handle !== "string") return res.status(400).json({ message: "Invalid handle" });
+    await storage.setSetting("zelle_handle", handle.trim());
+    res.json({ handle: handle.trim() });
+  });
+
+  // ── Public: manual payment methods config (for deposit page) ─────────────
+  app.get("/api/site-settings/manual-payments", async (req, res) => {
+    const [methods, cashappTag, chimeHandle, zelleHandle] = await Promise.all([
+      storage.getPaymentMethodsConfig(),
+      storage.getSetting("cashapp_tag", ""),
+      storage.getSetting("chime_handle", ""),
+      storage.getSetting("zelle_handle", ""),
+    ]);
+    res.json({
+      cashapp: { enabled: methods.cashapp !== false, tag: cashappTag },
+      chime:   { enabled: methods.chime === true,   handle: chimeHandle },
+      zelle:   { enabled: methods.zelle === true,   handle: zelleHandle },
+    });
+  });
+
   // ── Telegram Stars order ──────────────────────────────────────────────────
   app.post("/api/orders/stars", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
@@ -1706,57 +1751,105 @@ export async function registerRoutes(
     }
   });
 
-  // ── CashApp order (auto-delivers from stock) ─────────────────────────────
+  // ── CashApp order (checkout) + deposit ───────────────────────────────────
   app.get("/api/site-settings/cashapp-tag", async (req, res) => {
     const tag = await storage.getSetting("cashapp_tag", "");
     res.json({ tag });
   });
+
+  function generateNote(): string {
+    const words = ["Fuel", "Gas", "Snack", "Food", "Lunch", "Coffee"];
+    const word = words[Math.floor(Math.random() * words.length)];
+    const num = Math.floor(1000 + Math.random() * 89000);
+    return `${word} - ${num}`;
+  }
 
   app.post("/api/orders/cashapp", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     let pendingOrderId: number | null = null;
     try {
       const userId = (req.user as any).id;
-      const { items, amount, note } = req.body;
+      const { items, amount } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
-      const noteWords = ["Fuel", "Gas", "Snack"];
-      const noteWord = noteWords[Math.floor(Math.random() * noteWords.length)];
-      const noteNum = Math.floor(1000 + Math.random() * 89000);
-      const paymentNote = `${noteWord} - ${noteNum}`;
+      const paymentNote = generateNote();
       const cashappTag = await storage.getSetting("cashapp_tag", "");
 
-      // Deposit-only mode: no items — just generate a note, no amount required
+      // Deposit-only mode: user specifies how much they want to deposit
       if (productItems.length === 0) {
+        const depositAmount = amount ? Math.round(parseFloat(String(amount)) * 100) : 0;
         const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         const [order] = await db.insert(orders).values({
           userId,
           orderId: publicOrderId,
-          total: 0,
+          total: depositAmount,
           paidAmount: 0,
           status: "pending",
           paymentMethod: "CashApp",
-          paymentNote: paymentNote,
+          paymentNote,
           deliveryContent: "",
         }).returning();
         return res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
       }
 
-      // Use createPendingOrder to reserve stock immediately
+      // Checkout mode: reserve stock
       const order = await storage.createPendingOrder(userId, productItems, []);
       pendingOrderId = order.id;
-
-      // Attach CashApp-specific fields
-      await db.update(orders)
-        .set({ paymentMethod: "CashApp", paymentNote })
-        .where(eq(orders.id, order.id));
-
+      await db.update(orders).set({ paymentMethod: "CashApp", paymentNote }).where(eq(orders.id, order.id));
       pendingOrderId = null;
       res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
-      if (pendingOrderId != null) {
-        try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {}
+      if (pendingOrderId != null) { try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {} }
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Chime deposit ─────────────────────────────────────────────────────────
+  app.post("/api/deposits/chime", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const enabled = await storage.getSetting("payment_method_chime", "false");
+      if (enabled !== "true") return res.status(400).json({ message: "Chime deposits are not available" });
+      const userId = (req.user as any).id;
+      const { amount } = req.body;
+      if (!amount || isNaN(parseFloat(String(amount))) || parseFloat(String(amount)) <= 0) {
+        return res.status(400).json({ message: "Valid amount required" });
       }
+      const depositAmount = Math.round(parseFloat(String(amount)) * 100);
+      const paymentNote = generateNote();
+      const handle = await storage.getSetting("chime_handle", "");
+      const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const [order] = await db.insert(orders).values({
+        userId, orderId: publicOrderId, total: depositAmount, paidAmount: 0,
+        status: "pending", paymentMethod: "Chime", paymentNote, deliveryContent: "",
+      }).returning();
+      res.status(201).json({ order, paymentNote, handle });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Zelle deposit ─────────────────────────────────────────────────────────
+  app.post("/api/deposits/zelle", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const enabled = await storage.getSetting("payment_method_zelle", "false");
+      if (enabled !== "true") return res.status(400).json({ message: "Zelle deposits are not available" });
+      const userId = (req.user as any).id;
+      const { amount } = req.body;
+      if (!amount || isNaN(parseFloat(String(amount))) || parseFloat(String(amount)) <= 0) {
+        return res.status(400).json({ message: "Valid amount required" });
+      }
+      const depositAmount = Math.round(parseFloat(String(amount)) * 100);
+      const paymentNote = generateNote();
+      const handle = await storage.getSetting("zelle_handle", "");
+      const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const [order] = await db.insert(orders).values({
+        userId, orderId: publicOrderId, total: depositAmount, paidAmount: 0,
+        status: "pending", paymentMethod: "Zelle", paymentNote, deliveryContent: "",
+      }).returning();
+      res.status(201).json({ order, paymentNote, handle });
+    } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
   });

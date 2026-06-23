@@ -1756,9 +1756,58 @@ function CodesSection() {
   );
 }
 
+function HandleSettingCard({ label, description, settingKey, placeholder, color }: {
+  label: string; description: string; settingKey: string; placeholder: string; color: string;
+}) {
+  const { toast } = useToast();
+  const [input, setInput] = useState("");
+  const { data } = useQuery<{ handle?: string; tag?: string }>({
+    queryKey: [`/api/admin/settings/${settingKey}`],
+  });
+  useEffect(() => {
+    const val = data?.handle ?? data?.tag ?? "";
+    if (val !== undefined) setInput(val);
+  }, [data]);
+  const saveMutation = useMutation({
+    mutationFn: async (val: string) => {
+      const body = settingKey === "cashapp-tag" ? { tag: val } : { handle: val };
+      const res = await apiRequest("POST", `/api/admin/settings/${settingKey}`, body);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/settings/${settingKey}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings/manual-payments"] });
+      toast({ title: `${label} saved` });
+    },
+    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+  });
+  return (
+    <Card className="bg-[#0f1115] border-white/5">
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <p className="font-bold text-sm mb-0.5" style={{ color }}>{label}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3">{description}</p>
+          <div className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={placeholder}
+              className="flex-1 bg-white/5 border-white/8 text-white font-mono"
+              data-testid={`input-${settingKey}`}
+            />
+            <Button size="sm" onClick={() => saveMutation.mutate(input)} disabled={saveMutation.isPending}
+              data-testid={`button-save-${settingKey}`}>
+              {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function IntegrationsSection() {
   const { toast } = useToast();
-  const [cashappTagInput, setCashappTagInput] = useState("");
 
   const { data: integrationStatus, isLoading: statusLoading } = useQuery<Record<string, boolean>>({
     queryKey: ["/api/admin/integrations/status"],
@@ -1768,16 +1817,6 @@ function IntegrationsSection() {
     queryKey: ["/api/admin/payment-methods"],
   });
 
-  const { data: cashappTagData } = useQuery<{ tag: string }>({
-    queryKey: ["/api/admin/settings/cashapp-tag"],
-  });
-
-  useEffect(() => {
-    if (cashappTagData?.tag !== undefined) {
-      setCashappTagInput(cashappTagData.tag);
-    }
-  }, [cashappTagData]);
-
   const toggleMutation = useMutation({
     mutationFn: async ({ method, enabled }: { method: string; enabled: boolean }) => {
       const res = await apiRequest("PATCH", `/api/admin/payment-methods/${method}`, { enabled });
@@ -1786,29 +1825,16 @@ function IntegrationsSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-methods"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings/manual-payments"] });
     },
-    onError: () => {
-      toast({ title: "Failed to update", variant: "destructive" });
-    },
-  });
-
-  const saveCashappTagMutation = useMutation({
-    mutationFn: async (tag: string) => {
-      const res = await apiRequest("POST", "/api/admin/settings/cashapp-tag", { tag });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/cashapp-tag"] });
-      toast({ title: "CashApp tag saved" });
-    },
-    onError: () => {
-      toast({ title: "Failed to save", variant: "destructive" });
-    },
+    onError: () => toast({ title: "Failed to update", variant: "destructive" }),
   });
 
   const METHODS = [
     { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
+    { id: "chime", label: "Chime", icon: <span className="text-white font-black text-sm">C</span>, bg: "bg-[#7BC67E]" },
+    { id: "zelle", label: "Zelle", icon: <span className="text-white font-black text-sm">Z</span>, bg: "bg-[#6D1ED4]" },
     { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
@@ -1819,17 +1845,19 @@ function IntegrationsSection() {
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Link2 className="h-5 w-5 text-primary" /> Integrations
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Enable or disable payment methods and manage your bot token.</p>
+        <p className="text-sm text-muted-foreground mt-1">Enable or disable payment methods and manage handles.</p>
       </div>
 
       {/* Payment Method Toggles */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-3">Payment Methods</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Payment Methods (Deposits)</p>
         <div className="space-y-2">
           {methodsLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : METHODS.map((m) => {
-            const enabled = paymentMethods?.[m.id] !== false;
+            const enabled = m.id === "chime" || m.id === "zelle"
+              ? paymentMethods?.[m.id] === true
+              : paymentMethods?.[m.id] !== false;
             return (
               <Card key={m.id} className="bg-[#0f1115] border-white/5" data-testid={`card-payment-toggle-${m.id}`}>
                 <CardContent className="p-4 flex items-center justify-between gap-4">
@@ -1855,34 +1883,32 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      {/* CashApp Tag */}
+      {/* Manual Payment Handles */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-3">CashApp Settings</p>
-        <Card className="bg-[#0f1115] border-white/5">
-          <CardContent className="p-4 space-y-3">
-            <div>
-              <p className="font-bold text-sm text-white mb-1">Your CashApp $Cashtag</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Customers will be shown this $cashtag when paying via CashApp. They will send money here with a generated note.</p>
-              <div className="flex gap-2">
-                <Input
-                  value={cashappTagInput}
-                  onChange={(e) => setCashappTagInput(e.target.value)}
-                  placeholder="$YourCashTag"
-                  className="flex-1 bg-white/5 border-white/8 text-white font-mono"
-                  data-testid="input-cashapp-tag"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => saveCashappTagMutation.mutate(cashappTagInput)}
-                  disabled={saveCashappTagMutation.isPending}
-                  data-testid="button-save-cashapp-tag"
-                >
-                  {saveCashappTagMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Manual Payment Handles</p>
+        <div className="space-y-3">
+          <HandleSettingCard
+            label="CashApp $Cashtag"
+            description="Customers send CashApp to this tag with a generated note."
+            settingKey="cashapp-tag"
+            placeholder="$YourCashTag"
+            color="#00D632"
+          />
+          <HandleSettingCard
+            label="Chime Handle"
+            description="Phone number or email customers send Chime payments to."
+            settingKey="chime-handle"
+            placeholder="+1 (555) 000-0000"
+            color="#7BC67E"
+          />
+          <HandleSettingCard
+            label="Zelle Handle"
+            description="Phone number or email customers send Zelle payments to."
+            settingKey="zelle-handle"
+            placeholder="+1 (555) 000-0000 or email"
+            color="#9B59E8"
+          />
+        </div>
       </div>
 
       {/* Telegram Bot Token Status */}
@@ -1911,7 +1937,7 @@ function IntegrationsSection() {
 
       <Card className="bg-[#0f1115] border-primary/20">
         <CardContent className="p-4 space-y-2">
-          <p className="text-xs font-semibold text-primary">How to set the token</p>
+          <p className="text-xs font-semibold text-primary">How to set the Telegram token</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Message <span className="text-white font-medium">@BotFather</span> on Telegram and create a new bot</li>
             <li>Go to <span className="text-white font-medium">My Bots → Your Bot → Payments</span> and enable Stars</li>
@@ -1980,13 +2006,17 @@ function FeatureTogglesCard() {
   );
 }
 
+function methodMeta(method: string) {
+  if (method === "Chime") return { color: "#7BC67E", label: "Chime", icon: "C" };
+  if (method === "Zelle") return { color: "#9B59E8", label: "Zelle", icon: "Z" };
+  return { color: "#00D632", label: "CashApp", icon: "$" };
+}
+
 function CashAppSection() {
   const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [paidAmountInput, setPaidAmountInput] = useState("");
-  const [showPaidForm, setShowPaidForm] = useState(false);
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -1998,41 +2028,28 @@ function CashAppSection() {
     refetchInterval: 6000,
   });
 
-  const cashappOrders = (allOrders || []).filter((o: any) => o.paymentMethod === "CashApp");
-  const pendingOrders = cashappOrders.filter((o: any) => o.status === "pending");
+  const manualOrders = (allOrders || []).filter((o: any) => ["CashApp", "Chime", "Zelle"].includes(o.paymentMethod));
+  const pendingOrders = manualOrders.filter((o: any) => o.status === "pending");
   const cq = searchQuery.trim().toLowerCase();
-  const displayedOrders = (showHistory ? cashappOrders : pendingOrders).filter((o: any) =>
+  const displayedOrders = (showHistory ? manualOrders : pendingOrders).filter((o: any) =>
     !cq ||
     o.orderId?.toLowerCase().includes(cq) ||
     o.user?.username?.toLowerCase().includes(cq) ||
     o.paymentNote?.toLowerCase().includes(cq)
   );
 
-  const mutationOpts = (successMsg: string) => ({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setSelectedOrder(null);
-      toast({ title: successMsg });
-    },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-  });
-
-  const cashappFulfillMutation = useMutation({
-    mutationFn: async ({ orderId, paidAmount }: { orderId: number; paidAmount?: number }) => {
-      const body: any = {};
-      if (paidAmount !== undefined) body.paidAmount = paidAmount;
-      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, body);
+  const fulfillMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${orderId}/cashapp-fulfill`, {});
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       setSelectedOrder(null);
-      setShowPaidForm(false);
-      setPaidAmountInput("");
-      toast({ title: "Order confirmed — balance credited" });
+      toast({ title: "Deposit confirmed — balance credited" });
     },
-    onError: (e: any) => { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const markUnpaidMutation = useMutation({
@@ -2041,13 +2058,19 @@ function CashAppSection() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
-    ...mutationOpts("Order marked unpaid"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Marked unpaid" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
 
   if (selectedOrder) {
-    const current = cashappOrders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
+    const current = manualOrders?.find((o: any) => o.id === selectedOrder.id) || selectedOrder;
+    const meta = methodMeta(current.paymentMethod);
     const productItems = current.items?.filter((i: any) => !i.itemType || i.itemType === "product") || [];
     const grouped: Record<string, { productName: string; variantName: string; qty: number; unitPrice: number }> = {};
     for (const item of productItems) {
@@ -2057,7 +2080,6 @@ function CashAppSection() {
     }
     const groupedEntries = Object.entries(grouped);
     const isPending = current.status === "pending";
-    const isFulfilled = current.status === "delivering" || current.status === "fulfilled" || current.status === "replaced";
 
     return (
       <div className="space-y-4">
@@ -2065,29 +2087,40 @@ function CashAppSection() {
         <div className="bg-[#0f1115] border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <SiCashapp className="h-5 w-5 text-[#00D632]" />
-              <h2 className="text-lg font-black text-white">CashApp Order</h2>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: meta.color }}>
+                {meta.icon}
+              </div>
+              <h2 className="text-lg font-black text-white">{meta.label} Deposit</h2>
             </div>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
+
           <div className="space-y-3 border-b border-white/5 pb-4">
-            <div><p className="text-[10px] text-white/40 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-white/40 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
             <div><p className="text-[10px] text-white/40 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId}</p></div>
+            <div><p className="text-[10px] text-white/40 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-white/40 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
+              <div>
+                <p className="text-[10px] text-white/40 mb-0.5">Payment Note</p>
+                <p className="text-xs font-mono font-bold" style={{ color: meta.color }}>{current.paymentNote}</p>
+              </div>
             )}
-            <div><p className="text-[10px] text-white/40 mb-0.5">Amount</p><p className="text-sm font-black text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div>
+              <p className="text-[10px] text-white/40 mb-0.5">Amount to receive</p>
+              <p className="text-2xl font-black text-white">${(current.total / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-white/30 font-mono mt-0.5">user specified this amount — confirm only if received exactly this</p>
+            </div>
           </div>
 
-          {isPending && !showPaidForm && (
+          {isPending && (
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowPaidForm(true); setPaidAmountInput(""); }}
-                className="flex-1 h-11 rounded-xl bg-[#00D632]/20 border border-[#00D632]/40 text-[#00D632] text-sm font-black hover:bg-[#00D632]/30 transition-colors"
+                onClick={() => fulfillMutation.mutate(current.id)}
+                disabled={fulfillMutation.isPending}
+                className="flex-1 h-11 rounded-xl text-white text-sm font-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ background: `${meta.color}30`, border: `1px solid ${meta.color}60` }}
                 data-testid={`button-cashapp-paid-${current.id}`}
               >
-                ✓ Paid
+                {fulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <>✓ Confirm Received</>}
               </button>
               <button
                 onClick={() => markUnpaidMutation.mutate(current.id)}
@@ -2095,52 +2128,10 @@ function CashAppSection() {
                 className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-black hover:bg-red-500/20 transition-colors disabled:opacity-50"
                 data-testid={`button-cashapp-unpaid-${current.id}`}
               >
-                ✕ Unpaid
+                ✕ Reject
               </button>
             </div>
           )}
-
-          {isPending && showPaidForm && (
-            <div className="space-y-3 p-4 bg-[#00D632]/5 border border-[#00D632]/20 rounded-xl">
-              <p className="text-xs font-bold text-[#00D632]">How much did the user pay?</p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white/60 font-mono">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  value={paidAmountInput}
-                  onChange={e => setPaidAmountInput(e.target.value)}
-                  className="flex-1 h-9 bg-black/50 border border-white/10 rounded px-2 text-sm text-white font-mono outline-none focus:border-[#00D632]/40"
-                  data-testid="input-paid-amount"
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const amt = parseFloat(paidAmountInput);
-                    if (!amt || amt <= 0) return;
-                    cashappFulfillMutation.mutate({ orderId: current.id, paidAmount: amt });
-                  }}
-                  disabled={cashappFulfillMutation.isPending || !paidAmountInput || parseFloat(paidAmountInput) <= 0}
-                  className="flex-1 h-9 rounded-lg bg-[#00D632]/80 hover:bg-[#00D632] text-white text-xs font-black transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
-                  data-testid="btn-confirm-paid"
-                >
-                  {cashappFulfillMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirm & Credit"}
-                </button>
-                <button
-                  onClick={() => { setShowPaidForm(false); setPaidAmountInput(""); }}
-                  className="h-9 px-3 rounded-lg border border-white/10 text-white/50 hover:text-white text-xs font-bold transition-colors"
-                  data-testid="btn-cancel-paid"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
 
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
@@ -2165,8 +2156,12 @@ function CashAppSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SiCashapp className="h-6 w-6 text-[#00D632]" />
-          <h1 className="text-2xl font-semibold">{showHistory ? "CashApp History" : "Unconfirmed CashApp"}</h1>
+          <div className="flex -space-x-1">
+            <div className="w-6 h-6 rounded-full bg-[#00D632] flex items-center justify-center text-[10px] font-black text-white z-30">$</div>
+            <div className="w-6 h-6 rounded-full bg-[#7BC67E] flex items-center justify-center text-[10px] font-black text-white z-20">C</div>
+            <div className="w-6 h-6 rounded-full bg-[#9B59E8] flex items-center justify-center text-[10px] font-black text-white z-10">Z</div>
+          </div>
+          <h1 className="text-2xl font-semibold">{showHistory ? "Payment History" : "Pending Deposits"}</h1>
           {pendingOrders.length > 0 && (
             <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingOrders.length} pending</Badge>
           )}
@@ -2185,7 +2180,7 @@ function CashAppSection() {
           placeholder="Search by order ID, username, payment note..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full h-9 bg-white/5 border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#00D632]/40"
+          className="w-full h-9 bg-white/5 border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
           data-testid="input-cashapp-order-search"
         />
         {searchQuery && (
@@ -2197,28 +2192,36 @@ function CashAppSection() {
 
       {displayedOrders.length === 0 ? (
         <div className="text-center py-20 text-white/20 text-sm">
-          {showHistory ? "No CashApp orders" : "No pending CashApp orders"}
+          {showHistory ? "No manual payment history" : "No pending deposits"}
         </div>
       ) : (
         <div className="space-y-2">
-          {displayedOrders.map((order: any) => (
-            <div
-              key={order.id}
-              className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
-              onClick={() => setSelectedOrder(order)}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-mono text-white/50 truncate">{order.orderId}</p>
-                  <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
+          {displayedOrders.map((order: any) => {
+            const meta = methodMeta(order.paymentMethod);
+            return (
+              <div
+                key={order.id}
+                className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                onClick={() => setSelectedOrder(order)}
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0" style={{ background: `${meta.color}30`, border: `1px solid ${meta.color}50`, color: meta.color }}>
+                    {meta.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold" style={{ color: meta.color }}>{meta.label}</span>
+                      <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
+                    </div>
+                    <p className="text-sm font-black text-white">${(order.total / 100).toFixed(2)}</p>
+                    {order.paymentNote && <p className="text-[10px] font-mono mt-0.5" style={{ color: `${meta.color}80` }}>{order.paymentNote}</p>}
+                    <p className="text-[10px] text-white/30">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <p className="text-sm font-black text-white mt-0.5">${(order.total / 100).toFixed(2)}</p>
-                {order.paymentNote && <p className="text-[10px] font-mono text-[#00D632]/70 mt-0.5">{order.paymentNote}</p>}
-                <p className="text-[10px] text-white/30 mt-0.5">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
+                <ChevronRight className="h-4 w-4 text-white/20 flex-shrink-0" />
               </div>
-              <ChevronRight className="h-4 w-4 text-white/20 flex-shrink-0" />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

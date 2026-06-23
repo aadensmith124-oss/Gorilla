@@ -691,8 +691,8 @@ export class DatabaseStorage implements IStorage {
         userId: order.userId,
         amount: creditAmount,
         type: "deposit",
-        description: `CashApp deposit confirmed (${order.orderId})`,
-        paymentMethod: "CashApp",
+        description: `${order.paymentMethod || "Manual"} deposit confirmed (${order.orderId})`,
+        paymentMethod: order.paymentMethod || "CashApp",
       });
       const [updated] = await db.update(orders)
         .set({ status: "fulfilled", paidAmount: creditAmount, total: creditAmount })
