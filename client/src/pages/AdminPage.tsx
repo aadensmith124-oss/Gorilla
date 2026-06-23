@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag, Copy, Check } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag, Copy, Check, Upload, ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -281,7 +281,30 @@ function ProductsSection() {
   const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
   const [managingStock, setManagingStock] = useState<number | null>(null);
   const [editingVariant, setEditingVariant] = useState<number | null>(null);
+  const [isUploadingAddImage, setIsUploadingAddImage] = useState(false);
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
   const { data: products, isLoading } = useProducts();
+
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, formType: "add" | "edit") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const setUploading = formType === "add" ? setIsUploadingAddImage : setIsUploadingEditImage;
+    const form = formType === "add" ? addForm : editForm;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = (event.target?.result as string).split(",")[1];
+        const res = await apiRequest("POST", "/api/upload", { filename: file.name, mimeType: file.type, data: base64 });
+        const data = await res.json();
+        form.setValue("image", data.url);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploading(false);
+    }
+  };
 
   const productSchema = z.object({
     name: z.string().min(1, "Name required"),
@@ -453,10 +476,19 @@ function ProductsSection() {
                 )} />
                 <FormField control={addForm.control} name="image" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image URL <span className="text-white/30 font-normal">(optional)</span></FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="https://..." className="bg-black/50 border-white/10" data-testid="input-product-image" />
-                    </FormControl>
+                    <FormLabel>Image <span className="text-white/30 font-normal">(optional)</span></FormLabel>
+                    <div className="flex gap-2 items-start">
+                      <FormControl className="flex-1">
+                        <Input {...field} placeholder="https://... or upload below" className="bg-black/50 border-white/10" data-testid="input-product-image" />
+                      </FormControl>
+                      <label className="relative cursor-pointer shrink-0">
+                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-white/10 bg-black/50 text-xs text-white/60 hover:text-white hover:border-white/20 transition-colors">
+                          {isUploadingAddImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                          Gallery
+                        </div>
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full" onChange={e => handleProductImageUpload(e, "add")} />
+                      </label>
+                    </div>
                     {field.value && (
                       <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
                     )}
@@ -503,10 +535,19 @@ function ProductsSection() {
                 )} />
                 <FormField control={editForm.control} name="image" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image URL <span className="text-white/30 font-normal">(optional)</span></FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="https://..." className="bg-black/50 border-white/10" data-testid="input-edit-product-image" />
-                    </FormControl>
+                    <FormLabel>Image <span className="text-white/30 font-normal">(optional)</span></FormLabel>
+                    <div className="flex gap-2 items-start">
+                      <FormControl className="flex-1">
+                        <Input {...field} placeholder="https://... or upload below" className="bg-black/50 border-white/10" data-testid="input-edit-product-image" />
+                      </FormControl>
+                      <label className="relative cursor-pointer shrink-0">
+                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-white/10 bg-black/50 text-xs text-white/60 hover:text-white hover:border-white/20 transition-colors">
+                          {isUploadingEditImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                          Gallery
+                        </div>
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full" onChange={e => handleProductImageUpload(e, "edit")} />
+                      </label>
+                    </div>
                     {field.value && (
                       <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
                     )}
@@ -2415,7 +2456,6 @@ function AdminCardsSection() {
   const [tab, setTab] = useState<"stock" | "bases">("stock");
   const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
-  const [hrPercent, setHrPercent] = useState("80");
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
 
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
@@ -2425,19 +2465,12 @@ function AdminCardsSection() {
   const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
   const previewZip = extractZipPreview(fullItem);
 
-  const handleHrChange = (val: string) => {
-    const stripped = val.replace(/[^0-9]/g, "");
-    if (stripped === "") { setHrPercent(""); return; }
-    const n = Math.max(1, Math.min(100, parseInt(stripped, 10)));
-    setHrPercent(String(n));
-  };
-
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!fullItem.trim()) throw new Error("Full item is required");
       if (!price || parseFloat(price) <= 0) throw new Error("Valid price is required");
-      const body: any = { extras: fullItem.trim(), price: parseFloat(price), hrPercent: hrPercent || "1" };
-      if (selectedBaseId) body.baseId = Number(selectedBaseId);
+      if (!selectedBaseId) throw new Error("Base is required");
+      const body: any = { extras: fullItem.trim(), price: parseFloat(price), baseId: Number(selectedBaseId) };
       const res = await apiRequest("POST", "/api/cards", body);
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed to add card"); }
       return res.json();
@@ -2445,7 +2478,7 @@ function AdminCardsSection() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
       qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
-      setFullItem(""); setPrice(""); setHrPercent("80"); setSelectedBaseId("");
+      setFullItem(""); setPrice(""); setSelectedBaseId("");
       toast({ title: "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -2485,51 +2518,38 @@ function AdminCardsSection() {
           </div>
         </div>
 
-        {/* Base selector */}
+        {/* Base selector — required */}
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Base</label>
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
           <select
             value={selectedBaseId}
             onChange={e => setSelectedBaseId(e.target.value)}
             className="w-full bg-black/50 border border-white/10 rounded text-xs text-white py-2 px-2 outline-none focus:border-white/20"
             data-testid="select-card-base"
           >
-            <option value="">No base</option>
+            <option value="">— Select base —</option>
             {(bases ?? []).map((b: any) => (
               <option key={b.id} value={String(b.id)}>{b.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-            <Input
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              placeholder="5.00"
-              type="number"
-              step="0.01"
-              className="bg-black/50 border-white/10"
-              data-testid="input-card-price"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">HR %</label>
-            <Input
-              value={hrPercent}
-              onChange={e => handleHrChange(e.target.value)}
-              placeholder="80"
-              className="bg-black/50 border-white/10 font-mono"
-              data-testid="input-hr-percent"
-            />
-            <p className="text-[9px] text-white/20">Hit rate % (1–100)</p>
-          </div>
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+          <Input
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            placeholder="5.00"
+            type="number"
+            step="0.01"
+            className="bg-black/50 border-white/10"
+            data-testid="input-card-price"
+          />
         </div>
 
         <Button
           onClick={() => addMutation.mutate()}
-          disabled={addMutation.isPending || !fullItem.trim() || !price}
+          disabled={addMutation.isPending || !fullItem.trim() || !price || !selectedBaseId}
           size="sm"
           className="w-full h-8 text-xs"
           data-testid="btn-add-card"

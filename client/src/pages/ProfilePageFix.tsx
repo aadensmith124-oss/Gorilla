@@ -15,7 +15,7 @@ const RANKS = [
   { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-white/40",  bar: "#ffffff40", bg: "bg-white/5",        discount: 0,  threshold: 0       },
   { key: "regular", label: "Regular", emoji: "⭐", color: "text-blue-400",  bar: "#60a5fa",   bg: "bg-blue-500/10",    discount: 2,  threshold: 10000   },
   { key: "vip",     label: "VIP",     emoji: "💎", color: "text-purple-400",bar: "#c084fc",   bg: "bg-purple-500/10",  discount: 5,  threshold: 50000   },
-  { key: "nyc",     label: "NYC",     emoji: "🗽", color: "text-amber-400", bar: "#fbbf24",   bg: "bg-amber-500/10",   discount: 10, threshold: 100000  },
+  { key: "nyc",     label: "NYC",     emoji: "🫆", color: "text-amber-400", bar: "#fbbf24",   bg: "bg-amber-500/10",   discount: 10, threshold: 100000  },
 ] as const;
 
 function RankCard({ rankData }: { rankData: any }) {

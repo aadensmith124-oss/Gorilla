@@ -257,27 +257,23 @@ function CardsTab() {
   const qc = useQueryClient();
   const [fullItem, setFullItem] = useState("");
   const [price, setPrice] = useState("");
-  const [hrPercent, setHrPercent] = useState("80");
+  const [selectedBaseId, setSelectedBaseId] = useState<string>("");
 
   const { data: cards = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
+  const { data: bases = [] } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
   const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
-
-  const handleHrChange = (val: string) => {
-    const stripped = val.replace(/[^0-9]/g, "");
-    if (stripped === "") { setHrPercent(""); return; }
-    setHrPercent(String(Math.max(1, Math.min(100, parseInt(stripped, 10)))));
-  };
 
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!fullItem.trim()) throw new Error("Full item is required");
       if (!price || parseFloat(price) <= 0) throw new Error("Valid price is required");
-      const res = await apiRequest("POST", "/api/cards", { extras: fullItem.trim(), price: parseFloat(price), hrPercent: hrPercent || "1" });
+      if (!selectedBaseId) throw new Error("Base is required");
+      const res = await apiRequest("POST", "/api/cards", { extras: fullItem.trim(), price: parseFloat(price), baseId: Number(selectedBaseId) });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed"); }
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Card added" }); setFullItem(""); setPrice(""); setHrPercent("80"); qc.invalidateQueries({ queryKey: ["/api/cards"] }); },
+    onSuccess: () => { toast({ title: "Card added" }); setFullItem(""); setPrice(""); setSelectedBaseId(""); qc.invalidateQueries({ queryKey: ["/api/cards"] }); qc.invalidateQueries({ queryKey: ["/api/card-bases"] }); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -298,18 +294,25 @@ function CardsTab() {
           <textarea value={fullItem} onChange={e => setFullItem(e.target.value)} placeholder={"4111111111111111|12/25|123|John Doe|Address"} rows={3} className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20" data-testid="input-full-item" />
           {previewBin.length === 6 && <p className="text-[10px] text-primary/60 font-mono">BIN: {previewBin} (auto-lookup on save)</p>}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-            <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-black/50 border-white/10 h-8" data-testid="input-card-price" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">HR %</label>
-            <Input value={hrPercent} onChange={e => handleHrChange(e.target.value)} placeholder="80" className="bg-black/50 border-white/10 h-8 font-mono" data-testid="input-hr-percent" />
-          </div>
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
+          <select
+            value={selectedBaseId}
+            onChange={e => setSelectedBaseId(e.target.value)}
+            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white py-2 px-2 outline-none focus:border-white/20"
+            data-testid="select-card-base"
+          >
+            <option value="">— Select base —</option>
+            {(bases as any[]).map((b: any) => (
+              <option key={b.id} value={String(b.id)}>{b.name}</option>
+            ))}
+          </select>
         </div>
-        {hrPercent && <p className="text-[10px] text-primary/60 font-mono">🔥 PiF Market | {hrPercent}% HR 🔥</p>}
-        <Button size="sm" className="w-full h-8 text-xs" onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !fullItem.trim() || !price} data-testid="btn-add-card">
+        <div className="space-y-1">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-black/50 border-white/10 h-8" data-testid="input-card-price" />
+        </div>
+        <Button size="sm" className="w-full h-8 text-xs" onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !fullItem.trim() || !price || !selectedBaseId} data-testid="btn-add-card">
           {addMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Card"}
         </Button>
       </div>
