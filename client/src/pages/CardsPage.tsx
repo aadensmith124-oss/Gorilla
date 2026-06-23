@@ -35,8 +35,10 @@ function hasBilling(extras: string): boolean {
 
 function formatCardType(binData: any): string {
   if (!binData) return "";
-  return [binData.type?.toUpperCase(), binData.brand?.toUpperCase() || binData.scheme?.toUpperCase()]
-    .filter(Boolean).join(" ");
+  return [binData.type, binData.scheme, binData.brand]
+    .filter(Boolean)
+    .map((s: string) => s.toUpperCase())
+    .join(" ");
 }
 
 function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; onToggleCart: (c: any) => void }) {
@@ -73,10 +75,8 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
         {/* Row 1: Base name + billing + price */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            {baseName ? (
+            {baseName && (
               <span className="text-xs font-bold text-primary/90 font-mono truncate">{baseName}</span>
-            ) : (
-              <span className="text-xs font-bold text-white/30 font-mono">NO BASE</span>
             )}
             {billing && (
               <span className="text-[10px] font-bold text-green-400 font-mono shrink-0">Y</span>
@@ -90,13 +90,12 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           <p className="text-[11px] text-white/40 font-mono uppercase">{cardType}</p>
         )}
 
-        {/* Row 3: BIN + Unknown + ZIP + country */}
+        {/* Row 3: BIN + state/Unknown + ZIP + country */}
         <div className="flex items-center gap-2 font-mono text-[11px] flex-wrap">
           {bin && (
             <span className="border border-white/15 px-1.5 py-0.5 rounded text-white/60 text-[11px]">{bin}</span>
           )}
-          <span className="text-white/30">Unknown</span>
-          {state && <span className="text-white/30">{state}</span>}
+          <span className="text-white/30">{state || "Unknown"}</span>
           {zip && <span className="text-white/30">ZIP {zip}</span>}
           {countryCode && <span className="text-white/30">{countryCode}</span>}
         </div>
