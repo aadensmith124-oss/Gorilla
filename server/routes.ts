@@ -1216,10 +1216,30 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || ((req.user as any).role !== 'admin' && !(req.user as any).isWorker)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    // Extract card number from the full delivery item (first pipe-delimited segment)
     const fullItem = req.body.extras || "";
-    const firstSegment = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").trim();
-    const cardNumber = firstSegment || req.body.cardNumber || "";
+
+    // Robust card number extractor — works with any delimiter or spacing
+    function findCardNumber(line: string): string {
+      if (!line) return "";
+      const tokens = line.split(/[|\t:;,\s]+/).map((t: string) => t.trim()).filter(Boolean);
+      // First pass: token whose digits are 13-19 long and starts with 3/4/5/6
+      for (const token of tokens) {
+        const digits = token.replace(/\D/g, "");
+        if (digits.length >= 13 && digits.length <= 19 && /^[3456]/.test(digits)) return digits;
+      }
+      // Second pass: scan concatenated string for a 13-19 digit run starting with 3/4/5/6
+      const noGaps = line.replace(/[\s\-]/g, "");
+      const m = noGaps.match(/[3456]\d{12,18}/);
+      if (m) return m[0];
+      // Fallback: first numeric token >= 6 digits
+      for (const token of tokens) {
+        const digits = token.replace(/\D/g, "");
+        if (digits.length >= 6) return digits;
+      }
+      return "";
+    }
+
+    const cardNumber = findCardNumber(fullItem) || req.body.cardNumber || "";
     const masked = cardNumber.length >= 4
       ? cardNumber.substring(0, 6) + "*".repeat(Math.max(0, cardNumber.length - 10)) + cardNumber.slice(-4)
       : cardNumber;
@@ -1237,10 +1257,6 @@ export async function registerRoutes(
       } catch {}
     }
 
-    // Validate hrPercent: strip non-numeric, clamp 1-100, default 1
-    const rawHr = String(req.body.hrPercent ?? "80").replace(/[^0-9]/g, "");
-    const hrPercent = rawHr ? Math.max(1, Math.min(100, parseInt(rawHr, 10))) : 1;
-
     const baseId = req.body.baseId ? Number(req.body.baseId) : undefined;
 
     const card = await storage.createCard({
@@ -1252,7 +1268,7 @@ export async function registerRoutes(
       extras: fullItem.trim(),
       price: Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price,
       isFirstHand: false,
-      hrPercent,
+      hrPercent: 80,
       ...(baseId ? { baseId } : {}),
     } as any);
 

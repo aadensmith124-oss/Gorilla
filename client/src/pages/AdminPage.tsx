@@ -2292,12 +2292,37 @@ function CashAppSection() {
   );
 }
 
-function extractZipPreview(extras: string): string {
-  if (!extras) return "";
-  const parts = extras.split(/[|\t]/);
-  for (let i = 3; i < parts.length; i++) {
-    const t = parts[i].trim();
-    if (/^\d{5}(-\d{4})?$/.test(t)) return t.substring(0, 5);
+function findCardNumberPreview(line: string): string {
+  if (!line) return "";
+  const tokens = line.split(/[|\t:;,\s]+/).map(t => t.trim()).filter(Boolean);
+  for (const token of tokens) {
+    const digits = token.replace(/\D/g, "");
+    if (digits.length >= 13 && digits.length <= 19 && /^[3456]/.test(digits)) return digits;
+  }
+  const noGaps = line.replace(/[\s\-]/g, "");
+  const m = noGaps.match(/[3456]\d{12,18}/);
+  if (m) return m[0];
+  return "";
+}
+
+function extractZipPreview(line: string): string {
+  if (!line) return "";
+  const tokens = line.split(/[|\t:;,\s]+/).map(t => t.trim()).filter(Boolean);
+  for (const token of tokens) {
+    const zipMatch = token.match(/^(\d{5})(?:-\d{4})?$/);
+    if (zipMatch) {
+      const num = parseInt(zipMatch[1], 10);
+      if (num >= 501 && num <= 99950 && !(num >= 1900 && num <= 2100)) return zipMatch[1];
+    }
+  }
+  for (const token of tokens) {
+    const digits = token.replace(/\D/g, "");
+    if (digits.length >= 13) continue;
+    const m = token.match(/\b(\d{5})(?:-\d{4})?\b/);
+    if (m) {
+      const num = parseInt(m[1], 10);
+      if (num >= 501 && num <= 99950 && !(num >= 1900 && num <= 2100)) return m[1];
+    }
   }
   return "";
 }
@@ -2462,7 +2487,7 @@ function AdminCardsSection() {
   const { data: bases } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
   // Auto-extract BIN + ZIP preview from full item
-  const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
+  const previewBin = findCardNumberPreview(fullItem).substring(0, 6);
   const previewZip = extractZipPreview(fullItem);
 
   const addMutation = useMutation({

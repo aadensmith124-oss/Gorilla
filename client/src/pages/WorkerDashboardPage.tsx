@@ -262,7 +262,15 @@ function CardsTab() {
   const { data: cards = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
   const { data: bases = [] } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
-  const previewBin = fullItem.split(/[|\t]/)[0].replace(/\D/g, "").substring(0, 6);
+  const previewBin = (() => {
+    const tokens = fullItem.split(/[|\t:;,\s]+/).map((t: string) => t.trim()).filter(Boolean);
+    for (const token of tokens) {
+      const digits = token.replace(/\D/g, "");
+      if (digits.length >= 13 && digits.length <= 19 && /^[3456]/.test(digits)) return digits.substring(0, 6);
+    }
+    const m = fullItem.replace(/[\s\-]/g, "").match(/[3456]\d{12,18}/);
+    return m ? m[0].substring(0, 6) : "";
+  })();
 
   const addMutation = useMutation({
     mutationFn: async () => {

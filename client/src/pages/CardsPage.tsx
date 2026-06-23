@@ -11,10 +11,22 @@ function extractBin(cardNumber: string): string {
 
 function extractZip(extras: string): string {
   if (!extras) return "";
-  const parts = extras.split(/[|\t]/);
-  for (let i = 3; i < parts.length; i++) {
-    const t = parts[i].trim();
-    if (/^\d{5}(-\d{4})?$/.test(t)) return t;
+  const tokens = extras.split(/[|\t:;,\s]+/).map(t => t.trim()).filter(Boolean);
+  for (const token of tokens) {
+    const zipMatch = token.match(/^(\d{5})(?:-\d{4})?$/);
+    if (zipMatch) {
+      const num = parseInt(zipMatch[1], 10);
+      if (num >= 501 && num <= 99950 && !(num >= 1900 && num <= 2100)) return zipMatch[1];
+    }
+  }
+  for (const token of tokens) {
+    const digits = token.replace(/\D/g, "");
+    if (digits.length >= 13) continue;
+    const m = token.match(/\b(\d{5})(?:-\d{4})?\b/);
+    if (m) {
+      const num = parseInt(m[1], 10);
+      if (num >= 501 && num <= 99950 && !(num >= 1900 && num <= 2100)) return m[1];
+    }
   }
   return "";
 }
