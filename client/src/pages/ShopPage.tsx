@@ -1,6 +1,6 @@
 import { useProducts } from "@/hooks/use-products";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ShieldX } from "lucide-react";
+import { Loader2, ShieldX, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
@@ -47,19 +47,19 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="rounded-xl overflow-hidden border border-white/5 cursor-pointer transition-all hover:border-white/10 hover:scale-[1.01] active:scale-[0.99]"
+        className="rounded-2xl overflow-hidden border border-white/[0.07] cursor-pointer transition-all hover:border-white/[0.14] hover:scale-[1.02] active:scale-[0.99] bg-[#0f0f0f]"
         style={isTop1
-          ? { boxShadow: "0 0 18px 2px rgba(251,191,36,0.18)" }
+          ? { boxShadow: "0 0 20px 2px rgba(251,191,36,0.14)" }
           : isTop2
-          ? { boxShadow: "0 0 10px 1px rgba(251,191,36,0.09)" }
+          ? { boxShadow: "0 0 12px 1px rgba(251,191,36,0.07)" }
           : {}}
         data-testid={`card-product-${product.id}`}
       >
-        {/* Image / Logo area */}
+        {/* Image area */}
         <div
           className="relative w-full flex items-center justify-center overflow-hidden"
           style={{
-            height: 110,
+            height: 108,
             background: hasImage ? "#111" : cardGradient(product.name),
           }}
         >
@@ -71,40 +71,39 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
-            <span className="text-2xl font-black text-white/20 select-none uppercase tracking-widest">
+            <span className="text-3xl font-black text-white/10 select-none uppercase tracking-widest">
               {product.name.slice(0, 2)}
             </span>
           )}
 
-          {/* Top 1 / Top 2 banner */}
           {isTop1 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-500 text-black">
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-500 text-black">
               🏆 Top 1
             </div>
           )}
           {isTop2 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/40">
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/40">
               🔥 Top 2
             </div>
           )}
         </div>
 
-        {/* Info area */}
-        <div className="bg-[#0f0f0f] px-2.5 py-2.5 space-y-1">
+        {/* Info */}
+        <div className="px-3 py-2.5 space-y-1">
           <p className="text-xs font-bold text-white leading-tight line-clamp-1">{product.name}</p>
           {product.description ? (
-            <p className="text-[10px] text-white/30 leading-snug line-clamp-2 font-mono">{product.description}</p>
+            <p className="text-[10px] text-white/25 leading-snug line-clamp-1 font-mono">{product.description}</p>
           ) : null}
           <div className="flex items-center gap-1.5 pt-0.5">
             {comparePrice && comparePrice > lowestPrice && (
               <span className="text-[10px] line-through text-white/20 font-mono">${(comparePrice / 100).toFixed(2)}</span>
             )}
             {lowestPrice > 0 ? (
-              <span className={`text-sm font-black font-mono ${isTop1 ? "text-amber-300" : isTop2 ? "text-amber-400" : "text-primary"}`}>
+              <span className={`text-sm font-black font-mono ${isTop1 ? "text-amber-300" : isTop2 ? "text-amber-400" : "text-white"}`}>
                 ${(lowestPrice / 100).toFixed(2)}
               </span>
             ) : (
-              <span className="text-sm font-black font-mono text-white/40">Free</span>
+              <span className="text-sm font-black font-mono text-white/35">Free</span>
             )}
             <span className="text-[10px] text-white/20 font-mono">/ line</span>
           </div>
@@ -144,13 +143,13 @@ export default function ShopPage() {
   }, [sortedProducts, search]);
 
   if (isLoading) {
-    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>;
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-white/30" /></div>;
   }
 
   if (user?.isBanned) {
     return (
-      <div className="max-w-sm mx-auto px-3 py-8">
-        <div className="bg-destructive/10 border border-destructive/20 p-6 rounded-xl text-center space-y-3">
+      <div className="max-w-sm mx-auto px-4 py-10">
+        <div className="bg-destructive/10 border border-destructive/20 p-6 rounded-2xl text-center space-y-3">
           <ShieldX className="h-8 w-8 text-destructive mx-auto" />
           <p className="text-sm text-destructive font-bold">Account Restricted</p>
           <p className="text-xs text-white/40 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
@@ -160,26 +159,30 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
-      <div className="space-y-1 mb-2">
-        <h1 className="text-xl font-bold text-white">PiF<span className="text-white/40"> Market</span></h1>
-        <p className="text-xs text-white/30">Premium marketplace</p>
+    <div className="max-w-sm mx-auto px-4 py-5 space-y-4">
+      {/* Header */}
+      <div className="space-y-0.5">
+        <h1 className="text-lg font-bold text-white">PiF<span className="text-white/30"> Market</span></h1>
+        <p className="text-[11px] text-white/25">Premium marketplace</p>
       </div>
 
-      {/* Search only — no filters */}
-      <input
-        type="text"
-        placeholder="Search logs..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="w-full h-9 bg-[#111] border border-white/5 rounded-lg px-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
-        data-testid="input-search"
-      />
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/25" />
+        <input
+          type="text"
+          placeholder="Search logs..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full h-10 bg-[#0f0f0f] border border-white/[0.07] rounded-2xl pl-9 pr-4 text-xs text-white placeholder:text-white/20 outline-none focus:border-white/[0.12] transition-colors"
+          data-testid="input-search"
+        />
+      </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-white/20 text-sm">No products found</div>
       ) : (
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           {filtered.map((product: any) => {
             const rank = !search.trim() ? topIds.indexOf(product.id) : -1;
             return <ProductCard key={product.id} product={product} rank={rank} />;

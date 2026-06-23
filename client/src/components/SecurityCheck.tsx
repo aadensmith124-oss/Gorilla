@@ -48,10 +48,10 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex flex-col justify-center px-8 md:px-16"
-      style={{ background: "#0c0c0c" }}
+      style={{ background: "#0a0a0a" }}
     >
       <div className="max-w-lg">
-        <p className="text-white text-2xl font-bold mb-6 tracking-tight opacity-90">
+        <p className="text-white/60 text-sm font-mono mb-8 tracking-wide">
           pifmarket.com
         </p>
 
@@ -59,15 +59,15 @@ export function SecurityCheck({ onVerified }: SecurityCheckProps) {
           {clicked ? <>Performing security<br />verification</> : <>Security<br />verification</>}
         </h1>
 
-        <p className="text-white/50 text-sm leading-relaxed mb-10 max-w-sm">
+        <p className="text-white/40 text-sm leading-relaxed mb-10 max-w-sm">
           {clicked
             ? "This website uses a security service to protect against malicious bots and unauthorized access. Please wait while we verify your browser."
             : "This website uses a security service to protect against malicious bots. Please verify you are human to continue."}
         </p>
 
         <div
-          className="rounded px-5 py-4 flex items-center justify-between"
-          style={{ background: "#111", border: "1px solid #1e1e1e" }}
+          className="rounded-2xl px-5 py-4 flex items-center justify-between"
+          style={{ background: "#0f0f0f", border: "1px solid rgba(255,255,255,0.07)" }}
         >
           <div className="flex items-center gap-4">
             {!clicked ? (

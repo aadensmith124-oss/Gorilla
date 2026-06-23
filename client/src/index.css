@@ -5,26 +5,26 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 7%;
+  --background: 0 0% 6%;
   --foreground: 0 0% 95%;
-  --card: 0 0% 9%;
+  --card: 0 0% 8%;
   --card-foreground: 0 0% 95%;
-  --popover: 0 0% 9%;
+  --popover: 0 0% 8%;
   --popover-foreground: 0 0% 95%;
   --primary: 0 0% 95%;
   --primary-foreground: 0 0% 5%;
-  --secondary: 0 0% 13%;
+  --secondary: 0 0% 12%;
   --secondary-foreground: 0 0% 95%;
-  --muted: 0 0% 13%;
-  --muted-foreground: 0 0% 50%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 48%;
   --accent: 0 0% 95%;
   --accent-foreground: 0 0% 5%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 14%;
-  --input: 0 0% 12%;
+  --border: 0 0% 12%;
+  --input: 0 0% 10%;
   --ring: 0 0% 50%;
-  --radius: 0.5rem;
+  --radius: 0.625rem;
   --font-display: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -45,6 +45,7 @@
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { @apply bg-transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors; }
-.glass { @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl; }
-.pro-card { @apply bg-[#111111] border border-white/5 rounded shadow-xl; }
-.item-row { @apply border border-white/5 bg-[#111111] rounded p-3 hover:bg-[#161616] transition-colors; }
+
+.glass { @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-2xl; }
+.pro-card { @apply bg-[#0f0f0f] border border-white/[0.06] rounded-2xl shadow-xl; }
+.item-row { @apply border border-white/[0.06] bg-[#0f0f0f] rounded-xl p-3 hover:bg-[#141414] transition-colors; }

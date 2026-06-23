@@ -93,62 +93,64 @@ export default function ProfilePage() {
     if (tabFromUrl) setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#0a0a0a]"><Loader2 className="h-7 w-7 animate-spin text-white/30" /></div>;
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-5 pb-20">
       <div>
-        <p className="text-xs text-muted-foreground">Your account</p>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-[11px] text-white/30 uppercase tracking-widest">Your account</p>
+        <h1 className="text-2xl font-bold text-white mt-0.5">Dashboard</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start border-b border-white/5 bg-transparent p-0 h-auto rounded-none gap-6">
-          <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+        <TabsList className="w-full justify-start border-b border-white/[0.06] bg-transparent p-0 h-auto rounded-none gap-5">
+          <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/40 data-[state=active]:text-white">
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/40 data-[state=active]:text-white">
             Orders
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+          <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/40 data-[state=active]:text-white">
             Settings
           </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
+          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/40 data-[state=active]:text-white">
             Balance
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="pt-6 space-y-4">
           {rankData && <RankCard rankData={rankData} />}
-          <Card className="bg-card/40 border-white/5">
-            <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Username</p>
-                <p className="text-lg font-bold text-white">{user.username}</p>
+          <div className="bg-[#0f0f0f] border border-white/[0.07] rounded-2xl overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-white/[0.06]">
+              <p className="text-xs font-semibold text-white">Account Information</p>
+            </div>
+            <div className="divide-y divide-white/[0.05]">
+              <div className="px-4 py-3 flex justify-between items-center">
+                <p className="text-[11px] text-white/35">Username</p>
+                <p className="text-xs font-semibold text-white">{user.username}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="text-lg font-bold text-white">{user.email}</p>
+              <div className="px-4 py-3 flex justify-between items-center">
+                <p className="text-[11px] text-white/35">Email</p>
+                <p className="text-xs font-semibold text-white">{user.email}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Telegram</p>
-                <p className="text-lg font-bold text-white">{user.telegramUsername || "—"}</p>
+              <div className="px-4 py-3 flex justify-between items-center">
+                <p className="text-[11px] text-white/35">Telegram</p>
+                <p className="text-xs font-semibold text-white">{user.telegramUsername || "—"}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Member Since</p>
-                <p className="text-sm text-white">{new Date(user.createdAt).toLocaleDateString()}</p>
+              <div className="px-4 py-3 flex justify-between items-center">
+                <p className="text-[11px] text-white/35">Member Since</p>
+                <p className="text-xs text-white/60">{new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
+            </div>
+            <div className="px-4 py-3 border-t border-white/[0.06]">
               <button
                 onClick={() => logout()}
-                className="w-full h-10 mt-4 bg-destructive/20 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/30 transition-colors font-bold text-sm"
+                className="w-full h-9 bg-destructive/15 border border-destructive/25 text-destructive rounded-xl hover:bg-destructive/25 transition-colors font-semibold text-xs"
               >
-                Logout
+                Sign Out
               </button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="orders" className="pt-6">
@@ -159,21 +161,21 @@ export default function ProfilePage() {
                 <p className="text-sm text-white mb-4">
                   {visibleOrders.length} ORDER{visibleOrders.length !== 1 ? "S" : ""} FOUND
                 </p>
-                <div className="bg-[#0d0f12] rounded-xl border border-white/5 overflow-hidden">
-                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/5">
-                    <span className="text-[10px] font-bold text-white/40">Amount</span>
-                    <span className="text-[10px] font-bold text-white/40">Status</span>
-                    <span className="text-[10px] font-bold text-white/40">Date</span>
+                <div className="bg-[#0f0f0f] rounded-2xl border border-white/[0.07] overflow-hidden">
+                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/[0.06]">
+                    <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Amount</span>
+                    <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Status</span>
+                    <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">Date</span>
                   </div>
                   {visibleOrders.map((order: any) => (
                     <button
                       key={order.id}
                       onClick={() => setLocation(`/order/${order.orderId}`)}
-                      className="w-full grid grid-cols-3 px-4 py-3.5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors text-left"
+                      className="w-full grid grid-cols-3 px-4 py-3 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.03] transition-colors text-left"
                     >
-                      <span className="text-sm font-bold text-white">${(order.total / 100).toFixed(2)}</span>
-                      <span className={`text-sm font-bold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
-                      <span className="text-xs text-white/50">{formatDate(order.createdAt)}</span>
+                      <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+                      <span className={`text-xs font-semibold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
+                      <span className="text-[11px] text-white/40">{formatDate(order.createdAt)}</span>
                     </button>
                   ))}
                 </div>
