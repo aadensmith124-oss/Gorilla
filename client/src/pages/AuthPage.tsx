@@ -24,11 +24,8 @@ export default function AuthPage() {
       <div className="relative z-10 w-full max-w-[340px] space-y-5">
         {/* Brand */}
         <div className="text-center space-y-1 mb-2">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.08] mb-3">
-            <span className="text-sm font-black text-white">P</span>
-          </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">PiF<span className="text-white/35"> Market</span></h1>
-          <p className="text-white/30 text-[11px]">Premium digital marketplace</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">NYC<span className="text-white/35">HQ</span></h1>
+          <p className="text-white/30 text-[11px]">BEST HIGH QUALITY CARDS</p>
         </div>
 
         {/* Tab switcher */}

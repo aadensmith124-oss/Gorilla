@@ -49,7 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/+xgVCi_EMsq1iZTRh", icon: Send, label: "Telegram Support", external: true },
+        { href: "https://t.me/+5pZdw9Czcro1OTFh", icon: Send, label: "Telegram Support", external: true },
       ],
     },
     ...(features?.reseller !== false ? [{
@@ -76,7 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full bg-[#0a0a0a] text-white overflow-y-auto">
       {/* Brand */}
       <div className="px-5 py-6">
-        <span className="text-base font-bold tracking-tight text-white">PiF<span className="text-white/35"> Market</span></span>
+        <span className="text-base font-bold tracking-tight text-white">NYC<span className="text-white/35">HQ</span></span>
       </div>
 
       <div className="flex flex-col gap-5 px-3 flex-1">

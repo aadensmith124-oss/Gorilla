@@ -162,8 +162,8 @@ export default function ShopPage() {
     <div className="max-w-sm mx-auto px-4 py-5 space-y-4">
       {/* Header */}
       <div className="space-y-0.5">
-        <h1 className="text-lg font-bold text-white">PiF<span className="text-white/30"> Market</span></h1>
-        <p className="text-[11px] text-white/25">Premium marketplace</p>
+        <h1 className="text-lg font-bold text-white">NYC<span className="text-white/30">HQ</span></h1>
+        <p className="text-[11px] text-white/25">BEST HIGH QUALITY CARDS</p>
       </div>
 
       {/* Search */}

@@ -1921,8 +1921,9 @@ function IntegrationsSection() {
   const METHODS = [
     { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
-    { id: "chime", label: "Chime", icon: <span className="text-white font-black text-sm">C</span>, bg: "bg-[#7BC67E]" },
+    { id: "venmo", label: "Venmo", icon: <span className="text-white font-black text-sm">V</span>, bg: "bg-[#3D95CE]" },
     { id: "zelle", label: "Zelle", icon: <span className="text-white font-black text-sm">Z</span>, bg: "bg-[#6D1ED4]" },
+    { id: "chime", label: "Chime", icon: <span className="text-white font-black text-sm">C</span>, bg: "bg-[#7BC67E]" },
     { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-black" />, bg: "bg-primary" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
@@ -1983,11 +1984,11 @@ function IntegrationsSection() {
             color="#00D632"
           />
           <HandleSettingCard
-            label="Chime Handle"
-            description="Phone number or email customers send Chime payments to."
-            settingKey="chime-handle"
-            placeholder="+1 (555) 000-0000"
-            color="#7BC67E"
+            label="Venmo Handle"
+            description="Username or phone number customers send Venmo payments to."
+            settingKey="venmo-handle"
+            placeholder="@YourVenmo"
+            color="#3D95CE"
           />
           <HandleSettingCard
             label="Zelle Handle"
@@ -1995,6 +1996,13 @@ function IntegrationsSection() {
             settingKey="zelle-handle"
             placeholder="+1 (555) 000-0000 or email"
             color="#9B59E8"
+          />
+          <HandleSettingCard
+            label="Chime Handle"
+            description="Phone number or email customers send Chime payments to."
+            settingKey="chime-handle"
+            placeholder="+1 (555) 000-0000"
+            color="#7BC67E"
           />
         </div>
       </div>
