@@ -1844,6 +1844,53 @@ function CodesSection() {
   );
 }
 
+function MinDepositCard({ method, label, color }: { method: string; label: string; color: string }) {
+  const { toast } = useToast();
+  const [input, setInput] = useState("");
+  const { data } = useQuery<Record<string, number>>({
+    queryKey: ["/api/admin/settings/min-deposits"],
+  });
+  useEffect(() => {
+    if (data && data[method] !== undefined) setInput(data[method] === 0 ? "" : String(data[method]));
+  }, [data, method]);
+  const saveMutation = useMutation({
+    mutationFn: async (val: number) => {
+      const res = await apiRequest("POST", "/api/admin/settings/min-deposits", { method, min: val });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/min-deposits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings/min-deposits"] });
+      toast({ title: `${label} min deposit saved` });
+    },
+    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+  });
+  return (
+    <Card className="bg-[#0f1115] border-white/5">
+      <CardContent className="p-4 space-y-2">
+        <p className="font-bold text-sm mb-0.5" style={{ color }}>Minimum Deposit — {label}</p>
+        <p className="text-xs text-muted-foreground">Set to 0 for no minimum.</p>
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="0.00"
+            className="flex-1 bg-white/5 border-white/8 text-white font-mono"
+            data-testid={`input-min-deposit-${method}`}
+          />
+          <Button size="sm" onClick={() => saveMutation.mutate(parseFloat(input) || 0)} disabled={saveMutation.isPending}
+            data-testid={`button-save-min-deposit-${method}`}>
+            {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function HandleSettingCard({ label, description, settingKey, placeholder, color }: {
   label: string; description: string; settingKey: string; placeholder: string; color: string;
 }) {
@@ -1972,9 +2019,9 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      {/* Manual Payment Handles */}
+      {/* Manual Payment Handles — CashApp */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-3">Manual Payment Handles</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">CashApp Settings</p>
         <div className="space-y-3">
           <HandleSettingCard
             label="CashApp $Cashtag"
@@ -1983,6 +2030,14 @@ function IntegrationsSection() {
             placeholder="$YourCashTag"
             color="#00D632"
           />
+          <MinDepositCard method="cashapp" label="CashApp" color="#00D632" />
+        </div>
+      </div>
+
+      {/* Manual Payment Handles — Venmo / Zelle / Chime */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Alternative Payment Handles</p>
+        <div className="space-y-3">
           <HandleSettingCard
             label="Venmo Handle"
             description="Username or phone number customers send Venmo payments to."
@@ -1990,6 +2045,7 @@ function IntegrationsSection() {
             placeholder="@YourVenmo"
             color="#3D95CE"
           />
+          <MinDepositCard method="venmo" label="Venmo" color="#3D95CE" />
           <HandleSettingCard
             label="Zelle Handle"
             description="Phone number or email customers send Zelle payments to."
@@ -1997,6 +2053,7 @@ function IntegrationsSection() {
             placeholder="+1 (555) 000-0000 or email"
             color="#9B59E8"
           />
+          <MinDepositCard method="zelle" label="Zelle" color="#9B59E8" />
           <HandleSettingCard
             label="Chime Handle"
             description="Phone number or email customers send Chime payments to."
@@ -2004,7 +2061,14 @@ function IntegrationsSection() {
             placeholder="+1 (555) 000-0000"
             color="#7BC67E"
           />
+          <MinDepositCard method="chime" label="Chime" color="#7BC67E" />
         </div>
+      </div>
+
+      {/* Crypto min deposit */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Crypto Settings</p>
+        <MinDepositCard method="crypto" label="Crypto" color="#F7931A" />
       </div>
 
       {/* Telegram Bot Token Status */}
@@ -2051,12 +2115,12 @@ function IntegrationsSection() {
 
 function FeatureTogglesCard() {
   const { toast } = useToast();
-  const { data: features, isLoading: featuresLoading } = useQuery<{ checker: boolean; reseller: boolean }>({
+  const { data: features, isLoading: featuresLoading } = useQuery<{ checker: boolean; reseller: boolean; ranks: boolean; logs: boolean }>({
     queryKey: ["/api/settings/features"],
   });
 
   const toggleFeature = useMutation({
-    mutationFn: async (body: { checker?: boolean; reseller?: boolean }) => {
+    mutationFn: async (body: { checker?: boolean; reseller?: boolean; ranks?: boolean; logs?: boolean }) => {
       const res = await apiRequest("POST", "/api/admin/settings/features", body);
       return res.json();
     },
@@ -2068,6 +2132,8 @@ function FeatureTogglesCard() {
   });
 
   const FEATURES = [
+    { key: "ranks" as const, label: "Ranks", desc: "Show/hide the Ranks page and nav link" },
+    { key: "logs" as const, label: "Logs Shop", desc: "Show/hide the Logs shop page and nav link" },
     { key: "checker" as const, label: "Card Checker", desc: "Show/hide the Checker page and nav link" },
     { key: "reseller" as const, label: "Become Reseller", desc: "Show/hide the Reseller application page" },
   ];

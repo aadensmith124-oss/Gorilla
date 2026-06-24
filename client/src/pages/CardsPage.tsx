@@ -5,6 +5,12 @@ import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return "";
+  const upper = code.toUpperCase();
+  return String.fromCodePoint(...upper.split("").map(c => 0x1F1E6 - 65 + c.charCodeAt(0)));
+}
+
 function extractBin(cardNumber: string): string {
   return (cardNumber ?? "").replace(/\D/g, "").substring(0, 6);
 }
@@ -182,7 +188,7 @@ function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; o
           {city && <span>{city}</span>}
           {state && <span>{state}</span>}
           {zip && <span>ZIP {zip}</span>}
-          {countryCode && <span>{countryCode.toUpperCase()}</span>}
+          {countryCode && <span>{countryFlag(countryCode)} {countryCode.toUpperCase()}</span>}
         </div>
 
         {/* Row 4: Buttons */}

@@ -19,7 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
 
-  const { data: features } = useQuery<{ checker: boolean; reseller: boolean }>({
+  const { data: features } = useQuery<{ checker: boolean; reseller: boolean; ranks: boolean; logs: boolean }>({
     queryKey: ["/api/settings/features"],
     staleTime: 30000,
   });
@@ -30,13 +30,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/", icon: Home, label: "Deposit" },
         { href: "/orders", icon: Package, label: "Orders" },
-        { href: "/ranks", icon: Trophy, label: "Ranks" },
+        ...(features?.ranks !== false ? [{ href: "/ranks", icon: Trophy, label: "Ranks" }] : []),
       ],
     },
     {
       label: "SHOP",
       items: [
-        { href: "/shop", icon: Store, label: "Logs" },
+        ...(features?.logs !== false ? [{ href: "/shop", icon: Store, label: "Logs" }] : []),
         { href: "/acctplug", icon: LayoutDashboard, label: "Cards" },
       ],
     },

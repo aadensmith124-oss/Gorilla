@@ -1676,7 +1676,7 @@ export async function registerRoutes(
     }
     const { method } = req.params;
     const { enabled } = req.body;
-    if (!["crypto", "stars", "cashapp", "wallet", "chime", "zelle"].includes(method) || typeof enabled !== "boolean") {
+    if (!["crypto", "stars", "cashapp", "wallet", "chime", "zelle", "venmo"].includes(method) || typeof enabled !== "boolean") {
       return res.status(400).json({ message: "Invalid request" });
     }
     await storage.setSetting(`payment_method_${method}`, String(enabled));
@@ -1738,18 +1738,70 @@ export async function registerRoutes(
     res.json({ handle: handle.trim() });
   });
 
+  // ── Admin: Venmo handle setting ────────────────────────────────────────────
+  app.get("/api/admin/settings/venmo-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const handle = await storage.getSetting("venmo_handle", "");
+    res.json({ handle });
+  });
+
+  app.post("/api/admin/settings/venmo-handle", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { handle } = req.body;
+    if (typeof handle !== "string") return res.status(400).json({ message: "Invalid handle" });
+    await storage.setSetting("venmo_handle", handle.trim());
+    res.json({ handle: handle.trim() });
+  });
+
+  // ── Admin: Min deposit per payment method ──────────────────────────────────
+  app.get("/api/admin/settings/min-deposits", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const [cashapp, venmo, zelle, chime, crypto] = await Promise.all([
+      storage.getSetting("min_deposit_cashapp", "0"),
+      storage.getSetting("min_deposit_venmo", "0"),
+      storage.getSetting("min_deposit_zelle", "0"),
+      storage.getSetting("min_deposit_chime", "0"),
+      storage.getSetting("min_deposit_crypto", "0"),
+    ]);
+    res.json({ cashapp: parseFloat(cashapp), venmo: parseFloat(venmo), zelle: parseFloat(zelle), chime: parseFloat(chime), crypto: parseFloat(crypto) });
+  });
+
+  app.post("/api/admin/settings/min-deposits", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+    const { method, min } = req.body;
+    if (!["cashapp", "venmo", "zelle", "chime", "crypto"].includes(method) || typeof min !== "number" || min < 0) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    await storage.setSetting(`min_deposit_${method}`, String(min));
+    res.json({ ok: true });
+  });
+
+  // ── Public: min deposits (for deposit page) ────────────────────────────────
+  app.get("/api/site-settings/min-deposits", async (_req, res) => {
+    const [cashapp, venmo, zelle, chime, crypto] = await Promise.all([
+      storage.getSetting("min_deposit_cashapp", "0"),
+      storage.getSetting("min_deposit_venmo", "0"),
+      storage.getSetting("min_deposit_zelle", "0"),
+      storage.getSetting("min_deposit_chime", "0"),
+      storage.getSetting("min_deposit_crypto", "0"),
+    ]);
+    res.json({ cashapp: parseFloat(cashapp), venmo: parseFloat(venmo), zelle: parseFloat(zelle), chime: parseFloat(chime), crypto: parseFloat(crypto) });
+  });
+
   // ── Public: manual payment methods config (for deposit page) ─────────────
   app.get("/api/site-settings/manual-payments", async (req, res) => {
-    const [methods, cashappTag, chimeHandle, zelleHandle] = await Promise.all([
+    const [methods, cashappTag, chimeHandle, zelleHandle, venmoHandle] = await Promise.all([
       storage.getPaymentMethodsConfig(),
       storage.getSetting("cashapp_tag", ""),
       storage.getSetting("chime_handle", ""),
       storage.getSetting("zelle_handle", ""),
+      storage.getSetting("venmo_handle", ""),
     ]);
     res.json({
       cashapp: { enabled: methods.cashapp !== false, tag: cashappTag },
       chime:   { enabled: methods.chime === true,   handle: chimeHandle },
       zelle:   { enabled: methods.zelle === true,   handle: zelleHandle },
+      venmo:   { enabled: (methods as any).venmo === true, handle: venmoHandle },
     });
   });
 
@@ -2265,16 +2317,20 @@ export async function registerRoutes(
   app.get("/api/settings/features", async (_req, res) => {
     const checker = await storage.getSetting("feature_checker", "true");
     const reseller = await storage.getSetting("feature_reseller", "true");
-    res.json({ checker: checker !== "false", reseller: reseller !== "false" });
+    const ranks = await storage.getSetting("feature_ranks", "true");
+    const logs = await storage.getSetting("feature_logs", "true");
+    res.json({ checker: checker !== "false", reseller: reseller !== "false", ranks: ranks !== "false", logs: logs !== "false" });
   });
 
   app.post("/api/admin/settings/features", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { checker, reseller } = req.body;
+    const { checker, reseller, ranks, logs } = req.body;
     if (checker !== undefined) await storage.setSetting("feature_checker", checker ? "true" : "false");
     if (reseller !== undefined) await storage.setSetting("feature_reseller", reseller ? "true" : "false");
+    if (ranks !== undefined) await storage.setSetting("feature_ranks", ranks ? "true" : "false");
+    if (logs !== undefined) await storage.setSetting("feature_logs", logs ? "true" : "false");
     res.json({ ok: true });
   });
 

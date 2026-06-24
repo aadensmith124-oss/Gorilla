@@ -193,8 +193,13 @@ export default function DepositPage() {
     cashapp: { enabled: boolean; tag: string };
     chime: { enabled: boolean; handle: string };
     zelle: { enabled: boolean; handle: string };
+    venmo: { enabled: boolean; handle: string };
   }>({
     queryKey: ["/api/site-settings/manual-payments"],
+  });
+
+  const { data: minDeposits } = useQuery<Record<string, number>>({
+    queryKey: ["/api/site-settings/min-deposits"],
   });
 
   const { data: deposits, refetch: refetchDeposits } = useQuery<Deposit[]>({
@@ -206,7 +211,8 @@ export default function DepositPage() {
   const cryptoMutation = useMutation({
     mutationFn: async () => {
       const amount = parseFloat(amountInput);
-      if (!amount || amount < 1) throw new Error("Minimum deposit is $1");
+      const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
+      if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit for Crypto is $${cryptoMin.toFixed(2)}`);
       if (amount > 1000000000) throw new Error("Maximum deposit is $1,000,000,000");
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
         amount: String(Math.round(amount * 100)),
@@ -239,6 +245,8 @@ export default function DepositPage() {
     mutationFn: async () => {
       const amount = parseFloat(amountInput);
       if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.cashapp ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for CashApp is $${min.toFixed(2)}`);
       const res = await apiRequest("POST", "/api/orders/cashapp", { amount });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
       return res.json();
@@ -254,6 +262,8 @@ export default function DepositPage() {
     mutationFn: async () => {
       const amount = parseFloat(amountInput);
       if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.chime ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for Chime is $${min.toFixed(2)}`);
       const res = await apiRequest("POST", "/api/deposits/chime", { amount });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
       return res.json();
@@ -269,6 +279,8 @@ export default function DepositPage() {
     mutationFn: async () => {
       const amount = parseFloat(amountInput);
       if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.zelle ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for Zelle is $${min.toFixed(2)}`);
       const res = await apiRequest("POST", "/api/deposits/zelle", { amount });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
       return res.json();
@@ -496,7 +508,13 @@ export default function DepositPage() {
 
               {/* Amount input */}
               <div className="space-y-1.5">
-                <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Deposit Amount (USD)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Deposit Amount (USD)</label>
+                  {(() => {
+                    const min = minDeposits?.[method as string] ?? 0;
+                    return min > 0 ? <span className="text-[9px] font-mono text-yellow-400/70">Min: ${min.toFixed(2)}</span> : null;
+                  })()}
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
                   <input
