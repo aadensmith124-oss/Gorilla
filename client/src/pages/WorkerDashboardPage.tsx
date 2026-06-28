@@ -24,7 +24,7 @@ function statusClass(s: string) {
   if (s === "pending") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
   if (s === "refunded") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
   if (s === "waiting_payment") return "bg-red-500/20 text-red-400 border-red-500/30";
-  return "bg-white/10 text-white/50 border-white/10";
+  return "bg-gray-100 text-gray-500 border-gray-200";
 }
 
 // ────────── STOCK PANEL ──────────
@@ -64,29 +64,29 @@ function StockPanel({ variantId, variantName }: { variantId: number; variantName
   const available = stockItems.filter((i: any) => !i.isSold && !i.isReserved);
 
   return (
-    <div className="space-y-3 pt-3 border-t border-white/5">
-      <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">Stock for {variantName} — {available.length} available</p>
+    <div className="space-y-3 pt-3 border-t border-gray-200">
+      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Stock for {variantName} — {available.length} available</p>
       <textarea
         value={rawContent}
         onChange={e => setRawContent(e.target.value)}
         placeholder={"item1_line1\nitem1_line2\n\nitem2_line1\n\n(blank line = new item)"}
         rows={4}
-        className="w-full bg-black/40 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20"
+        className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-gray-900 font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-gray-300"
         data-testid={`textarea-stock-${variantId}`}
       />
       <Button size="sm" className="w-full h-8 text-xs" onClick={() => addStockMutation.mutate()} disabled={addStockMutation.isPending || !rawContent.trim()} data-testid={`btn-add-stock-${variantId}`}>
         {addStockMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Plus className="h-3.5 w-3.5 mr-1" />Add Stock Items</>}
       </Button>
-      {isLoading ? <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-white/30" /></div> :
-        available.length === 0 ? <p className="text-xs text-white/25 text-center py-2 font-mono">No stock items</p> : (
+      {isLoading ? <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-gray-400" /></div> :
+        available.length === 0 ? <p className="text-xs text-gray-400 text-center py-2 font-mono">No stock items</p> : (
           <div className="space-y-1 max-h-40 overflow-y-auto">
             {available.slice(0, 30).map((item: any) => (
-              <div key={item.id} className="flex items-center justify-between bg-black/30 border border-white/5 rounded px-2.5 py-1.5 group">
-                <p className="text-[10px] font-mono text-white/50 truncate flex-1">{item.content?.substring(0, 50)}...</p>
-                <button onClick={() => deleteStockMutation.mutate(item.id)} className="ml-2 text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Trash2 className="h-3 w-3" /></button>
+              <div key={item.id} className="flex items-center justify-between bg-gray-100 border border-gray-200 rounded px-2.5 py-1.5 group">
+                <p className="text-[10px] font-mono text-gray-500 truncate flex-1">{item.content?.substring(0, 50)}...</p>
+                <button onClick={() => deleteStockMutation.mutate(item.id)} className="ml-2 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Trash2 className="h-3 w-3" /></button>
               </div>
             ))}
-            {available.length > 30 && <p className="text-[10px] text-white/25 text-center font-mono">+{available.length - 30} more</p>}
+            {available.length > 30 && <p className="text-[10px] text-gray-400 text-center font-mono">+{available.length - 30} more</p>}
           </div>
         )}
     </div>
@@ -159,11 +159,11 @@ function ProductsTab() {
       </div>
 
       {showNewProduct && (
-        <div className="bg-[#0f1115] border border-white/8 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-white/40 uppercase tracking-widest">New Product</p>
-          <Input placeholder="Product name" value={newProductName} onChange={e => setNewProductName(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-name" />
-          <Input placeholder="Description (optional)" value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-desc" />
-          <Input placeholder="Image URL (optional)" value={newProductImage} onChange={e => setNewProductImage(e.target.value)} className="bg-black/50 border-white/10 h-8 text-sm" data-testid="input-product-image" />
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">New Product</p>
+          <Input placeholder="Product name" value={newProductName} onChange={e => setNewProductName(e.target.value)} className="bg-gray-100 border-gray-200 h-8 text-sm" data-testid="input-product-name" />
+          <Input placeholder="Description (optional)" value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} className="bg-gray-100 border-gray-200 h-8 text-sm" data-testid="input-product-desc" />
+          <Input placeholder="Image URL (optional)" value={newProductImage} onChange={e => setNewProductImage(e.target.value)} className="bg-gray-100 border-gray-200 h-8 text-sm" data-testid="input-product-image" />
           <div className="flex gap-2">
             <Button size="sm" className="flex-1 h-8 text-xs" onClick={() => createProductMutation.mutate()} disabled={createProductMutation.isPending || !newProductName.trim()}>{createProductMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}</Button>
             <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowNewProduct(false)}>Cancel</Button>
@@ -176,32 +176,32 @@ function ProductsTab() {
           const isExpanded = expandedProduct === product.id;
           const totalStock = product.variants?.reduce((sum: number, v: any) => sum + (v.stockCount || 0), 0) ?? 0;
           return (
-            <div key={product.id} className="bg-[#0f1115] border border-white/5 rounded-xl overflow-hidden">
-              <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+            <div key={product.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                 <button className="flex items-center gap-3 text-left flex-1" onClick={() => setExpandedProduct(isExpanded ? null : product.id)} data-testid={`btn-product-${product.id}`}>
-                  <Package className="h-4 w-4 text-white/30 flex-shrink-0" />
+                  <Package className="h-4 w-4 text-gray-400 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">{product.name}</p>
-                    <p className="text-[10px] text-white/30 font-mono mt-0.5">{product.variants?.length ?? 0} variants · {totalStock} in stock</p>
+                    <p className="text-[10px] text-gray-400 font-mono mt-0.5">{product.variants?.length ?? 0} variants · {totalStock} in stock</p>
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${product.name}"?`)) deleteProductMutation.mutate(product.id); }} className="text-white/20 hover:text-red-400 transition-colors p-1" data-testid={`btn-delete-product-${product.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
-                  <ChevronRight className={`h-4 w-4 text-white/20 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                  <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${product.name}"?`)) deleteProductMutation.mutate(product.id); }} className="text-gray-300 hover:text-red-400 transition-colors p-1" data-testid={`btn-delete-product-${product.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                  <ChevronRight className={`h-4 w-4 text-gray-300 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                 </div>
               </div>
               {isExpanded && (
-                <div className="px-4 pb-4 space-y-3 border-t border-white/5">
+                <div className="px-4 pb-4 space-y-3 border-t border-gray-200">
                   <div className="space-y-2 pt-3">
                     {(product.variants || []).map((variant: any) => {
                       const isVE = expandedVariant === variant.id;
                       return (
-                        <div key={variant.id} className="bg-black/30 border border-white/5 rounded-lg overflow-hidden">
+                        <div key={variant.id} className="bg-gray-100 border border-gray-200 rounded-lg overflow-hidden">
                           {editingVariant?.id === variant.id ? (
                             <div className="px-3 py-2.5 space-y-2">
                               <div className="flex gap-2">
-                                <Input value={editingVariant!.name} onChange={e => setEditingVariant(v => v ? { ...v, name: e.target.value } : v)} placeholder="Name" className="flex-1 bg-black/50 border-white/10 h-7 text-xs" />
-                                <Input value={editingVariant!.price} onChange={e => setEditingVariant(v => v ? { ...v, price: e.target.value } : v)} placeholder="Price $" type="number" step="0.01" className="w-24 bg-black/50 border-white/10 h-7 text-xs" />
+                                <Input value={editingVariant!.name} onChange={e => setEditingVariant(v => v ? { ...v, name: e.target.value } : v)} placeholder="Name" className="flex-1 bg-gray-100 border-gray-200 h-7 text-xs" />
+                                <Input value={editingVariant!.price} onChange={e => setEditingVariant(v => v ? { ...v, price: e.target.value } : v)} placeholder="Price $" type="number" step="0.01" className="w-24 bg-gray-100 border-gray-200 h-7 text-xs" />
                               </div>
                               <div className="flex gap-2">
                                 <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => editVariantMutation.mutate(editingVariant!)} disabled={editVariantMutation.isPending}>{editVariantMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}</Button>
@@ -210,11 +210,11 @@ function ProductsTab() {
                             </div>
                           ) : (
                             <div className="flex items-center w-full">
-                              <button className="flex-1 flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left" onClick={() => setExpandedVariant(isVE ? null : variant.id)} data-testid={`btn-variant-${variant.id}`}>
-                                <div><p className="text-xs font-bold text-white">{variant.name}</p><p className="text-[10px] text-white/30 font-mono">${(variant.price / 100).toFixed(2)} · {variant.stockCount} in stock</p></div>
-                                <ChevronRight className={`h-3.5 w-3.5 text-white/20 transition-transform ${isVE ? "rotate-90" : ""}`} />
+                              <button className="flex-1 flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors text-left" onClick={() => setExpandedVariant(isVE ? null : variant.id)} data-testid={`btn-variant-${variant.id}`}>
+                                <div><p className="text-xs font-bold text-white">{variant.name}</p><p className="text-[10px] text-gray-400 font-mono">${(variant.price / 100).toFixed(2)} · {variant.stockCount} in stock</p></div>
+                                <ChevronRight className={`h-3.5 w-3.5 text-gray-300 transition-transform ${isVE ? "rotate-90" : ""}`} />
                               </button>
-                              <button onClick={() => setEditingVariant({ id: variant.id, name: variant.name, price: (variant.price / 100).toFixed(2) })} className="px-2.5 text-white/20 hover:text-primary transition-colors" data-testid={`btn-edit-variant-${variant.id}`}>
+                              <button onClick={() => setEditingVariant({ id: variant.id, name: variant.name, price: (variant.price / 100).toFixed(2) })} className="px-2.5 text-gray-300 hover:text-primary transition-colors" data-testid={`btn-edit-variant-${variant.id}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
                             </div>
@@ -226,10 +226,10 @@ function ProductsTab() {
                   </div>
                   {showNewVariant === product.id ? (
                     <div className="space-y-2 pt-1">
-                      <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">New Variant</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">New Variant</p>
                       <div className="flex gap-2">
-                        <Input placeholder="Variant name" value={newVariantName} onChange={e => setNewVariantName(e.target.value)} className="flex-1 bg-black/50 border-white/10 h-8 text-xs" data-testid="input-variant-name" />
-                        <Input placeholder="Price $" type="number" step="0.01" value={newVariantPrice} onChange={e => setNewVariantPrice(e.target.value)} className="w-24 bg-black/50 border-white/10 h-8 text-xs" data-testid="input-variant-price" />
+                        <Input placeholder="Variant name" value={newVariantName} onChange={e => setNewVariantName(e.target.value)} className="flex-1 bg-gray-100 border-gray-200 h-8 text-xs" data-testid="input-variant-name" />
+                        <Input placeholder="Price $" type="number" step="0.01" value={newVariantPrice} onChange={e => setNewVariantPrice(e.target.value)} className="w-24 bg-gray-100 border-gray-200 h-8 text-xs" data-testid="input-variant-price" />
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => createVariantMutation.mutate(product.id)} disabled={createVariantMutation.isPending}>{createVariantMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Variant"}</Button>
@@ -237,7 +237,7 @@ function ProductsTab() {
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => { setShowNewVariant(product.id); setNewVariantName(""); setNewVariantPrice(""); }} className="w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-white/10 rounded text-xs text-white/30 hover:text-white hover:border-white/20 transition-colors" data-testid={`btn-add-variant-${product.id}`}>
+                    <button onClick={() => { setShowNewVariant(product.id); setNewVariantName(""); setNewVariantPrice(""); }} className="w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:text-white hover:border-gray-300 transition-colors" data-testid={`btn-add-variant-${product.id}`}>
                       <Plus className="h-3 w-3" /> Add Variant
                     </button>
                   )}
@@ -295,19 +295,19 @@ function CardsTab() {
     <div className="space-y-4">
       <h2 className="text-sm font-bold text-white">Cards ({cards.length})</h2>
 
-      <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Add Card</p>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Add Card</p>
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Full Delivery Item</label>
-          <textarea value={fullItem} onChange={e => setFullItem(e.target.value)} placeholder={"4111111111111111|12/25|123|John Doe|Address"} rows={3} className="w-full bg-black/50 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-white/20 resize-none placeholder:text-white/20" data-testid="input-full-item" />
+          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Full Delivery Item</label>
+          <textarea value={fullItem} onChange={e => setFullItem(e.target.value)} placeholder={"4111111111111111|12/25|123|John Doe|Address"} rows={3} className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-gray-900 font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-gray-300" data-testid="input-full-item" />
           {previewBin.length === 6 && <p className="text-[10px] text-primary/60 font-mono">BIN: {previewBin} (auto-lookup on save)</p>}
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
+          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
           <select
             value={selectedBaseId}
             onChange={e => setSelectedBaseId(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 rounded text-xs text-white py-2 px-2 outline-none focus:border-white/20"
+            className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-white py-2 px-2 outline-none focus:border-gray-300"
             data-testid="select-card-base"
           >
             <option value="">— Select base —</option>
@@ -317,8 +317,8 @@ function CardsTab() {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] text-white/40 uppercase tracking-widest">Price ($)</label>
-          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-black/50 border-white/10 h-8" data-testid="input-card-price" />
+          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" type="number" step="0.01" className="bg-gray-100 border-gray-200 h-8" data-testid="input-card-price" />
         </div>
         <Button size="sm" className="w-full h-8 text-xs" onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !fullItem.trim() || !price || !selectedBaseId} data-testid="btn-add-card">
           {addMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Card"}
@@ -330,22 +330,22 @@ function CardsTab() {
           {(cards as any[]).map((card: any) => {
             const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
             return (
-              <div key={card.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between" data-testid={`row-card-${card.id}`}>
+              <div key={card.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between" data-testid={`row-card-${card.id}`}>
                 <div className="space-y-0.5 min-w-0 flex-1">
                   <p className="text-xs font-mono font-bold text-primary">🔥 PiF Market | {card.hrPercent ?? 80}% HR 🔥</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono bg-[#1a1a1a] border border-white/10 px-1.5 py-0.5 rounded text-white/50">{cBin}</span>
-                    {card.binData?.bank && <span className="text-[10px] text-white/30 font-mono">{card.binData.bank}</span>}
+                    <span className="text-[10px] font-mono bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-gray-500">{cBin}</span>
+                    {card.binData?.bank && <span className="text-[10px] text-gray-400 font-mono">{card.binData.bank}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-2">
                   <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
-                  <button onClick={() => deleteMutation.mutate(card.id)} disabled={deleteMutation.isPending} className="text-white/20 hover:text-red-400 transition-colors" data-testid={`btn-delete-card-${card.id}`}><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => deleteMutation.mutate(card.id)} disabled={deleteMutation.isPending} className="text-gray-300 hover:text-red-400 transition-colors" data-testid={`btn-delete-card-${card.id}`}><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
             );
           })}
-          {cards.length === 0 && <p className="text-center text-xs text-white/25 py-6 font-mono">No cards</p>}
+          {cards.length === 0 && <p className="text-center text-xs text-gray-400 py-6 font-mono">No cards</p>}
         </div>
       )}
     </div>
@@ -366,24 +366,24 @@ function OrdersTab() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-white">Orders ({orders.length})</h2>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID or username..." className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-orders-search" />
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID or username..." className="w-full h-8 bg-gray-50 border border-gray-200 rounded px-3 text-xs text-white placeholder:text-gray-400 outline-none" data-testid="input-orders-search" />
       <div className="space-y-1.5">
         {filtered.slice(0, 50).map((order: any) => (
-          <div key={order.id} className="bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5" data-testid={`row-order-${order.id}`}>
+          <div key={order.id} className="bg-white border border-gray-200 rounded-xl px-3 py-2.5" data-testid={`row-order-${order.id}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <Badge className={`text-[10px] flex-shrink-0 ${statusClass(order.status)}`}>{statusLabel(order.status)}</Badge>
-                <p className="text-xs font-mono text-white/50 truncate">{order.orderId}</p>
+                <p className="text-xs font-mono text-gray-500 truncate">{order.orderId}</p>
               </div>
               <span className="text-xs font-mono text-white flex-shrink-0 ml-2">{order.total > 0 ? `$${(order.total / 100).toFixed(2)}` : "—"}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-white/30 font-mono">{order.user?.username || order.userId} · {order.paymentMethod || "—"}</p>
-              <p className="text-[10px] text-white/20 font-mono">{new Date(order.createdAt).toLocaleDateString()}</p>
+              <p className="text-[10px] text-gray-400 font-mono">{order.user?.username || order.userId} · {order.paymentMethod || "—"}</p>
+              <p className="text-[10px] text-gray-300 font-mono">{new Date(order.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p className="text-center text-xs text-white/25 py-8 font-mono">No orders found</p>}
+        {filtered.length === 0 && <p className="text-center text-xs text-gray-400 py-8 font-mono">No orders found</p>}
       </div>
     </div>
   );
@@ -424,29 +424,29 @@ function UsersBalanceTab() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-white">Add Balance to User</h2>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search username or email..." className="w-full h-8 bg-[#111] border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/25 outline-none" data-testid="input-user-search" />
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search username or email..." className="w-full h-8 bg-gray-50 border border-gray-200 rounded px-3 text-xs text-white placeholder:text-gray-400 outline-none" data-testid="input-user-search" />
 
       {selectedUser ? (
-        <div className="bg-[#0f1115] border border-white/8 rounded-xl p-4 space-y-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-white">@{selectedUser.username}</p>
-              <p className="text-xs text-white/40 font-mono">Balance: ${(selectedUser.balance / 100).toFixed(2)}</p>
+              <p className="text-xs text-gray-500 font-mono">Balance: ${(selectedUser.balance / 100).toFixed(2)}</p>
             </div>
-            <button onClick={() => setSelectedUser(null)} className="text-xs text-white/30 hover:text-white transition-colors font-mono">← back</button>
+            <button onClick={() => setSelectedUser(null)} className="text-xs text-gray-400 hover:text-white transition-colors font-mono">← back</button>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest">Amount to Add ($)</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-widest">Amount to Add ($)</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-mono">$</span>
                 <input
                   type="number"
                   step="0.01"
                   placeholder="0.00"
                   value={balanceAmount}
                   onChange={e => setBalanceAmount(e.target.value)}
-                  className="w-full h-9 bg-black/50 border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-primary/40"
+                  className="w-full h-9 bg-gray-100 border border-gray-200 rounded-lg pl-7 pr-3 text-sm text-gray-900 font-mono outline-none focus:border-primary/40"
                   data-testid="input-balance-amount"
                 />
               </div>
@@ -460,23 +460,23 @@ function UsersBalanceTab() {
                 {addBalanceMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><DollarSign className="h-3.5 w-3.5 mr-1" />Add</>}
               </Button>
             </div>
-            <p className="text-[10px] text-white/25 font-mono">use negative number to subtract balance</p>
+            <p className="text-[10px] text-gray-400 font-mono">use negative number to subtract balance</p>
           </div>
         </div>
       ) : (
         <div className="space-y-1.5 max-h-96 overflow-y-auto">
           {isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div> :
             filtered.slice(0, 30).map((u: any) => (
-              <button key={u.id} onClick={() => setSelectedUser(u)} className="w-full flex items-center justify-between bg-[#0f1115] border border-white/5 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors text-left" data-testid={`btn-select-user-${u.id}`}>
+              <button key={u.id} onClick={() => setSelectedUser(u)} className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2.5 hover:border-gray-200 transition-colors text-left" data-testid={`btn-select-user-${u.id}`}>
                 <div>
                   <p className="text-xs font-bold text-white">@{u.username}</p>
-                  <p className="text-[10px] text-white/30 font-mono">${(u.balance / 100).toFixed(2)}</p>
+                  <p className="text-[10px] text-gray-400 font-mono">${(u.balance / 100).toFixed(2)}</p>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-white/20" />
+                <ChevronRight className="h-3.5 w-3.5 text-gray-300" />
               </button>
             ))
           }
-          {filtered.length === 0 && !isLoading && <p className="text-center text-xs text-white/25 py-6 font-mono">No users found</p>}
+          {filtered.length === 0 && !isLoading && <p className="text-center text-xs text-gray-400 py-6 font-mono">No users found</p>}
         </div>
       )}
     </div>
@@ -495,7 +495,7 @@ export default function WorkerDashboardPage() {
     <div className="flex h-screen flex-col items-center justify-center gap-4">
       <ShieldX className="h-14 w-14 text-destructive" />
       <h1 className="text-lg font-bold text-white">Access Denied</h1>
-      <p className="text-xs text-white/40">Worker access required</p>
+      <p className="text-xs text-gray-500">Worker access required</p>
     </div>
   );
 
@@ -507,17 +507,17 @@ export default function WorkerDashboardPage() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-white">Worker Dashboard</h1>
-          <p className="text-[10px] text-white/30 font-mono">@{user?.username}</p>
+          <p className="text-[10px] text-gray-400 font-mono">@{user?.username}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-4 gap-1 bg-white/5 rounded-lg p-1">
+      <div className="grid grid-cols-4 gap-1 bg-gray-50 rounded-lg p-1">
         {TABS.map(({ id, label, Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex flex-col items-center gap-0.5 py-2 rounded text-xs font-semibold transition-colors ${activeTab === id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`}
+            className={`flex flex-col items-center gap-0.5 py-2 rounded text-xs font-semibold transition-colors ${activeTab === id ? "bg-gray-100 text-white" : "text-gray-500 hover:text-gray-600"}`}
             data-testid={`tab-${id}`}
           >
             <Icon className="h-3.5 w-3.5" />

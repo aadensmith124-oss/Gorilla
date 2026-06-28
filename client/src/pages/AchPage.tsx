@@ -32,11 +32,11 @@ function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onTo
   });
 
   return (
-    <div className={`border rounded mb-2 overflow-hidden transition-colors ${inCart ? "border-green-600/40 bg-[#0f1a0f]" : "border-white/8 bg-[#0f0f0f]"}`}>
+    <div className={`border rounded mb-2 overflow-hidden transition-colors ${inCart ? "border-green-600/40 bg-white" : "border-gray-200 bg-white"}`}>
       <div className="px-4 py-3 space-y-1.5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
-            <p className="text-sm font-bold text-white font-mono uppercase tracking-wide">
+            <p className="text-sm font-bold text-gray-900 font-mono uppercase tracking-wide">
               {ach.bankName}
             </p>
             <p className="text-xs text-white/40 font-mono">
@@ -52,7 +52,7 @@ function AchRow({ ach, inCart, onToggleCart }: { ach: any; inCart: boolean; onTo
             className={`flex items-center gap-1.5 border rounded text-xs font-bold py-1.5 px-3 transition-all ${
               inCart
                 ? "border-green-600/60 text-green-400 bg-green-900/20"
-                : "border-white/10 text-white/50 hover:border-white/20 hover:text-white"
+                : "border-gray-200 text-white/50 hover:border-gray-300 hover:text-gray-900"
             }`}
             data-testid={`btn-cart-ach-${ach.id}`}
           >
@@ -157,7 +157,7 @@ export default function AchPage() {
           placeholder="Search bank, balance..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-[#111] border border-white/5 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/10 transition-colors"
+          className="w-full bg-[#111] border border-gray-200 rounded py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-gray-200 transition-colors"
           data-testid="input-search-ach"
         />
       </div>
@@ -168,7 +168,7 @@ export default function AchPage() {
         className={`w-full border rounded py-2 text-xs transition-all flex items-center justify-center gap-2 ${
           showFilters || activeFilters > 0
             ? "border-primary/40 text-primary bg-primary/5"
-            : "border-white/8 text-white/50 bg-[#111] hover:text-white hover:border-white/15"
+            : "border-gray-200 text-white/50 bg-[#111] hover:text-white hover:border-gray-300"
         }`}
         data-testid="btn-ach-filters"
       >
@@ -177,7 +177,7 @@ export default function AchPage() {
       </button>
 
       {showFilters && (
-        <div className="border border-white/8 bg-[#111] rounded p-3 space-y-3">
+        <div className="border border-gray-200 bg-[#111] rounded p-3 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-white/40 uppercase tracking-widest">Price Filter</p>
             <button
@@ -191,13 +191,13 @@ export default function AchPage() {
             <div className="space-y-1">
               <label className="text-[9px] text-white/30 uppercase tracking-widest">Min ($)</label>
               <input type="number" step="0.01" placeholder="0.00" value={priceMin} onChange={e => setPriceMin(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none"
+                className="w-full bg-black/40 border border-gray-200 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none"
                 data-testid="input-ach-price-min" />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] text-white/30 uppercase tracking-widest">Max ($)</label>
               <input type="number" step="0.01" placeholder="100.00" value={priceMax} onChange={e => setPriceMax(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none"
+                className="w-full bg-black/40 border border-gray-200 rounded py-1.5 px-2 text-xs text-white placeholder:text-white/20 outline-none"
                 data-testid="input-ach-price-max" />
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function AchPage() {
       <button
         onClick={purchaseCart}
         disabled={cartIds.size === 0}
-        className="w-full border border-white/8 bg-[#111] rounded py-2 text-xs text-white/40 hover:text-white hover:border-white/15 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+        className="w-full border border-gray-200 bg-[#111] rounded py-2 text-xs text-white/40 hover:text-white hover:border-gray-300 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
         data-testid="btn-add-selected-ach"
       >
         <ShoppingCart className="h-3 w-3" />

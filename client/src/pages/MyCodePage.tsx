@@ -18,14 +18,14 @@ export default function MyCodePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0c0c0c]">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] p-4">
+    <div className="min-h-screen bg-white p-4">
       <div className="max-w-sm mx-auto py-10 space-y-6">
 
         <div className="text-center space-y-2">
@@ -33,14 +33,14 @@ export default function MyCodePage() {
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-xl font-bold text-white">Your Login Code</h1>
-          <p className="text-xs text-white/30">This is the only way to sign into your account</p>
+          <p className="text-xs text-gray-400">This is the only way to sign into your account</p>
         </div>
 
-        <div className="bg-[#111] border border-white/5 rounded-xl p-6 space-y-5">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 space-y-5">
           <div className="bg-black/70 border-2 border-primary/30 rounded-xl p-5 text-center space-y-3">
-            <p className="text-[10px] uppercase tracking-widest text-white/25">Login Code</p>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400">Login Code</p>
             <p
-              className="font-mono text-2xl font-black text-white tracking-[0.25em] select-all cursor-text"
+              className="font-mono text-2xl font-black text-gray-900 tracking-[0.25em] select-all cursor-text"
               data-testid="text-login-code"
             >
               {user?.loginCode ?? "—"}
@@ -65,7 +65,7 @@ export default function MyCodePage() {
             </div>
           </div>
 
-          <p className="text-[10px] text-white/20 text-center leading-relaxed">
+          <p className="text-[10px] text-gray-300 text-center leading-relaxed">
             Save it in a password manager, screenshot it, or write it down somewhere safe.
           </p>
         </div>

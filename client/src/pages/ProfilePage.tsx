@@ -47,7 +47,7 @@ export default function ProfilePage() {
     }
   }, [orderId, orders]);
 
-  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#090a0c]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6 pb-20">
@@ -57,7 +57,7 @@ export default function ProfilePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start border-b border-white/5 bg-transparent p-0 h-auto rounded-none gap-6">
+        <TabsList className="w-full justify-start border-b border-gray-200 bg-transparent p-0 h-auto rounded-none gap-6">
           <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-sm font-medium">
             Dashboard
           </TabsTrigger>
@@ -94,26 +94,26 @@ export default function ProfilePage() {
 
 function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
   return (
-    <Card className="bg-card/40 border-white/5">
+    <Card className="bg-card/40 border-gray-200">
       <CardHeader>
         <CardTitle>Account Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Username</p>
-          <p className="text-lg font-bold text-white">{user.username}</p>
+          <p className="text-lg font-bold text-gray-900">{user.username}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Email</p>
-          <p className="text-lg font-bold text-white">{user.email}</p>
+          <p className="text-lg font-bold text-gray-900">{user.email}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Telegram</p>
-          <p className="text-lg font-bold text-white">{user.telegramUsername}</p>
+          <p className="text-lg font-bold text-gray-900">{user.telegramUsername}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Member Since</p>
-          <p className="text-sm text-white">{new Date(user.createdAt).toLocaleDateString()}</p>
+          <p className="text-sm text-gray-900">{new Date(user.createdAt).toLocaleDateString()}</p>
         </div>
         <button 
           onClick={logout}
@@ -192,7 +192,7 @@ function SettingsTab({ user }: { user: any }) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center gap-3 text-sm">
             <Key className="h-4 w-4 text-muted-foreground" />
@@ -207,7 +207,7 @@ function SettingsTab({ user }: { user: any }) {
           <div className="flex items-center gap-3 text-sm">
             <Mail className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Email:</span>
-            <span className="text-white">{user.email || user.username}</span>
+            <span className="text-gray-900">{user.email || user.username}</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Link2 className="h-4 w-4 text-muted-foreground" />
@@ -228,7 +228,7 @@ function SettingsTab({ user }: { user: any }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardHeader>
           <CardTitle className="text-white text-lg">Change Email</CardTitle>
         </CardHeader>
@@ -239,7 +239,7 @@ function SettingsTab({ user }: { user: any }) {
               placeholder="name@example.com" 
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-new-email"
             />
           </div>
@@ -249,7 +249,7 @@ function SettingsTab({ user }: { user: any }) {
               placeholder="name@example.com" 
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-confirm-email"
             />
           </div>
@@ -259,7 +259,7 @@ function SettingsTab({ user }: { user: any }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardHeader>
           <CardTitle className="text-white text-lg">Change Password</CardTitle>
         </CardHeader>
@@ -271,7 +271,7 @@ function SettingsTab({ user }: { user: any }) {
               placeholder="Current password" 
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-current-password"
             />
           </div>
@@ -282,7 +282,7 @@ function SettingsTab({ user }: { user: any }) {
               placeholder="********" 
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-new-password"
             />
           </div>
@@ -293,7 +293,7 @@ function SettingsTab({ user }: { user: any }) {
               placeholder="********" 
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-confirm-password"
             />
           </div>
@@ -323,11 +323,11 @@ function OrdersTab() {
           </Link>
         </div>
       ) : (
-        <Card className="bg-[#16181d] border-white/5">
+        <Card className="bg-gray-50 border-gray-200">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-white/10">
+                <thead className="border-b border-gray-200">
                   <tr>
                     <th className="text-left p-4 font-medium">#</th>
                     <th className="text-left p-4 font-medium">Type</th>
@@ -353,7 +353,7 @@ function OrdersTab() {
                     const typeLabel = hasCards && hasProducts ? 'Mixed' : hasCards ? 'Cards' : 'Order';
 
                     return (
-                    <tr key={order.id} className="border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedOrder(order)}>
+                    <tr key={order.id} className="border-b border-gray-200 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setSelectedOrder(order)}>
                       <td className="p-4">{index + 1}</td>
                       <td className="p-4">
                         <Badge variant="outline" className={hasCards && !hasProducts ? 'border-yellow-500/30 text-yellow-500' : hasCards && hasProducts ? 'border-purple-500/30 text-purple-400' : 'border-destructive/30 text-destructive'}>
@@ -393,7 +393,7 @@ function OrdersTab() {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-center gap-2 p-4 border-t border-white/5">
+            <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200">
               <span className="text-muted-foreground">«</span>
               <span className="text-sm">1 of 1</span>
               <span className="text-muted-foreground">»</span>
@@ -432,20 +432,20 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
 
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
+        <SheetContent className="w-full sm:max-w-md bg-white border-l border-gray-200 text-white p-0">
           <div className="p-6 space-y-6 h-full flex flex-col">
             <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
 
             <div className="flex-1 flex flex-col gap-4">
               <div
-                className="bg-black border border-white/10 text-white rounded-lg p-4 text-sm font-mono break-all cursor-pointer min-h-[120px] space-y-3"
+                className="bg-black border border-gray-200 text-white rounded-lg p-4 text-sm font-mono break-all cursor-pointer min-h-[120px] space-y-3"
                 onClick={() => copyToClipboard(content)}
                 data-testid="stock-content-box"
               >
                 {content.split(/\n\n+/).filter(Boolean).map((chunk: string, ci: number, arr: string[]) => (
                   <div key={ci}>
                     <span className="whitespace-pre-wrap">{chunk.trim()}</span>
-                    {ci < arr.length - 1 && <div className="mt-3 border-t border-white/10" />}
+                    {ci < arr.length - 1 && <div className="mt-3 border-t border-gray-200" />}
                   </div>
                 ))}
               </div>
@@ -465,12 +465,12 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md bg-[#0d0f12] border-l border-white/5 text-white p-0">
+      <SheetContent className="w-full sm:max-w-md bg-white border-l border-gray-200 text-white p-0">
         <div className="p-6 space-y-6 h-full flex flex-col">
           <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
-            <TabsList className="w-full bg-transparent border-b border-white/5 rounded-none p-0 h-auto gap-8">
+            <TabsList className="w-full bg-transparent border-b border-gray-200 rounded-none p-0 h-auto gap-8">
               <TabsTrigger 
                 value="info" 
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-blue-500"
@@ -521,7 +521,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
 
             <TabsContent value="products" className="pt-6 space-y-6 overflow-y-auto max-h-[60vh]">
               {order.items?.map((item: any, idx: number) => (
-                <div key={idx} className="space-y-4 border-b border-white/5 pb-6 last:border-0">
+                <div key={idx} className="space-y-4 border-b border-gray-200 pb-6 last:border-0">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={item.itemType === 'card' ? 'border-yellow-500/30 text-yellow-500 text-[9px]' : 'border-primary/30 text-primary text-[9px]'}>
                       {item.itemType === 'card' ? '💳 Credit Card' : '📦 Product'}
@@ -609,7 +609,7 @@ function BalanceTab({ user }: { user: any }) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground font-medium">Current Balance</span>
@@ -626,7 +626,7 @@ function BalanceTab({ user }: { user: any }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardContent className="p-6 space-y-6">
           <div>
             <h3 className="text-sm font-medium mb-3">Amount to charge</h3>
@@ -634,7 +634,7 @@ function BalanceTab({ user }: { user: any }) {
               placeholder="amount to charge in $" 
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="bg-[#1c1f26] border-white/5"
+              className="bg-gray-50 border-gray-200"
               data-testid="input-charge-amount"
             />
           </div>
@@ -656,7 +656,7 @@ function BalanceTab({ user }: { user: any }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#16181d] border-white/5">
+      <Card className="bg-gray-50 border-gray-200">
         <CardHeader>
           <CardTitle className="text-white text-lg">Redeem Gift Card</CardTitle>
         </CardHeader>
@@ -667,7 +667,7 @@ function BalanceTab({ user }: { user: any }) {
               placeholder="XXXX-XXXX-XXXX-XXXX" 
               value={giftCardCode}
               onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
-              className="bg-[#1c1f26] border-white/5 font-mono"
+              className="bg-gray-50 border-gray-200 font-mono"
               data-testid="input-gift-card"
             />
           </div>

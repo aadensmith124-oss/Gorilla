@@ -24,7 +24,7 @@ export default function MinesGamePage() {
     <div className="max-w-3xl mx-auto py-8">
       <Card className="border-destructive/20 bg-[#0f1115] backdrop-blur-sm">
         <CardHeader className="text-center border-b border-white/5 bg-white/5">
-          <CardTitle className="text-3xl font-black italic tracking-tighter uppercase text-white">Minefield</CardTitle>
+          <CardTitle className="text-3xl font-black italic tracking-tighter uppercase text-gray-900">Minefield</CardTitle>
           <CardDescription className="italic">Cross the field without hitting a mine.</CardDescription>
         </CardHeader>
         <CardContent className="p-8 flex flex-col items-center gap-12">
@@ -92,7 +92,7 @@ export default function MinesGamePage() {
                 </div>
                 <Button 
                   size="lg" 
-                  className="w-32 h-14 bg-destructive hover:bg-destructive/90 text-white font-black italic tracking-tighter uppercase text-xl" 
+                  className="w-32 h-14 bg-destructive hover:bg-destructive/90 text-gray-900 font-black italic tracking-tighter uppercase text-xl" 
                   onClick={handlePlay}
                   disabled={playMines.isPending}
                 >

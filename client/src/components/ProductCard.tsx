@@ -17,11 +17,11 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="group cursor-pointer rounded-2xl overflow-hidden border border-white/[0.07] bg-[#0f0f0f] transition-all hover:border-white/[0.14] hover:scale-[1.02] active:scale-[0.99] flex flex-col"
+        className="group cursor-pointer rounded-2xl overflow-hidden border border-gray-200 bg-white transition-all hover:border-gray-200 hover:scale-[1.02] active:scale-[0.99] flex flex-col"
         data-testid={`card-product-${product.id}`}
       >
         {/* Square image */}
-        <div className="w-full bg-[#0c0c0c] relative" style={{ aspectRatio: '1 / 1' }}>
+        <div className="w-full bg-white relative" style={{ aspectRatio: '1 / 1' }}>
           {product.image && !imgError ? (
             <img
               src={product.image}

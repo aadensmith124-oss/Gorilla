@@ -46,8 +46,8 @@ export function RulesLink({ onClick }: { onClick: () => void }) {
 export function RulesModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-[#0f1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
+      <div className="w-full max-w-lg bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-destructive" />
             <h2 className="font-display font-black uppercase tracking-tight text-lg">Store Rules</h2>
@@ -58,7 +58,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
           {RULES.map((rule, i) => (
-            <div key={i} className="bg-black/30 border border-white/5 rounded-xl p-4 space-y-1.5">
+            <div key={i} className="bg-black/30 border border-gray-200 rounded-xl p-4 space-y-1.5">
               <p className="text-xs font-black text-primary uppercase tracking-widest">{String(i + 1).padStart(2, "0")}. {rule.title}</p>
               <p className="text-sm text-white/70 leading-relaxed">{rule.body}</p>
             </div>

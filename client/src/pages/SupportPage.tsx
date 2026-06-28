@@ -84,7 +84,7 @@ export default function SupportPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-[#0f1115] border border-white/5 p-1">
+        <TabsList className="bg-white border border-gray-200 p-1">
           <TabsTrigger value="new" className="gap-2 data-[state=active]:bg-primary">
             <MessageSquare className="h-4 w-4" /> New Ticket
           </TabsTrigger>
@@ -94,7 +94,7 @@ export default function SupportPage() {
         </TabsList>
 
         <TabsContent value="new" className="mt-6">
-          <Card className="bg-[#0f1115] border-white/5">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
               <CardTitle className="text-xl">Open a Ticket</CardTitle>
             </CardHeader>
@@ -104,7 +104,7 @@ export default function SupportPage() {
                   <FormField control={form.control} name="orderId" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="uppercase text-[10px] text-muted-foreground">Product ID / Order ID</FormLabel>
-                      <FormControl><Input {...field} placeholder="Enter your Order ID (e.g. CARD-abc123...)" className="bg-black/50 border-white/10" /></FormControl>
+                      <FormControl><Input {...field} placeholder="Enter your Order ID (e.g. CARD-abc123...)" className="bg-gray-100 border-gray-200" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -114,11 +114,11 @@ export default function SupportPage() {
                       <FormLabel className="uppercase text-[10px] text-muted-foreground">What you need</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="bg-black/50 border-white/10 text-white">
+                          <SelectTrigger className="bg-gray-100 border-gray-200 text-white">
                             <SelectValue placeholder="Select a reason" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                        <SelectContent className="bg-white border-gray-200 text-white">
                           <SelectItem value="Refund">Refund</SelectItem>
                           <SelectItem value="Replace">Replace</SelectItem>
                           <SelectItem value="Nothing">Nothing</SelectItem>
@@ -132,7 +132,7 @@ export default function SupportPage() {
                   <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="uppercase text-[10px] text-muted-foreground">What happened?</FormLabel>
-                      <FormControl><Textarea {...field} placeholder="Describe the issue in detail..." className="bg-black/50 border-white/10 min-h-[120px]" /></FormControl>
+                      <FormControl><Textarea {...field} placeholder="Describe the issue in detail..." className="bg-gray-100 border-gray-200 min-h-[120px]" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -143,8 +143,8 @@ export default function SupportPage() {
                       <div className="flex flex-col gap-4">
                         <div className="flex gap-4 items-center">
                           <div className="relative group flex-1">
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-black/50 border-white/10 opacity-0 absolute inset-0 cursor-pointer z-10" />
-                            <div className="flex items-center gap-3 px-4 h-10 rounded-md bg-black/40 border border-white/10 text-xs text-muted-foreground">
+                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-gray-100 border-gray-200 opacity-0 absolute inset-0 cursor-pointer z-10" />
+                            <div className="flex items-center gap-3 px-4 h-10 rounded-md bg-gray-100 border border-gray-200 text-xs text-muted-foreground">
                               <Upload className="h-4 w-4" />
                               <span>{field.value ? field.value.split('/').pop() : "Choose File"}</span>
                             </div>
@@ -152,7 +152,7 @@ export default function SupportPage() {
                           {isUploading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
                         </div>
                         {field.value && (
-                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10">
+                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-200">
                             <img src={field.value} className="w-full h-full object-cover" />
                           </div>
                         )}
@@ -175,13 +175,13 @@ export default function SupportPage() {
             {ticketsLoading ? (
               <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
             ) : !tickets || tickets.length === 0 ? (
-              <div className="text-center py-20 bg-[#0f1115] rounded-xl border border-white/5">
+              <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
                 <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
                 <p className="text-muted-foreground font-bold">No support history found</p>
               </div>
             ) : (
               tickets.map((ticket) => (
-                <Card key={ticket.id} className="bg-[#0f1115] border-white/5 hover:border-white/10 transition-colors">
+                <Card key={ticket.id} className="bg-white border-gray-200 hover:border-gray-200 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between py-4">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-lg", ticket.status === 'open' ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500")}>
@@ -194,7 +194,7 @@ export default function SupportPage() {
                     </div>
                     <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className={cn(
                       "uppercase text-[10px]",
-                      ticket.status === 'open' ? "border-primary/50 text-primary" : "bg-green-500 text-white"
+                      ticket.status === 'open' ? "border-primary/50 text-primary" : "bg-green-500 text-gray-900"
                     )}>
                       {ticket.status}
                     </Badge>

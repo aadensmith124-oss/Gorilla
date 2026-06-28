@@ -30,7 +30,7 @@ const adminSections = [
   { id: "cashapp",  label: "CashApp",    Icon: DollarSign },
   { id: "deposits", label: "Deposits",   Icon: Wallet },
   { id: "users",    label: "Users",      Icon: Users },
-  { id: "sellers",  label: "Sellers",    Icon: BadgeCheck },
+  
   { id: "codes",    label: "Codes",      Icon: Gift },
   { id: "integrations", label: "Settings", Icon: Settings },
 ];
@@ -139,7 +139,7 @@ export default function AdminPage() {
           {activeSection === "users"        && <UsersSection />}
           {activeSection === "codes"        && <CodesSection />}
           {activeSection === "deposits"     && <DepositsSection />}
-          {activeSection === "sellers"      && <SellersSection />}
+          
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
 
@@ -624,7 +624,7 @@ function ProductsSection() {
                   onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}>
                   <ChevronDown className={`h-4 w-4 transition-transform ${expandedProduct === product.id ? "rotate-180" : ""}`} />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white"
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-gray-700"
                   onClick={() => startEdit(product)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -1015,19 +1015,19 @@ function OrdersSection() {
 
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-white">Order Detail</h2>
+            <h2 className="text-lg font-black text-gray-900">Order Detail</h2>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
 
           <div className="space-y-3 border-b border-gray-200 pb-4">
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Payment</p><p className="text-xs text-white">{current.paymentMethod || "—"}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Order ID</p><p className="text-xs font-mono text-gray-900 break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-gray-700">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-gray-900 font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Payment</p><p className="text-xs text-gray-700">{current.paymentMethod || "—"}</p></div>
             {current.paymentNote && (
               <div><p className="text-[10px] text-gray-500 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
             )}
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Amount</p><p className="text-xs text-white">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Amount</p><p className="text-xs text-gray-700">${(current.total / 100).toFixed(2)}</p></div>
             <div><p className="text-[10px] text-gray-500 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
@@ -1079,7 +1079,7 @@ function OrdersSection() {
               {groupedEntries.map(([key, g]) => (
                 <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
                   <div>
-                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-xs font-bold text-gray-900">{g.productName}</p>
                     <p className="text-[10px] text-gray-500 mt-0.5">{g.variantName} · qty {g.qty}</p>
                   </div>
                   <p className="text-xs text-gray-600">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
@@ -1171,7 +1171,7 @@ function OrdersSection() {
         </div>
         {filteredOrders.map((order: any) => (
           <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-gray-200 last:border-0 items-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
-            <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+            <span className="text-xs font-bold text-gray-900">${(order.total / 100).toFixed(2)}</span>
             <div className="min-w-0">
               <p className="text-[11px] text-gray-600 truncate font-mono">{order.user?.username ? `@${order.user.username}` : ""} <span className="text-gray-500">{order.orderId?.slice(0, 10)}</span></p>
               <p className="text-[10px] text-gray-400 truncate">{order.paymentNote || order.paymentMethod || "—"} · {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
@@ -1301,7 +1301,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           <CardContent className="p-4 space-y-3">
             <p className="text-sm font-bold text-green-400">✓ Test order created!</p>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Order ID: <span className="font-mono text-white">{lastOrder.orderId}</span></p>
+              <p>Order ID: <span className="font-mono text-gray-900">{lastOrder.orderId}</span></p>
               <p>Status: <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">delivering</Badge></p>
               <p className="text-gray-600">Now go to the Orders tab to paste items and fulfill this order.</p>
             </div>
@@ -1437,7 +1437,7 @@ function UsersSection() {
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-bold text-white">{selectedUser.username}</p>
+              <p className="font-bold text-gray-900">{selectedUser.username}</p>
               <p className="text-[10px] text-gray-400 font-mono">{selectedUser.email}</p>
             </div>
             <div className="flex gap-2 items-center">
@@ -1451,7 +1451,7 @@ function UsersSection() {
           <div className="grid grid-cols-2 gap-2 text-center">
             <div className="bg-gray-50 rounded-lg p-2">
               <p className="text-[9px] text-gray-400">Balance</p>
-              <p className="text-sm font-mono font-bold text-white">${(selectedUser.balance / 100).toFixed(2)}</p>
+              <p className="text-sm font-mono font-bold text-gray-900">${(selectedUser.balance / 100).toFixed(2)}</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-2">
               <p className="text-[9px] text-gray-400">Login Code</p>
@@ -1559,7 +1559,7 @@ function UsersSection() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-white">Users <span className="text-gray-400 font-normal">({(users ?? []).length})</span></h2>
+        <h2 className="text-sm font-bold text-gray-900">Users <span className="text-gray-400 font-normal">({(users ?? []).length})</span></h2>
       </div>
       <input
         value={search}
@@ -1579,7 +1579,7 @@ function UsersSection() {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-bold text-sm text-white truncate">{user.username}</p>
+                  <p className="font-bold text-sm text-gray-900 truncate">{user.username}</p>
                   {user.role === "admin" && <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px]">admin</Badge>}
                   {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">banned</Badge>}
                 </div>
@@ -1672,7 +1672,7 @@ function CodesSection() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "balance"
               ? "bg-primary text-black"
-              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-white"
+              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700"
           }`}
           data-testid="tab-balance-codes"
         >
@@ -1684,7 +1684,7 @@ function CodesSection() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "discount"
               ? "bg-primary text-black"
-              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-white"
+              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700"
           }`}
           data-testid="tab-discount-codes"
         >
@@ -1760,7 +1760,7 @@ function CodesSection() {
                   {balanceCodes.map((c: any) => (
                     <div key={c.id} className="flex items-center justify-between bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5">
                       <div>
-                        <p className="text-sm font-bold text-white font-mono">{c.code}</p>
+                        <p className="text-sm font-bold text-gray-900 font-mono">{c.code}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-bold text-green-400">${(c.amount / 100).toFixed(2)}</span>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-gray-50 text-gray-400" : "bg-green-500/20 text-green-400"}`}>
@@ -1864,7 +1864,7 @@ function CodesSection() {
                     <div key={dc.id} className="flex items-center gap-3 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-bold text-white font-mono">{dc.code}</span>
+                          <span className="text-sm font-bold text-gray-900 font-mono">{dc.code}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-gray-100 text-gray-500"}`}>
                             {dc.isActive ? "Active" : "Inactive"}
                           </span>
@@ -2060,7 +2060,7 @@ function IntegrationsSection() {
                       {m.icon}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-white">{m.label}</p>
+                      <p className="font-bold text-sm text-gray-900">{m.label}</p>
                       <p className="text-xs text-muted-foreground">{enabled ? "Visible to customers" : "Hidden from customers"}</p>
                     </div>
                   </div>
@@ -2138,7 +2138,7 @@ function IntegrationsSection() {
           <Card className="bg-white border-gray-200" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
             <CardContent className="p-4 flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
-                <p className="font-mono text-sm text-white">TELEGRAM_BOT_TOKEN</p>
+                <p className="font-mono text-sm text-gray-900">TELEGRAM_BOT_TOKEN</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">Required for Telegram Stars payments. Create a bot via @BotFather and enable Stars in Payments.</p>
               </div>
               <div className="shrink-0 mt-0.5">
@@ -2208,7 +2208,7 @@ function FeatureTogglesCard() {
             <Card key={f.key} className="bg-white border-gray-200" data-testid={`card-feature-${f.key}`}>
               <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-bold text-sm text-white">{f.label}</p>
+                  <p className="font-bold text-sm text-gray-900">{f.label}</p>
                   <p className="text-xs text-muted-foreground">{enabled ? "Visible to users" : "Hidden — nobody can see it"}</p>
                 </div>
                 <Switch
@@ -2310,14 +2310,14 @@ function CashAppSection() {
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: meta.color }}>
                 {meta.icon}
               </div>
-              <h2 className="text-lg font-black text-white">{meta.label} Deposit</h2>
+              <h2 className="text-lg font-black text-gray-900">{meta.label} Deposit</h2>
             </div>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
 
           <div className="space-y-3 border-b border-gray-200 pb-4">
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-white">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-gray-900 font-bold">{current.user?.username || current.userId}</p></div>
+            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-gray-700">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
             {current.paymentNote && (
               <div>
                 <p className="text-[10px] text-gray-500 mb-0.5">Payment Note</p>
@@ -2326,7 +2326,7 @@ function CashAppSection() {
             )}
             <div>
               <p className="text-[10px] text-gray-500 mb-0.5">Amount to receive</p>
-              <p className="text-2xl font-black text-white">${(current.total / 100).toFixed(2)}</p>
+              <p className="text-2xl font-black text-gray-900">${(current.total / 100).toFixed(2)}</p>
               <p className="text-[10px] text-gray-400 font-mono mt-0.5">user specified this amount — confirm only if received exactly this</p>
             </div>
           </div>
@@ -2359,7 +2359,7 @@ function CashAppSection() {
               {groupedEntries.map(([key, g]) => (
                 <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
                   <div>
-                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-xs font-bold text-gray-900">{g.productName}</p>
                     <p className="text-[10px] text-gray-500 mt-0.5">{g.variantName} · qty {g.qty}</p>
                   </div>
                   <p className="text-xs text-gray-600">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
@@ -2433,7 +2433,7 @@ function CashAppSection() {
                       <span className="text-[10px] font-bold" style={{ color: meta.color }}>{meta.label}</span>
                       <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
                     </div>
-                    <p className="text-sm font-black text-white">${(order.total / 100).toFixed(2)}</p>
+                    <p className="text-sm font-black text-gray-900">${(order.total / 100).toFixed(2)}</p>
                     {order.paymentNote && <p className="text-[10px] font-mono mt-0.5" style={{ color: `${meta.color}80` }}>{order.paymentNote}</p>}
                     <p className="text-[10px] text-gray-400">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
                   </div>
@@ -2614,7 +2614,7 @@ function AdminBasesTab() {
                       className="text-left w-full"
                       data-testid={`btn-expand-base-${b.id}`}
                     >
-                      <p className="text-sm font-bold text-white font-mono">{b.name}</p>
+                      <p className="text-sm font-bold text-gray-900 font-mono">{b.name}</p>
                       <p className="text-[10px] text-gray-400">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
                     </button>
                   )}
@@ -2731,7 +2731,7 @@ function AdminCardsSection() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-white">Cards</h2>
+      <h2 className="text-base font-bold text-gray-900">Cards</h2>
 
       {/* Add Card form */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
@@ -2803,7 +2803,7 @@ function AdminCardsSection() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-mono transition-all capitalize ${tab === t ? "text-primary border-b border-primary -mb-px" : "text-gray-400 hover:text-white"}`}
+            className={`px-4 py-2 text-xs font-mono transition-all capitalize ${tab === t ? "text-primary border-b border-primary -mb-px" : "text-gray-400 hover:text-gray-700"}`}
             data-testid={`tab-cards-${t}`}
           >
             {t}
@@ -2832,7 +2832,7 @@ function AdminCardsSection() {
                     {card.extras && <p className="text-[9px] text-gray-300 truncate font-mono">{card.extras.substring(0, 55)}...</p>}
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-2">
-                    <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
+                    <span className="font-mono text-sm text-gray-900">${(card.price / 100).toFixed(2)}</span>
                     <button
                       onClick={() => deleteMutation.mutate(card.id)}
                       disabled={deleteMutation.isPending}
@@ -2891,7 +2891,7 @@ function AdminAchSection() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-white">ACH Management</h2>
+      <h2 className="text-base font-bold text-gray-900">ACH Management</h2>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Add ACH</p>
@@ -2955,11 +2955,11 @@ function AdminAchSection() {
           (achList ?? []).map((a: any) => (
             <div key={a.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
               <div className="space-y-0.5 min-w-0 flex-1">
-                <p className="text-sm font-bold text-white">{a.bankName}</p>
+                <p className="text-sm font-bold text-gray-900">{a.bankName}</p>
                 <p className="text-[10px] text-gray-400 font-mono">{a.balance}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0 ml-2">
-                <span className="font-mono text-sm text-white">${(a.price / 100).toFixed(2)}</span>
+                <span className="font-mono text-sm text-gray-900">${(a.price / 100).toFixed(2)}</span>
                 <button
                   onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
@@ -3163,7 +3163,7 @@ function SellersSection() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-lg font-mono transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-white"}`}
+            className={`text-xs px-3 py-1.5 rounded-lg font-mono transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
           >
             {f}{f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
           </button>

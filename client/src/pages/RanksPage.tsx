@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 const RANKS = [
-  { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-white/50",   bar: "#ffffff40", border: "border-white/10",     glow: "",                     discount: 0,  threshold: 0,      next: 10000  },
+  { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-gray-500",   bar: "#ffffff40", border: "border-gray-200",     glow: "",                     discount: 0,  threshold: 0,      next: 10000  },
   { key: "regular", label: "Regular", emoji: "⭐", color: "text-blue-400",   bar: "#60a5fa",   border: "border-blue-500/30",  glow: "shadow-blue-500/10",   discount: 2,  threshold: 10000,  next: 50000  },
   { key: "vip",     label: "VIP",     emoji: "💎", color: "text-purple-400", bar: "#c084fc",   border: "border-purple-500/30",glow: "shadow-purple-500/10", discount: 5,  threshold: 50000,  next: 100000 },
   { key: "nyc",     label: "NYC",     emoji: "🫆", color: "text-amber-400",  bar: "#fbbf24",   border: "border-amber-500/30", glow: "shadow-amber-500/10",  discount: 10, threshold: 100000, next: null   },
@@ -29,19 +29,19 @@ export default function RanksPage() {
     : 100;
 
   return (
-    <div className="min-h-screen bg-[#090a0c] pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-md mx-auto px-4 pt-6">
 
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => setLocation("/profile")}
-            className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            className="h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
             <h1 className="text-lg font-bold text-white">Ranks</h1>
-            <p className="text-[10px] text-white/30 uppercase tracking-widest">deposit more, save more</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest">deposit more, save more</p>
           </div>
         </div>
 
@@ -52,25 +52,25 @@ export default function RanksPage() {
         ) : (
           <>
             {/* Current rank hero */}
-            <div className={`rounded-2xl border ${current.border} bg-white/[0.03] p-5 mb-6 shadow-lg ${current.glow}`}>
+            <div className={`rounded-2xl border ${current.border} bg-gray-50 p-5 mb-6 shadow-lg ${current.glow}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{current.emoji}</span>
                   <div>
                     <p className={`text-lg font-bold ${current.color}`}>{current.label}</p>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">your rank</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">your rank</p>
                   </div>
                 </div>
                 <div className="text-right">
                   {current.discount > 0 ? (
                     <>
                       <p className={`text-2xl font-bold ${current.color}`}>{current.discount}%</p>
-                      <p className="text-[10px] text-white/30">off every order</p>
+                      <p className="text-[10px] text-gray-400">off every order</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-white/20">—</p>
-                      <p className="text-[10px] text-white/30">no discount yet</p>
+                      <p className="text-2xl font-bold text-gray-300">—</p>
+                      <p className="text-[10px] text-gray-400">no discount yet</p>
                     </>
                   )}
                 </div>
@@ -78,17 +78,17 @@ export default function RanksPage() {
 
               {next ? (
                 <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] text-white/30">
+                  <div className="flex justify-between text-[10px] text-gray-400">
                     <span>${(totalDeposited / 100).toFixed(0)} deposited</span>
                     <span>${(next.threshold / 100).toFixed(0)} for {next.label} {next.emoji}</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-gray-50 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${progress}%`, backgroundColor: current.bar }}
                     />
                   </div>
-                  <p className="text-[10px] text-white/20">
+                  <p className="text-[10px] text-gray-300">
                     ${((next.threshold - totalDeposited) / 100).toFixed(0)} more to unlock {next.discount}% discount
                   </p>
                 </div>
@@ -99,7 +99,7 @@ export default function RanksPage() {
 
             {/* All tiers */}
             <div className="space-y-2">
-              <p className="text-[9px] text-white/20 uppercase tracking-widest mb-3">All Tiers</p>
+              <p className="text-[9px] text-gray-300 uppercase tracking-widest mb-3">All Tiers</p>
               {RANKS.map((rank, i) => {
                 const isUnlocked = i <= currentIdx;
                 const isCurrent = i === currentIdx;
@@ -108,29 +108,29 @@ export default function RanksPage() {
                     key={rank.key}
                     className={`flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all ${
                       isCurrent
-                        ? `${rank.border} bg-white/[0.04]`
+                        ? `${rank.border} bg-gray-50`
                         : isUnlocked
-                        ? "border-white/5 bg-white/[0.02]"
-                        : "border-white/[0.04] bg-transparent opacity-50"
+                        ? "border-gray-200 bg-gray-50"
+                        : "border-gray-200 bg-transparent opacity-50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-lg w-7 text-center">{rank.emoji}</span>
                       <div>
-                        <p className={`text-sm font-bold ${isUnlocked ? rank.color : "text-white/30"}`}>
+                        <p className={`text-sm font-bold ${isUnlocked ? rank.color : "text-gray-400"}`}>
                           {rank.label}
-                          {isCurrent && <span className="ml-2 text-[9px] font-normal text-white/30 uppercase tracking-widest">current</span>}
+                          {isCurrent && <span className="ml-2 text-[9px] font-normal text-gray-400 uppercase tracking-widest">current</span>}
                         </p>
-                        <p className="text-[10px] text-white/20">
+                        <p className="text-[10px] text-gray-300">
                           {rank.threshold === 0 ? "Default" : `$${(rank.threshold / 100).toFixed(0)}+ deposited`}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       {rank.discount > 0 ? (
-                        <span className={`text-sm font-bold ${isUnlocked ? rank.color : "text-white/20"}`}>{rank.discount}% off</span>
+                        <span className={`text-sm font-bold ${isUnlocked ? rank.color : "text-gray-300"}`}>{rank.discount}% off</span>
                       ) : (
-                        <span className="text-sm text-white/20">—</span>
+                        <span className="text-sm text-gray-300">—</span>
                       )}
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export default function RanksPage() {
               })}
             </div>
 
-            <p className="text-[10px] text-white/20 text-center mt-6 leading-relaxed">
+            <p className="text-[10px] text-gray-300 text-center mt-6 leading-relaxed">
               Discounts apply automatically at checkout.<br />Based on your total lifetime deposits.
             </p>
           </>

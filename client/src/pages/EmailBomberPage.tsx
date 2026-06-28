@@ -61,7 +61,7 @@ export default function EmailBomberPage() {
 
   return (
     <div className="max-w-sm mx-auto px-3 py-4">
-      <div className="bg-[#0e0e0e] border border-white/8 rounded-xl p-4 space-y-3">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
         <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Email Bomber</p>
 
         <input
@@ -70,7 +70,7 @@ export default function EmailBomberPage() {
           placeholder="target email address"
           type="email"
           disabled={status === "running"}
-          className="w-full h-8 bg-black/40 border border-white/8 rounded px-3 text-xs text-white placeholder:text-white/20 outline-none font-mono"
+          className="w-full h-8 bg-black/40 border border-gray-200 rounded px-3 text-xs text-white placeholder:text-white/20 outline-none font-mono"
           data-testid="input-target-email"
           onKeyDown={e => { if (e.key === "Enter") handleBomb(); }}
         />
@@ -89,7 +89,7 @@ export default function EmailBomberPage() {
         <button
           onClick={status === "done" ? () => { setStatus("idle"); setTargetEmail(""); setJobId(null); } : handleBomb}
           disabled={status === "running" || (status === "idle" && (!targetEmail || !canAfford))}
-          className="w-full h-8 flex items-center justify-center gap-2 rounded border border-white/10 text-xs font-mono text-white/60 hover:text-white hover:border-white/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-full h-8 flex items-center justify-center gap-2 rounded border border-gray-200 text-xs font-mono text-white/60 hover:text-white hover:border-gray-300 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           data-testid="btn-bomb"
         >
           {status === "running"

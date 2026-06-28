@@ -59,7 +59,7 @@ export function VerificationBanner() {
 
   if (isTermed) {
     return (
-      <div className="w-full bg-[#1a0a0a] border-b-2 border-destructive text-white px-4 py-4 space-y-2">
+      <div className="w-full bg-gray-50 border-b-2 border-destructive text-gray-900 px-4 py-4 space-y-2">
         <div className="flex items-center gap-3">
           <ShieldX className="h-6 w-6 text-destructive shrink-0" />
           <div>
@@ -74,7 +74,7 @@ export function VerificationBanner() {
           <Button
             size="sm"
             variant="outline"
-            className="border-white/20 text-white hover:bg-white/10 text-xs h-7"
+            className="border-gray-300 text-white hover:bg-white/10 text-xs h-7"
             onClick={() => setShowForm(true)}
           >
             Reapply
@@ -86,7 +86,7 @@ export function VerificationBanner() {
 
   if (isDenied) {
     return (
-      <div className="w-full bg-destructive/90 border-b border-destructive text-white px-4 py-3 flex items-center gap-3">
+      <div className="w-full bg-destructive/90 border-b border-destructive text-gray-900 px-4 py-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <div className="flex-1">
           <p className="font-bold text-sm uppercase tracking-wide">Verification Denied</p>
@@ -95,7 +95,7 @@ export function VerificationBanner() {
         <Button
           size="sm"
           variant="outline"
-          className="border-white/30 text-white hover:bg-white/10 text-xs h-7"
+          className="border-gray-200/30 text-white hover:bg-white/10 text-xs h-7"
           onClick={() => setShowForm(true)}
         >
           Reapply
@@ -106,7 +106,7 @@ export function VerificationBanner() {
 
   if (isPending) {
     return (
-      <div className="w-full bg-yellow-600/90 border-b border-yellow-500 text-white px-4 py-3 flex items-center gap-3">
+      <div className="w-full bg-yellow-600/90 border-b border-yellow-500 text-gray-900 px-4 py-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <div className="flex-1">
           <p className="font-bold text-sm uppercase tracking-wide">Verification Pending</p>
@@ -119,7 +119,7 @@ export function VerificationBanner() {
   return (
     <>
       <div
-        className="w-full bg-destructive/90 border-b border-destructive text-white px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-destructive transition-colors"
+        className="w-full bg-destructive/90 border-b border-destructive text-gray-900 px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-destructive transition-colors"
         onClick={() => setShowForm(true)}
       >
         <AlertTriangle className="h-5 w-5 shrink-0" />
@@ -132,8 +132,8 @@ export function VerificationBanner() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-[#0f1115] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-white/5">
+          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
               <h2 className="font-display font-black uppercase tracking-tight text-lg">Account Verification</h2>
               <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-white transition-colors">
                 <X className="h-5 w-5" />
@@ -141,10 +141,10 @@ export function VerificationBanner() {
             </div>
 
             <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
-              <div className="bg-black/30 border border-white/5 rounded-xl p-4">
+              <div className="bg-black/30 border border-gray-200 rounded-xl p-4">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Terms of Service</p>
                 <pre className="text-xs text-white/70 leading-relaxed whitespace-pre-wrap font-sans">{TERMS}</pre>
-                <div className="mt-3 pt-3 border-t border-white/5 text-xs text-white/60">
+                <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-white/60">
                   You agree to follow all{" "}
                   <RulesLink onClick={() => setShowRules(true)} />
                   {" "}of this store.
@@ -166,7 +166,7 @@ export function VerificationBanner() {
                 </p>
               </button>
 
-              <div className="space-y-3 border-t border-white/5 pt-4">
+              <div className="space-y-3 border-t border-gray-200 pt-4">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Your Information</p>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1.5">Your Telegram @username</label>
@@ -174,7 +174,7 @@ export function VerificationBanner() {
                     placeholder="@yourusername"
                     value={telegramUsername}
                     onChange={e => setTelegramUsername(e.target.value)}
-                    className="bg-black/50 border-white/10"
+                    className="bg-black/50 border-gray-200"
                   />
                 </div>
                 <div>
@@ -183,7 +183,7 @@ export function VerificationBanner() {
                     placeholder="https://t.me/yourchannel"
                     value={channelLink}
                     onChange={e => setChannelLink(e.target.value)}
-                    className="bg-black/50 border-white/10"
+                    className="bg-black/50 border-gray-200"
                   />
                 </div>
                 <div>
@@ -192,7 +192,7 @@ export function VerificationBanner() {
                     placeholder="My Resell Channel"
                     value={channelName}
                     onChange={e => setChannelName(e.target.value)}
-                    className="bg-black/50 border-white/10"
+                    className="bg-black/50 border-gray-200"
                   />
                 </div>
               </div>

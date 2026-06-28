@@ -258,7 +258,7 @@ export default function CardsPage() {
           onClick={() => setShowFilters(f => !f)}
           className={`w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-colors ${
             showFilters || activeFilters > 0
-              ? "bg-gray-800 border-gray-800 text-white"
+              ? "bg-gray-800 border-gray-800 text-gray-900"
               : "bg-gray-800 border-gray-800 text-white hover:bg-gray-700"
           }`}
           data-testid="btn-toggle-filters"
@@ -375,7 +375,7 @@ export default function CardsPage() {
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">TYPE</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BANK</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ZIP</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">CITY</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">FLAG</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ST</th>
                 <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">PRICE</th>
                 <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">BUY</th>
@@ -404,7 +404,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
 
   const bin = extractBin(card.cardNumber);
   const zip = extractZip(card.extras ?? "");
-  const city = extractCity(card.extras ?? "");
+  const flag = countryFlag(card.binData?.countryCode ?? "");
   const state = extractState(card.extras ?? "");
   const cardType = formatType(card.binData);
   const bank = formatBank(card.binData);
@@ -451,8 +451,8 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
       <td className="px-3 py-3">
         <span className="text-xs font-mono text-gray-600">{zip || "—"}</span>
       </td>
-      <td className="px-3 py-3 max-w-[100px]">
-        <span className="text-xs text-gray-600 truncate block">{city || "—"}</span>
+      <td className="px-3 py-3">
+        <span className="text-lg leading-none">{flag || "—"}</span>
       </td>
       <td className="px-3 py-3">
         <span className="text-xs font-mono text-gray-600">{state || "—"}</span>

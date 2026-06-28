@@ -69,14 +69,14 @@ export default function BecomeSellerPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#090a0c] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#090a0c] pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 space-y-6">
 
         {/* Header */}
@@ -85,7 +85,7 @@ export default function BecomeSellerPage() {
             <BadgeCheck className="h-5 w-5 text-primary" />
             <h1 className="text-xl font-bold text-white">Become a Seller</h1>
           </div>
-          <p className="text-xs text-white/40">Apply to sell your products on PiF Market and reach our customer base</p>
+          <p className="text-xs text-gray-500">Apply to sell your products on PiF Market and reach our customer base</p>
         </div>
 
         {/* Perks — only show when not approved */}
@@ -95,7 +95,7 @@ export default function BecomeSellerPage() {
               <div key={p.label} className="bg-white/3 border border-white/6 rounded-xl p-3 text-center space-y-1.5">
                 <p.icon className="h-4 w-4 text-primary mx-auto" />
                 <p className="text-[11px] font-bold text-white">{p.label}</p>
-                <p className="text-[10px] text-white/35 leading-tight">{p.desc}</p>
+                <p className="text-[10px] text-gray-400 leading-tight">{p.desc}</p>
               </div>
             ))}
           </div>
@@ -108,23 +108,23 @@ export default function BecomeSellerPage() {
               <CheckCircle2 className="h-8 w-8 text-green-400 shrink-0" />
               <div>
                 <p className="text-base font-black text-green-400">You're an Approved Seller!</p>
-                <p className="text-xs text-white/50 mt-0.5">Your application has been approved. Use your seller code below.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Your application has been approved. Use your seller code below.</p>
               </div>
             </div>
 
             {application.sellerCode && (
-              <div className="bg-black/50 border border-white/8 rounded-xl p-4 space-y-2">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Your Seller Code</p>
+              <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 space-y-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Your Seller Code</p>
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-lg font-black text-primary tracking-wider flex-1">
                     {application.sellerCode}
                   </span>
                   <button
                     onClick={copyCode}
-                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
                     data-testid="btn-copy-seller-code"
                   >
-                    {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5 text-white/50" />}
+                    {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5 text-gray-500" />}
                   </button>
                 </div>
               </div>
@@ -138,7 +138,7 @@ export default function BecomeSellerPage() {
             <Clock className="h-8 w-8 text-yellow-400 shrink-0" />
             <div>
               <p className="text-base font-black text-yellow-400">Application Under Review</p>
-              <p className="text-xs text-white/50 mt-0.5">An admin is reviewing your application. We'll update you soon.</p>
+              <p className="text-xs text-gray-500 mt-0.5">An admin is reviewing your application. We'll update you soon.</p>
             </div>
           </div>
         )}
@@ -151,9 +151,9 @@ export default function BecomeSellerPage() {
               <div>
                 <p className="text-base font-black text-red-400">Application Not Approved</p>
                 {application.note ? (
-                  <p className="text-xs text-white/50 mt-0.5">{application.note}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{application.note}</p>
                 ) : (
-                  <p className="text-xs text-white/50 mt-0.5">Your application wasn't approved this time. You may reapply below.</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Your application wasn't approved this time. You may reapply below.</p>
                 )}
               </div>
             </div>
@@ -180,12 +180,12 @@ function ApplyForm({ note, setNote, onSubmit, isPending, label }: {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xs text-white/40 block mb-1.5">Why do you want to sell on PiF Market? <span className="text-white/25">(optional)</span></label>
+        <label className="text-xs text-gray-500 block mb-1.5">Why do you want to sell on PiF Market? <span className="text-gray-400">(optional)</span></label>
         <Textarea
           placeholder="Tell us a bit about what you plan to sell and your experience..."
           value={note}
           onChange={e => setNote(e.target.value)}
-          className="bg-black/50 border-white/10 resize-none h-28 text-sm"
+          className="bg-gray-100 border-gray-200 resize-none h-28 text-sm"
           data-testid="input-seller-note"
         />
       </div>

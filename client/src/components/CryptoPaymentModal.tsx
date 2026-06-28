@@ -68,7 +68,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-[#1a1a1a] border-white/10">
+      <DialogContent className="sm:max-w-md bg-gray-50 border-gray-200">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center justify-between">
             <span>Crypto Payment</span>
@@ -104,7 +104,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
               <Button
                 variant="outline"
                 onClick={() => window.open(checkoutUrl, "_blank")}
-                className="w-full border-white/10"
+                className="w-full border-gray-200"
                 data-testid="button-reopen-checkout"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
