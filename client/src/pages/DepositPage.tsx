@@ -7,18 +7,11 @@ import { ChevronRight, Loader2, Copy, Check, Clock, CheckCircle2, XCircle, Alert
 import { SiBitcoin, SiEthereum, SiLitecoin, SiSolana, SiTether, SiCashapp } from "react-icons/si";
 
 type Method = "crypto" | "cashapp" | "chime" | "zelle";
-
 type ManualResult = { note: string; handle: string; amount: number; method: Method };
-
 type Deposit = {
-  id: string;
-  type: "crypto" | "cashapp" | "chime" | "zelle";
-  amount: number;
-  status: string;
-  paymentId?: string;
-  checkoutUrl?: string;
-  paymentNote?: string;
-  createdAt: string;
+  id: string; type: "crypto" | "cashapp" | "chime" | "zelle";
+  amount: number; status: string; paymentId?: string;
+  checkoutUrl?: string; paymentNote?: string; createdAt: string;
 };
 
 const COINS = [
@@ -41,34 +34,23 @@ const BONUS_TIERS = [
 
 function CopyButton({ value, label }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
-  const handle = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const handle = () => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
-    <button
-      onClick={handle}
-      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/60 hover:text-white transition-colors"
-      data-testid="btn-copy"
-    >
-      {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+    <button onClick={handle} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-xs text-gray-600 hover:text-gray-900 transition-colors" data-testid="btn-copy">
+      {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
       {copied ? "Copied!" : (label || "Copy")}
     </button>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === "completed" || status === "delivering" || status === "fulfilled") {
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-green-400"><CheckCircle2 className="h-3 w-3" /> credited</span>;
-  }
-  if (status === "failed" || status === "expired") {
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-red-400/70"><XCircle className="h-3 w-3" /> {status}</span>;
-  }
-  if (status === "underpaid") {
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-yellow-400/70"><AlertTriangle className="h-3 w-3" /> underpaid</span>;
-  }
-  return <span className="flex items-center gap-1 text-[10px] font-mono text-white/40 animate-pulse"><Clock className="h-3 w-3" /> pending</span>;
+  if (status === "completed" || status === "delivering" || status === "fulfilled")
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-green-600"><CheckCircle2 className="h-3 w-3" /> credited</span>;
+  if (status === "failed" || status === "expired")
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-red-500"><XCircle className="h-3 w-3" /> {status}</span>;
+  if (status === "underpaid")
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-amber-500"><AlertTriangle className="h-3 w-3" /> underpaid</span>;
+  return <span className="flex items-center gap-1 text-[10px] font-mono text-gray-400 animate-pulse"><Clock className="h-3 w-3" /> pending</span>;
 }
 
 function methodColor(type: string) {
@@ -91,10 +73,10 @@ function DepositRow({ deposit }: { deposit: Deposit }) {
   const color = methodColor(deposit.type);
 
   return (
-    <div className={`flex items-center justify-between px-3 py-2.5 rounded border ${
-      isCredited ? "bg-green-950/10 border-green-900/30" :
-      deposit.status === "failed" || deposit.status === "expired" ? "bg-red-950/10 border-red-900/20" :
-      "bg-[#0e0e0e] border-white/5"
+    <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition-colors ${
+      isCredited ? "bg-green-50 border-green-200" :
+      deposit.status === "failed" || deposit.status === "expired" ? "bg-red-50 border-red-200" :
+      "bg-white border-gray-200"
     }`}>
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: `${color}22`, color }}>
@@ -102,20 +84,20 @@ function DepositRow({ deposit }: { deposit: Deposit }) {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-white">{amountLabel}</span>
+            <span className="text-xs font-mono font-bold text-gray-900">{amountLabel}</span>
             <StatusBadge status={deposit.status} />
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-white/25 font-mono">
+            <span className="text-[10px] text-gray-400 font-mono">
               {methodLabel(deposit.type)} · {new Date(deposit.createdAt).toLocaleDateString()}
             </span>
-            {deposit.paymentNote && <span className="text-[10px] font-mono" style={{ color: `${color}80` }}>{deposit.paymentNote}</span>}
+            {deposit.paymentNote && <span className="text-[10px] font-mono" style={{ color: `${color}99` }}>{deposit.paymentNote}</span>}
           </div>
         </div>
       </div>
       {deposit.checkoutUrl && !isCredited && (
         <a href={deposit.checkoutUrl} target="_blank" rel="noopener noreferrer">
-          <button className="ml-2 flex-shrink-0 text-white/20 hover:text-white/60 transition-colors" title="Reopen checkout">
+          <button className="ml-2 flex-shrink-0 text-gray-300 hover:text-gray-600 transition-colors" title="Reopen checkout">
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </a>
@@ -130,49 +112,41 @@ function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset
   const sendLabel = result.method === "cashapp" ? "Send to $Cashtag" : result.method === "chime" ? "Send to Chime" : "Send to Zelle";
 
   return (
-    <div className="border rounded-xl p-4 space-y-3" style={{ borderColor: `${color}40`, background: `${color}08` }}>
+    <div className="border rounded-2xl p-4 space-y-3" style={{ borderColor: `${color}40`, background: `${color}08` }}>
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: color, color: "#000" }}>
+        <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: color, color: "#fff" }}>
           {name.charAt(0)}
         </div>
         <p className="text-xs font-bold" style={{ color }}>Send via {name}</p>
       </div>
-
       <div className="space-y-2">
-        <div className="bg-black/40 rounded px-3 py-2">
-          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">{sendLabel}</p>
+        <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+          <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 font-mono">{sendLabel}</p>
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-white font-mono">{result.handle || `(no ${name} handle set)`}</p>
+            <p className="text-sm font-bold text-gray-900 font-mono">{result.handle || `(no ${name} handle set)`}</p>
             {result.handle && <CopyButton value={result.handle} />}
           </div>
         </div>
-
-        <div className="bg-black/40 rounded px-3 py-2">
-          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Amount (send EXACTLY this)</p>
+        <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+          <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 font-mono">Amount (send EXACTLY this)</p>
           <div className="flex items-center justify-between">
-            <p className="text-lg font-bold text-white font-mono">${(result.amount / 100).toFixed(2)}</p>
+            <p className="text-xl font-black text-gray-900 font-mono">${(result.amount / 100).toFixed(2)}</p>
             <CopyButton value={(result.amount / 100).toFixed(2)} label="Copy" />
           </div>
-          <p className="text-[10px] text-yellow-400/70 font-mono mt-1">⚠ You must send exactly this amount</p>
+          <p className="text-[10px] text-amber-600 font-mono mt-1">⚠ Send exactly this amount</p>
         </div>
-
-        <div className="bg-black/40 rounded px-3 py-2">
-          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
+        <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+          <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold font-mono" style={{ color }}>{result.note}</p>
             <CopyButton value={result.note} />
           </div>
         </div>
       </div>
-
-      <p className="text-[10px] text-white/25 font-mono leading-relaxed">
+      <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
         include the exact note when sending · admin will confirm and credit your balance
       </p>
-      <button
-        onClick={onReset}
-        className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors font-mono"
-        data-testid="btn-new-deposit"
-      >
+      <button onClick={onReset} className="w-full text-[11px] text-gray-400 hover:text-gray-700 transition-colors font-mono" data-testid="btn-new-deposit">
         ← create new deposit
       </button>
     </div>
@@ -194,9 +168,7 @@ export default function DepositPage() {
     chime: { enabled: boolean; handle: string };
     zelle: { enabled: boolean; handle: string };
     venmo: { enabled: boolean; handle: string };
-  }>({
-    queryKey: ["/api/site-settings/manual-payments"],
-  });
+  }>({ queryKey: ["/api/site-settings/manual-payments"] });
 
   const { data: minDeposits } = useQuery<Record<string, number>>({
     queryKey: ["/api/site-settings/min-deposits"],
@@ -214,29 +186,17 @@ export default function DepositPage() {
       const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
       if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit for Crypto is $${cryptoMin.toFixed(2)}`);
       if (amount > 1000000000) throw new Error("Maximum deposit is $1,000,000,000");
-      const res = await apiRequest("POST", "/api/payments/forebit/create", {
-        amount: String(Math.round(amount * 100)),
-        purpose: "deposit",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to create payment");
-      }
+      const res = await apiRequest("POST", "/api/payments/forebit/create", { amount: String(Math.round(amount * 100)), purpose: "deposit" });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed to create payment"); }
       return res.json();
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
       if (data.checkoutUrl || data.url) {
         const url = data.checkoutUrl || data.url;
-        if (data.paymentId) {
-          sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
-          sessionStorage.setItem("lastForebitPurpose", "deposit");
-          sessionStorage.removeItem("lastForebitOrderId");
-        }
+        if (data.paymentId) { sessionStorage.setItem("lastForebitPaymentId", data.paymentId); sessionStorage.setItem("lastForebitPurpose", "deposit"); sessionStorage.removeItem("lastForebitOrderId"); }
         window.location.href = url;
-      } else {
-        toast({ title: "Payment created", description: "Check your email for the payment link" });
-      }
+      } else { toast({ title: "Payment created", description: "Check your email for the payment link" }); }
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -312,12 +272,13 @@ export default function DepositPage() {
   const isManual = method !== "crypto";
 
   return (
-    <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
+    <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
+
       {/* Payment issues banner */}
       <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer">
-        <button className="w-full flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded text-xs text-white/50 hover:bg-white/8 transition-colors" data-testid="btn-payment-issues">
+        <button className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-500 hover:bg-gray-50 transition-colors shadow-sm" data-testid="btn-payment-issues">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse flex-shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
             <span className="font-mono">payment issues? click here</span>
           </div>
           <ChevronRight className="h-3 w-3 flex-shrink-0" />
@@ -325,9 +286,9 @@ export default function DepositPage() {
       </a>
 
       {pendingDeposits.length > 0 && (
-        <div className="border border-yellow-500/20 bg-yellow-950/10 rounded px-3 py-2 flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-yellow-400/60 flex-shrink-0" />
-          <p className="text-[11px] text-yellow-400/70 font-mono">
+        <div className="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+          <p className="text-[11px] text-amber-700 font-mono">
             {pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""} — awaiting confirmation
           </p>
         </div>
@@ -335,33 +296,32 @@ export default function DepositPage() {
 
       {/* Method selector */}
       <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${1 + (cashappEnabled ? 1 : 0) + (chimeEnabled ? 1 : 0) + (zelleEnabled ? 1 : 0)}, 1fr)` }}>
-        {/* Crypto always shown */}
         <button
           onClick={() => { setMethod("crypto"); setManualResult(null); setAmountInput(""); }}
-          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-primary/50 bg-primary/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+          className={`flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all shadow-sm ${method === "crypto" ? "border-green-300 bg-green-50 shadow-green-100" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
           data-testid="btn-method-crypto"
         >
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-primary" : "bg-white/10"}`}>
-            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-black" : "text-white/60"}`} />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-green-700" : "bg-gray-100"}`}>
+            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-white" : "text-gray-500"}`} />
           </div>
           <div className="text-center">
-            <p className={`text-xs font-bold ${method === "crypto" ? "text-primary" : "text-white/50"}`}>Crypto</p>
-            <p className="text-[10px] text-white/25 font-mono">+bonus</p>
+            <p className={`text-xs font-bold ${method === "crypto" ? "text-green-800" : "text-gray-600"}`}>Crypto</p>
+            <p className="text-[10px] text-gray-400 font-mono">+bonus</p>
           </div>
         </button>
 
         {cashappEnabled && (
           <button
             onClick={() => { setMethod("cashapp"); setManualResult(null); setAmountInput(""); }}
-            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all shadow-sm ${method === "cashapp" ? "border-green-400 bg-green-50" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
             data-testid="btn-method-cashapp"
           >
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "cashapp" ? "bg-[#00D632]" : "bg-white/10"}`}>
-              <SiCashapp className={`h-5 w-5 ${method === "cashapp" ? "text-white" : "text-white/60"}`} />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === "cashapp" ? "bg-[#00D632]" : "bg-gray-100"}`}>
+              <SiCashapp className={`h-5 w-5 ${method === "cashapp" ? "text-white" : "text-gray-500"}`} />
             </div>
             <div className="text-center">
-              <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00D632]" : "text-white/50"}`}>CashApp</p>
-              <p className="text-[10px] text-white/25 font-mono">instant</p>
+              <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00b82b]" : "text-gray-600"}`}>CashApp</p>
+              <p className="text-[10px] text-gray-400 font-mono">instant</p>
             </div>
           </button>
         )}
@@ -369,15 +329,13 @@ export default function DepositPage() {
         {chimeEnabled && (
           <button
             onClick={() => { setMethod("chime"); setManualResult(null); setAmountInput(""); }}
-            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "chime" ? "border-[#7BC67E]/50 bg-[#7BC67E]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all shadow-sm ${method === "chime" ? "border-green-400 bg-green-50" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
             data-testid="btn-method-chime"
           >
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${method === "chime" ? "bg-[#7BC67E] text-white" : "bg-white/10 text-white/60"}`}>
-              C
-            </div>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${method === "chime" ? "bg-[#7BC67E] text-white" : "bg-gray-100 text-gray-500"}`}>C</div>
             <div className="text-center">
-              <p className={`text-xs font-bold ${method === "chime" ? "text-[#7BC67E]" : "text-white/50"}`}>Chime</p>
-              <p className="text-[10px] text-white/25 font-mono">instant</p>
+              <p className={`text-xs font-bold ${method === "chime" ? "text-[#3d8f40]" : "text-gray-600"}`}>Chime</p>
+              <p className="text-[10px] text-gray-400 font-mono">instant</p>
             </div>
           </button>
         )}
@@ -385,49 +343,49 @@ export default function DepositPage() {
         {zelleEnabled && (
           <button
             onClick={() => { setMethod("zelle"); setManualResult(null); setAmountInput(""); }}
-            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "zelle" ? "border-[#6D1ED4]/50 bg-[#6D1ED4]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all shadow-sm ${method === "zelle" ? "border-purple-300 bg-purple-50" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
             data-testid="btn-method-zelle"
           >
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${method === "zelle" ? "bg-[#6D1ED4] text-white" : "bg-white/10 text-white/60"}`}>
-              Z
-            </div>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${method === "zelle" ? "bg-[#6D1ED4] text-white" : "bg-gray-100 text-gray-500"}`}>Z</div>
             <div className="text-center">
-              <p className={`text-xs font-bold ${method === "zelle" ? "text-[#6D1ED4]" : "text-white/50"}`}>Zelle</p>
-              <p className="text-[10px] text-white/25 font-mono">instant</p>
+              <p className={`text-xs font-bold ${method === "zelle" ? "text-[#6D1ED4]" : "text-gray-600"}`}>Zelle</p>
+              <p className="text-[10px] text-gray-400 font-mono">instant</p>
             </div>
           </button>
         )}
       </div>
 
-      {/* === CRYPTO SECTION === */}
+      {/* CRYPTO SECTION */}
       {method === "crypto" && (
         <div className="space-y-3">
-          <div className="border border-primary/20 bg-primary/5 rounded-xl overflow-hidden">
-            <div className="px-3 py-2 border-b border-primary/10">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Deposit Bonus Milestones · Crypto Only</p>
-              <p className="text-[10px] text-white/30 mt-0.5">More you deposit, more you get back</p>
+          {/* Bonus milestones */}
+          <div className="border border-green-200 bg-green-50 rounded-2xl overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-green-200">
+              <p className="text-[10px] font-bold text-green-800 uppercase tracking-widest">Deposit Bonus Milestones · Crypto Only</p>
+              <p className="text-[10px] text-green-600 mt-0.5">More you deposit, more you get back</p>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-green-100">
               <div className="grid grid-cols-2 px-3 py-1.5">
-                <span className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Range</span>
-                <span className="text-[9px] text-white/30 uppercase tracking-widest font-mono text-right">Bonus</span>
+                <span className="text-[9px] text-green-600 uppercase tracking-widest font-mono font-bold">Range</span>
+                <span className="text-[9px] text-green-600 uppercase tracking-widest font-mono font-bold text-right">Bonus</span>
               </div>
               {BONUS_TIERS.map((tier, i) => {
                 const isActive = activeTier === tier;
                 return (
-                  <div key={i} className={`grid grid-cols-2 px-3 py-1.5 transition-colors ${isActive ? "bg-primary/10" : ""}`}>
-                    <span className={`text-xs font-mono ${isActive ? "text-white" : "text-white/40"}`}>
+                  <div key={i} className={`grid grid-cols-2 px-3 py-1.5 transition-colors ${isActive ? "bg-green-200/50" : ""}`}>
+                    <span className={`text-xs font-mono font-semibold ${isActive ? "text-green-900" : "text-gray-700"}`}>
                       ${tier.min.toLocaleString()}{tier.max ? ` — $${tier.max.toLocaleString()}` : "+"}
                     </span>
-                    <span className={`text-xs font-mono text-right font-bold ${isActive ? "text-primary" : "text-primary/60"}`}>{tier.bonus}</span>
+                    <span className={`text-xs font-mono text-right font-bold ${isActive ? "text-green-800" : "text-green-600"}`}>{tier.bonus}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
+          {/* Coin selector */}
           <div className="space-y-1.5">
-            <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Tap a coin to deposit</p>
+            <p className="text-[9px] text-gray-500 uppercase tracking-widest font-mono font-bold">Tap a coin to deposit</p>
             <div className="grid grid-cols-3 gap-2">
               {visibleCoins.map(coin => {
                 const isSelected = selectedCoin === coin.id;
@@ -436,107 +394,91 @@ export default function DepositPage() {
                   <button
                     key={coin.id}
                     onClick={() => setSelectedCoin(coin.id)}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${isSelected ? "border-white/30 bg-white/8" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all shadow-sm ${isSelected ? "border-gray-300 bg-gray-100" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"}`}
                     data-testid={`btn-coin-${coin.id}`}
                   >
                     <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: `${coin.color}22` }}>
                       <Icon className="h-4 w-4" style={{ color: coin.color }} />
                     </div>
-                    <span className="text-[10px] font-bold text-white font-mono">{coin.sub}</span>
-                    <span className="text-[9px] text-white/30">{coin.label}</span>
+                    <span className="text-[10px] font-bold text-gray-800 font-mono">{coin.sub}</span>
+                    <span className="text-[9px] text-gray-400">{coin.label}</span>
                   </button>
                 );
               })}
             </div>
             <button
               onClick={() => setShowMoreCoins(v => !v)}
-              className="w-full py-1.5 border border-white/8 rounded text-[10px] text-white/30 hover:text-white hover:border-white/15 transition-colors font-mono"
+              className="w-full py-2 border border-gray-200 bg-white rounded-xl text-[10px] text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors font-mono shadow-sm"
               data-testid="btn-more-coins"
             >
-              {showMoreCoins ? "▲ FEWER COINS ▲" : "▶ MORE COINS ▼"}
+              {showMoreCoins ? "▲ FEWER COINS" : "▶ MORE COINS"}
             </button>
           </div>
 
+          {/* Amount input */}
           <div className="space-y-1.5">
-            <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Amount (USD)</label>
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
+            <label className="text-[9px] text-gray-500 uppercase tracking-widest font-mono font-bold">Amount (USD)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-mono">$</span>
               <input
-                type="number"
-                step="0.01"
-                min="1"
-                placeholder="0.00"
-                value={amountInput}
+                type="number" step="0.01" min="1" placeholder="0.00" value={amountInput}
                 onChange={e => setAmountInput(e.target.value)}
-                className="w-full h-10 bg-[#0e0e0e] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-primary/40 transition-colors"
+                className="w-full h-11 bg-white border border-gray-200 rounded-xl pl-7 pr-3 text-sm text-gray-900 font-mono outline-none focus:border-green-300 transition-colors shadow-sm"
                 data-testid="input-amount"
               />
             </div>
             {activeTier && parsedAmount > 0 && (
-              <p className="text-[10px] text-primary font-mono font-bold">
-                🎉 You qualify for a {activeTier.bonus} bonus on this deposit!
-              </p>
+              <p className="text-[10px] text-green-700 font-mono font-bold">🎉 You qualify for a {activeTier.bonus} bonus!</p>
             )}
           </div>
 
           <button
             onClick={() => cryptoMutation.mutate()}
             disabled={cryptoMutation.isPending || !amountInput || parsedAmount <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-40"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all disabled:opacity-40 shadow-sm text-white"
+            style={{ background: "#2d6a2d" }}
             data-testid="btn-deposit-crypto"
           >
             {cryptoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-              <>
-                <ExternalLink className="h-4 w-4" />
-                Deposit {parsedAmount > 0 ? `$${parsedAmount.toFixed(2)}` : ""} with {selectedCoin}
-              </>
+              <><ExternalLink className="h-4 w-4" /> Deposit {parsedAmount > 0 ? `$${parsedAmount.toFixed(2)}` : ""} with {selectedCoin}</>
             )}
           </button>
         </div>
       )}
 
-      {/* === MANUAL PAYMENT SECTION (CashApp / Chime / Zelle) === */}
+      {/* MANUAL PAYMENT SECTION */}
       {isManual && (
         <div className="space-y-2">
           {manualResult ? (
             <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setAmountInput(""); }} />
           ) : (
             <>
-              <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
+              <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500 font-mono leading-relaxed">
                 enter how much you want to deposit · you will get a unique note · send EXACTLY that amount with the note · admin will credit your balance
               </div>
-
-              {/* Amount input */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Deposit Amount (USD)</label>
-                  {(() => {
-                    const min = minDeposits?.[method as string] ?? 0;
-                    return min > 0 ? <span className="text-[9px] font-mono text-yellow-400/70">Min: ${min.toFixed(2)}</span> : null;
-                  })()}
+                  <label className="text-[9px] text-gray-500 uppercase tracking-widest font-mono font-bold">Deposit Amount (USD)</label>
+                  {(() => { const min = minDeposits?.[method as string] ?? 0; return min > 0 ? <span className="text-[9px] font-mono text-amber-600 font-bold">Min: ${min.toFixed(2)}</span> : null; })()}
                 </div>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-mono">$</span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="0.00"
-                    value={amountInput}
+                    type="number" step="0.01" min="0.01" placeholder="0.00" value={amountInput}
                     onChange={e => setAmountInput(e.target.value)}
-                    className="w-full h-10 bg-[#0e0e0e] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-white/20 transition-colors"
+                    className="w-full h-11 bg-white border border-gray-200 rounded-xl pl-7 pr-3 text-sm text-gray-900 font-mono outline-none focus:border-gray-300 transition-colors shadow-sm"
                     data-testid="input-manual-amount"
                   />
                 </div>
               </div>
-
               <button
                 onClick={handleGenerate}
                 disabled={isManualPending || !amountInput || parsedAmount <= 0}
-                className="w-full flex items-center justify-center gap-2 py-2.5 border rounded text-xs font-mono transition-all disabled:opacity-40"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-mono font-bold transition-all disabled:opacity-40 border"
                 style={{
                   borderColor: method === "cashapp" ? "#00D63240" : method === "chime" ? "#7BC67E40" : "#6D1ED440",
-                  color: method === "cashapp" ? "#00D632" : method === "chime" ? "#7BC67E" : "#9B59E8",
+                  color: method === "cashapp" ? "#00b82b" : method === "chime" ? "#3d8f40" : "#6D1ED4",
+                  background: method === "cashapp" ? "#f0fff4" : method === "chime" ? "#f0fff4" : "#faf5ff",
                 }}
                 data-testid="btn-generate-note"
               >
@@ -551,12 +493,12 @@ export default function DepositPage() {
       {recentDeposits.length > 0 && (
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">
-            <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono">Topup History</p>
-            <button onClick={() => refetchDeposits()} className="text-white/20 hover:text-white/50 transition-colors" title="Refresh" data-testid="btn-refresh-deposits">
+            <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono font-bold">Topup History</p>
+            <button onClick={() => refetchDeposits()} className="text-gray-300 hover:text-gray-500 transition-colors" title="Refresh" data-testid="btn-refresh-deposits">
               <RefreshCw className="h-3 w-3" />
             </button>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {recentDeposits.map(dep => <DepositRow key={dep.id} deposit={dep} />)}
           </div>
         </div>

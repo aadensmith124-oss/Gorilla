@@ -37,19 +37,39 @@ function extractZip(extras: string): string {
   return "";
 }
 
+const US_STATES = new Set([
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY",
+  "LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND",
+  "OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC",
+]);
+
 function extractCity(extras: string): string {
   if (!extras) return "";
   const parts = extras.split(/[|\t]/);
-  const city = parts[5]?.trim() ?? "";
-  if (city && city.length > 1 && !/^\d{5}/.test(city)) return city;
+  // Find state abbreviation index, city is typically just before it
+  for (let i = 1; i < parts.length; i++) {
+    const t = parts[i].trim();
+    if (US_STATES.has(t)) {
+      // city is the token before the state (skip blanks)
+      for (let j = i - 1; j >= 0; j--) {
+        const c = parts[j].trim();
+        if (c && c.length > 1 && !/^\d/.test(c) && !c.includes("@") && !c.includes(".") && !/^\d{1,3}\.\d{1,3}/.test(c)) {
+          return c.length > 20 ? c.substring(0, 18) + "…" : c;
+        }
+      }
+      break;
+    }
+  }
   return "";
 }
 
 function extractState(extras: string): string {
   if (!extras) return "";
   const parts = extras.split(/[|\t]/);
-  const state = parts[6]?.trim() ?? "";
-  if (/^[A-Z]{2}$/.test(state) && !["US", "UK", "CA", "AU"].includes(state)) return state;
+  for (const part of parts) {
+    const t = part.trim();
+    if (US_STATES.has(t)) return t;
+  }
   return "";
 }
 
