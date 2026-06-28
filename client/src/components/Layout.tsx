@@ -42,9 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     },
     ...(features?.checker !== false ? [{
       label: "BOT",
-      items: [
-        { href: "/checker", icon: Bot, label: "Checker" },
-      ],
+      items: [{ href: "/checker", icon: Bot, label: "Checker" }],
     }] : []),
     {
       label: "SUPPORT",
@@ -54,35 +52,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
     },
     ...(features?.reseller !== false ? [{
       label: "RESELLER",
-      items: [
-        { href: "/become-reseller", icon: BadgeCheck, label: "Become Reseller" },
-      ],
+      items: [{ href: "/become-reseller", icon: BadgeCheck, label: "Become Reseller" }],
     }] : []),
     ...(user?.role === "admin" ? [{
       label: "ADMIN",
-      items: [
-        { href: "/admin", icon: Settings, label: "Admin Panel" },
-      ],
+      items: [{ href: "/admin", icon: Settings, label: "Admin Panel" }],
     }] : []),
     ...((user as any)?.isWorker && user?.role !== "admin" ? [{
       label: "WORKER",
-      items: [
-        { href: "/worker", icon: Briefcase, label: "Worker Dashboard" },
-      ],
+      items: [{ href: "/worker", icon: Briefcase, label: "Worker Dashboard" }],
     }] : []),
   ];
 
   const NavContent = () => (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ background: "linear-gradient(180deg, #0d1a0e 0%, #091208 100%)" }}>
+    <div className="flex flex-col h-full overflow-y-auto bg-white">
       {/* Brand + close */}
-      <div className="px-5 py-5 flex items-center justify-between border-b border-[#2d6a2d]/20">
+      <div className="px-5 py-5 flex items-center justify-between border-b border-gray-100">
         <div>
-          <span className="text-lg font-black tracking-tight text-white">NYC</span>
-          <span className="text-lg font-black tracking-tight text-[#4a9a3a]">HQ</span>
+          <span className="text-lg font-black tracking-tight text-gray-900">NYC</span>
+          <span className="text-lg font-black tracking-tight" style={{ color: "#2d6a2d" }}>HQ</span>
         </div>
         <button
           onClick={() => setIsMobileOpen(false)}
-          className="h-7 w-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white hover:bg-white/[0.06] transition-all"
+          className="h-7 w-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -90,13 +82,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* User pill */}
       {user && (
-        <div className="mx-4 mt-4 mb-2 flex items-center gap-3 bg-[#1a3a1a]/50 border border-[#2d6a2d]/25 rounded-2xl px-3.5 py-3">
-          <div className="h-8 w-8 rounded-xl bg-[#2d6a2d]/40 flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-black text-[#4a9a3a] uppercase">{user.username?.[0] || "U"}</span>
+        <div className="mx-4 mt-4 mb-2 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-3.5 py-3">
+          <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(45,106,45,0.12)" }}>
+            <span className="text-[11px] font-black uppercase" style={{ color: "#2d6a2d" }}>{user.username?.[0] || "U"}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-white truncate">{user.username}</p>
-            <p className="text-[10px] text-[#4a9a3a]/70 font-mono">${balanceDollars}</p>
+            <p className="text-xs font-semibold text-gray-800 truncate">{user.username}</p>
+            <p className="text-[10px] font-mono font-bold" style={{ color: "#2d6a2d" }}>${balanceDollars}</p>
           </div>
         </div>
       )}
@@ -104,7 +96,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col gap-4 px-3 py-3 flex-1">
         {navSections.map((section) => (
           <div key={section.label}>
-            <p className="text-[9px] font-black text-[#4a9a3a]/40 tracking-[0.2em] uppercase mb-1 px-2.5">{section.label}</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] mb-1 px-2.5 text-gray-400">{section.label}</p>
             <div className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const isActive = location === item.href;
@@ -115,7 +107,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-white/40 hover:text-white hover:bg-[#2d6a2d]/15 transition-all"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all"
                     >
                       <item.icon className="h-3.5 w-3.5 shrink-0" />
                       {item.label}
@@ -125,11 +117,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
                     <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-[#2d6a2d]/30 text-[#6abf5a] font-bold border border-[#2d6a2d]/30"
-                        : "text-white/40 hover:text-white hover:bg-white/[0.04]"
-                    }`}>
-                      <item.icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-[#4a9a3a]" : "text-white/25"}`} />
+                      isActive ? "font-bold" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                    style={isActive ? { background: "rgba(45,106,45,0.08)", color: "#2d6a2d", border: "1px solid rgba(45,106,45,0.15)" } : {}}
+                    >
+                      <item.icon className={`h-3.5 w-3.5 shrink-0`} style={isActive ? { color: "#2d6a2d" } : { color: "#9ca3af" }} />
                       {item.label}
                     </div>
                   </Link>
@@ -141,10 +133,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {user && (
-        <div className="p-4 border-t border-[#2d6a2d]/15">
+        <div className="p-4 border-t border-gray-100">
           <button
             onClick={() => { logout(); setIsMobileOpen(false); }}
-            className="flex items-center gap-2.5 text-xs text-white/25 hover:text-red-400/70 transition-colors w-full px-3 py-2 rounded-xl hover:bg-red-950/20"
+            className="flex items-center gap-2.5 text-xs text-gray-400 hover:text-red-500 transition-colors w-full px-3 py-2 rounded-xl hover:bg-red-50"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign out
@@ -155,26 +147,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#090a0c]">
+    <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
-      <header className="h-13 border-b border-[#1a3a1a]/60 sticky top-0 z-40 px-4 flex items-center justify-between" style={{ background: "linear-gradient(90deg, #0b1a0c 0%, #090e09 100%)", height: "52px" }}>
+      <header className="h-[52px] border-b border-gray-200 bg-white sticky top-0 z-40 px-4 flex items-center justify-between shadow-sm">
         {/* Left: Hamburger + brand */}
         <div className="flex items-center gap-3">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-[#4a9a3a]/70 hover:text-[#4a9a3a] hover:bg-[#2d6a2d]/15 border border-[#2d6a2d]/20"
+                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-gray-200"
                 data-testid="btn-menu"
               >
                 <Menu className="h-[16px] w-[16px]" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[260px] p-0 border-r border-[#2d6a2d]/20" style={{ background: "transparent" }}>
+            <SheetContent side="left" className="w-[260px] p-0 border-r border-gray-200 bg-white">
               <NavContent />
             </SheetContent>
           </Sheet>
 
-          <span className="text-sm font-black tracking-tight text-white">NYC<span className="text-[#4a9a3a]">HQ</span></span>
+          <span className="text-sm font-black tracking-tight text-gray-900">
+            NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
+          </span>
         </div>
 
         {/* Right: Balance + User */}
@@ -185,9 +179,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <button
                   className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border"
                   style={{
-                    background: "rgba(45,106,45,0.15)",
-                    borderColor: "rgba(45,106,45,0.3)",
-                    color: "#6abf5a",
+                    background: "rgba(45,106,45,0.08)",
+                    borderColor: "rgba(45,106,45,0.25)",
+                    color: "#2d6a2d",
                   }}
                   data-testid="btn-balance"
                 >
@@ -198,22 +192,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1 text-xs text-white/40 hover:text-white transition-colors" data-testid="btn-user-dropdown">
+                  <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors" data-testid="btn-user-dropdown">
                     <span className="max-w-[80px] truncate">{user.username}</span>
                     <ChevronDown className="h-3 w-3" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="border text-white text-xs min-w-[200px] rounded-2xl"
-                  style={{ background: "#0d1a0e", borderColor: "rgba(45,106,45,0.25)" }}
-                  align="end"
-                >
-                  <div className="px-3 py-2.5 border-b" style={{ borderColor: "rgba(45,106,45,0.2)" }}>
-                    <p className="text-[10px] text-[#4a9a3a]/60 truncate">{user.username}</p>
+                <DropdownMenuContent className="bg-white border-gray-200 text-gray-800 text-xs min-w-[200px] rounded-2xl shadow-lg" align="end">
+                  <div className="px-3 py-2.5 border-b border-gray-100">
+                    <p className="text-[10px] text-gray-400 truncate">{user.username}</p>
                   </div>
                   <DropdownMenuItem asChild>
                     <Link href="/my-code">
-                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/60 hover:text-white">
+                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-gray-600 hover:text-gray-900">
                         <KeyRound className="h-3 w-3" />
                         Login Code
                       </div>
@@ -222,15 +212,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {(user as any)?.isWorker && (
                     <DropdownMenuItem asChild>
                       <Link href="/worker">
-                        <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/60 hover:text-white">
+                        <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-gray-600 hover:text-gray-900">
                           <Briefcase className="h-3 w-3" />
                           Worker Dashboard
                         </div>
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator style={{ background: "rgba(45,106,45,0.2)" }} />
-                  <DropdownMenuItem onClick={() => logout()} className="text-red-400/70 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <DropdownMenuItem onClick={() => logout()} className="text-red-500 hover:text-red-600 cursor-pointer text-xs focus:text-red-600 focus:bg-red-50">
                     <LogOut className="h-3 w-3 mr-2" />
                     Sign out
                   </DropdownMenuItem>

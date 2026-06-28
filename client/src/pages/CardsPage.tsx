@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal, Zap } from "lucide-react";
+import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -57,176 +57,17 @@ function hasBilling(extras: string): boolean {
   return (extras ?? "").split(/[|\t]/).length >= 5;
 }
 
-function formatCardType(binData: any): string {
+function formatType(binData: any): string {
   if (!binData) return "";
-  return [binData.type, binData.scheme, binData.brand]
-    .filter(Boolean)
-    .map((s: string) => s.toUpperCase())
-    .join(" · ");
+  const t = binData.type?.toUpperCase();
+  return t || "";
 }
 
-function FilterDropdown({
-  label, value, onChange, options, placeholder,
-}: {
-  label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const active = !!value;
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-mono shrink-0 transition-all w-full justify-between"
-        style={{
-          background: active ? "rgba(45,106,45,0.2)" : "#0c140d",
-          border: active ? "1px solid rgba(74,154,58,0.4)" : "1px solid rgba(45,106,45,0.2)",
-          color: active ? "#6abf5a" : "rgba(255,255,255,0.35)",
-        }}
-      >
-        <span className="truncate max-w-[120px]">{value || placeholder}</span>
-        <div className="flex items-center gap-1 shrink-0">
-          {value && (
-            <span
-              onClick={e => { e.stopPropagation(); onChange(""); setOpen(false); }}
-              className="hover:text-white transition-colors"
-            >
-              <X className="h-3 w-3" />
-            </span>
-          )}
-          <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
-        </div>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 w-full min-w-[160px] border rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto" style={{ background: "#0c140d", borderColor: "rgba(45,106,45,0.25)" }}>
-          <button
-            onClick={() => { onChange(""); setOpen(false); }}
-            className="w-full text-left px-3 py-2 text-xs font-mono transition-colors hover:bg-white/5"
-            style={{ color: "rgba(255,255,255,0.25)" }}
-          >
-            All {label}s
-          </button>
-          {options.map(opt => (
-            <button
-              key={opt}
-              onClick={() => { onChange(opt); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-xs font-mono transition-colors hover:bg-white/5"
-              style={{ color: value === opt ? "#6abf5a" : "rgba(255,255,255,0.55)", background: value === opt ? "rgba(45,106,45,0.15)" : "transparent" }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CardRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; onToggleCart: (c: any) => void }) {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
-
-  const bin = extractBin(card.cardNumber);
-  const zip = extractZip(card.extras ?? "");
-  const city = extractCity(card.extras ?? "");
-  const state = extractState(card.extras ?? "");
-  const billing = hasBilling(card.extras ?? "");
-  const cardType = formatCardType(card.binData);
-  const bank = card.binData?.bank && card.binData.bank !== "Unknown" ? card.binData.bank : "";
-  const countryCode = card.binData?.countryCode ?? "";
-  const baseName = card.baseName ?? null;
-
-  const purchaseMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/cards/${card.id}/purchase`, {});
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Purchase failed"); }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      toast({ title: "Purchase complete", description: "Card delivered to your orders" });
-      setLocation("/orders");
-    },
-    onError: (e: Error) => toast({ title: "Purchase failed", description: e.message, variant: "destructive" }),
-  });
-
-  return (
-    <div
-      className="rounded-xl overflow-hidden mb-2 transition-all"
-      style={{
-        background: inCart ? "rgba(20,50,20,0.6)" : "#0c140d",
-        border: inCart ? "1px solid rgba(74,154,58,0.35)" : "1px solid rgba(45,106,45,0.15)",
-      }}
-      data-testid={`card-row-${card.id}`}
-    >
-      <div className="px-3.5 py-3 space-y-2">
-        {/* Top: base name + billing badge + price */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {baseName && (
-              <span className="text-xs font-black font-mono truncate" style={{ color: "#6abf5a" }}>{baseName}</span>
-            )}
-            {billing && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0" style={{ background: "rgba(45,106,45,0.3)", color: "#6abf5a" }}>BILL</span>
-            )}
-          </div>
-          <span className="text-sm font-black font-mono text-white shrink-0">${(card.price / 100).toFixed(2)}</span>
-        </div>
-
-        {/* Card type */}
-        {cardType && (
-          <p className="text-[10px] font-mono" style={{ color: "rgba(106,191,90,0.45)" }}>{cardType}</p>
-        )}
-
-        {/* BIN + bank + location */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-          {bin && (
-            <span className="px-1.5 py-0.5 rounded-md font-bold text-white/60" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>{bin}</span>
-          )}
-          {bank && <span className="truncate max-w-[120px]">{bank}</span>}
-          {city && <span>{city}</span>}
-          {state && <span className="font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>{state}</span>}
-          {zip && <span>· {zip}</span>}
-          {countryCode && <span>{countryFlag(countryCode)}</span>}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-1.5 pt-0.5">
-          <button
-            onClick={() => onToggleCart(card)}
-            className="flex items-center gap-1.5 rounded-xl text-xs font-bold py-1.5 px-3 transition-all"
-            style={{
-              border: inCart ? "1px solid rgba(74,154,58,0.5)" : "1px solid rgba(255,255,255,0.12)",
-              color: inCart ? "#6abf5a" : "rgba(255,255,255,0.45)",
-              background: inCart ? "rgba(45,106,45,0.15)" : "transparent",
-            }}
-            data-testid={`btn-cart-card-${card.id}`}
-          >
-            <ShoppingCart className="h-3 w-3" />
-            {inCart ? "added" : "add"}
-          </button>
-          <button
-            onClick={() => purchaseMutation.mutate()}
-            disabled={purchaseMutation.isPending}
-            className="flex-1 rounded-xl text-xs font-bold py-1.5 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-            style={{
-              background: "rgba(45,106,45,0.25)",
-              border: "1px solid rgba(74,154,58,0.4)",
-              color: "#6abf5a",
-            }}
-            data-testid={`btn-buy-card-${card.id}`}
-          >
-            {purchaseMutation.isPending
-              ? <Loader2 className="h-3 w-3 animate-spin" />
-              : <><Zap className="h-3 w-3" /> Buy ${(card.price / 100).toFixed(2)}</>
-            }
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+function formatBank(binData: any): string {
+  if (!binData) return "";
+  const b = binData.bank;
+  if (!b || b === "Unknown") return "";
+  return b.length > 18 ? b.substring(0, 16) + "..." : b;
 }
 
 export default function CardsPage() {
@@ -234,6 +75,7 @@ export default function CardsPage() {
   const [zipSearch, setZipSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedBase, setSelectedBase] = useState<number | null>(null);
+  const [showBaseDropdown, setShowBaseDropdown] = useState(false);
   const [selectedBank, setSelectedBank] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -262,20 +104,14 @@ export default function CardsPage() {
   const availableBanks = useMemo(() => {
     if (!cards) return [];
     const set = new Set<string>();
-    cards.forEach((c: any) => {
-      const b = c.binData?.bank;
-      if (b && b !== "Unknown") set.add(b);
-    });
+    cards.forEach((c: any) => { const b = c.binData?.bank; if (b && b !== "Unknown") set.add(b); });
     return Array.from(set).sort();
   }, [cards]);
 
   const availableCountries = useMemo(() => {
     if (!cards) return [];
     const set = new Set<string>();
-    cards.forEach((c: any) => {
-      const code = c.binData?.countryCode;
-      if (code) set.add(code.toUpperCase());
-    });
+    cards.forEach((c: any) => { const code = c.binData?.countryCode; if (code) set.add(code.toUpperCase()); });
     return Array.from(set).sort();
   }, [cards]);
 
@@ -310,6 +146,14 @@ export default function CardsPage() {
     });
   };
 
+  const toggleAll = () => {
+    if (cartCardIds.size === filteredCards.length) {
+      setCartCardIds(new Set());
+    } else {
+      setCartCardIds(new Set(filteredCards.map((c: any) => c.id)));
+    }
+  };
+
   const purchaseCart = async () => {
     if (cartCards.length === 0) return;
     setCartPurchasing({ current: 0, total: cartCards.length, done: false });
@@ -336,179 +180,279 @@ export default function CardsPage() {
   const activeFilters = (zipSearch ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (selectedBank ? 1 : 0) + (selectedCountry ? 1 : 0);
   const clearFilters = () => { setZipSearch(""); setPriceMin(""); setPriceMax(""); setSelectedBank(""); setSelectedCountry(""); };
 
+  const selectedBaseName = bases?.find((b: any) => b.id === selectedBase)?.name ?? "All Bases";
+
   return (
-    <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
+    <div className="max-w-2xl mx-auto px-0 py-0">
 
-      {/* Header */}
-      <div className="space-y-0.5 pb-1">
-        <h1 className="text-lg font-black text-white">
-          NYC<span style={{ color: "#4a9a3a" }}>HQ</span>
-          <span className="ml-2 text-xs font-mono font-normal" style={{ color: "rgba(106,191,90,0.4)" }}>Cards</span>
-        </h1>
-        <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.35)" }}>FRESH BINS · INSTANT DELIVERY</p>
-      </div>
-
-      {/* Search + Filter row */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: "rgba(74,154,58,0.4)" }} />
+      {/* Search + controls */}
+      <div className="px-3 pt-3 pb-2 space-y-2 bg-white border-b border-gray-200 sticky top-[52px] z-30">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search BIN, base, brand, type..."
+            placeholder="Search cards, base name, BIN, brand..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-white/20 outline-none transition-colors"
-            style={{
-              background: "#0c140d",
-              border: "1px solid rgba(45,106,45,0.2)",
-            }}
-            onFocus={e => (e.target.style.borderColor = "rgba(74,154,58,0.4)")}
-            onBlur={e => (e.target.style.borderColor = "rgba(45,106,45,0.2)")}
+            className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300 focus:bg-white transition-colors"
             data-testid="input-search"
           />
         </div>
-        <button
-          onClick={() => setShowFilters(f => !f)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono shrink-0 transition-all"
-          style={{
-            background: showFilters || activeFilters > 0 ? "rgba(45,106,45,0.2)" : "#0c140d",
-            border: showFilters || activeFilters > 0 ? "1px solid rgba(74,154,58,0.4)" : "1px solid rgba(45,106,45,0.2)",
-            color: showFilters || activeFilters > 0 ? "#6abf5a" : "rgba(255,255,255,0.35)",
-          }}
-          data-testid="btn-toggle-filters"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          {activeFilters > 0 ? `(${activeFilters})` : "Filter"}
-        </button>
-      </div>
 
-      {/* Filter panel */}
-      {showFilters && (
-        <div className="space-y-2.5 rounded-xl p-3.5" style={{ background: "#0c140d", border: "1px solid rgba(45,106,45,0.2)" }}>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "rgba(74,154,58,0.45)" }}>ZIP Code</p>
-            <input
-              type="text"
-              placeholder="Enter ZIP..."
-              value={zipSearch}
-              onChange={e => setZipSearch(e.target.value)}
-              className="w-full rounded-xl py-2 px-3 text-xs text-white placeholder:text-white/20 outline-none"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(45,106,45,0.2)" }}
-              data-testid="input-zip"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <FilterDropdown label="Bank" value={selectedBank} onChange={setSelectedBank} options={availableBanks} placeholder="Issuer / Bank" />
-            <FilterDropdown label="Country" value={selectedCountry} onChange={setSelectedCountry} options={availableCountries} placeholder="Country" />
-          </div>
-
-          <div className="flex gap-2 items-center">
-            <input
-              type="number" step="0.01" placeholder="Min $" value={priceMin} onChange={e => setPriceMin(e.target.value)}
-              className="flex-1 rounded-xl py-2 px-3 text-xs text-white placeholder:text-white/20 outline-none"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(45,106,45,0.2)" }}
-              data-testid="input-price-min"
-            />
-            <span className="text-xs font-mono shrink-0" style={{ color: "rgba(74,154,58,0.3)" }}>—</span>
-            <input
-              type="number" step="0.01" placeholder="Max $" value={priceMax} onChange={e => setPriceMax(e.target.value)}
-              className="flex-1 rounded-xl py-2 px-3 text-xs text-white placeholder:text-white/20 outline-none"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(45,106,45,0.2)" }}
-              data-testid="input-price-max"
-            />
-          </div>
-
-          {activeFilters > 0 && (
-            <button
-              onClick={clearFilters}
-              className="text-[10px] font-mono flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors"
-              style={{ color: "rgba(255,100,100,0.6)", border: "1px solid rgba(180,0,0,0.2)", background: "rgba(180,0,0,0.08)" }}
-            >
-              <X className="h-3 w-3" /> clear filters
-            </button>
+        {/* All Bases dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowBaseDropdown(d => !d)}
+            className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-3.5 h-10 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            data-testid="btn-base-dropdown"
+          >
+            <span>{selectedBaseName}</span>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
+          </button>
+          {showBaseDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              <button
+                onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
+                className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-gray-50 ${selectedBase === null ? "font-semibold text-gray-900" : "text-gray-600"}`}
+                data-testid="btn-base-all"
+              >
+                All Bases
+              </button>
+              {(bases ?? []).map((b: any) => (
+                <button
+                  key={b.id}
+                  onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
+                  className={`w-full text-left px-4 py-3 text-sm border-t border-gray-100 transition-colors hover:bg-gray-50 ${selectedBase === b.id ? "font-semibold text-gray-900" : "text-gray-600"}`}
+                  data-testid={`btn-base-${b.id}`}
+                >
+                  {b.name} ({b.count})
+                </button>
+              ))}
+            </div>
           )}
         </div>
-      )}
 
-      {/* Base filter pills */}
-      <div className="flex flex-wrap gap-1.5">
+        {/* Filters button */}
         <button
-          onClick={() => setSelectedBase(null)}
-          className="text-xs px-3 py-1.5 rounded-xl font-mono font-bold transition-all"
-          style={{
-            background: selectedBase === null ? "rgba(45,106,45,0.25)" : "transparent",
-            border: selectedBase === null ? "1px solid rgba(74,154,58,0.4)" : "1px solid rgba(45,106,45,0.2)",
-            color: selectedBase === null ? "#6abf5a" : "rgba(255,255,255,0.35)",
-          }}
-          data-testid="btn-base-all"
+          onClick={() => setShowFilters(f => !f)}
+          className={`w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-colors ${
+            showFilters || activeFilters > 0
+              ? "bg-gray-800 border-gray-800 text-white"
+              : "bg-gray-800 border-gray-800 text-white hover:bg-gray-700"
+          }`}
+          data-testid="btn-toggle-filters"
         >
-          all bases
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
         </button>
-        {(bases ?? []).map((b: any) => (
-          <button
-            key={b.id}
-            onClick={() => setSelectedBase(b.id)}
-            className="text-xs px-3 py-1.5 rounded-xl font-mono font-bold transition-all"
-            style={{
-              background: selectedBase === b.id ? "rgba(45,106,45,0.25)" : "transparent",
-              border: selectedBase === b.id ? "1px solid rgba(74,154,58,0.4)" : "1px solid rgba(45,106,45,0.15)",
-              color: selectedBase === b.id ? "#6abf5a" : "rgba(255,255,255,0.3)",
-            }}
-            data-testid={`btn-base-${b.id}`}
-          >
-            {b.name} <span style={{ color: "rgba(74,154,58,0.5)" }}>({b.count})</span>
-          </button>
-        ))}
+
+        {/* Filter panel */}
+        {showFilters && (
+          <div className="space-y-2 bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">ZIP Code</p>
+              <input
+                type="text"
+                placeholder="Enter ZIP..."
+                value={zipSearch}
+                onChange={e => setZipSearch(e.target.value)}
+                className="w-full h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300"
+                data-testid="input-zip"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Bank</p>
+                <select
+                  value={selectedBank}
+                  onChange={e => setSelectedBank(e.target.value)}
+                  className="w-full h-9 bg-white border border-gray-200 rounded-lg px-2 text-xs text-gray-700 outline-none"
+                >
+                  <option value="">All Banks</option>
+                  {availableBanks.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Country</p>
+                <select
+                  value={selectedCountry}
+                  onChange={e => setSelectedCountry(e.target.value)}
+                  className="w-full h-9 bg-white border border-gray-200 rounded-lg px-2 text-xs text-gray-700 outline-none"
+                >
+                  <option value="">All</option>
+                  {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 items-center">
+              <input type="number" step="0.01" placeholder="Min $" value={priceMin} onChange={e => setPriceMin(e.target.value)}
+                className="flex-1 h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none"
+                data-testid="input-price-min"
+              />
+              <span className="text-gray-300 text-xs shrink-0">—</span>
+              <input type="number" step="0.01" placeholder="Max $" value={priceMax} onChange={e => setPriceMax(e.target.value)}
+                className="flex-1 h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none"
+                data-testid="input-price-max"
+              />
+            </div>
+            {activeFilters > 0 && (
+              <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors">
+                <X className="h-3 w-3" /> Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Buy Selected button */}
+        <button
+          onClick={purchaseCart}
+          disabled={cartCardIds.size === 0 || !!cartPurchasing}
+          className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: cartCardIds.size > 0 ? "rgba(45,106,45,0.08)" : "#f3f4f6",
+            borderColor: cartCardIds.size > 0 ? "rgba(45,106,45,0.3)" : "#e5e7eb",
+            color: cartCardIds.size > 0 ? "#2d6a2d" : "#9ca3af",
+          }}
+          data-testid="btn-add-selected"
+        >
+          {cartPurchasing && !cartPurchasing.done ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Purchasing {cartPurchasing.current}/{cartPurchasing.total}...
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="h-4 w-4" />
+              Buy Selected ({cartCardIds.size}){cartCardIds.size > 0 ? ` · $${(cartTotal / 100).toFixed(2)}` : ""}
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Buy selected bar */}
-      <button
-        onClick={purchaseCart}
-        disabled={cartCardIds.size === 0 || !!cartPurchasing}
-        className="w-full rounded-xl py-2.5 text-xs font-bold font-mono flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{
-          background: cartCardIds.size > 0 ? "rgba(45,106,45,0.2)" : "rgba(255,255,255,0.03)",
-          border: cartCardIds.size > 0 ? "1px solid rgba(74,154,58,0.35)" : "1px solid rgba(255,255,255,0.07)",
-          color: cartCardIds.size > 0 ? "#6abf5a" : "rgba(255,255,255,0.3)",
-        }}
-        data-testid="btn-add-selected"
-      >
-        {cartPurchasing && !cartPurchasing.done ? (
-          <>
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            purchasing {cartPurchasing.current}/{cartPurchasing.total}...
-          </>
-        ) : (
-          <>
-            <ShoppingCart className="h-3.5 w-3.5" />
-            {cartCardIds.size > 0 ? `Buy ${cartCardIds.size} selected · $${(cartTotal / 100).toFixed(2)}` : `select cards to buy`}
-          </>
-        )}
-      </button>
-
-      {/* Count info */}
-      {!isLoading && (cards ?? []).length > 0 && (
-        <p className="text-[10px] font-mono" style={{ color: "rgba(74,154,58,0.35)" }}>
-          {filteredCards.length} card{filteredCards.length !== 1 ? "s" : ""} available
-          {activeFilters > 0 ? ` · ${activeFilters} filter${activeFilters > 1 ? "s" : ""} active` : ""}
-        </p>
-      )}
-
-      {/* Cards list */}
-      <div>
+      {/* Table */}
+      <div className="overflow-x-auto bg-white">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "rgba(74,154,58,0.5)" }} />
+            <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="py-16 text-center text-xs font-mono" style={{ color: "rgba(74,154,58,0.3)" }}>No cards available</div>
+          <div className="py-16 text-center text-sm text-gray-400">No cards available</div>
         ) : (
-          filteredCards.map((card: any) => (
-            <CardRow key={card.id} card={card} inCart={cartCardIds.has(card.id)} onToggleCart={toggleCart} />
-          ))
+          <table className="w-full text-sm border-collapse" style={{ minWidth: "560px" }}>
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="w-10 px-3 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={filteredCards.length > 0 && cartCardIds.size === filteredCards.length}
+                    onChange={toggleAll}
+                    className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-green-700"
+                    data-testid="checkbox-all"
+                  />
+                </th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BIN</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">TYPE</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BANK</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ZIP</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">CITY</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ST</th>
+                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">PRICE</th>
+                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">BUY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCards.map((card: any) => (
+                <CardTableRow
+                  key={card.id}
+                  card={card}
+                  inCart={cartCardIds.has(card.id)}
+                  onToggleCart={toggleCart}
+                />
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
+  );
+}
+
+function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boolean; onToggleCart: (c: any) => void }) {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const bin = extractBin(card.cardNumber);
+  const zip = extractZip(card.extras ?? "");
+  const city = extractCity(card.extras ?? "");
+  const state = extractState(card.extras ?? "");
+  const cardType = formatType(card.binData);
+  const bank = formatBank(card.binData);
+
+  const purchaseMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/cards/${card.id}/purchase`, {});
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Purchase failed"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({ title: "Purchase complete", description: "Card delivered to your orders" });
+      setLocation("/orders");
+    },
+    onError: (e: Error) => toast({ title: "Purchase failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <tr
+      className={`border-b border-gray-100 transition-colors ${inCart ? "bg-green-50" : "hover:bg-gray-50"}`}
+      data-testid={`card-row-${card.id}`}
+    >
+      <td className="px-3 py-3">
+        <input
+          type="checkbox"
+          checked={inCart}
+          onChange={() => onToggleCart(card)}
+          className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-green-700"
+          data-testid={`checkbox-card-${card.id}`}
+        />
+      </td>
+      <td className="px-3 py-3">
+        <span className="font-bold font-mono text-sm text-gray-900">{bin || "—"}</span>
+      </td>
+      <td className="px-3 py-3">
+        <span className="text-xs font-mono text-gray-600">{cardType || "—"}</span>
+      </td>
+      <td className="px-3 py-3 max-w-[140px]">
+        <span className="text-xs text-gray-600 truncate block">{bank || "—"}</span>
+      </td>
+      <td className="px-3 py-3">
+        <span className="text-xs font-mono text-gray-600">{zip || "—"}</span>
+      </td>
+      <td className="px-3 py-3 max-w-[100px]">
+        <span className="text-xs text-gray-600 truncate block">{city || "—"}</span>
+      </td>
+      <td className="px-3 py-3">
+        <span className="text-xs font-mono text-gray-600">{state || "—"}</span>
+      </td>
+      <td className="px-3 py-3 text-right">
+        <span className="font-bold text-sm text-gray-900">${(card.price / 100).toFixed(2)}</span>
+      </td>
+      <td className="px-3 py-3 text-right">
+        <button
+          onClick={() => purchaseMutation.mutate()}
+          disabled={purchaseMutation.isPending}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors disabled:opacity-50"
+          data-testid={`btn-buy-card-${card.id}`}
+        >
+          {purchaseMutation.isPending
+            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            : <ShoppingCart className="h-3.5 w-3.5" />
+          }
+        </button>
+      </td>
+    </tr>
   );
 }

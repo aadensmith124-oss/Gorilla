@@ -17,14 +17,14 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 }
 
 const CARD_GRADIENTS = [
-  "linear-gradient(135deg, #0d1f0e 0%, #142a15 100%)",
-  "linear-gradient(135deg, #0e1a1f 0%, #132535 100%)",
-  "linear-gradient(135deg, #12100d 0%, #22200a 100%)",
-  "linear-gradient(135deg, #0f1520 0%, #1a2540 100%)",
-  "linear-gradient(135deg, #1a0d0d 0%, #2a1515 100%)",
-  "linear-gradient(135deg, #0a1010 0%, #1a2020 100%)",
-  "linear-gradient(135deg, #10100a 0%, #20201a 100%)",
-  "linear-gradient(135deg, #0d0d1f 0%, #16163a 100%)",
+  "linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)",
+  "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
+  "linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)",
+  "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
+  "linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)",
+  "linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)",
+  "linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)",
+  "linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%)",
 ];
 
 function cardGradient(name: string): string {
@@ -47,19 +47,14 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.99]"
+        className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.99] bg-white"
         style={{
-          background: "#0c140d",
-          border: isTop1
-            ? "1px solid rgba(74,154,58,0.45)"
-            : isTop2
-            ? "1px solid rgba(74,154,58,0.25)"
-            : "1px solid rgba(45,106,45,0.15)",
+          borderColor: isTop1 ? "rgba(45,106,45,0.4)" : isTop2 ? "rgba(45,106,45,0.2)" : "#e5e7eb",
           boxShadow: isTop1
-            ? "0 0 24px 2px rgba(74,154,58,0.12), inset 0 1px 0 rgba(74,154,58,0.1)"
+            ? "0 4px 16px rgba(45,106,45,0.15)"
             : isTop2
-            ? "0 0 14px 1px rgba(74,154,58,0.07)"
-            : "none",
+            ? "0 2px 8px rgba(45,106,45,0.08)"
+            : "0 1px 3px rgba(0,0,0,0.06)",
         }}
         data-testid={`card-product-${product.id}`}
       >
@@ -68,57 +63,54 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
           className="relative w-full flex items-center justify-center overflow-hidden"
           style={{
             height: 100,
-            background: hasImage ? "#0c140d" : cardGradient(product.name),
+            background: hasImage ? "#f9fafb" : cardGradient(product.name),
           }}
         >
           {hasImage ? (
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-full object-cover opacity-80"
+              className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
-            <span className="text-3xl font-black select-none uppercase tracking-widest" style={{ color: "rgba(74,154,58,0.12)" }}>
+            <span className="text-3xl font-black select-none uppercase tracking-widest text-black/10">
               {product.name.slice(0, 2)}
             </span>
           )}
 
           {isTop1 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest" style={{ background: "#2d6a2d", color: "#a8e89a" }}>
-              ⚡ #1
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-green-700 text-white shadow-sm">
+              ⚡ Top 1
             </div>
           )}
           {isTop2 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border" style={{ borderColor: "rgba(74,154,58,0.35)", color: "#6abf5a", background: "rgba(45,106,45,0.15)" }}>
-              🔥 #2
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-300 text-green-700 bg-green-50">
+              🔥 Top 2
             </div>
           )}
-
-          {/* Subtle bottom fade */}
-          <div className="absolute inset-x-0 bottom-0 h-8" style={{ background: "linear-gradient(to top, #0c140d, transparent)" }} />
         </div>
 
         {/* Info */}
-        <div className="px-3 py-2.5 space-y-1.5">
-          <p className="text-xs font-bold text-white leading-tight line-clamp-1">{product.name}</p>
+        <div className="px-3 py-2.5 space-y-1">
+          <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-1">{product.name}</p>
           {product.description ? (
-            <p className="text-[10px] leading-snug line-clamp-1 font-mono" style={{ color: "rgba(106,191,90,0.4)" }}>{product.description}</p>
+            <p className="text-[10px] text-gray-400 leading-snug line-clamp-1 font-mono">{product.description}</p>
           ) : null}
           <div className="flex items-center justify-between pt-0.5">
             <div className="flex items-center gap-1.5">
               {comparePrice && comparePrice > lowestPrice && (
-                <span className="text-[10px] line-through font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>${(comparePrice / 100).toFixed(2)}</span>
+                <span className="text-[10px] line-through text-gray-300 font-mono">${(comparePrice / 100).toFixed(2)}</span>
               )}
               {lowestPrice > 0 ? (
-                <span className="text-sm font-black font-mono" style={{ color: isTop1 ? "#6abf5a" : isTop2 ? "#5aad4a" : "#fff" }}>
+                <span className={`text-sm font-black font-mono ${isTop1 ? "text-green-700" : isTop2 ? "text-green-600" : "text-gray-900"}`}>
                   ${(lowestPrice / 100).toFixed(2)}
                 </span>
               ) : (
-                <span className="text-sm font-black font-mono" style={{ color: "rgba(106,191,90,0.5)" }}>Free</span>
+                <span className="text-sm font-black font-mono text-gray-400">Free</span>
               )}
             </div>
-            <div className="flex items-center gap-0.5" style={{ color: "rgba(74,154,58,0.4)" }}>
+            <div className="flex items-center gap-0.5 text-green-600">
               <Zap className="h-2.5 w-2.5" />
               <span className="text-[9px] font-mono">instant</span>
             </div>
@@ -159,20 +151,16 @@ export default function ShopPage() {
   }, [sortedProducts, search]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: "rgba(74,154,58,0.5)" }} />
-      </div>
-    );
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-gray-300" /></div>;
   }
 
   if (user?.isBanned) {
     return (
       <div className="max-w-sm mx-auto px-4 py-10">
-        <div className="border p-6 rounded-2xl text-center space-y-3" style={{ background: "rgba(180,0,0,0.08)", borderColor: "rgba(180,0,0,0.2)" }}>
+        <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center space-y-3">
           <ShieldX className="h-8 w-8 text-red-400 mx-auto" />
-          <p className="text-sm text-red-400 font-bold">Account Restricted</p>
-          <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>Your account has been restricted. Contact support if you believe this is an error.</p>
+          <p className="text-sm text-red-600 font-bold">Account Restricted</p>
+          <p className="text-xs text-gray-400 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
         </div>
       </div>
     );
@@ -182,34 +170,28 @@ export default function ShopPage() {
     <div className="max-w-sm mx-auto px-4 py-5 space-y-4">
       {/* Header */}
       <div className="space-y-0.5">
-        <h1 className="text-lg font-black text-white">
-          NYC<span style={{ color: "#4a9a3a" }}>HQ</span>
-          <span className="ml-2 text-xs font-mono font-normal" style={{ color: "rgba(106,191,90,0.4)" }}>Logs</span>
+        <h1 className="text-lg font-black text-gray-900">
+          NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
+          <span className="ml-2 text-xs font-mono font-normal text-gray-400">Logs</span>
         </h1>
-        <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.4)" }}>BEST HIGH QUALITY CARDS</p>
+        <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">BEST HIGH QUALITY CARDS</p>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: "rgba(74,154,58,0.4)" }} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
         <input
           type="text"
           placeholder="Search logs..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 rounded-2xl pl-9 pr-4 text-xs text-white placeholder:text-white/20 outline-none transition-colors"
-          style={{
-            background: "#0c140d",
-            border: "1px solid rgba(45,106,45,0.25)",
-          }}
-          onFocus={e => (e.target.style.borderColor = "rgba(74,154,58,0.45)")}
-          onBlur={e => (e.target.style.borderColor = "rgba(45,106,45,0.25)")}
+          className="w-full h-10 bg-white border border-gray-200 rounded-2xl pl-9 pr-4 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300 transition-colors shadow-sm"
           data-testid="input-search"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-xs font-mono" style={{ color: "rgba(74,154,58,0.3)" }}>No products found</div>
+        <div className="text-center py-20 text-gray-400 text-sm">No products found</div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {filtered.map((product: any) => {

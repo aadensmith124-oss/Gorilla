@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -13,96 +14,81 @@ export default function AuthPage() {
   const [faceLoaded, setFaceLoaded] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setFaceLoaded(true), 100);
+    const t = setTimeout(() => setFaceLoaded(true), 80);
     return () => clearTimeout(t);
   }, []);
 
   if (user) return <Redirect to="/" />;
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#0b1a0e] relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #0b1a0e 0%, #091208 100%)" }}>
       {/* Green ambient glow */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[50%] bg-[#2d6a2d]/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#1a4a1a]/15 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#1a4a1a]/15 rounded-full blur-[100px]" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[70%] h-[50%] rounded-full blur-[140px]" style={{ background: "rgba(45,106,45,0.18)" }} />
+        <div className="absolute bottom-[-20%] right-[-15%] w-[40%] h-[40%] rounded-full blur-[120px]" style={{ background: "rgba(20,60,20,0.12)" }} />
       </div>
 
-      {/* Beast Boy Face — fades in from top */}
-      <div
-        className="relative z-10 w-full flex justify-center pt-8"
-        style={{
-          opacity: faceLoaded ? 1 : 0,
-          transform: faceLoaded ? "translateY(0)" : "translateY(-24px)",
-          transition: "opacity 1.1s ease, transform 1.1s ease",
-        }}
-      >
+      <div className="relative z-10 w-full max-w-[340px] space-y-4">
+        {/* Beast Boy face fades in */}
         <div
-          className="relative w-36 h-36 rounded-full overflow-hidden"
+          className="flex justify-center mb-1"
           style={{
-            boxShadow: "0 8px 40px 8px rgba(74,138,58,0.35), 0 0 0 3px rgba(74,138,58,0.18)",
-            maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+            opacity: faceLoaded ? 1 : 0,
+            transform: faceLoaded ? "translateY(0) scale(1)" : "translateY(-16px) scale(0.92)",
+            transition: "opacity 1s ease, transform 1s ease",
           }}
         >
-          <img
-            src={beastBoyImg}
-            alt="NYCHQ"
-            className="w-full h-full object-cover object-top scale-125"
-            style={{ objectPosition: "50% 15%" }}
-          />
+          <div
+            className="w-20 h-20 rounded-full overflow-hidden"
+            style={{
+              boxShadow: "0 4px 32px 6px rgba(74,154,58,0.3), 0 0 0 2px rgba(74,154,58,0.2)",
+              maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+            }}
+          >
+            <img
+              src={beastBoyImg}
+              alt="NYCHQ"
+              className="w-full h-full object-cover scale-125"
+              style={{ objectPosition: "50% 15%" }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* White card panel */}
-      <div
-        className="relative z-10 w-full max-w-[360px] mx-auto mt-5 mx-4 rounded-t-3xl rounded-b-none flex-1"
-        style={{
-          background: "linear-gradient(160deg, #f5f5f0 0%, #ffffff 40%)",
-          minHeight: "calc(100vh - 200px)",
-          opacity: faceLoaded ? 1 : 0,
-          transform: faceLoaded ? "translateY(0)" : "translateY(30px)",
-          transition: "opacity 0.9s ease 0.3s, transform 0.9s ease 0.3s",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.4)",
-        }}
-      >
-        <div className="px-7 pt-8 pb-6">
-          {/* Brand */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-black text-[#1a1a1a] tracking-tight">
-              NYC<span className="text-[#4a7c3a]">HQ</span>
-            </h1>
-            <p className="text-[10px] text-[#888] uppercase tracking-[0.2em] mt-0.5">
-              {tab === "login" ? "Welcome Back" : "Create Account"}
-            </p>
-          </div>
+        {/* Brand */}
+        <div className="text-center space-y-0.5">
+          <h1 className="text-xl font-black tracking-tight text-white">
+            NYC<span style={{ color: "#4a9a3a" }}>HQ</span>
+          </h1>
+          <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "rgba(74,154,58,0.5)" }}>BEST HIGH QUALITY CARDS</p>
+        </div>
 
-          {/* Tab switcher */}
-          <div className="flex bg-[#f0f0ee] rounded-2xl p-1 gap-1 mb-6">
-            <button
-              onClick={() => setTab("login")}
-              className={`flex-1 text-[11px] font-bold py-2.5 rounded-xl transition-all ${
-                tab === "login"
-                  ? "bg-[#2d6a2d] text-white shadow-sm"
-                  : "text-[#666] hover:text-[#333]"
-              }`}
-              data-testid="tab-login"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setTab("register")}
-              className={`flex-1 text-[11px] font-bold py-2.5 rounded-xl transition-all ${
-                tab === "register"
-                  ? "bg-[#2d6a2d] text-white shadow-sm"
-                  : "text-[#666] hover:text-[#333]"
-              }`}
-              data-testid="tab-register"
-            >
-              Register
-            </button>
-          </div>
+        {/* Tab switcher */}
+        <div className="flex rounded-2xl p-1 gap-1" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <button
+            onClick={() => setTab("login")}
+            className={`flex-1 text-[11px] font-bold py-2 rounded-xl transition-all ${
+              tab === "login"
+                ? "text-white shadow-sm"
+                : "hover:text-white/60"
+            }`}
+            style={tab === "login" ? { background: "rgba(45,106,45,0.5)", color: "#fff" } : { color: "rgba(255,255,255,0.35)" }}
+            data-testid="tab-login"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setTab("register")}
+            className={`flex-1 text-[11px] font-bold py-2 rounded-xl transition-all`}
+            style={tab === "register" ? { background: "rgba(45,106,45,0.5)", color: "#fff" } : { color: "rgba(255,255,255,0.35)" }}
+            data-testid="tab-register"
+          >
+            Create Account
+          </button>
+        </div>
 
+        {/* Form card */}
+        <div className="rounded-2xl p-5 shadow-2xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(74,154,58,0.15)", backdropFilter: "blur(12px)" }}>
           {tab === "login" ? <LoginForm /> : <RegisterForm />}
         </div>
       </div>
@@ -123,16 +109,18 @@ function PasswordInput({ value, onChange, placeholder, disabled, testId }: {
         placeholder={placeholder || "••••••••"}
         disabled={disabled}
         autoComplete="current-password"
-        className="h-12 bg-[#f7f7f5] border-[#e0e0dc] focus:border-[#4a7c3a] focus:ring-[#4a7c3a]/20 pr-10 rounded-xl text-sm text-[#1a1a1a] placeholder:text-[#aaa]"
+        className="h-10 pr-9 rounded-xl text-sm"
+        style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
         data-testid={testId}
       />
       <button
         type="button"
         onClick={() => setShow(s => !s)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555] transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+        style={{ color: "rgba(255,255,255,0.25)" }}
         tabIndex={-1}
       >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
       </button>
     </div>
   );
@@ -154,7 +142,7 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-[#888] font-bold">Email</label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Email</Label>
         <Input
           type="email"
           value={email}
@@ -162,26 +150,23 @@ function LoginForm() {
           placeholder="you@example.com"
           disabled={isLoggingIn}
           autoComplete="email"
-          className="h-12 bg-[#f7f7f5] border-[#e0e0dc] focus:border-[#4a7c3a] rounded-xl text-sm text-[#1a1a1a] placeholder:text-[#aaa]"
+          className="h-10 rounded-xl text-sm"
+          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
           data-testid="input-email"
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-[#888] font-bold">Password</label>
-        <PasswordInput
-          value={password}
-          onChange={setPassword}
-          disabled={isLoggingIn}
-          testId="input-password"
-        />
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Password</Label>
+        <PasswordInput value={password} onChange={setPassword} disabled={isLoggingIn} testId="input-password" />
       </div>
       <Button
         type="submit"
         disabled={isLoggingIn || !email.trim() || !password}
-        className="w-full h-12 text-sm font-bold rounded-xl mt-2 bg-[#2d6a2d] hover:bg-[#3a7a3a] text-white border-0 shadow-lg"
+        className="w-full h-10 text-xs font-bold rounded-xl mt-1 border-0"
+        style={{ background: "#2d6a2d", color: "#fff" }}
         data-testid="btn-login"
       >
-        {isLoggingIn ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
+        {isLoggingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Sign In"}
       </Button>
     </form>
   );
@@ -213,10 +198,10 @@ function RegisterForm() {
 
   if (done) {
     return (
-      <div className="text-center space-y-3 py-6">
-        <div className="text-5xl">✓</div>
-        <p className="text-base font-black text-[#1a1a1a]">Account created!</p>
-        <p className="text-xs text-[#888] leading-relaxed">Your username was auto-generated. You can see it in your profile.</p>
+      <div className="text-center space-y-3 py-4">
+        <div className="text-4xl">✓</div>
+        <p className="text-sm font-bold text-white">Account created!</p>
+        <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>Your username was auto-generated. You can see it in your profile.</p>
       </div>
     );
   }
@@ -224,7 +209,7 @@ function RegisterForm() {
   return (
     <form onSubmit={handleCreate} className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-[#888] font-bold">Email</label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Email</Label>
         <Input
           type="email"
           value={email}
@@ -232,40 +217,30 @@ function RegisterForm() {
           placeholder="you@example.com"
           disabled={isRegistering}
           autoComplete="email"
-          className="h-12 bg-[#f7f7f5] border-[#e0e0dc] focus:border-[#4a7c3a] rounded-xl text-sm text-[#1a1a1a] placeholder:text-[#aaa]"
+          className="h-10 rounded-xl text-sm"
+          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
           data-testid="input-reg-email"
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-[#888] font-bold">Password</label>
-        <PasswordInput
-          value={password}
-          onChange={setPassword}
-          placeholder="min. 6 characters"
-          disabled={isRegistering}
-          testId="input-reg-password"
-        />
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Password</Label>
+        <PasswordInput value={password} onChange={setPassword} placeholder="min. 6 characters" disabled={isRegistering} testId="input-reg-password" />
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-[#888] font-bold">Confirm Password</label>
-        <PasswordInput
-          value={confirm}
-          onChange={setConfirm}
-          placeholder="repeat password"
-          disabled={isRegistering}
-          testId="input-reg-confirm"
-        />
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Confirm Password</Label>
+        <PasswordInput value={confirm} onChange={setConfirm} placeholder="repeat password" disabled={isRegistering} testId="input-reg-confirm" />
       </div>
-      <p className="text-[10px] text-[#aaa] leading-relaxed">
-        Your username will be auto-generated as <span className="font-mono text-[#777]">anon-xxxxxxxx</span>.
+      <p className="text-[10px] leading-relaxed" style={{ color: "rgba(255,255,255,0.2)" }}>
+        Username auto-generated as <span className="font-mono" style={{ color: "rgba(255,255,255,0.35)" }}>anon-xxxxxxxx</span>.
       </p>
       <Button
         type="submit"
         disabled={isRegistering || !email.trim() || !password || !confirm}
-        className="w-full h-12 text-sm font-bold rounded-xl bg-[#2d6a2d] hover:bg-[#3a7a3a] text-white border-0 shadow-lg"
+        className="w-full h-10 text-xs font-bold rounded-xl border-0"
+        style={{ background: "#2d6a2d", color: "#fff" }}
         data-testid="btn-register"
       >
-        {isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+        {isRegistering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
       </Button>
     </form>
   );
