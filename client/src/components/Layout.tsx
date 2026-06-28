@@ -146,6 +146,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 
+  const isAuthPage = location === "/auth";
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}

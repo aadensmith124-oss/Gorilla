@@ -1,12 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import beastBoyImg from "@assets/IMG_8176_1782687294972.jpeg";
+
+function generateChallenge() {
+  const ops = ["+", "-", "×"] as const;
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a = Math.floor(Math.random() * 12) + 1;
+  let b = Math.floor(Math.random() * 12) + 1;
+  if (op === "-" && b > a) [a, b] = [b, a];
+  const answer = op === "+" ? a + b : op === "-" ? a - b : a * b;
+  return { question: `${a} ${op} ${b}`, answer };
+}
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -179,9 +189,24 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState(false);
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [challenge, setChallenge] = useState(() => generateChallenge());
+  const [captchaError, setCaptchaError] = useState(false);
+
+  const refreshChallenge = () => {
+    setChallenge(generateChallenge());
+    setCaptchaInput("");
+    setCaptchaError(false);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (parseInt(captchaInput, 10) !== challenge.answer) {
+      setCaptchaError(true);
+      refreshChallenge();
+      toast({ title: "Verification failed", description: "Wrong answer — try the new question", variant: "destructive" });
+      return;
+    }
     if (password !== confirm) {
       toast({ title: "Passwords don't match", variant: "destructive" });
       return;
@@ -230,12 +255,48 @@ function RegisterForm() {
         <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Confirm Password</Label>
         <PasswordInput value={confirm} onChange={setConfirm} placeholder="repeat password" disabled={isRegistering} testId="input-reg-confirm" />
       </div>
+
+      {/* Math captcha */}
+      <div className="space-y-1.5">
+        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>
+          Verification
+        </Label>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex-1 flex items-center justify-between px-3 h-10 rounded-xl font-mono text-sm font-bold select-none"
+            style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${captchaError ? "rgba(239,68,68,0.5)" : "rgba(74,154,58,0.2)"}`, color: captchaError ? "#ef4444" : "rgba(74,154,58,0.9)" }}
+          >
+            <span>{challenge.question} = ?</span>
+          </div>
+          <button
+            type="button"
+            onClick={refreshChallenge}
+            className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
+            style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "rgba(74,154,58,0.5)" }}
+            title="New question"
+            data-testid="btn-refresh-captcha"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <Input
+          type="number"
+          value={captchaInput}
+          onChange={e => { setCaptchaInput(e.target.value); setCaptchaError(false); }}
+          placeholder="Enter the answer"
+          disabled={isRegistering}
+          className="h-10 rounded-xl text-sm"
+          style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${captchaError ? "rgba(239,68,68,0.5)" : "rgba(74,154,58,0.2)"}`, color: "#fff" }}
+          data-testid="input-captcha"
+        />
+      </div>
+
       <p className="text-[10px] leading-relaxed" style={{ color: "rgba(255,255,255,0.2)" }}>
         Username auto-generated as <span className="font-mono" style={{ color: "rgba(255,255,255,0.35)" }}>anon-xxxxxxxx</span>.
       </p>
       <Button
         type="submit"
-        disabled={isRegistering || !email.trim() || !password || !confirm}
+        disabled={isRegistering || !email.trim() || !password || !confirm || !captchaInput}
         className="w-full h-10 text-xs font-bold rounded-xl border-0"
         style={{ background: "#2d6a2d", color: "#fff" }}
         data-testid="btn-register"
