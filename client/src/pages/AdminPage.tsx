@@ -27,7 +27,7 @@ const adminSections = [
   { id: "products",  label: "Products",  Icon: Package },
   { id: "acctplug", label: "Cards",      Icon: CreditCard },
   { id: "orders",   label: "Orders",     Icon: ShoppingBag },
-  { id: "cashapp",  label: "CashApp",    Icon: DollarSign },
+  { id: "cashapp",  label: "Payments",   Icon: DollarSign },
   { id: "deposits", label: "Deposits",   Icon: Wallet },
   { id: "users",    label: "Users",      Icon: Users },
   
@@ -2237,6 +2237,7 @@ function CashAppSection() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<"all" | "CashApp" | "Chime" | "Zelle">("all");
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -2251,12 +2252,19 @@ function CashAppSection() {
   const manualOrders = (allOrders || []).filter((o: any) => ["CashApp", "Chime", "Zelle"].includes(o.paymentMethod));
   const pendingOrders = manualOrders.filter((o: any) => o.status === "pending");
   const cq = searchQuery.trim().toLowerCase();
-  const displayedOrders = (showHistory ? manualOrders : pendingOrders).filter((o: any) =>
+  const typeFiltered = (showHistory ? manualOrders : pendingOrders).filter((o: any) =>
+    paymentTypeFilter === "all" || o.paymentMethod === paymentTypeFilter
+  );
+  const displayedOrders = typeFiltered.filter((o: any) =>
     !cq ||
     o.orderId?.toLowerCase().includes(cq) ||
     o.user?.username?.toLowerCase().includes(cq) ||
     o.paymentNote?.toLowerCase().includes(cq)
   );
+
+  const cashappCount = pendingOrders.filter((o: any) => o.paymentMethod === "CashApp").length;
+  const chimeCount = pendingOrders.filter((o: any) => o.paymentMethod === "Chime").length;
+  const zelleCount = pendingOrders.filter((o: any) => o.paymentMethod === "Zelle").length;
 
   const fulfillMutation = useMutation({
     mutationFn: async (orderId: number) => {
@@ -2376,22 +2384,42 @@ function CashAppSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex -space-x-1">
-            <div className="w-6 h-6 rounded-full bg-[#00D632] flex items-center justify-center text-[10px] font-black text-white z-30">$</div>
-            <div className="w-6 h-6 rounded-full bg-[#7BC67E] flex items-center justify-center text-[10px] font-black text-white z-20">C</div>
-            <div className="w-6 h-6 rounded-full bg-[#9B59E8] flex items-center justify-center text-[10px] font-black text-white z-10">Z</div>
-          </div>
-          <h1 className="text-2xl font-semibold">{showHistory ? "Payment History" : "Pending Deposits"}</h1>
+          <h1 className="text-2xl font-semibold">{showHistory ? "Payment History" : "Pending Payments"}</h1>
           {pendingOrders.length > 0 && (
-            <Badge className="bg-[#00D632]/20 text-[#00D632] border-[#00D632]/30">{pendingOrders.length} pending</Badge>
+            <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/30">{pendingOrders.length} pending</Badge>
           )}
         </div>
         <button
           onClick={() => setShowHistory(h => !h)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-white" : "bg-[#0d0d0d] text-white/45 hover:bg-[#111]/5"}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-white" : "bg-[#0d0d0d] text-white/45 hover:bg-white/5"}`}
         >
           {showHistory ? "← Pending" : "History"}
         </button>
+      </div>
+
+      {/* Payment type filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {[
+          { key: "all", label: "All", count: pendingOrders.length, color: "text-white/70" },
+          { key: "CashApp", label: "CashApp", count: cashappCount, color: "text-[#00D632]" },
+          { key: "Chime", label: "Chime", count: chimeCount, color: "text-[#7BC67E]" },
+          { key: "Zelle", label: "Zelle", count: zelleCount, color: "text-[#9B59E8]" },
+        ].map(({ key, label, count, color }) => (
+          <button
+            key={key}
+            onClick={() => setPaymentTypeFilter(key as any)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+              paymentTypeFilter === key
+                ? "bg-white/10 border-white/20 text-white"
+                : "bg-transparent border-white/8 text-white/40 hover:border-white/15 hover:text-white/60"
+            }`}
+          >
+            <span>{label}</span>
+            {!showHistory && count > 0 && (
+              <span className={`text-[10px] font-mono ${paymentTypeFilter === key ? "text-white/70" : color}`}>{count}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="relative">
@@ -2400,7 +2428,7 @@ function CashAppSection() {
           placeholder="Search by order ID, username, payment note..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full h-9 bg-[#0d0d0d] border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-gray-300"
+          className="w-full h-9 bg-[#0d0d0d] border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/20"
           data-testid="input-cashapp-order-search"
         />
         {searchQuery && (

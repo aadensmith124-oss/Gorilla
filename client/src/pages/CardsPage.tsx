@@ -206,7 +206,7 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto px-0 py-0">
 
       {/* Search + controls */}
-      <div className="px-3 pt-3 pb-2 space-y-2 bg-[#111] border-b border-white/10 sticky top-[52px] z-30">
+      <div className="px-3 pt-3 pb-2 space-y-2 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
         {/* Search bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />

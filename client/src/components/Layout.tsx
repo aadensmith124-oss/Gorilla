@@ -158,7 +158,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all bg-white/[0.06] border border-white/10 text-white/70"
+                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-white/50 hover:text-white/80"
                 data-testid="btn-menu"
               >
                 <PanelLeft className="h-[15px] w-[15px]" />
