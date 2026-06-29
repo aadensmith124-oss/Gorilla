@@ -66,7 +66,7 @@ export default function GamesPage() {
                 {game.description}
               </p>
               
-              <Button className="mt-8 bg-[#111]/5 hover:bg-primary hover:text-black text-white font-bold border border-white/10">
+              <Button className="mt-8 bg-[#111]/5 hover:bg-primary hover:text-white text-white font-bold border border-white/10">
                 Play Now
               </Button>
             </CardContent>

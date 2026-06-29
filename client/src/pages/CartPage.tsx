@@ -280,7 +280,7 @@ export default function CartPage() {
           <p className="text-sm text-muted-foreground">Add some products to get started.</p>
         </div>
         <Link href="/">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-black text-xs font-bold" data-testid="button-browse-shop">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold" data-testid="button-browse-shop">
             Browse Shop <ArrowRight className="h-4 w-4" />
           </button>
         </Link>
@@ -366,7 +366,7 @@ export default function CartPage() {
               <button
                 onClick={handleApplyCoupon}
                 disabled={validateDiscountMutation.isPending || !couponCode.trim()}
-                className="px-4 h-10 rounded-lg bg-primary hover:bg-primary/90 text-black text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 h-10 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 data-testid="button-apply-coupon"
               >
                 {validateDiscountMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Tag className="h-3.5 w-3.5" />}
@@ -473,7 +473,7 @@ export default function CartPage() {
 
         {/* Proceed to Payment */}
         <button
-          className="w-full h-9 rounded-xl text-xs font-bold text-black bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 uppercase tracking-widest flex items-center justify-center gap-2"
+          className="w-full h-9 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 uppercase tracking-widest flex items-center justify-center gap-2"
           disabled={isPending}
           onClick={handleCheckout}
           data-testid="button-proceed-payment"

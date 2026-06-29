@@ -161,7 +161,7 @@ export default function SupportPage() {
                     </FormItem>
                   )} />
 
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-black h-12">
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white h-12">
                     Send Support Request
                   </Button>
                 </form>

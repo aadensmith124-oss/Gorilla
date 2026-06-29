@@ -367,7 +367,7 @@ export default function CardsPage() {
                     type="checkbox"
                     checked={filteredCards.length > 0 && cartCardIds.size === filteredCards.length}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-amber-500"
+                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
                     data-testid="checkbox-all"
                   />
                 </th>
@@ -435,7 +435,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
           type="checkbox"
           checked={inCart}
           onChange={() => onToggleCart(card)}
-          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-amber-500"
+          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
           data-testid={`checkbox-card-${card.id}`}
         />
       </td>

@@ -513,7 +513,7 @@ export default function DepositPage() {
           <button
             onClick={() => cryptoMutation.mutate()}
             disabled={cryptoMutation.isPending || !amountInput || parsedAmount <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-40"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-40"
             data-testid="btn-deposit-crypto"
           >
             {cryptoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (

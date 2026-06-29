@@ -70,7 +70,7 @@ export default function DiceGamePage() {
             </div>
             <Button 
               size="lg" 
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-black font-black italic tracking-tighter uppercase text-xl" 
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black italic tracking-tighter uppercase text-xl" 
               onClick={handleRoll}
               disabled={playDice.isPending}
             >

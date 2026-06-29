@@ -1478,7 +1478,7 @@ function UsersSection() {
               <button
                 onClick={() => setBalanceMutation.mutate({ userId: selectedUser.id, balance: balanceInput })}
                 disabled={setBalanceMutation.isPending || !balanceInput}
-                className="h-8 px-3 bg-primary/80 hover:bg-primary text-black text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
+                className="h-8 px-3 bg-primary/80 hover:bg-primary text-white text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
                 data-testid={`btn-set-balance-${selectedUser.id}`}
               >
                 {setBalanceMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Set"}
@@ -1671,7 +1671,7 @@ function CodesSection() {
           onClick={() => setTab("balance")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "balance"
-              ? "bg-primary text-black"
+              ? "bg-primary text-white"
               : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-balance-codes"
@@ -1683,7 +1683,7 @@ function CodesSection() {
           onClick={() => setTab("discount")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "discount"
-              ? "bg-primary text-black"
+              ? "bg-primary text-white"
               : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-discount-codes"
@@ -2024,12 +2024,12 @@ function IntegrationsSection() {
   });
 
   const METHODS = [
-    { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-black" />, bg: "bg-primary" },
+    { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-white" />, bg: "bg-primary" },
     { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#00D632]" },
     { id: "venmo", label: "Venmo", icon: <span className="text-white font-black text-sm">V</span>, bg: "bg-[#3D95CE]" },
     { id: "zelle", label: "Zelle", icon: <span className="text-white font-black text-sm">Z</span>, bg: "bg-[#6D1ED4]" },
     { id: "chime", label: "Chime", icon: <span className="text-white font-black text-sm">C</span>, bg: "bg-[#7BC67E]" },
-    { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-black" />, bg: "bg-primary" },
+    { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-primary" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
 
@@ -2388,7 +2388,7 @@ function CashAppSection() {
         </div>
         <button
           onClick={() => setShowHistory(h => !h)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-black" : "bg-[#0d0d0d] text-white/45 hover:bg-[#111]/5"}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-white" : "bg-[#0d0d0d] text-white/45 hover:bg-[#111]/5"}`}
         >
           {showHistory ? "← Pending" : "History"}
         </button>
