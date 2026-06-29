@@ -39,7 +39,7 @@ function CaptchaImage({ code, width = 200, height = 52 }: { code: string; width?
       {/* Noise lines */}
       {noises.map(n => (
         <line key={n.key} x1={n.x1} y1={n.y1} x2={n.x2} y2={n.y2}
-          stroke={`hsl(${randomInt(100,200)},30%,60%)`} strokeWidth="1.2" opacity="0.5" />
+          stroke={`hsl(${randomInt(20,50)},60%,50%)`} strokeWidth="1.2" opacity="0.5" />
       ))}
       {/* Characters */}
       {chars.map((ch, i) => {
@@ -47,7 +47,7 @@ function CaptchaImage({ code, width = 200, height = 52 }: { code: string; width?
         const y = height / 2 + randomInt(-4, 4);
         const rotate = randomInt(-22, 22);
         const size = randomInt(20, 28);
-        const color = `hsl(${randomInt(180, 260)},50%,${randomInt(20, 45)}%)`;
+        const color = `hsl(${randomInt(20, 45)},80%,${randomInt(25, 45)}%)`;
         return (
           <text key={i} x={x} y={y}
             dominantBaseline="middle" textAnchor="middle"
@@ -87,15 +87,13 @@ function PasswordInput({ value, onChange, placeholder, disabled, testId }: {
         placeholder={placeholder || "••••••••"}
         disabled={disabled}
         autoComplete="current-password"
-        className="h-10 pr-9 rounded-xl text-sm"
-        style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
+        className="h-10 pr-9 rounded-xl text-sm bg-black/30 border-primary/20 text-white"
         data-testid={testId}
       />
       <button
         type="button"
         onClick={() => setShow(s => !s)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-        style={{ color: "rgba(255,255,255,0.25)" }}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/50"
         tabIndex={-1}
       >
         {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -130,7 +128,7 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-3.5">
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Email</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Email</Label>
         <Input
           type="email"
           value={email}
@@ -138,28 +136,26 @@ function LoginForm() {
           placeholder="you@example.com"
           disabled={isLoggingIn}
           autoComplete="email"
-          className="h-10 rounded-xl text-sm"
-          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
+          className="h-10 rounded-xl text-sm bg-black/30 border-primary/20 text-white"
           data-testid="input-email"
         />
       </div>
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Password</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Password</Label>
         <PasswordInput value={password} onChange={setPassword} disabled={isLoggingIn} testId="input-password" />
       </div>
 
       {/* CAPTCHA */}
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Verification</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Verification</Label>
         <div className="flex items-center gap-2">
-          <div className="flex-1 rounded-xl overflow-hidden border" style={{ borderColor: "rgba(74,154,58,0.15)" }}>
+          <div className="flex-1 rounded-xl overflow-hidden border border-primary/15">
             <CaptchaImage code={captchaCode} width={180} height={50} />
           </div>
           <button
             type="button"
             onClick={() => { refreshCaptcha(); setCaptchaInput(""); }}
-            className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
-            style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "rgba(74,154,58,0.5)" }}
+            className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors bg-black/30 border border-primary/20 text-primary/50 hover:text-primary/80"
             title="New code"
             data-testid="btn-refresh-captcha"
           >
@@ -173,8 +169,7 @@ function LoginForm() {
           placeholder="Enter the code above"
           disabled={isLoggingIn}
           autoComplete="off"
-          className="h-10 rounded-xl text-sm tracking-widest"
-          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
+          className="h-10 rounded-xl text-sm tracking-widest bg-black/30 border-primary/20 text-white"
           data-testid="input-captcha"
         />
       </div>
@@ -182,8 +177,7 @@ function LoginForm() {
       <Button
         type="submit"
         disabled={isLoggingIn || !email.trim() || !password || !captchaInput.trim()}
-        className="w-full h-10 text-xs font-bold rounded-xl mt-1 border-0"
-        style={{ background: "#2d6a2d", color: "#fff" }}
+        className="w-full h-10 text-xs font-bold rounded-xl mt-1"
         data-testid="btn-login"
       >
         {isLoggingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Sign In"}
@@ -236,17 +230,16 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       <div className="text-center space-y-4 py-4">
         <div className="text-4xl">✓</div>
         <p className="text-sm font-bold text-white">Account created!</p>
-        <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <p className="text-xs leading-relaxed text-white/35">
           Your username was auto-generated. Sign in with your email and password.
         </p>
-        <button
+        <Button
           onClick={onSwitchToLogin}
-          className="w-full h-10 text-xs font-bold rounded-xl border-0 mt-2"
-          style={{ background: "#2d6a2d", color: "#fff" }}
+          className="w-full h-10 text-xs font-bold rounded-xl mt-2"
           data-testid="btn-go-login"
         >
           Sign In
-        </button>
+        </Button>
       </div>
     );
   }
@@ -254,7 +247,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   return (
     <form onSubmit={handleCreate} className="space-y-3.5">
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Email</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Email</Label>
         <Input
           type="email"
           value={email}
@@ -262,27 +255,25 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
           placeholder="you@example.com"
           disabled={submitting}
           autoComplete="email"
-          className="h-10 rounded-xl text-sm"
-          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(74,154,58,0.2)", color: "#fff" }}
+          className="h-10 rounded-xl text-sm bg-black/30 border-primary/20 text-white"
           data-testid="input-reg-email"
         />
       </div>
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Password</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Password</Label>
         <PasswordInput value={password} onChange={setPassword} placeholder="min. 6 characters" disabled={submitting} testId="input-reg-password" />
       </div>
       <div className="space-y-1.5">
-        <Label className="text-[10px] uppercase tracking-widest font-bold" style={{ color: "rgba(74,154,58,0.6)" }}>Confirm Password</Label>
+        <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Confirm Password</Label>
         <PasswordInput value={confirm} onChange={setConfirm} placeholder="repeat password" disabled={submitting} testId="input-reg-confirm" />
       </div>
-      <p className="text-[10px] leading-relaxed" style={{ color: "rgba(255,255,255,0.2)" }}>
-        Username auto-generated as <span className="font-mono" style={{ color: "rgba(255,255,255,0.35)" }}>anon-xxxxxxxx</span>.
+      <p className="text-[10px] leading-relaxed text-white/20">
+        Username auto-generated as <span className="font-mono text-white/35">anon-xxxxxxxx</span>.
       </p>
       <Button
         type="submit"
         disabled={submitting || !email.trim() || !password || !confirm}
-        className="w-full h-10 text-xs font-bold rounded-xl border-0"
-        style={{ background: "#2d6a2d", color: "#fff" }}
+        className="w-full h-10 text-xs font-bold rounded-xl"
         data-testid="btn-register"
       >
         {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
@@ -305,15 +296,15 @@ export default function AuthPage() {
   if (user) return <Redirect to="/" />;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #0b1a0e 0%, #091208 100%)" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-5 bg-background">
       {/* Ambient glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[70%] h-[50%] rounded-full blur-[140px]" style={{ background: "rgba(45,106,45,0.18)" }} />
-        <div className="absolute bottom-[-20%] right-[-15%] w-[40%] h-[40%] rounded-full blur-[120px]" style={{ background: "rgba(20,60,20,0.12)" }} />
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[70%] h-[50%] rounded-full blur-[140px] bg-primary/8" />
+        <div className="absolute bottom-[-20%] right-[-15%] w-[40%] h-[40%] rounded-full blur-[120px] bg-primary/5" />
       </div>
 
       <div className="relative z-10 w-full max-w-[340px] space-y-4">
-        {/* Beast Boy face */}
+        {/* Logo face */}
         <div
           className="flex justify-center mb-1"
           style={{
@@ -325,7 +316,7 @@ export default function AuthPage() {
           <div
             className="w-20 h-20 rounded-full overflow-hidden"
             style={{
-              boxShadow: "0 4px 32px 6px rgba(74,154,58,0.3), 0 0 0 2px rgba(74,154,58,0.2)",
+              boxShadow: "0 4px 32px 6px hsl(38 95% 55% / 0.25), 0 0 0 2px hsl(38 95% 55% / 0.2)",
               maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
               WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
             }}
@@ -342,25 +333,27 @@ export default function AuthPage() {
         {/* Brand */}
         <div className="text-center space-y-0.5">
           <h1 className="text-xl font-black tracking-tight text-white">
-            BEAST<span style={{ color: "#4a9a3a" }}>CC</span>
+            BEAST<span className="text-primary">CC</span>
           </h1>
-          <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "rgba(74,154,58,0.5)" }}>BEST HIGH QUALITY CARDS</p>
+          <p className="text-[10px] uppercase tracking-widest font-semibold text-primary/50">BEST HIGH QUALITY CARDS</p>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex rounded-2xl p-1 gap-1" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="flex rounded-2xl p-1 gap-1 bg-white/[0.06]">
           <button
             onClick={() => setTab("login")}
-            className="flex-1 text-[11px] font-bold py-2 rounded-xl transition-all"
-            style={tab === "login" ? { background: "rgba(45,106,45,0.5)", color: "#fff" } : { color: "rgba(255,255,255,0.35)" }}
+            className={`flex-1 text-[11px] font-bold py-2 rounded-xl transition-all ${
+              tab === "login" ? "bg-primary/30 text-white" : "text-white/35 hover:text-white/60"
+            }`}
             data-testid="tab-login"
           >
             Sign In
           </button>
           <button
             onClick={() => setTab("register")}
-            className="flex-1 text-[11px] font-bold py-2 rounded-xl transition-all"
-            style={tab === "register" ? { background: "rgba(45,106,45,0.5)", color: "#fff" } : { color: "rgba(255,255,255,0.35)" }}
+            className={`flex-1 text-[11px] font-bold py-2 rounded-xl transition-all ${
+              tab === "register" ? "bg-primary/30 text-white" : "text-white/35 hover:text-white/60"
+            }`}
             data-testid="tab-register"
           >
             Create Account
@@ -368,7 +361,7 @@ export default function AuthPage() {
         </div>
 
         {/* Form card */}
-        <div className="rounded-2xl p-5 shadow-2xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(74,154,58,0.15)", backdropFilter: "blur(12px)" }}>
+        <div className="rounded-2xl p-5 shadow-2xl bg-white/[0.05] border border-primary/15 backdrop-blur-xl">
           {tab === "login"
             ? <LoginForm />
             : <RegisterForm onSwitchToLogin={() => setTab("login")} />

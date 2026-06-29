@@ -330,9 +330,9 @@ export default function CardsPage() {
           disabled={cartCardIds.size === 0 || !!cartPurchasing}
           className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: cartCardIds.size > 0 ? "rgba(45,106,45,0.08)" : "#f3f4f6",
-            borderColor: cartCardIds.size > 0 ? "rgba(45,106,45,0.3)" : "#e5e7eb",
-            color: cartCardIds.size > 0 ? "#2d6a2d" : "#9ca3af",
+            background: cartCardIds.size > 0 ? "hsl(38 95% 55% / 0.08)" : "rgba(255,255,255,0.04)",
+            borderColor: cartCardIds.size > 0 ? "hsl(38 95% 55% / 0.3)" : "rgba(255,255,255,0.1)",
+            color: cartCardIds.size > 0 ? "hsl(38 95% 55%)" : "rgba(255,255,255,0.3)",
           }}
           data-testid="btn-add-selected"
         >
@@ -367,7 +367,7 @@ export default function CardsPage() {
                     type="checkbox"
                     checked={filteredCards.length > 0 && cartCardIds.size === filteredCards.length}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
+                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-amber-500"
                     data-testid="checkbox-all"
                   />
                 </th>
@@ -427,7 +427,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
 
   return (
     <tr
-      className={`border-b border-white/8 transition-colors ${inCart ? "bg-green-50" : "hover:bg-[#0d0d0d]"}`}
+      className={`border-b border-white/8 transition-colors ${inCart ? "bg-primary/5" : "hover:bg-[#0d0d0d]"}`}
       data-testid={`card-row-${card.id}`}
     >
       <td className="px-3 py-3">
@@ -435,7 +435,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
           type="checkbox"
           checked={inCart}
           onChange={() => onToggleCart(card)}
-          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
+          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-amber-500"
           data-testid={`checkbox-card-${card.id}`}
         />
       </td>

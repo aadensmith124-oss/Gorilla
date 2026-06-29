@@ -39,8 +39,8 @@ export default function ProductDetailPage() {
     if (selectedVariant) setQuantity(Math.min(Math.max(minQty, 1), maxQty));
   }, [selectedVariantId, minQty, maxQty]);
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!product) return <div className="p-8 text-center text-gray-500 text-sm">Product not found</div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!product) return <div className="p-8 text-center text-muted-foreground text-sm">Product not found</div>;
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
@@ -69,15 +69,15 @@ export default function ProductDetailPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-4 pt-8">
-      <div className="w-full max-w-sm bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-2xl">
+    <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-8">
+      <div className="w-full max-w-sm bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
 
         {/* Header */}
         <div className="flex items-start justify-between px-4 py-4 gap-3">
-          <span className="text-sm font-bold text-white leading-snug">{product.name}</span>
+          <span className="text-sm font-bold text-foreground leading-snug">{product.name}</span>
           <button
             onClick={() => setLocation("/")}
-            className="flex-shrink-0 mt-0.5 text-gray-500 hover:text-white transition-colors"
+            className="flex-shrink-0 mt-0.5 text-muted-foreground hover:text-white transition-colors"
             data-testid="button-close-product"
           >
             <X className="h-4 w-4" />
@@ -88,19 +88,19 @@ export default function ProductDetailPage() {
           {/* Description */}
           {product.description ? (
             <div className="space-y-1.5">
-              <p className="text-xs text-gray-500">Description</p>
-              <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+              <p className="text-xs text-muted-foreground">Description</p>
+              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">{product.description}</p>
             </div>
           ) : null}
 
           {/* Variant select */}
           <div className="space-y-1.5">
-            <p className="text-xs text-gray-500">Available options</p>
+            <p className="text-xs text-muted-foreground">Available options</p>
             <Select onValueChange={setSelectedVariantId} value={selectedVariantId || undefined}>
-              <SelectTrigger className="w-full h-10 bg-gray-50 border-gray-200 text-gray-900 text-xs rounded-lg" data-testid="select-variant">
+              <SelectTrigger className="w-full h-10 text-xs rounded-lg" data-testid="select-variant">
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-50 border-gray-200 text-gray-900">
+              <SelectContent>
                 {product.variants.map((v: any) => {
                   const outOfStock = v.stockCount === 0;
                   return (
@@ -108,11 +108,11 @@ export default function ProductDetailPage() {
                       key={v.id}
                       value={v.id.toString()}
                       disabled={outOfStock}
-                      className="text-xs cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
+                      className="text-xs cursor-pointer"
                     >
-                      <span className={`font-bold ${outOfStock ? "text-gray-400" : "text-gray-900"}`}>
+                      <span className={`font-bold ${outOfStock ? "text-muted-foreground" : "text-foreground"}`}>
                         {v.comparePrice && v.comparePrice > v.price && (
-                          <span className="line-through text-gray-500 font-normal mr-1">${(v.comparePrice / 100).toFixed(2)}</span>
+                          <span className="line-through text-muted-foreground font-normal mr-1">${(v.comparePrice / 100).toFixed(2)}</span>
                         )}
                         ${(v.price / 100).toFixed(2)} — {v.name}
                         {outOfStock && <span className="ml-2 text-red-400 font-normal">(out of stock)</span>}
@@ -126,21 +126,21 @@ export default function ProductDetailPage() {
 
           {/* Quantity */}
           <div className="space-y-1.5">
-            <p className="text-xs text-gray-500">Quantity</p>
-            <div className="flex items-center h-10 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden w-full">
+            <p className="text-xs text-muted-foreground">Quantity</p>
+            <div className="flex items-center h-10 bg-input border border-border rounded-lg overflow-hidden w-full">
               <button
                 onClick={() => setQuantity(prev => Math.max(minQty, prev - 1))}
                 disabled={quantity <= minQty}
-                className="h-full px-3 text-gray-500 hover:text-white hover:bg-gray-50 transition-colors border-r border-gray-200 text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+                className="h-full px-3 text-muted-foreground hover:text-white hover:bg-white/5 transition-colors border-r border-border text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
                 data-testid="button-qty-decrease"
               >
                 <Minus className="h-3 w-3" />
               </button>
-              <span className="flex-1 text-center text-sm text-gray-900 font-mono">{quantity}</span>
+              <span className="flex-1 text-center text-sm text-foreground font-mono">{quantity}</span>
               <button
                 onClick={() => setQuantity(prev => Math.min(maxQty, prev + 1))}
                 disabled={quantity >= maxQty}
-                className="h-full px-3 text-gray-500 hover:text-white hover:bg-gray-50 transition-colors border-l border-gray-200 text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+                className="h-full px-3 text-muted-foreground hover:text-white hover:bg-white/5 transition-colors border-l border-border text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
                 data-testid="button-qty-increase"
               >
                 <Plus className="h-3 w-3" />
@@ -150,13 +150,13 @@ export default function ProductDetailPage() {
 
           {/* Total amount */}
           <div className="space-y-1">
-            <p className="text-xs text-gray-500">Total amount</p>
+            <p className="text-xs text-muted-foreground">Total amount</p>
             <div className="flex items-baseline gap-2">
               <p className="text-lg font-bold text-primary">
                 {discountedAmount > 0 ? `$${(discountedAmount / 100).toFixed(2)}` : "—"}
               </p>
               {rankDiscountPct > 0 && discountedAmount < totalAmount && (
-                <span className="text-xs text-gray-400 line-through">${(totalAmount / 100).toFixed(2)}</span>
+                <span className="text-xs text-muted-foreground line-through">${(totalAmount / 100).toFixed(2)}</span>
               )}
               {rankDiscountPct > 0 && discountedAmount < totalAmount && (
                 <span className="text-[10px] text-amber-400 font-bold">{rankDiscountPct}% off</span>
@@ -168,7 +168,7 @@ export default function ProductDetailPage() {
           <button
             onClick={() => purchaseMutation.mutate()}
             disabled={!selectedVariantId || purchaseMutation.isPending}
-            className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-black"
+            className="w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] bg-primary text-primary-foreground"
             data-testid="button-purchase"
           >
             {purchaseMutation.isPending

@@ -45,7 +45,7 @@ export default function AdminPage() {
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0d0d0d]">
-        <Loader2 className="h-7 w-7 animate-spin" style={{ color: "#2d6a2d" }} />
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function AdminPage() {
       <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-white/10 bg-[#111]">
         <div className="px-5 py-5 border-b border-white/8">
           <p className="text-base font-black text-white">
-            BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
+            BEAST<span className="text-primary">CC</span>
           </p>
           <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono mt-0.5">Admin</p>
         </div>
@@ -84,11 +84,12 @@ export default function AdminPage() {
                 data-testid={`admin-nav-${id}`}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
                 style={{
-                  background: active ? "#2d6a2d" : undefined,
-                  color: active ? "#fff" : "#6b7280",
+                  background: active ? "hsl(38 95% 55% / 0.15)" : undefined,
+                  color: active ? "hsl(38 95% 55%)" : "#6b7280",
+                  border: active ? "1px solid hsl(38 95% 55% / 0.25)" : "1px solid transparent",
                 }}
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "#f3f4f6"; (e.currentTarget as HTMLElement).style.color = active ? "#fff" : "#111827"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "#2d6a2d" : ""; (e.currentTarget as HTMLElement).style.color = active ? "#fff" : "#6b7280"; }}
+                onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "#d1d5db"; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "hsl(38 95% 55% / 0.15)" : ""; (e.currentTarget as HTMLElement).style.color = active ? "hsl(38 95% 55%)" : "#6b7280"; }}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span>{label}</span>
@@ -116,7 +117,7 @@ export default function AdminPage() {
         <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/10">
           <div>
             <p className="text-sm font-black text-white">
-              BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
+              BEAST<span className="text-primary">CC</span>
               <span className="ml-1.5 text-xs font-normal text-white/40">Admin</span>
             </p>
             <p className="text-[10px] text-white/40 font-mono">{activeLabel}</p>
@@ -155,13 +156,12 @@ export default function AdminPage() {
                 key={id}
                 onClick={() => setActiveSection(id)}
                 data-testid={`admin-tab-${id}`}
-                className="shrink-0 flex flex-col items-center gap-0.5 py-2 px-3 min-w-[60px] transition-colors"
-                style={{ color: active ? "#2d6a2d" : "#9ca3af" }}
+                className={`shrink-0 flex flex-col items-center gap-0.5 py-2 px-3 min-w-[60px] transition-colors ${active ? "text-primary" : "text-white/40"}`}
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-[9px] font-medium">{label}</span>
                 {active && (
-                  <span className="mt-0.5 w-4 h-0.5 rounded-full" style={{ background: "#2d6a2d" }} />
+                  <span className="mt-0.5 w-4 h-0.5 rounded-full bg-primary" />
                 )}
               </button>
             );

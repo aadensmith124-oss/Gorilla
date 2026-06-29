@@ -65,12 +65,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const NavContent = () => (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ background: "#090a0c" }}>
+    <div className="flex flex-col h-full overflow-y-auto bg-background">
       {/* Brand + close */}
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
         <div>
           <span className="text-lg font-black tracking-tight text-white">BEAST</span>
-          <span className="text-lg font-black tracking-tight" style={{ color: "#4a9a3a" }}>CC</span>
+          <span className="text-lg font-black tracking-tight text-primary">CC</span>
         </div>
         <button
           onClick={() => setIsMobileOpen(false)}
@@ -82,13 +82,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* User pill */}
       {user && (
-        <div className="mx-4 mt-4 mb-2 flex items-center gap-3 border border-white/8 rounded-2xl px-3.5 py-3" style={{ background: "rgba(74,154,58,0.07)" }}>
-          <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(74,154,58,0.15)" }}>
-            <span className="text-[11px] font-black uppercase" style={{ color: "#4a9a3a" }}>{user.username?.[0] || "U"}</span>
+        <div className="mx-4 mt-4 mb-2 flex items-center gap-3 border border-primary/15 rounded-2xl px-3.5 py-3 bg-primary/7">
+          <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0 bg-primary/15">
+            <span className="text-[11px] font-black uppercase text-primary">{user.username?.[0] || "U"}</span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-white/80 truncate">{user.username}</p>
-            <p className="text-[10px] font-mono font-bold" style={{ color: "#4a9a3a" }}>${balanceDollars}</p>
+            <p className="text-[10px] font-mono font-bold text-primary">${balanceDollars}</p>
           </div>
         </div>
       )}
@@ -116,12 +116,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 }
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
-                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer`}
-                      style={isActive
-                        ? { background: "rgba(74,154,58,0.12)", color: "#4a9a3a", border: "1px solid rgba(74,154,58,0.2)" }
-                        : { color: "rgba(255,255,255,0.45)" }}
-                    >
-                      <item.icon className="h-3.5 w-3.5 shrink-0" style={isActive ? { color: "#4a9a3a" } : { color: "rgba(255,255,255,0.3)" }} />
+                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-primary/12 text-primary border border-primary/20"
+                        : "text-white/45 hover:text-white/70 hover:bg-white/5"
+                    }`}>
+                      <item.icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-white/30"}`} />
                       {item.label}
                     </div>
                   </Link>
@@ -150,27 +150,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   if (isAuthPage) return <>{children}</>;
 
   return (
-    <div className="min-h-screen" style={{ background: "#090a0c" }}>
+    <div className="min-h-screen bg-background">
       {/* Top Bar */}
-      <header className="h-[52px] border-b sticky top-0 z-40 px-4 flex items-center justify-between" style={{ background: "#090a0c", borderColor: "rgba(255,255,255,0.07)" }}>
+      <header className="h-[52px] border-b border-white/7 sticky top-0 z-40 px-4 flex items-center justify-between bg-background">
         {/* Left: Panel icon hamburger + brand */}
         <div className="flex items-center gap-3">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all bg-white/[0.06] border border-white/10 text-white/70"
                 data-testid="btn-menu"
               >
                 <PanelLeft className="h-[15px] w-[15px]" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[260px] p-0 border-r" style={{ borderColor: "rgba(255,255,255,0.08)", background: "#090a0c" }}>
+            <SheetContent side="left" className="w-[260px] p-0 border-r border-white/8 bg-background">
               <NavContent />
             </SheetContent>
           </Sheet>
 
-          <span className="text-sm font-black tracking-tight text-white">BEAST<span style={{ color: "#4a9a3a" }}>CC</span></span>
+          <span className="text-sm font-black tracking-tight text-white">BEAST<span className="text-primary">CC</span></span>
         </div>
 
         {/* Right: Balance + User */}
@@ -179,12 +178,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <>
               <Link href="/">
                 <button
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border"
-                  style={{
-                    background: "rgba(74,154,58,0.1)",
-                    borderColor: "rgba(74,154,58,0.25)",
-                    color: "#4a9a3a",
-                  }}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border bg-primary/10 border-primary/25 text-primary hover:bg-primary/15"
                   data-testid="btn-balance"
                 >
                   <span>${balanceDollars}</span>
@@ -199,8 +193,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <ChevronDown className="h-3 w-3" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="border text-xs min-w-[200px] rounded-2xl shadow-xl" style={{ background: "#111", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }} align="end">
-                  <div className="px-3 py-2.5 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+                <DropdownMenuContent className="border border-white/10 text-xs min-w-[200px] rounded-2xl shadow-xl bg-[#111] text-white/80" align="end">
+                  <div className="px-3 py-2.5 border-b border-white/7">
                     <p className="text-[10px] text-white/35 truncate">{user.username}</p>
                   </div>
                   <DropdownMenuItem asChild>
@@ -221,7 +215,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator style={{ background: "rgba(255,255,255,0.07)" }} />
+                  <DropdownMenuSeparator className="bg-white/7" />
                   <DropdownMenuItem onClick={() => logout()} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
                     <LogOut className="h-3 w-3 mr-2" />
                     Sign out

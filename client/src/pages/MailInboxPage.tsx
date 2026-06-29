@@ -50,10 +50,10 @@ export function MailInboxPage() {
         <Button variant="outline" size="sm" onClick={() => setSelectedMail(null)} className="flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" /> Back to Inbox
         </Button>
-        <Card className="bg-white border-gray-200">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
-              <CardTitle className="text-lg font-bold text-white">{selectedMail.title}</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">{selectedMail.title}</CardTitle>
               <span className="text-[10px] text-muted-foreground whitespace-nowrap pt-1">
                 {new Date(selectedMail.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </span>
@@ -63,7 +63,7 @@ export function MailInboxPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-[#e1e1e1] whitespace-pre-wrap leading-relaxed">{selectedMail.body}</div>
+            <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{selectedMail.body}</div>
           </CardContent>
         </Card>
       </div>
@@ -95,7 +95,7 @@ export function MailInboxPage() {
             className="w-full text-left"
             data-testid={`mail-item-${mail.id}`}
           >
-            <Card className={`border transition-colors hover:border-primary/30 cursor-pointer ${!mail.isRead ? "bg-gray-50 border-primary/20" : "bg-white border-gray-200"}`}>
+            <Card className={`border transition-colors hover:border-primary/30 cursor-pointer ${!mail.isRead ? "bg-card border-primary/20" : "bg-card/50 border-border"}`}>
               <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   {!mail.isRead && (

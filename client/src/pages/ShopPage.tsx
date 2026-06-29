@@ -49,12 +49,12 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
       <div
         className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.99] bg-[#111]"
         style={{
-          borderColor: isTop1 ? "rgba(45,106,45,0.4)" : isTop2 ? "rgba(45,106,45,0.2)" : "#e5e7eb",
+          borderColor: isTop1 ? "hsl(38 95% 55% / 0.4)" : isTop2 ? "hsl(38 95% 55% / 0.2)" : "rgba(255,255,255,0.1)",
           boxShadow: isTop1
-            ? "0 4px 16px rgba(45,106,45,0.15)"
+            ? "0 4px 16px hsl(38 95% 55% / 0.15)"
             : isTop2
-            ? "0 2px 8px rgba(45,106,45,0.08)"
-            : "0 1px 3px rgba(0,0,0,0.06)",
+            ? "0 2px 8px hsl(38 95% 55% / 0.08)"
+            : "none",
         }}
         data-testid={`card-product-${product.id}`}
       >
@@ -80,12 +80,12 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
           )}
 
           {isTop1 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-green-700 text-white shadow-sm">
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-primary text-primary-foreground shadow-sm">
               ⚡ Top 1
             </div>
           )}
           {isTop2 && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-300 text-green-700 bg-green-50">
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-primary/30 text-primary bg-primary/10">
               🔥 Top 2
             </div>
           )}
@@ -103,14 +103,14 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
                 <span className="text-[10px] line-through text-white/30 font-mono">${(comparePrice / 100).toFixed(2)}</span>
               )}
               {lowestPrice > 0 ? (
-                <span className={`text-sm font-black font-mono ${isTop1 ? "text-green-700" : isTop2 ? "text-green-600" : "text-white"}`}>
+                <span className={`text-sm font-black font-mono ${isTop1 ? "text-primary" : isTop2 ? "text-primary/80" : "text-white"}`}>
                   ${(lowestPrice / 100).toFixed(2)}
                 </span>
               ) : (
                 <span className="text-sm font-black font-mono text-white/40">Free</span>
               )}
             </div>
-            <div className="flex items-center gap-0.5 text-green-600">
+            <div className="flex items-center gap-0.5 text-primary/70">
               <Zap className="h-2.5 w-2.5" />
               <span className="text-[9px] font-mono">instant</span>
             </div>
@@ -157,9 +157,9 @@ export default function ShopPage() {
   if (user?.isBanned) {
     return (
       <div className="max-w-sm mx-auto px-4 py-10">
-        <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center space-y-3">
+        <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl text-center space-y-3">
           <ShieldX className="h-8 w-8 text-red-400 mx-auto" />
-          <p className="text-sm text-red-600 font-bold">Account Restricted</p>
+          <p className="text-sm text-red-400 font-bold">Account Restricted</p>
           <p className="text-xs text-white/40 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function ShopPage() {
       {/* Header */}
       <div className="space-y-0.5">
         <h1 className="text-lg font-black text-white">
-          BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
+          BEAST<span className="text-primary">CC</span>
           <span className="ml-2 text-xs font-mono font-normal text-white/40">Logs</span>
         </h1>
         <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">BEST HIGH QUALITY CARDS</p>

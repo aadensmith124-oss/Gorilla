@@ -17,11 +17,11 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="group cursor-pointer rounded-2xl overflow-hidden border border-gray-200 bg-white transition-all hover:border-gray-200 hover:scale-[1.02] active:scale-[0.99] flex flex-col"
+        className="group cursor-pointer rounded-2xl overflow-hidden border border-white/10 bg-[#111] transition-all hover:border-white/20 hover:scale-[1.02] active:scale-[0.99] flex flex-col"
         data-testid={`card-product-${product.id}`}
       >
         {/* Square image */}
-        <div className="w-full bg-white relative" style={{ aspectRatio: '1 / 1' }}>
+        <div className="w-full bg-white/[0.03] relative" style={{ aspectRatio: '1 / 1' }}>
           {product.image && !imgError ? (
             <img
               src={product.image}
@@ -42,7 +42,7 @@ export function ProductCard({ product }: { product: ProductWithVariants }) {
             {product.name}
           </p>
 
-          <button className="w-full h-7 rounded-xl text-[10px] font-bold text-black flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98] bg-white">
+          <button className="w-full h-7 rounded-xl text-[10px] font-bold text-primary-foreground flex items-center justify-between px-2.5 transition-all hover:opacity-90 active:scale-[0.98] bg-primary">
             <span>Buy Now</span>
             <span className="flex items-center gap-1">
               {comparePrice && comparePrice > lowestPrice && (
