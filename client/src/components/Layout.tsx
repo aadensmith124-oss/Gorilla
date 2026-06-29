@@ -169,7 +169,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          <span className="text-sm font-black tracking-tight text-white">BEAST<span className="text-primary">CC</span></span>
         </div>
 
         {/* Right: Balance + User */}

@@ -206,118 +206,120 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto px-0 py-0">
 
       {/* Search + controls */}
-      <div className="px-3 pt-3 pb-2 space-y-2 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
+      <div className="px-3 pt-2.5 pb-2 space-y-1.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
         {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
           <input
             type="text"
             placeholder="Search cards, base name, BIN, brand..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 focus:bg-[#111] transition-colors"
+            className="w-full h-8 bg-[#0d0d0d] border border-white/10 rounded-lg pl-8 pr-3 text-[11px] text-white/90 placeholder:text-white/35 outline-none focus:border-white/15 transition-colors"
             data-testid="input-search"
           />
         </div>
 
-        {/* All Bases dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowBaseDropdown(d => !d)}
-            className="w-full flex items-center justify-between bg-[#0d0d0d] border border-white/10 rounded-xl px-3.5 h-10 text-sm text-white/70 hover:bg-[#111]/5 transition-colors"
-            data-testid="btn-base-dropdown"
-          >
-            <span>{selectedBaseName}</span>
-            <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
-          </button>
-          {showBaseDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden">
-              <button
-                onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
-                className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#0d0d0d] ${selectedBase === null ? "font-semibold text-white" : "text-white/60"}`}
-                data-testid="btn-base-all"
-              >
-                All Bases
-              </button>
-              {(bases ?? []).map((b: any) => (
+        <div className="flex gap-1.5">
+          {/* All Bases dropdown */}
+          <div className="relative flex-1">
+            <button
+              onClick={() => setShowBaseDropdown(d => !d)}
+              className="w-full flex items-center justify-between bg-[#0d0d0d] border border-white/10 rounded-lg px-2.5 h-8 text-[11px] text-white/60 hover:text-white/80 transition-colors"
+              data-testid="btn-base-dropdown"
+            >
+              <span className="truncate">{selectedBaseName}</span>
+              <ChevronDown className={`h-3 w-3 text-white/30 ml-1 flex-shrink-0 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
+            </button>
+            {showBaseDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden max-h-48 overflow-y-auto">
                 <button
-                  key={b.id}
-                  onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
-                  className={`w-full text-left px-4 py-3 text-sm border-t border-white/8 transition-colors hover:bg-[#0d0d0d] ${selectedBase === b.id ? "font-semibold text-white" : "text-white/60"}`}
-                  data-testid={`btn-base-${b.id}`}
+                  onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
+                  className={`w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-[#0d0d0d] ${selectedBase === null ? "font-semibold text-white" : "text-white/55"}`}
+                  data-testid="btn-base-all"
                 >
-                  {b.name} ({b.count})
+                  All Bases
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+                {(bases ?? []).map((b: any) => (
+                  <button
+                    key={b.id}
+                    onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
+                    className={`w-full text-left px-3 py-2 text-[11px] border-t border-white/8 transition-colors hover:bg-[#0d0d0d] ${selectedBase === b.id ? "font-semibold text-white" : "text-white/55"}`}
+                    data-testid={`btn-base-${b.id}`}
+                  >
+                    {b.name} ({b.count})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Filters button */}
-        <button
-          onClick={() => setShowFilters(f => !f)}
-          className={`w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-colors ${
-            showFilters || activeFilters > 0
-              ? "bg-gray-800 border-gray-800 text-white"
-              : "bg-gray-800 border-gray-800 text-white hover:bg-gray-700"
-          }`}
-          data-testid="btn-toggle-filters"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
-        </button>
+          {/* Filters button */}
+          <button
+            onClick={() => setShowFilters(f => !f)}
+            className={`flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
+              showFilters || activeFilters > 0
+                ? "bg-white/10 border-white/20 text-white"
+                : "bg-[#0d0d0d] border-white/10 text-white/50 hover:text-white/70"
+            }`}
+            data-testid="btn-toggle-filters"
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+            Filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
+          </button>
+        </div>
 
         {/* Filter panel */}
         {showFilters && (
-          <div className="space-y-2 bg-[#0d0d0d] border border-white/10 rounded-xl p-3">
+          <div className="space-y-2 bg-[#0d0d0d] border border-white/10 rounded-xl p-2.5">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">ZIP Code</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-1">ZIP Code</p>
               <input
                 type="text"
                 placeholder="Enter ZIP..."
                 value={zipSearch}
                 onChange={e => setZipSearch(e.target.value)}
-                className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15"
+                className="w-full h-7 bg-[#111] border border-white/10 rounded-lg px-2.5 text-[11px] text-white/90 placeholder:text-white/35 outline-none focus:border-white/15"
                 data-testid="input-zip"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">Bank</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-1">Bank</p>
                 <select
                   value={selectedBank}
                   onChange={e => setSelectedBank(e.target.value)}
-                  className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-white/70 outline-none"
+                  className="w-full h-7 bg-[#111] border border-white/10 rounded-lg px-2 text-[11px] text-white/70 outline-none"
                 >
                   <option value="">All Banks</option>
                   {availableBanks.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">Country</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-1">Country</p>
                 <select
                   value={selectedCountry}
                   onChange={e => setSelectedCountry(e.target.value)}
-                  className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-white/70 outline-none"
+                  className="w-full h-7 bg-[#111] border border-white/10 rounded-lg px-2 text-[11px] text-white/70 outline-none"
                 >
                   <option value="">All</option>
                   {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-1.5 items-center">
               <input type="number" step="0.01" placeholder="Min $" value={priceMin} onChange={e => setPriceMin(e.target.value)}
-                className="flex-1 h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none"
+                className="flex-1 h-7 bg-[#111] border border-white/10 rounded-lg px-2.5 text-[11px] text-white/90 placeholder:text-white/35 outline-none"
                 data-testid="input-price-min"
               />
-              <span className="text-white/30 text-xs shrink-0">—</span>
+              <span className="text-white/30 text-[11px] shrink-0">—</span>
               <input type="number" step="0.01" placeholder="Max $" value={priceMax} onChange={e => setPriceMax(e.target.value)}
-                className="flex-1 h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none"
+                className="flex-1 h-7 bg-[#111] border border-white/10 rounded-lg px-2.5 text-[11px] text-white/90 placeholder:text-white/35 outline-none"
                 data-testid="input-price-max"
               />
             </div>
             {activeFilters > 0 && (
-              <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors">
+              <button onClick={clearFilters} className="flex items-center gap-1 text-[10px] text-red-400/70 hover:text-red-400 transition-colors">
                 <X className="h-3 w-3" /> Clear all filters
               </button>
             )}
@@ -328,22 +330,22 @@ export default function CardsPage() {
         <button
           onClick={purchaseCart}
           disabled={cartCardIds.size === 0 || !!cartPurchasing}
-          className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg border text-[11px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: cartCardIds.size > 0 ? "hsl(38 95% 55% / 0.08)" : "rgba(255,255,255,0.04)",
-            borderColor: cartCardIds.size > 0 ? "hsl(38 95% 55% / 0.3)" : "rgba(255,255,255,0.1)",
-            color: cartCardIds.size > 0 ? "hsl(38 95% 55%)" : "rgba(255,255,255,0.3)",
+            background: cartCardIds.size > 0 ? "hsl(112 45% 42% / 0.08)" : "rgba(255,255,255,0.03)",
+            borderColor: cartCardIds.size > 0 ? "hsl(112 45% 42% / 0.3)" : "rgba(255,255,255,0.08)",
+            color: cartCardIds.size > 0 ? "hsl(112 45% 42%)" : "rgba(255,255,255,0.25)",
           }}
           data-testid="btn-add-selected"
         >
           {cartPurchasing && !cartPurchasing.done ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3 w-3 animate-spin" />
               Purchasing {cartPurchasing.current}/{cartPurchasing.total}...
             </>
           ) : (
             <>
-              <ShoppingCart className="h-4 w-4" />
+              <ShoppingCart className="h-3 w-3" />
               Buy Selected ({cartCardIds.size}){cartCardIds.size > 0 ? ` · $${(cartTotal / 100).toFixed(2)}` : ""}
             </>
           )}
@@ -353,32 +355,32 @@ export default function CardsPage() {
       {/* Table */}
       <div className="overflow-x-auto bg-[#0a0a0a]">
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-4 w-4 animate-spin text-white/30" />
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="py-16 text-center text-sm text-white/40">No cards available</div>
+          <div className="py-12 text-center text-xs text-white/35">No cards available</div>
         ) : (
-          <table className="w-full text-sm border-collapse" style={{ minWidth: "560px" }}>
+          <table className="w-full text-xs border-collapse" style={{ minWidth: "520px" }}>
             <thead>
               <tr className="border-b border-white/10">
-                <th className="w-10 px-3 py-3 text-left">
+                <th className="w-8 px-2.5 py-2 text-left">
                   <input
                     type="checkbox"
                     checked={filteredCards.length > 0 && cartCardIds.size === filteredCards.length}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
+                    className="w-3.5 h-3.5 rounded border-white/15 cursor-pointer accent-green-500"
                     data-testid="checkbox-all"
                   />
                 </th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">BIN</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">TYPE</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">BANK</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">ZIP</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">COUNTRY</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">ST</th>
-                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-white/40">PRICE</th>
-                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-white/40">BUY</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BIN</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">TYPE</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BANK</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ZIP</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">CC</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ST</th>
+                <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">$</th>
+                <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">BUY</th>
               </tr>
             </thead>
             <tbody>
@@ -427,49 +429,49 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
 
   return (
     <tr
-      className={`border-b border-white/8 transition-colors ${inCart ? "bg-primary/5" : "hover:bg-[#0d0d0d]"}`}
+      className={`border-b border-white/[0.06] transition-colors ${inCart ? "bg-primary/[0.04]" : "hover:bg-white/[0.02]"}`}
       data-testid={`card-row-${card.id}`}
     >
-      <td className="px-3 py-3">
+      <td className="px-2.5 py-2">
         <input
           type="checkbox"
           checked={inCart}
           onChange={() => onToggleCart(card)}
-          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
+          className="w-3.5 h-3.5 rounded border-white/15 cursor-pointer accent-green-500"
           data-testid={`checkbox-card-${card.id}`}
         />
       </td>
-      <td className="px-3 py-3">
-        <span className="font-bold font-mono text-sm text-white">{bin || "—"}</span>
+      <td className="px-2.5 py-2">
+        <span className="font-bold font-mono text-xs text-white">{bin || "—"}</span>
       </td>
-      <td className="px-3 py-3">
-        <span className="text-xs font-mono text-white/60">{cardType || "—"}</span>
+      <td className="px-2.5 py-2">
+        <span className="text-[11px] font-mono text-white/55">{cardType || "—"}</span>
       </td>
-      <td className="px-3 py-3 max-w-[140px]">
-        <span className="text-xs text-white/60 truncate block">{bank || "—"}</span>
+      <td className="px-2.5 py-2 max-w-[120px]">
+        <span className="text-[11px] text-white/55 truncate block">{bank || "—"}</span>
       </td>
-      <td className="px-3 py-3">
-        <span className="text-xs font-mono text-white/60">{zip || "—"}</span>
+      <td className="px-2.5 py-2">
+        <span className="text-[11px] font-mono text-white/55">{zip || "—"}</span>
       </td>
-      <td className="px-3 py-3">
-        <span className="text-lg leading-none">{flag || "—"}</span>
+      <td className="px-2.5 py-2">
+        <span className="text-sm leading-none">{flag || "—"}</span>
       </td>
-      <td className="px-3 py-3">
-        <span className="text-xs font-mono text-white/60">{state || "—"}</span>
+      <td className="px-2.5 py-2">
+        <span className="text-[11px] font-mono text-white/55">{state || "—"}</span>
       </td>
-      <td className="px-3 py-3 text-right">
-        <span className="font-bold text-sm text-white">${(card.price / 100).toFixed(2)}</span>
+      <td className="px-2.5 py-2 text-right">
+        <span className="font-bold text-xs text-white">${(card.price / 100).toFixed(2)}</span>
       </td>
-      <td className="px-3 py-3 text-right">
+      <td className="px-2.5 py-2 text-right">
         <button
           onClick={() => purchaseMutation.mutate()}
           disabled={purchaseMutation.isPending}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-[#111]/5 hover:bg-[#111]/8 text-white/60 transition-colors disabled:opacity-50"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-white/50 transition-colors disabled:opacity-50"
           data-testid={`btn-buy-card-${card.id}`}
         >
           {purchaseMutation.isPending
-            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            : <ShoppingCart className="h-3.5 w-3.5" />
+            ? <Loader2 className="h-3 w-3 animate-spin" />
+            : <ShoppingCart className="h-3 w-3" />
           }
         </button>
       </td>
