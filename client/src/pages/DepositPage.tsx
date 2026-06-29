@@ -294,6 +294,8 @@ export default function DepositPage() {
 
   const recentDeposits = deposits?.slice(0, 20) ?? [];
   const pendingDeposits = deposits?.filter(d => !["completed", "delivering", "fulfilled", "failed", "expired"].includes(d.status)) ?? [];
+  const pendingManualDeposits = pendingDeposits.filter(d => d.type !== "crypto");
+  const pendingCryptoDeposits = pendingDeposits.filter(d => d.type === "crypto");
   const parsedAmount = parseFloat(amountInput) || 0;
   const activeTier = BONUS_TIERS.find(t => parsedAmount >= t.min && (t.max === null || parsedAmount <= t.max));
   const visibleCoins = showMoreCoins ? COINS : COINS.slice(0, 6);
@@ -324,12 +326,41 @@ export default function DepositPage() {
         </button>
       </a>
 
-      {pendingDeposits.length > 0 && (
+      {pendingCryptoDeposits.length > 0 && (
         <div className="border border-yellow-500/20 bg-yellow-950/10 rounded px-3 py-2 flex items-center gap-2">
           <Clock className="h-3.5 w-3.5 text-yellow-400/60 flex-shrink-0" />
           <p className="text-[11px] text-yellow-400/70 font-mono">
-            {pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""} — awaiting confirmation
+            {pendingCryptoDeposits.length} crypto deposit{pendingCryptoDeposits.length > 1 ? "s" : ""} pending — awaiting network confirmation
           </p>
+        </div>
+      )}
+
+      {/* Pending manual deposits (CashApp / Chime / Zelle) in a separate prominent section */}
+      {pendingManualDeposits.length > 0 && (
+        <div className="rounded-xl border border-white/10 overflow-hidden" style={{ background: "#0e0e0e" }}>
+          <div className="px-3 py-2 border-b border-white/8 flex items-center gap-2">
+            <Clock className="h-3 w-3 text-yellow-400/70 flex-shrink-0" />
+            <p className="text-[10px] font-bold text-yellow-400/80 uppercase tracking-widest font-mono">Awaiting Admin Confirmation</p>
+          </div>
+          <div className="divide-y divide-white/5">
+            {pendingManualDeposits.map(dep => (
+              <div key={dep.id} className="px-3 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0"
+                    style={{ background: methodColor(dep.type) + "33", color: methodColor(dep.type) }}>
+                    {dep.type.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono text-white font-bold">{dep.amount > 0 ? `$${(dep.amount / 100).toFixed(2)}` : "pending"}</p>
+                    <p className="text-[10px] text-white/25 font-mono">{methodLabel(dep.type)} · {dep.paymentNote || "—"}</p>
+                  </div>
+                </div>
+                <span className="text-[9px] px-2 py-0.5 rounded font-mono animate-pulse" style={{ background: "rgba(255,200,0,0.1)", color: "rgba(255,200,0,0.6)" }}>
+                  pending
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

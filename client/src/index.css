@@ -5,24 +5,24 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 97%;
-  --foreground: 0 0% 8%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 8%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 8%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 93%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 93%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 93%;
   --primary: 122 40% 29%;
   --primary-foreground: 0 0% 98%;
-  --secondary: 0 0% 94%;
-  --secondary-foreground: 0 0% 20%;
-  --muted: 0 0% 93%;
-  --muted-foreground: 0 0% 45%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 85%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 50%;
   --accent: 122 40% 29%;
   --accent-foreground: 0 0% 98%;
-  --destructive: 0 84% 60%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 87%;
-  --input: 0 0% 96%;
+  --border: 0 0% 13%;
+  --input: 0 0% 9%;
   --ring: 122 40% 29%;
   --radius: 0.625rem;
   --font-display: 'Inter', sans-serif;
@@ -44,9 +44,9 @@
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-.glass { @apply bg-white/80 backdrop-blur-xl border border-black/[0.06] shadow-md; }
-.pro-card { @apply bg-white border border-gray-200 rounded-2xl shadow-sm; }
-.item-row { @apply border border-gray-200 bg-white rounded-xl p-3 hover:bg-gray-50 transition-colors; }
+.glass { @apply bg-white/5 backdrop-blur-xl border border-white/[0.06] shadow-md; }
+.pro-card { @apply bg-[#111] border border-white/10 rounded-2xl shadow-sm; }
+.item-row { @apply border border-white/10 bg-[#111] rounded-xl p-3 hover:bg-white/5 transition-colors; }

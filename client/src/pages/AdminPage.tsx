@@ -44,7 +44,7 @@ export default function AdminPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-[#0d0d0d]">
         <Loader2 className="h-7 w-7 animate-spin" style={{ color: "#2d6a2d" }} />
       </div>
     );
@@ -52,10 +52,10 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-50 gap-3">
+      <div className="flex h-screen flex-col items-center justify-center bg-[#0d0d0d] gap-3">
         <ShieldX className="h-12 w-12 text-red-400" />
-        <p className="text-base font-bold text-gray-700">Access Denied</p>
-        <p className="text-sm text-gray-400">Admin accounts only</p>
+        <p className="text-base font-bold text-white/70">Access Denied</p>
+        <p className="text-sm text-white/40">Admin accounts only</p>
       </div>
     );
   }
@@ -63,15 +63,15 @@ export default function AdminPage() {
   const activeLabel = adminSections.find(s => s.id === activeSection)?.label ?? "";
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-[#0d0d0d] overflow-hidden">
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
-        <div className="px-5 py-5 border-b border-gray-100">
-          <p className="text-base font-black text-gray-900">
+      <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-white/10 bg-[#111]">
+        <div className="px-5 py-5 border-b border-white/8">
+          <p className="text-base font-black text-white">
             BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
           </p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-mono mt-0.5">Admin</p>
+          <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono mt-0.5">Admin</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
@@ -98,10 +98,10 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <div className="p-3 border-t border-gray-100">
+        <div className="p-3 border-t border-white/8">
           <button
             onClick={() => setLocation("/")}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/40 hover:text-white/70 hover:bg-[#111]/5 transition-colors"
           >
             <ChevronRight className="h-3.5 w-3.5 rotate-180" />
             Back to site
@@ -113,17 +113,17 @@ export default function AdminPage() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Mobile header */}
-        <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+        <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/10">
           <div>
-            <p className="text-sm font-black text-gray-900">
+            <p className="text-sm font-black text-white">
               BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
-              <span className="ml-1.5 text-xs font-normal text-gray-400">Admin</span>
+              <span className="ml-1.5 text-xs font-normal text-white/40">Admin</span>
             </p>
-            <p className="text-[10px] text-gray-400 font-mono">{activeLabel}</p>
+            <p className="text-[10px] text-white/40 font-mono">{activeLabel}</p>
           </div>
           <button
             onClick={() => setLocation("/")}
-            className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+            className="text-xs text-white/45 border border-white/10 rounded-lg px-2.5 py-1.5 hover:bg-[#0d0d0d] transition-colors"
           >
             ← Site
           </button>
@@ -145,7 +145,7 @@ export default function AdminPage() {
 
         {/* ── Mobile bottom tab bar ── */}
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-50 flex overflow-x-auto bg-white border-t border-gray-200"
+          className="md:hidden fixed bottom-0 inset-x-0 z-50 flex overflow-x-auto bg-[#111] border-t border-white/10"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         >
           {adminSections.map(({ id, label, Icon }) => {
@@ -215,7 +215,7 @@ function DashboardSection() {
       <div className="border border-red-500/20 bg-red-950/10 rounded-xl p-4 space-y-3">
         <div>
           <p className="text-sm font-bold text-red-400">Danger Zone</p>
-          <p className="text-xs text-gray-500 mt-0.5">Permanently wipe all products, orders, cards, and reset all user balances to $0.</p>
+          <p className="text-xs text-white/45 mt-0.5">Permanently wipe all products, orders, cards, and reset all user balances to $0.</p>
         </div>
         {!confirmClear ? (
           <button
@@ -238,7 +238,7 @@ function DashboardSection() {
             </button>
             <button
               onClick={() => setConfirmClear(false)}
-              className="px-3 py-1.5 rounded bg-gray-50 text-gray-500 text-xs hover:bg-gray-100 transition-colors"
+              className="px-3 py-1.5 rounded bg-[#0d0d0d] text-white/45 text-xs hover:bg-[#111]/5 transition-colors"
             >
               Cancel
             </button>
@@ -264,7 +264,7 @@ function DepositsSection() {
     if (status === "fulfilled" || status === "delivering") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-mono">credited</span>;
     if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">{type === "cashapp" ? "awaiting admin" : "pending"}</span>;
     if (status === "waiting_payment") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">unpaid</span>;
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">{status}</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#111]/5 text-white/45 font-mono">{status}</span>;
   };
 
   return (
@@ -274,30 +274,30 @@ function DepositsSection() {
           <h1 className="text-2xl font-semibold">Deposits</h1>
           <p className="text-sm text-muted-foreground mt-1">All crypto and CashApp deposits from all users</p>
         </div>
-        <Button size="sm" variant="outline" className="text-xs border-gray-200" onClick={() => refetch()}>Refresh</Button>
+        <Button size="sm" variant="outline" className="text-xs border-white/10" onClick={() => refetch()}>Refresh</Button>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : !deposits?.length ? (
-        <div className="text-center py-20 text-gray-400 text-sm">No deposits yet</div>
+        <div className="text-center py-20 text-white/40 text-sm">No deposits yet</div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-gray-200 hover:bg-transparent">
-                <TableHead className="text-gray-500 text-xs">User</TableHead>
-                <TableHead className="text-gray-500 text-xs">Type</TableHead>
-                <TableHead className="text-gray-500 text-xs">Amount</TableHead>
-                <TableHead className="text-gray-500 text-xs">Status</TableHead>
-                <TableHead className="text-gray-500 text-xs">Note</TableHead>
-                <TableHead className="text-gray-500 text-xs">Date</TableHead>
+              <TableRow className="border-white/10 hover:bg-transparent">
+                <TableHead className="text-white/45 text-xs">User</TableHead>
+                <TableHead className="text-white/45 text-xs">Type</TableHead>
+                <TableHead className="text-white/45 text-xs">Amount</TableHead>
+                <TableHead className="text-white/45 text-xs">Status</TableHead>
+                <TableHead className="text-white/45 text-xs">Note</TableHead>
+                <TableHead className="text-white/45 text-xs">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {deposits.map((d: any) => (
-                <TableRow key={d.id} className="border-gray-200 hover:bg-white/[0.02]">
-                  <TableCell className="text-xs font-mono text-gray-600">{d.username}</TableCell>
+                <TableRow key={d.id} className="border-white/10 hover:bg-[#111]/[0.02]">
+                  <TableCell className="text-xs font-mono text-white/60">{d.username}</TableCell>
                   <TableCell className="text-xs">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${d.type === "crypto" ? "bg-blue-500/15 text-blue-400" : "bg-green-500/15 text-green-400"}`}>
                       {d.type}
@@ -305,8 +305,8 @@ function DepositsSection() {
                   </TableCell>
                   <TableCell className="text-xs font-mono font-bold">${((d.amount ?? 0) / 100).toFixed(2)}</TableCell>
                   <TableCell>{statusBadge(d.status, d.type)}</TableCell>
-                  <TableCell className="text-[10px] font-mono text-gray-500">{d.paymentNote ?? "—"}</TableCell>
-                  <TableCell className="text-[10px] text-gray-500">{new Date(d.createdAt).toLocaleString()}</TableCell>
+                  <TableCell className="text-[10px] font-mono text-white/45">{d.paymentNote ?? "—"}</TableCell>
+                  <TableCell className="text-[10px] text-white/45">{new Date(d.createdAt).toLocaleString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -320,7 +320,7 @@ function DepositsSection() {
 function StatCard({ title, value, icon: Icon, color }: any) {
   const colorClass = color === "green" ? "text-green-500" : color === "orange" ? "text-orange-500" : "text-primary";
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-[#111] border-white/10">
       <CardContent className="p-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">{title}</p>
@@ -483,7 +483,7 @@ function ProductsSection() {
       </div>
 
       {showAddForm && (
-        <Card className="bg-white border-primary/20">
+        <Card className="bg-[#111] border-primary/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Add Product</CardTitle>
@@ -496,7 +496,7 @@ function ProductsSection() {
                 <FormField control={addForm.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
-                    <FormControl><Input {...field} className="bg-gray-100 border-gray-200" /></FormControl>
+                    <FormControl><Input {...field} className="bg-[#111]/5 border-white/10" /></FormControl>
                   </FormItem>
                 )} />
                 <FormField control={addForm.control} name="description" render={({ field }) => (
@@ -507,20 +507,20 @@ function ProductsSection() {
                         {...field}
                         placeholder="Describe the product — shown on product detail page..."
                         rows={4}
-                        className="bg-gray-100 border-gray-200 resize-none text-sm"
+                        className="bg-[#111]/5 border-white/10 resize-none text-sm"
                       />
                     </FormControl>
                   </FormItem>
                 )} />
                 <FormField control={addForm.control} name="image" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image <span className="text-gray-400 font-normal">(optional)</span></FormLabel>
+                    <FormLabel>Image <span className="text-white/40 font-normal">(optional)</span></FormLabel>
                     <div className="flex gap-2 items-start">
                       <FormControl className="flex-1">
-                        <Input {...field} placeholder="https://... or upload below" className="bg-gray-100 border-gray-200" data-testid="input-product-image" />
+                        <Input {...field} placeholder="https://... or upload below" className="bg-[#111]/5 border-white/10" data-testid="input-product-image" />
                       </FormControl>
                       <label className="relative cursor-pointer shrink-0">
-                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-xs text-gray-600 hover:text-white hover:border-gray-300 transition-colors">
+                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-white/10 bg-[#111]/5 text-xs text-white/60 hover:text-white hover:border-white/20 transition-colors">
                           {isUploadingAddImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                           Gallery
                         </div>
@@ -528,7 +528,7 @@ function ProductsSection() {
                       </label>
                     </div>
                     {field.value && (
-                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-gray-200" onError={e => (e.currentTarget.style.display = "none")} />
+                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
                     )}
                   </FormItem>
                 )} />
@@ -542,7 +542,7 @@ function ProductsSection() {
       )}
 
       {editingProduct && (
-        <Card className="bg-white border-primary/20">
+        <Card className="bg-[#111] border-primary/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Edit: {editingProduct.name}</CardTitle>
@@ -555,7 +555,7 @@ function ProductsSection() {
                 <FormField control={editForm.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name</FormLabel>
-                    <FormControl><Input {...field} className="bg-gray-100 border-gray-200" /></FormControl>
+                    <FormControl><Input {...field} className="bg-[#111]/5 border-white/10" /></FormControl>
                   </FormItem>
                 )} />
                 <FormField control={editForm.control} name="description" render={({ field }) => (
@@ -566,20 +566,20 @@ function ProductsSection() {
                         {...field}
                         placeholder="Describe the product — shown on product detail page..."
                         rows={4}
-                        className="bg-gray-100 border-gray-200 resize-none text-sm"
+                        className="bg-[#111]/5 border-white/10 resize-none text-sm"
                       />
                     </FormControl>
                   </FormItem>
                 )} />
                 <FormField control={editForm.control} name="image" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image <span className="text-gray-400 font-normal">(optional)</span></FormLabel>
+                    <FormLabel>Image <span className="text-white/40 font-normal">(optional)</span></FormLabel>
                     <div className="flex gap-2 items-start">
                       <FormControl className="flex-1">
-                        <Input {...field} placeholder="https://... or upload below" className="bg-gray-100 border-gray-200" data-testid="input-edit-product-image" />
+                        <Input {...field} placeholder="https://... or upload below" className="bg-[#111]/5 border-white/10" data-testid="input-edit-product-image" />
                       </FormControl>
                       <label className="relative cursor-pointer shrink-0">
-                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-gray-200 bg-gray-100 text-xs text-gray-600 hover:text-white hover:border-gray-300 transition-colors">
+                        <div className="flex items-center gap-1.5 h-10 px-3 rounded-md border border-white/10 bg-[#111]/5 text-xs text-white/60 hover:text-white hover:border-white/20 transition-colors">
                           {isUploadingEditImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                           Gallery
                         </div>
@@ -587,7 +587,7 @@ function ProductsSection() {
                       </label>
                     </div>
                     {field.value && (
-                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-gray-200" onError={e => (e.currentTarget.style.display = "none")} />
+                      <img src={field.value} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded border border-white/10" onError={e => (e.currentTarget.style.display = "none")} />
                     )}
                   </FormItem>
                 )} />
@@ -602,7 +602,7 @@ function ProductsSection() {
 
       <div className="space-y-3">
         {products?.map((product: any) => (
-          <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div key={product.id} className="bg-[#111] border border-white/10 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div>
@@ -624,7 +624,7 @@ function ProductsSection() {
                   onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}>
                   <ChevronDown className={`h-4 w-4 transition-transform ${expandedProduct === product.id ? "rotate-180" : ""}`} />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-gray-700"
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white/70"
                   onClick={() => startEdit(product)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -637,14 +637,14 @@ function ProductsSection() {
             </div>
 
             {expandedProduct === product.id && (
-              <div className="border-t border-gray-200 p-4 space-y-4">
+              <div className="border-t border-white/10 p-4 space-y-4">
                 <p className="text-xs text-muted-foreground font-bold">Variants</p>
 
                 {product.variants?.length > 0 ? (
                   <div className="space-y-2">
                     {product.variants.map((v: any) => (
                       <div key={v.id}>
-                        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                        <div className="flex items-center justify-between bg-[#0d0d0d] rounded-lg px-3 py-2 border border-white/10">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-medium truncate">{v.name}</span>
                             <span className="text-xs text-muted-foreground">${(v.price / 100).toFixed(2)}</span>
@@ -695,19 +695,19 @@ function ProductsSection() {
                     <FormField control={variantForm.control} name="name" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs">Name</FormLabel>
-                        <FormControl><Input {...field} placeholder="e.g. 1 Month" className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+                        <FormControl><Input {...field} placeholder="e.g. 1 Month" className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={variantForm.control} name="minQuantity" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs">Min Qty</FormLabel>
-                        <FormControl><Input {...field} placeholder="1" type="number" min="1" className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+                        <FormControl><Input {...field} placeholder="1" type="number" min="1" className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={variantForm.control} name="price" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs">Price ($)</FormLabel>
-                        <FormControl><Input {...field} placeholder="9.99" type="number" step="0.01" className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+                        <FormControl><Input {...field} placeholder="9.99" type="number" step="0.01" className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
                       </FormItem>
                     )} />
                     <div className="col-span-2">
@@ -769,26 +769,26 @@ function EditVariantForm({ variant, onClose }: { variant: any; onClose: () => vo
   });
 
   return (
-    <div className="mt-1 bg-gray-100 border border-primary/20 rounded-lg p-3">
+    <div className="mt-1 bg-[#111]/5 border border-primary/20 rounded-lg p-3">
       <Form {...form}>
         <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="grid grid-cols-2 gap-2 items-end">
           <FormField control={form.control} name="name" render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs">Name</FormLabel>
-              <FormControl><Input {...field} className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+              <FormControl><Input {...field} className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
               <FormMessage className="text-xs" />
             </FormItem>
           )} />
           <FormField control={form.control} name="minQuantity" render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs">Min Qty</FormLabel>
-              <FormControl><Input {...field} type="number" min="1" className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+              <FormControl><Input {...field} type="number" min="1" className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
             </FormItem>
           )} />
           <FormField control={form.control} name="price" render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs">Price ($)</FormLabel>
-              <FormControl><Input {...field} type="number" step="0.01" className="bg-gray-100 border-gray-200 h-8 text-xs" /></FormControl>
+              <FormControl><Input {...field} type="number" step="0.01" className="bg-[#111]/5 border-white/10 h-8 text-xs" /></FormControl>
               <FormMessage className="text-xs" />
             </FormItem>
           )} />
@@ -852,7 +852,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
   });
 
   return (
-    <div className="mt-1 mb-2 bg-gray-100 rounded-lg border border-gray-200 p-3 space-y-3">
+    <div className="mt-1 mb-2 bg-[#111]/5 rounded-lg border border-white/10 p-3 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-bold text-muted-foreground">
           🔥 Top Seller — {isLoading ? "..." : `${items?.length || 0} available`}
@@ -865,7 +865,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
           onChange={(e) => setInput(e.target.value)}
           placeholder={"Blank line separates items:\nstock1\n\nstock2\n\nstock3"}
           rows={4}
-          className="bg-black/60 border-gray-200 text-xs font-mono resize-none placeholder:text-gray-300"
+          className="bg-black/60 border-white/10 text-xs font-mono resize-none placeholder:text-white/30"
         />
         <Button
           size="sm"
@@ -883,12 +883,12 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       ) : items?.length > 0 ? (
         <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {items.map((item: any) => (
-            <div key={item.id} className="bg-gray-50 border border-gray-200 rounded px-3 py-2 flex items-center justify-between gap-2">
+            <div key={item.id} className="bg-[#0d0d0d] border border-white/10 rounded px-3 py-2 flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-mono text-gray-500 truncate">{(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}</p>
+                <p className="text-[10px] font-mono text-white/45 truncate">{(item.content || "").substring(0, 80)}{(item.content || "").length > 80 ? "…" : ""}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-[9px] text-gray-300">avail</span>
+                <span className="text-[9px] text-white/30">avail</span>
                 <button
                   onClick={() => deleteMutation.mutate(item.id)}
                   disabled={deleteMutation.isPending}
@@ -923,7 +923,7 @@ function statusBadgeClass(s: string) {
   if (s === "delivering" || s === "fulfilled") return "bg-green-500/20 text-green-400 border-green-500/30";
   if (s === "refunded") return "bg-orange-500/20 text-orange-400 border-orange-500/30";
   if (s === "replaced") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-  return "bg-gray-100 text-gray-600";
+  return "bg-[#111]/5 text-white/60";
 }
 
 function OrdersSection() {
@@ -1013,26 +1013,26 @@ function OrdersSection() {
       <div className="space-y-4">
         <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <div className="bg-[#111] border border-white/10 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-gray-900">Order Detail</h2>
+            <h2 className="text-lg font-black text-white">Order Detail</h2>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
 
-          <div className="space-y-3 border-b border-gray-200 pb-4">
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Order ID</p><p className="text-xs font-mono text-gray-900 break-all">{current.orderId}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-gray-700">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-gray-900 font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Payment</p><p className="text-xs text-gray-700">{current.paymentMethod || "—"}</p></div>
+          <div className="space-y-3 border-b border-white/10 pb-4">
+            <div><p className="text-[10px] text-white/45 mb-0.5">Order ID</p><p className="text-xs font-mono text-white break-all">{current.orderId}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Date</p><p className="text-xs text-white/70">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Payment</p><p className="text-xs text-white/70">{current.paymentMethod || "—"}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-gray-500 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
+              <div><p className="text-[10px] text-white/45 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#00D632]">{current.paymentNote}</p></div>
             )}
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Amount</p><p className="text-xs text-gray-700">${(current.total / 100).toFixed(2)}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Amount</p><p className="text-xs text-white/70">${(current.total / 100).toFixed(2)}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
           </div>
 
           {current.status === "pending" && current.paymentMethod === "CashApp" && (
-            <div className="flex gap-3 border-b border-gray-200 pb-4">
+            <div className="flex gap-3 border-b border-white/10 pb-4">
               <button
                 onClick={() => { cashappFulfillMutation.mutate(current.id); }}
                 disabled={cashappFulfillMutation.isPending}
@@ -1053,7 +1053,7 @@ function OrdersSection() {
           )}
 
           {(current.status === "delivering" || current.status === "fulfilled" || current.status === "replaced") && (
-            <div className="flex gap-2 border-b border-gray-200 pb-4">
+            <div className="flex gap-2 border-b border-white/10 pb-4">
               <button
                 onClick={() => replaceMutation.mutate(current.id)}
                 disabled={replaceMutation.isPending}
@@ -1075,14 +1075,14 @@ function OrdersSection() {
 
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-gray-500">Items Ordered</p>
+              <p className="text-[10px] text-white/45">Items Ordered</p>
               {groupedEntries.map(([key, g]) => (
-                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#0d0d0d] border border-white/10">
                   <div>
-                    <p className="text-xs font-bold text-gray-900">{g.productName}</p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">{g.variantName} · qty {g.qty}</p>
+                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-[10px] text-white/45 mt-0.5">{g.variantName} · qty {g.qty}</p>
                   </div>
-                  <p className="text-xs text-gray-600">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
+                  <p className="text-xs text-white/60">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -1090,9 +1090,9 @@ function OrdersSection() {
 
           {groupedEntries.length === 0 && current.deliveryContent && current.orderId?.startsWith("ACH-") && (
             <div className="space-y-2">
-              <p className="text-[10px] text-gray-500">ACH Account Delivered</p>
-              <div className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
-                <p className="text-xs font-mono text-gray-700 whitespace-pre-wrap break-all">{current.deliveryContent}</p>
+              <p className="text-[10px] text-white/45">ACH Account Delivered</p>
+              <div className="px-3 py-2.5 rounded-xl bg-[#0d0d0d] border border-white/10">
+                <p className="text-xs font-mono text-white/70 whitespace-pre-wrap break-all">{current.deliveryContent}</p>
               </div>
             </div>
           )}
@@ -1126,11 +1126,11 @@ function OrdersSection() {
           placeholder="Search by order ID, username, payment note..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-gray-400 focus:outline-none focus:border-primary/40"
+          className="w-full h-9 bg-[#0d0d0d] border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-primary/40"
           data-testid="input-order-search"
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
             <X className="h-3.5 w-3.5" />
           </button>
         )}
@@ -1150,7 +1150,7 @@ function OrdersSection() {
                 ? key === "waiting"
                   ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-400"
                   : "bg-primary/20 border-primary/40 text-primary"
-                : "bg-gray-50 border-gray-200 text-gray-500 hover:text-white hover:border-gray-300"
+                : "bg-[#0d0d0d] border-white/10 text-white/45 hover:text-white hover:border-white/20"
             }`}
           >
             {label}
@@ -1162,22 +1162,22 @@ function OrdersSection() {
         <div className="text-center py-12 text-muted-foreground text-sm">No orders here.</div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2 border-b border-gray-200 gap-2">
-          <span className="text-[10px] font-bold text-gray-500">$</span>
-          <span className="text-[10px] font-bold text-gray-500">Note / Method</span>
-          <span className="text-[10px] font-bold text-gray-500">Status</span>
+      <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2 border-b border-white/10 gap-2">
+          <span className="text-[10px] font-bold text-white/45">$</span>
+          <span className="text-[10px] font-bold text-white/45">Note / Method</span>
+          <span className="text-[10px] font-bold text-white/45">Status</span>
           <span></span>
         </div>
         {filteredOrders.map((order: any) => (
-          <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-gray-200 last:border-0 items-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
-            <span className="text-xs font-bold text-gray-900">${(order.total / 100).toFixed(2)}</span>
+          <div key={order.id} className="grid grid-cols-[auto_1fr_auto_auto] px-3 py-2.5 border-b border-white/10 last:border-0 items-center gap-2 hover:bg-[#0d0d0d] transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
+            <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
             <div className="min-w-0">
-              <p className="text-[11px] text-gray-600 truncate font-mono">{order.user?.username ? `@${order.user.username}` : ""} <span className="text-gray-500">{order.orderId?.slice(0, 10)}</span></p>
-              <p className="text-[10px] text-gray-400 truncate">{order.paymentNote || order.paymentMethod || "—"} · {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+              <p className="text-[11px] text-white/60 truncate font-mono">{order.user?.username ? `@${order.user.username}` : ""} <span className="text-white/45">{order.orderId?.slice(0, 10)}</span></p>
+              <p className="text-[10px] text-white/40 truncate">{order.paymentNote || order.paymentMethod || "—"} · {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
             </div>
             <span className={`text-[11px] font-bold ${statusTextColor(order.status)}`}>{statusLabel(order.status)}</span>
-            <ChevronRight className="h-3.5 w-3.5 text-gray-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-white/30" />
           </div>
         ))}
       </div>
@@ -1191,7 +1191,7 @@ function statusTextColor(s: string) {
   if (s === "delivering" || s === "fulfilled") return "text-green-400";
   if (s === "refunded") return "text-orange-400";
   if (s === "replaced") return "text-blue-400";
-  return "text-gray-500";
+  return "text-white/45";
 }
 
 
@@ -1235,7 +1235,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
         <p className="text-sm text-muted-foreground mt-1">Create a fake order to test the delivery flow — no payment needed.</p>
       </div>
 
-      <Card className="bg-white border-primary/20">
+      <Card className="bg-[#111] border-primary/20">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -1246,10 +1246,10 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           <div>
             <label className="text-xs text-muted-foreground block mb-2">Product</label>
             <Select value={selectedProduct?.toString()} onValueChange={(v) => { setSelectedProduct(Number(v)); setSelectedVariant(null); }}>
-              <SelectTrigger className="bg-gray-100 border-gray-200">
+              <SelectTrigger className="bg-[#111]/5 border-white/10">
                 <SelectValue placeholder="Select a product" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200">
+              <SelectContent className="bg-[#111] border-white/10">
                 {products?.map((p: any) => (
                   <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                 ))}
@@ -1261,10 +1261,10 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
             <div>
               <label className="text-xs text-muted-foreground block mb-2">Variant</label>
               <Select value={selectedVariant?.toString()} onValueChange={(v) => setSelectedVariant(Number(v))}>
-                <SelectTrigger className="bg-gray-100 border-gray-200">
+                <SelectTrigger className="bg-[#111]/5 border-white/10">
                   <SelectValue placeholder="Select a variant" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200">
+                <SelectContent className="bg-[#111] border-white/10">
                   {product.variants?.map((v: any) => (
                     <SelectItem key={v.id} value={v.id.toString()}>
                       {v.name} — ${(v.price / 100).toFixed(2)} (min {v.minQuantity || 1})
@@ -1280,7 +1280,7 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
             <Input
               type="number" min="1" value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="bg-gray-100 border-gray-200"
+              className="bg-[#111]/5 border-white/10"
             />
           </div>
 
@@ -1301,9 +1301,9 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
           <CardContent className="p-4 space-y-3">
             <p className="text-sm font-bold text-green-400">✓ Test order created!</p>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Order ID: <span className="font-mono text-gray-900">{lastOrder.orderId}</span></p>
+              <p>Order ID: <span className="font-mono text-white">{lastOrder.orderId}</span></p>
               <p>Status: <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">delivering</Badge></p>
-              <p className="text-gray-600">Now go to the Orders tab to paste items and fulfill this order.</p>
+              <p className="text-white/60">Now go to the Orders tab to paste items and fulfill this order.</p>
             </div>
             <Button size="sm" className="w-full" onClick={onGoToOrders}>
               Go to Orders →
@@ -1432,38 +1432,38 @@ function UsersSection() {
   if (selectedUser) {
     return (
       <div className="space-y-3">
-        <button onClick={() => setSelectedUser(null)} className="text-xs text-gray-500 hover:text-white transition-colors">← Back to Users</button>
+        <button onClick={() => setSelectedUser(null)} className="text-xs text-white/45 hover:text-white transition-colors">← Back to Users</button>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+        <div className="bg-[#111] border border-white/10 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-bold text-gray-900">{selectedUser.username}</p>
-              <p className="text-[10px] text-gray-400 font-mono">{selectedUser.email}</p>
+              <p className="font-bold text-white">{selectedUser.username}</p>
+              <p className="text-[10px] text-white/40 font-mono">{selectedUser.email}</p>
             </div>
             <div className="flex gap-2 items-center">
               {selectedUser.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">BANNED</Badge>}
-              <Badge className={selectedUser.role === "admin" ? "bg-primary/20 text-primary border-primary/30" : "bg-gray-50 text-gray-500 border-gray-200"}>
+              <Badge className={selectedUser.role === "admin" ? "bg-primary/20 text-primary border-primary/30" : "bg-[#0d0d0d] text-white/45 border-white/10"}>
                 {selectedUser.role}
               </Badge>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="bg-gray-50 rounded-lg p-2">
-              <p className="text-[9px] text-gray-400">Balance</p>
-              <p className="text-sm font-mono font-bold text-gray-900">${(selectedUser.balance / 100).toFixed(2)}</p>
+            <div className="bg-[#0d0d0d] rounded-lg p-2">
+              <p className="text-[9px] text-white/40">Balance</p>
+              <p className="text-sm font-mono font-bold text-white">${(selectedUser.balance / 100).toFixed(2)}</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-2">
-              <p className="text-[9px] text-gray-400">Login Code</p>
+            <div className="bg-[#0d0d0d] rounded-lg p-2">
+              <p className="text-[9px] text-white/40">Login Code</p>
               {selectedUser.loginCode
                 ? <CopyLoginCode code={selectedUser.loginCode} userId={selectedUser.id} />
-                : <p className="text-xs text-gray-400">—</p>}
+                : <p className="text-xs text-white/40">—</p>}
             </div>
           </div>
 
           {/* Set Balance */}
-          <div className="space-y-1.5 pt-1 border-t border-gray-200">
-            <p className="text-[9px] text-gray-400 uppercase tracking-widest">Set Balance ($)</p>
+          <div className="space-y-1.5 pt-1 border-t border-white/10">
+            <p className="text-[9px] text-white/40 uppercase tracking-widest">Set Balance ($)</p>
             <div className="flex gap-2">
               <input
                 value={balanceInput}
@@ -1472,7 +1472,7 @@ function UsersSection() {
                 type="number"
                 step="0.01"
                 min="0"
-                className="flex-1 h-8 bg-gray-100 border border-gray-200 rounded px-2 text-xs text-white font-mono outline-none focus:border-primary/40"
+                className="flex-1 h-8 bg-[#111]/5 border border-white/10 rounded px-2 text-xs text-white font-mono outline-none focus:border-primary/40"
                 data-testid={`input-balance-${selectedUser.id}`}
               />
               <button
@@ -1487,7 +1487,7 @@ function UsersSection() {
           </div>
 
           {/* Role + Actions */}
-          <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-200">
+          <div className="flex flex-wrap gap-2 pt-1 border-t border-white/10">
             {selectedUser.role !== "admin" ? (
               <button
                 onClick={() => { if (confirm("Make this user admin?")) setRoleMutation.mutate({ userId: selectedUser.id, role: "admin" }); }}
@@ -1547,7 +1547,7 @@ function UsersSection() {
             )}
           </div>
 
-          <div className="text-[9px] text-gray-300 font-mono pt-1 border-t border-gray-200 space-y-0.5">
+          <div className="text-[9px] text-white/30 font-mono pt-1 border-t border-white/10 space-y-0.5">
             <p>Telegram: @{selectedUser.telegramUsername || '—'}</p>
             <p>Joined: {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
           </div>
@@ -1559,13 +1559,13 @@ function UsersSection() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-900">Users <span className="text-gray-400 font-normal">({(users ?? []).length})</span></h2>
+        <h2 className="text-sm font-bold text-white">Users <span className="text-white/40 font-normal">({(users ?? []).length})</span></h2>
       </div>
       <input
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Search by username or email..."
-        className="w-full h-8 bg-gray-50 border border-gray-200 rounded px-3 text-xs text-white placeholder:text-gray-400 outline-none"
+        className="w-full h-8 bg-[#0d0d0d] border border-white/10 rounded px-3 text-xs text-white placeholder:text-white/40 outline-none"
         data-testid="input-users-search"
       />
       <div className="space-y-1.5">
@@ -1573,21 +1573,21 @@ function UsersSection() {
           <button
             key={user.id}
             onClick={() => { setSelectedUser(user); setBalanceInput(""); }}
-            className="w-full text-left bg-white border border-gray-200 rounded-xl px-3 py-2.5 hover:border-gray-200 transition-colors"
+            className="w-full text-left bg-[#111] border border-white/10 rounded-xl px-3 py-2.5 hover:border-white/10 transition-colors"
             data-testid={`btn-user-${user.id}`}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-bold text-sm text-gray-900 truncate">{user.username}</p>
+                  <p className="font-bold text-sm text-white truncate">{user.username}</p>
                   {user.role === "admin" && <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px]">admin</Badge>}
                   {user.isBanned && <Badge className="bg-red-500/20 text-red-400 text-[9px]">banned</Badge>}
                 </div>
-                <p className="text-[10px] text-gray-400 font-mono">${(user.balance / 100).toFixed(2)}</p>
+                <p className="text-[10px] text-white/40 font-mono">${(user.balance / 100).toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {user.loginCode && <CopyLoginCode code={user.loginCode} userId={user.id} />}
-                <ChevronRight className="h-3.5 w-3.5 text-gray-300" />
+                <ChevronRight className="h-3.5 w-3.5 text-white/30" />
               </div>
             </div>
           </button>
@@ -1672,7 +1672,7 @@ function CodesSection() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "balance"
               ? "bg-primary text-black"
-              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700"
+              : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-balance-codes"
         >
@@ -1684,7 +1684,7 @@ function CodesSection() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "discount"
               ? "bg-primary text-black"
-              : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700"
+              : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-discount-codes"
         >
@@ -1696,26 +1696,26 @@ function CodesSection() {
       {/* ── BALANCE CODES TAB ── */}
       {tab === "balance" && (
         <>
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-[#111] border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Create Balance Code</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Amount ($)</p>
+                  <p className="text-xs text-white/45">Amount ($)</p>
                   <Input
                     type="number" step="0.01" min="0.01" placeholder="e.g. 10.00"
                     value={amount} onChange={e => setAmount(e.target.value)}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Quantity (max 100)</p>
+                  <p className="text-xs text-white/45">Quantity (max 100)</p>
                   <Input
                     type="number" min="1" max="100" placeholder="1"
                     value={count} onChange={e => setCount(e.target.value)}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
               </div>
@@ -1727,16 +1727,16 @@ function CodesSection() {
               {generated.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">Generated codes</p>
+                    <p className="text-xs text-white/45">Generated codes</p>
                     <button onClick={copyAll} className="text-xs text-primary hover:opacity-80 transition-opacity">Copy All</button>
                   </div>
-                  <div className="bg-gray-100 border border-gray-200 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
+                  <div className="bg-[#111]/5 border border-white/10 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
                     {generated.map((c) => (
                       <div key={c} className="flex items-center justify-between group">
                         <span className="text-xs font-mono text-green-400">{c}</span>
                         <button
                           onClick={() => { navigator.clipboard.writeText(c); toast({ title: "Copied" }); }}
-                          className="text-[10px] text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                          className="text-[10px] text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
                         >Copy</button>
                       </div>
                     ))}
@@ -1746,7 +1746,7 @@ function CodesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-[#111] border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Balance Codes ({balanceCodes?.length ?? 0})</CardTitle>
             </CardHeader>
@@ -1754,21 +1754,21 @@ function CodesSection() {
               {balanceLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
               ) : !balanceCodes?.length ? (
-                <p className="text-xs text-gray-500 text-center py-8">No codes generated yet.</p>
+                <p className="text-xs text-white/45 text-center py-8">No codes generated yet.</p>
               ) : (
                 <div className="space-y-2">
                   {balanceCodes.map((c: any) => (
-                    <div key={c.id} className="flex items-center justify-between bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5">
+                    <div key={c.id} className="flex items-center justify-between bg-[#111]/5 border border-white/10 rounded-lg px-3 py-2.5">
                       <div>
-                        <p className="text-sm font-bold text-gray-900 font-mono">{c.code}</p>
+                        <p className="text-sm font-bold text-white font-mono">{c.code}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-bold text-green-400">${(c.amount / 100).toFixed(2)}</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-gray-50 text-gray-400" : "bg-green-500/20 text-green-400"}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-[#0d0d0d] text-white/40" : "bg-green-500/20 text-green-400"}`}>
                             {c.isUsed ? "Used" : "Available"}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[11px] text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
+                      <span className="text-[11px] text-white/40">{new Date(c.createdAt).toLocaleDateString()}</span>
                     </div>
                   ))}
                 </div>
@@ -1781,66 +1781,66 @@ function CodesSection() {
       {/* ── DISCOUNT CODES TAB ── */}
       {tab === "discount" && (
         <>
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-[#111] border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Create Discount Code</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Code</p>
+                  <p className="text-xs text-white/45">Code</p>
                   <Input
                     placeholder="SAVE20"
                     value={dForm.code}
                     onChange={e => setDForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm font-mono"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm font-mono"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Type</p>
+                  <p className="text-xs text-white/45">Type</p>
                   <select
                     value={dForm.type}
                     onChange={e => setDForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full h-9 rounded-md bg-gray-100 border border-gray-200 text-sm text-white px-2 focus:outline-none"
+                    className="w-full h-9 rounded-md bg-[#111]/5 border border-white/10 text-sm text-white px-2 focus:outline-none"
                   >
                     <option value="percent">Percent (%)</option>
                     <option value="fixed">Fixed ($)</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">{dForm.type === "percent" ? "Discount %" : "Discount $ Amount"}</p>
+                  <p className="text-xs text-white/45">{dForm.type === "percent" ? "Discount %" : "Discount $ Amount"}</p>
                   <Input
                     type="number" min="0" step={dForm.type === "percent" ? "1" : "0.01"} placeholder={dForm.type === "percent" ? "20" : "5.00"}
                     value={dForm.value}
                     onChange={e => setDForm(f => ({ ...f, value: e.target.value }))}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Min. Order $ (optional)</p>
+                  <p className="text-xs text-white/45">Min. Order $ (optional)</p>
                   <Input
                     type="number" min="0" step="0.01" placeholder="0.00"
                     value={dForm.minOrder}
                     onChange={e => setDForm(f => ({ ...f, minOrder: e.target.value }))}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Max Uses (optional)</p>
+                  <p className="text-xs text-white/45">Max Uses (optional)</p>
                   <Input
                     type="number" min="1" placeholder="Unlimited"
                     value={dForm.maxUses}
                     onChange={e => setDForm(f => ({ ...f, maxUses: e.target.value }))}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Expires At (optional)</p>
+                  <p className="text-xs text-white/45">Expires At (optional)</p>
                   <Input
                     type="datetime-local"
                     value={dForm.expiresAt}
                     onChange={e => setDForm(f => ({ ...f, expiresAt: e.target.value }))}
-                    className="bg-gray-100 border-gray-200 h-9 text-sm"
+                    className="bg-[#111]/5 border-white/10 h-9 text-sm"
                   />
                 </div>
               </div>
@@ -1851,25 +1851,25 @@ function CodesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-[#111] border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Discount Codes ({discountList.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {discountList.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">No codes yet</p>
+                <p className="text-sm text-white/40 text-center py-6">No codes yet</p>
               ) : (
                 <div className="space-y-2">
                   {discountList.map((dc: any) => (
-                    <div key={dc.id} className="flex items-center gap-3 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2.5">
+                    <div key={dc.id} className="flex items-center gap-3 bg-[#111]/5 border border-white/10 rounded-lg px-3 py-2.5">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-bold text-gray-900 font-mono">{dc.code}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-gray-100 text-gray-500"}`}>
+                          <span className="text-sm font-bold text-white font-mono">{dc.code}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${dc.isActive ? "bg-primary/20 text-primary" : "bg-[#111]/5 text-white/45"}`}>
                             {dc.isActive ? "Active" : "Inactive"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-gray-500">
+                        <p className="text-[11px] text-white/45">
                           {dc.type === "percent" ? `${dc.value}% off` : `$${(dc.value / 100).toFixed(2)} off`}
                           {dc.minOrder > 0 && ` · min $${(dc.minOrder / 100).toFixed(2)}`}
                           {` · ${dc.usedCount}/${dc.maxUses ?? "∞"} uses`}
@@ -1879,7 +1879,7 @@ function CodesSection() {
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           onClick={() => toggleDiscountMutation.mutate({ id: dc.id, isActive: !dc.isActive })}
-                          className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${dc.isActive ? "border-gray-300 text-gray-600 hover:bg-gray-50" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                          className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${dc.isActive ? "border-gray-300 text-white/60 hover:bg-[#0d0d0d]" : "border-primary/30 text-primary hover:bg-primary/10"}`}
                         >
                           {dc.isActive ? "Disable" : "Enable"}
                         </button>
@@ -1924,7 +1924,7 @@ function MinDepositCard({ method, label, color }: { method: string; label: strin
     onError: () => toast({ title: "Failed to save", variant: "destructive" }),
   });
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-[#111] border-white/10">
       <CardContent className="p-4 space-y-2">
         <p className="font-bold text-sm mb-0.5" style={{ color }}>Minimum Deposit — {label}</p>
         <p className="text-xs text-muted-foreground">Set to 0 for no minimum.</p>
@@ -1936,7 +1936,7 @@ function MinDepositCard({ method, label, color }: { method: string; label: strin
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="0.00"
-            className="flex-1 bg-gray-50 border-gray-200 text-white font-mono"
+            className="flex-1 bg-[#0d0d0d] border-white/10 text-white font-mono"
             data-testid={`input-min-deposit-${method}`}
           />
           <Button size="sm" onClick={() => saveMutation.mutate(parseFloat(input) || 0)} disabled={saveMutation.isPending}
@@ -1975,7 +1975,7 @@ function HandleSettingCard({ label, description, settingKey, placeholder, color 
     onError: () => toast({ title: "Failed to save", variant: "destructive" }),
   });
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-[#111] border-white/10">
       <CardContent className="p-4 space-y-3">
         <div>
           <p className="font-bold text-sm mb-0.5" style={{ color }}>{label}</p>
@@ -1985,7 +1985,7 @@ function HandleSettingCard({ label, description, settingKey, placeholder, color 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={placeholder}
-              className="flex-1 bg-gray-50 border-gray-200 text-white font-mono"
+              className="flex-1 bg-[#0d0d0d] border-white/10 text-white font-mono"
               data-testid={`input-${settingKey}`}
             />
             <Button size="sm" onClick={() => saveMutation.mutate(input)} disabled={saveMutation.isPending}
@@ -2053,14 +2053,14 @@ function IntegrationsSection() {
               ? paymentMethods?.[m.id] === true
               : paymentMethods?.[m.id] !== false;
             return (
-              <Card key={m.id} className="bg-white border-gray-200" data-testid={`card-payment-toggle-${m.id}`}>
+              <Card key={m.id} className="bg-[#111] border-white/10" data-testid={`card-payment-toggle-${m.id}`}>
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full ${m.bg} flex items-center justify-center flex-shrink-0`}>
                       {m.icon}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-gray-900">{m.label}</p>
+                      <p className="font-bold text-sm text-white">{m.label}</p>
                       <p className="text-xs text-muted-foreground">{enabled ? "Visible to customers" : "Hidden from customers"}</p>
                     </div>
                   </div>
@@ -2135,10 +2135,10 @@ function IntegrationsSection() {
         {statusLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
-          <Card className="bg-white border-gray-200" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
+          <Card className="bg-[#111] border-white/10" data-testid="card-integration-TELEGRAM_BOT_TOKEN">
             <CardContent className="p-4 flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
-                <p className="font-mono text-sm text-gray-900">TELEGRAM_BOT_TOKEN</p>
+                <p className="font-mono text-sm text-white">TELEGRAM_BOT_TOKEN</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">Required for Telegram Stars payments. Create a bot via @BotFather and enable Stars in Payments.</p>
               </div>
               <div className="shrink-0 mt-0.5">
@@ -2153,7 +2153,7 @@ function IntegrationsSection() {
         )}
       </div>
 
-      <Card className="bg-white border-primary/20">
+      <Card className="bg-[#111] border-primary/20">
         <CardContent className="p-4 space-y-2">
           <p className="text-xs font-semibold text-primary">How to set the Telegram token</p>
           <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
@@ -2205,10 +2205,10 @@ function FeatureTogglesCard() {
         ) : FEATURES.map((f) => {
           const enabled = features?.[f.key] !== false;
           return (
-            <Card key={f.key} className="bg-white border-gray-200" data-testid={`card-feature-${f.key}`}>
+            <Card key={f.key} className="bg-[#111] border-white/10" data-testid={`card-feature-${f.key}`}>
               <CardContent className="p-4 flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-bold text-sm text-gray-900">{f.label}</p>
+                  <p className="font-bold text-sm text-white">{f.label}</p>
                   <p className="text-xs text-muted-foreground">{enabled ? "Visible to users" : "Hidden — nobody can see it"}</p>
                 </div>
                 <Switch
@@ -2304,30 +2304,30 @@ function CashAppSection() {
     return (
       <div className="space-y-4">
         <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>← Back</Button>
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <div className="bg-[#111] border border-white/10 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: meta.color }}>
                 {meta.icon}
               </div>
-              <h2 className="text-lg font-black text-gray-900">{meta.label} Deposit</h2>
+              <h2 className="text-lg font-black text-white">{meta.label} Deposit</h2>
             </div>
             <Badge className={statusBadgeClass(current.status)}>{statusLabel(current.status)}</Badge>
           </div>
 
-          <div className="space-y-3 border-b border-gray-200 pb-4">
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Customer</p><p className="text-xs text-gray-900 font-bold">{current.user?.username || current.userId}</p></div>
-            <div><p className="text-[10px] text-gray-500 mb-0.5">Date</p><p className="text-xs text-gray-700">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
+          <div className="space-y-3 border-b border-white/10 pb-4">
+            <div><p className="text-[10px] text-white/45 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId}</p></div>
+            <div><p className="text-[10px] text-white/45 mb-0.5">Date</p><p className="text-xs text-white/70">{new Date(current.createdAt).toLocaleString("en-US")}</p></div>
             {current.paymentNote && (
               <div>
-                <p className="text-[10px] text-gray-500 mb-0.5">Payment Note</p>
+                <p className="text-[10px] text-white/45 mb-0.5">Payment Note</p>
                 <p className="text-xs font-mono font-bold" style={{ color: meta.color }}>{current.paymentNote}</p>
               </div>
             )}
             <div>
-              <p className="text-[10px] text-gray-500 mb-0.5">Amount to receive</p>
-              <p className="text-2xl font-black text-gray-900">${(current.total / 100).toFixed(2)}</p>
-              <p className="text-[10px] text-gray-400 font-mono mt-0.5">user specified this amount — confirm only if received exactly this</p>
+              <p className="text-[10px] text-white/45 mb-0.5">Amount to receive</p>
+              <p className="text-2xl font-black text-white">${(current.total / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-white/40 font-mono mt-0.5">user specified this amount — confirm only if received exactly this</p>
             </div>
           </div>
 
@@ -2355,14 +2355,14 @@ function CashAppSection() {
 
           {groupedEntries.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-gray-500">Items Ordered</p>
+              <p className="text-[10px] text-white/45">Items Ordered</p>
               {groupedEntries.map(([key, g]) => (
-                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#0d0d0d] border border-white/10">
                   <div>
-                    <p className="text-xs font-bold text-gray-900">{g.productName}</p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">{g.variantName} · qty {g.qty}</p>
+                    <p className="text-xs font-bold text-white">{g.productName}</p>
+                    <p className="text-[10px] text-white/45 mt-0.5">{g.variantName} · qty {g.qty}</p>
                   </div>
-                  <p className="text-xs text-gray-600">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
+                  <p className="text-xs text-white/60">${((g.unitPrice * g.qty) / 100).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -2388,7 +2388,7 @@ function CashAppSection() {
         </div>
         <button
           onClick={() => setShowHistory(h => !h)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-black" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-black" : "bg-[#0d0d0d] text-white/45 hover:bg-[#111]/5"}`}
         >
           {showHistory ? "← Pending" : "History"}
         </button>
@@ -2400,18 +2400,18 @@ function CashAppSection() {
           placeholder="Search by order ID, username, payment note..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full h-9 bg-gray-50 border border-gray-200 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-gray-400 focus:outline-none focus:border-gray-300"
+          className="w-full h-9 bg-[#0d0d0d] border border-white/10 rounded-lg px-3 pr-8 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-gray-300"
           data-testid="input-cashapp-order-search"
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
             <X className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
 
       {displayedOrders.length === 0 ? (
-        <div className="text-center py-20 text-gray-300 text-sm">
+        <div className="text-center py-20 text-white/30 text-sm">
           {showHistory ? "No manual payment history" : "No pending deposits"}
         </div>
       ) : (
@@ -2421,7 +2421,7 @@ function CashAppSection() {
             return (
               <div
                 key={order.id}
-                className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                className="bg-[#111] border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-[#111]/[0.03] transition-colors"
                 onClick={() => setSelectedOrder(order)}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -2433,12 +2433,12 @@ function CashAppSection() {
                       <span className="text-[10px] font-bold" style={{ color: meta.color }}>{meta.label}</span>
                       <Badge className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</Badge>
                     </div>
-                    <p className="text-sm font-black text-gray-900">${(order.total / 100).toFixed(2)}</p>
+                    <p className="text-sm font-black text-white">${(order.total / 100).toFixed(2)}</p>
                     {order.paymentNote && <p className="text-[10px] font-mono mt-0.5" style={{ color: `${meta.color}80` }}>{order.paymentNote}</p>}
-                    <p className="text-[10px] text-gray-400">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-white/40">{order.user?.username || order.userId} · {new Date(order.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                <ChevronRight className="h-4 w-4 text-white/30 flex-shrink-0" />
               </div>
             );
           })}
@@ -2552,15 +2552,15 @@ function AdminBasesTab() {
   return (
     <div className="space-y-4">
       {/* Create base */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Create Base</p>
+      <div className="bg-[#111] border border-white/10 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-white/45 uppercase tracking-widest">Create Base</p>
         <div className="flex gap-2">
           <Input
             value={newBaseName}
             onChange={e => setNewBaseName(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && newBaseName.trim()) createMutation.mutate(); }}
             placeholder="Base name (e.g. OG CLOVER)"
-            className="bg-gray-100 border-gray-200 text-sm flex-1"
+            className="bg-[#111]/5 border-white/10 text-sm flex-1"
             data-testid="input-base-name"
           />
           <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !newBaseName.trim()} size="sm" className="h-9" data-testid="btn-create-base">
@@ -2574,10 +2574,10 @@ function AdminBasesTab() {
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (bases ?? []).length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-6">No bases yet</p>
+          <p className="text-xs text-white/40 text-center py-6">No bases yet</p>
         ) : (
           (bases ?? []).map((b: any) => (
-            <div key={b.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div key={b.id} className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
               <div className="px-4 py-3 flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   {editingBaseId === b.id ? (
@@ -2589,7 +2589,7 @@ function AdminBasesTab() {
                           if (e.key === "Enter" && editingBaseName.trim()) renameMutation.mutate({ id: b.id, name: editingBaseName });
                           if (e.key === "Escape") { setEditingBaseId(null); setEditingBaseName(""); }
                         }}
-                        className="bg-gray-100 border-gray-200 h-7 text-xs font-mono flex-1"
+                        className="bg-[#111]/5 border-white/10 h-7 text-xs font-mono flex-1"
                         autoFocus
                         data-testid={`input-rename-base-${b.id}`}
                       />
@@ -2603,7 +2603,7 @@ function AdminBasesTab() {
                       </button>
                       <button
                         onClick={() => { setEditingBaseId(null); setEditingBaseName(""); }}
-                        className="text-[10px] font-mono px-2 py-1 rounded border border-gray-200 text-gray-500 hover:text-white transition-all"
+                        className="text-[10px] font-mono px-2 py-1 rounded border border-white/10 text-white/45 hover:text-white transition-all"
                       >
                         cancel
                       </button>
@@ -2614,8 +2614,8 @@ function AdminBasesTab() {
                       className="text-left w-full"
                       data-testid={`btn-expand-base-${b.id}`}
                     >
-                      <p className="text-sm font-bold text-gray-900 font-mono">{b.name}</p>
-                      <p className="text-[10px] text-gray-400">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
+                      <p className="text-sm font-bold text-white font-mono">{b.name}</p>
+                      <p className="text-[10px] text-white/40">{b.count} card{b.count !== 1 ? "s" : ""} in stock</p>
                     </button>
                   )}
                 </div>
@@ -2623,14 +2623,14 @@ function AdminBasesTab() {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => { setEditingBaseId(b.id); setEditingBaseName(b.name); setExpandedBase(null); }}
-                      className="text-[10px] font-mono px-2 py-1 rounded border border-gray-200 text-gray-500 hover:border-white/25 hover:text-white transition-all"
+                      className="text-[10px] font-mono px-2 py-1 rounded border border-white/10 text-white/45 hover:border-white/25 hover:text-white transition-all"
                       data-testid={`btn-rename-base-${b.id}`}
                     >
                       rename
                     </button>
                     <button
                       onClick={() => setExpandedBase(expandedBase === b.id ? null : b.id)}
-                      className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${expandedBase === b.id ? "border-primary/40 text-primary" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
+                      className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${expandedBase === b.id ? "border-primary/40 text-primary" : "border-white/10 text-white/45 hover:border-white/20"}`}
                       data-testid={`btn-view-base-${b.id}`}
                     >
                       {expandedBase === b.id ? "close" : "view"}
@@ -2638,7 +2638,7 @@ function AdminBasesTab() {
                     <button
                       onClick={() => { if (b.count > 0) { toast({ title: "Cannot delete", description: "Remove all cards first", variant: "destructive" }); return; } deleteMutation.mutate(b.id); }}
                       disabled={deleteMutation.isPending}
-                      className="text-gray-300 hover:text-destructive transition-colors"
+                      className="text-white/30 hover:text-destructive transition-colors"
                       data-testid={`btn-delete-base-${b.id}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -2647,29 +2647,29 @@ function AdminBasesTab() {
                 )}
               </div>
               {expandedBase === b.id && (
-                <div className="border-t border-gray-200 px-4 py-3 space-y-2">
+                <div className="border-t border-white/10 px-4 py-3 space-y-2">
                   {!baseCards || baseCards.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-3">No cards in this base</p>
+                    <p className="text-xs text-white/40 text-center py-3">No cards in this base</p>
                   ) : (
                     baseCards.map((card: any) => {
                       const bin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
                       const zip = extractZipPreview(card.extras ?? "");
                       return (
-                        <div key={card.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
+                        <div key={card.id} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
                           <div className="min-w-0 flex-1 space-y-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-gray-500">{bin}</span>
-                              {zip && <span className="text-[10px] text-gray-400 font-mono">ZIP {zip}</span>}
-                              <span className="text-[10px] text-gray-400">{card.hrPercent ?? 80}% HR</span>
+                              <span className="text-[10px] font-mono bg-[#111]/5 border border-white/10 px-1.5 py-0.5 rounded text-white/45">{bin}</span>
+                              {zip && <span className="text-[10px] text-white/40 font-mono">ZIP {zip}</span>}
+                              <span className="text-[10px] text-white/40">{card.hrPercent ?? 80}% HR</span>
                             </div>
-                            {card.extras && <p className="text-[9px] text-gray-300 font-mono truncate">{card.extras.substring(0, 55)}...</p>}
+                            {card.extras && <p className="text-[9px] text-white/30 font-mono truncate">{card.extras.substring(0, 55)}...</p>}
                           </div>
                           <div className="flex items-center gap-3 shrink-0 ml-2">
-                            <span className="font-mono text-xs text-gray-600">${(card.price / 100).toFixed(2)}</span>
+                            <span className="font-mono text-xs text-white/60">${(card.price / 100).toFixed(2)}</span>
                             <button
                               onClick={() => deleteCardMutation.mutate(card.id)}
                               disabled={deleteCardMutation.isPending}
-                              className="text-gray-300 hover:text-destructive transition-colors"
+                              className="text-white/30 hover:text-destructive transition-colors"
                               data-testid={`btn-delete-base-card-${card.id}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -2731,20 +2731,20 @@ function AdminCardsSection() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-gray-900">Cards</h2>
+      <h2 className="text-base font-bold text-white">Cards</h2>
 
       {/* Add Card form */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Add Card</p>
+      <div className="bg-[#111] border border-white/10 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-white/45 uppercase tracking-widest">Add Card</p>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Full Delivery Item</label>
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Full Delivery Item</label>
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
             placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|ST|12345"}
             rows={3}
-            className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-gray-300"
+            className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-white/30"
             data-testid="input-full-item"
           />
           <div className="flex gap-3">
@@ -2759,11 +2759,11 @@ function AdminCardsSection() {
 
         {/* Base selector — required */}
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Base <span className="text-red-400/70">*</span></label>
           <select
             value={selectedBaseId}
             onChange={e => setSelectedBaseId(e.target.value)}
-            className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-white py-2 px-2 outline-none focus:border-gray-300"
+            className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white py-2 px-2 outline-none focus:border-gray-300"
             data-testid="select-card-base"
           >
             <option value="">— Select base —</option>
@@ -2774,14 +2774,14 @@ function AdminCardsSection() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Price ($)</label>
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Price ($)</label>
           <Input
             value={price}
             onChange={e => setPrice(e.target.value)}
             placeholder="5.00"
             type="number"
             step="0.01"
-            className="bg-gray-100 border-gray-200"
+            className="bg-[#111]/5 border-white/10"
             data-testid="input-card-price"
           />
         </div>
@@ -2798,12 +2798,12 @@ function AdminCardsSection() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-white/10">
         {(["stock", "bases"] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-mono transition-all capitalize ${tab === t ? "text-primary border-b border-primary -mb-px" : "text-gray-400 hover:text-gray-700"}`}
+            className={`px-4 py-2 text-xs font-mono transition-all capitalize ${tab === t ? "text-primary border-b border-primary -mb-px" : "text-white/40 hover:text-white/70"}`}
             data-testid={`tab-cards-${t}`}
           >
             {t}
@@ -2813,7 +2813,7 @@ function AdminCardsSection() {
 
       {tab === "stock" && (
         <div className="space-y-2">
-          <p className="text-xs text-gray-400">{(cards ?? []).length} cards in stock</p>
+          <p className="text-xs text-white/40">{(cards ?? []).length} cards in stock</p>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : (
@@ -2821,22 +2821,22 @@ function AdminCardsSection() {
               const cBin = (card.cardNumber || "").replace(/\D/g, "").substring(0, 6);
               const zip = extractZipPreview(card.extras ?? "");
               return (
-                <div key={card.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                <div key={card.id} className="bg-[#111] border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
                   <div className="space-y-0.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {card.baseName && <span className="text-[10px] font-mono font-bold text-primary/70">{card.baseName}</span>}
-                      <span className="text-[10px] font-mono bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-gray-500">{cBin}</span>
-                      {zip && <span className="text-[10px] text-gray-400 font-mono">ZIP {zip}</span>}
+                      <span className="text-[10px] font-mono bg-[#111]/5 border border-white/10 px-1.5 py-0.5 rounded text-white/45">{cBin}</span>
+                      {zip && <span className="text-[10px] text-white/40 font-mono">ZIP {zip}</span>}
                     </div>
-                    <p className="text-[10px] text-gray-400 font-mono">{card.hrPercent ?? 80}% HR</p>
-                    {card.extras && <p className="text-[9px] text-gray-300 truncate font-mono">{card.extras.substring(0, 55)}...</p>}
+                    <p className="text-[10px] text-white/40 font-mono">{card.hrPercent ?? 80}% HR</p>
+                    {card.extras && <p className="text-[9px] text-white/30 truncate font-mono">{card.extras.substring(0, 55)}...</p>}
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-2">
-                    <span className="font-mono text-sm text-gray-900">${(card.price / 100).toFixed(2)}</span>
+                    <span className="font-mono text-sm text-white">${(card.price / 100).toFixed(2)}</span>
                     <button
                       onClick={() => deleteMutation.mutate(card.id)}
                       disabled={deleteMutation.isPending}
-                      className="text-gray-300 hover:text-destructive transition-colors"
+                      className="text-white/30 hover:text-destructive transition-colors"
                       data-testid={`btn-delete-card-${card.id}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -2891,49 +2891,49 @@ function AdminAchSection() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-bold text-gray-900">ACH Management</h2>
+      <h2 className="text-base font-bold text-white">ACH Management</h2>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Add ACH</p>
+      <div className="bg-[#111] border border-white/10 rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-white/45 uppercase tracking-widest">Add ACH</p>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Bank</label>
-          <Input value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Chase, Wells Fargo..." className="bg-gray-100 border-gray-200" data-testid="input-ach-bank" />
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Bank</label>
+          <Input value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Chase, Wells Fargo..." className="bg-[#111]/5 border-white/10" data-testid="input-ach-bank" />
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Balance</label>
-          <div className="flex items-center bg-gray-100 border border-gray-200 rounded-md overflow-hidden">
-            <span className="pl-3 pr-1 text-sm text-gray-500 font-mono select-none">$</span>
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Balance</label>
+          <div className="flex items-center bg-[#111]/5 border border-white/10 rounded-md overflow-hidden">
+            <span className="pl-3 pr-1 text-sm text-white/45 font-mono select-none">$</span>
             <input
               value={balance}
               onChange={e => setBalance(e.target.value.replace(/[^0-9,.\-]/g, ""))}
               placeholder="4,990 or 3,298.09"
               type="text"
               inputMode="decimal"
-              className="flex-1 bg-transparent py-2 pr-3 text-sm text-white font-mono outline-none placeholder:text-gray-300"
+              className="flex-1 bg-transparent py-2 pr-3 text-sm text-white font-mono outline-none placeholder:text-white/30"
               data-testid="input-ach-balance"
             />
           </div>
-          <p className="text-[10px] text-gray-400">e.g. 4,990 or 3,298.09 — $ is added automatically</p>
+          <p className="text-[10px] text-white/40">e.g. 4,990 or 3,298.09 — $ is added automatically</p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Full Item</label>
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Full Item</label>
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
             placeholder={"routing|account|name|address"}
             rows={3}
-            className="w-full bg-gray-100 border border-gray-200 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-gray-300"
+            className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-white/30"
             data-testid="input-ach-full-item"
           />
-          <p className="text-[9px] text-gray-300">only shown to buyer after purchase</p>
+          <p className="text-[9px] text-white/30">only shown to buyer after purchase</p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-500 uppercase tracking-widest">Price ($)</label>
-          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" type="number" step="0.01" className="bg-gray-100 border-gray-200" data-testid="input-ach-price" />
+          <label className="text-[10px] text-white/45 uppercase tracking-widest">Price ($)</label>
+          <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" type="number" step="0.01" className="bg-[#111]/5 border-white/10" data-testid="input-ach-price" />
         </div>
 
         <Button
@@ -2948,22 +2948,22 @@ function AdminAchSection() {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-gray-400">{(achList ?? []).length} ACH total</p>
+        <p className="text-xs text-white/40">{(achList ?? []).length} ACH total</p>
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
         ) : (
           (achList ?? []).map((a: any) => (
-            <div key={a.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div key={a.id} className="bg-[#111] border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
               <div className="space-y-0.5 min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900">{a.bankName}</p>
-                <p className="text-[10px] text-gray-400 font-mono">{a.balance}</p>
+                <p className="text-sm font-bold text-white">{a.bankName}</p>
+                <p className="text-[10px] text-white/40 font-mono">{a.balance}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0 ml-2">
-                <span className="font-mono text-sm text-gray-900">${(a.price / 100).toFixed(2)}</span>
+                <span className="font-mono text-sm text-white">${(a.price / 100).toFixed(2)}</span>
                 <button
                   onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
-                  className="text-gray-300 hover:text-destructive transition-colors"
+                  className="text-white/30 hover:text-destructive transition-colors"
                   data-testid={`btn-delete-ach-${a.id}`}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -3027,44 +3027,44 @@ function SmtpSection() {
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-md">
+        <div className="bg-[#111] border border-white/10 rounded-xl p-5 space-y-4 max-w-md">
           <div className="space-y-1">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest">SMTP Host</label>
+            <label className="text-[10px] text-white/45 uppercase tracking-widest">SMTP Host</label>
             <Input
               value={host}
               onChange={e => setHost(e.target.value)}
               placeholder="smtp.gmail.com"
-              className="bg-gray-100 border-gray-200"
+              className="bg-[#111]/5 border-white/10"
               data-testid="input-smtp-host"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest">SMTP Port</label>
+            <label className="text-[10px] text-white/45 uppercase tracking-widest">SMTP Port</label>
             <Input
               value={port}
               onChange={e => setPort(e.target.value)}
               placeholder="587"
-              className="bg-gray-100 border-gray-200"
+              className="bg-[#111]/5 border-white/10"
               data-testid="input-smtp-port"
             />
-            <p className="text-[10px] text-gray-300">587 for TLS, 465 for SSL, 25 for plain</p>
+            <p className="text-[10px] text-white/30">587 for TLS, 465 for SSL, 25 for plain</p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest">Sender Email</label>
+            <label className="text-[10px] text-white/45 uppercase tracking-widest">Sender Email</label>
             <Input
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="youremail@gmail.com"
               type="email"
-              className="bg-gray-100 border-gray-200"
+              className="bg-[#111]/5 border-white/10"
               data-testid="input-smtp-email"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest">
+            <label className="text-[10px] text-white/45 uppercase tracking-widest">
               App Password {smtpData?.has_password && <span className="text-green-400 normal-case">(saved)</span>}
             </label>
             <Input
@@ -3072,10 +3072,10 @@ function SmtpSection() {
               onChange={e => setPassword(e.target.value)}
               placeholder={smtpData?.has_password ? "Leave blank to keep current password" : "App password or SMTP password"}
               type="password"
-              className="bg-gray-100 border-gray-200"
+              className="bg-[#111]/5 border-white/10"
               data-testid="input-smtp-password"
             />
-            <p className="text-[10px] text-gray-300">For Gmail: use an App Password, not your account password</p>
+            <p className="text-[10px] text-white/30">For Gmail: use an App Password, not your account password</p>
           </div>
 
           <Button
@@ -3141,7 +3141,7 @@ function SellersSection() {
     if (status === "approved") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-mono">approved</span>;
     if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">pending</span>;
     if (status === "rejected") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">rejected</span>;
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-500 font-mono">{status}</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0d0d0d] text-white/45 font-mono">{status}</span>;
   }
 
   return (
@@ -3163,7 +3163,7 @@ function SellersSection() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-lg font-mono transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
+            className={`text-xs px-3 py-1.5 rounded-lg font-mono transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-[#0d0d0d] text-white/45 hover:bg-[#111]/5 hover:text-white/70"}`}
           >
             {f}{f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
           </button>
@@ -3180,7 +3180,7 @@ function SellersSection() {
             <div
               key={seller.id}
               onClick={() => { setSelected(seller); setNoteInput(""); }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-gray-200 hover:bg-gray-50 hover:border-gray-200 cursor-pointer transition-colors"
+              className="flex items-center gap-3 p-3 rounded-xl bg-[#111]/3 border border-white/10 hover:bg-[#0d0d0d] hover:border-white/10 cursor-pointer transition-colors"
               data-testid={`row-seller-${seller.id}`}
             >
               <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
@@ -3192,7 +3192,7 @@ function SellersSection() {
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 {statusBadge(seller.status)}
-                <span className="text-[10px] text-gray-400">{new Date(seller.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                <span className="text-[10px] text-white/40">{new Date(seller.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
               </div>
             </div>
           ))}
@@ -3201,45 +3201,45 @@ function SellersSection() {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
               <h2 className="text-base font-bold">Seller Application</h2>
-              <button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-gray-50 text-muted-foreground">
+              <button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-[#0d0d0d] text-muted-foreground">
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] text-gray-500 mb-0.5">Username</p>
+                  <p className="text-[10px] text-white/45 mb-0.5">Username</p>
                   <p className="text-sm text-white font-mono">{selected.username ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-500 mb-0.5">Status</p>
+                  <p className="text-[10px] text-white/45 mb-0.5">Status</p>
                   {statusBadge(selected.status)}
                 </div>
                 {selected.sellerCode && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-gray-500 mb-0.5">Seller Code</p>
+                    <p className="text-[10px] text-white/45 mb-0.5">Seller Code</p>
                     <p className="text-sm text-primary font-mono font-bold">{selected.sellerCode}</p>
                   </div>
                 )}
                 {selected.note && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-gray-500 mb-0.5">Applicant Note</p>
-                    <p className="text-xs text-gray-600 leading-relaxed">{selected.note}</p>
+                    <p className="text-[10px] text-white/45 mb-0.5">Applicant Note</p>
+                    <p className="text-xs text-white/60 leading-relaxed">{selected.note}</p>
                   </div>
                 )}
               </div>
 
               {selected.status === "pending" && (
-                <div className="space-y-2 border-t border-gray-200 pt-3">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">Approve or Reject</p>
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <p className="text-[10px] text-white/45 uppercase tracking-widest">Approve or Reject</p>
                   <Input
                     placeholder="Rejection reason (optional)"
                     value={noteInput}
                     onChange={e => setNoteInput(e.target.value)}
-                    className="bg-gray-100 border-gray-200 text-xs h-8"
+                    className="bg-[#111]/5 border-white/10 text-xs h-8"
                     data-testid="input-seller-note"
                   />
                   <div className="flex gap-2">
@@ -3267,7 +3267,7 @@ function SellersSection() {
               )}
 
               {selected.status === "approved" && (
-                <div className="space-y-2 border-t border-gray-200 pt-3">
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <Button
                     size="sm"
                     variant="destructive"

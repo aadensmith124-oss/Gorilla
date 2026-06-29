@@ -47,7 +47,7 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.99] bg-white"
+        className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.99] bg-[#111]"
         style={{
           borderColor: isTop1 ? "rgba(45,106,45,0.4)" : isTop2 ? "rgba(45,106,45,0.2)" : "#e5e7eb",
           boxShadow: isTop1
@@ -93,21 +93,21 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
 
         {/* Info */}
         <div className="px-3 py-2.5 space-y-1">
-          <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-1">{product.name}</p>
+          <p className="text-xs font-bold text-white leading-tight line-clamp-1">{product.name}</p>
           {product.description ? (
-            <p className="text-[10px] text-gray-400 leading-snug line-clamp-1 font-mono">{product.description}</p>
+            <p className="text-[10px] text-white/40 leading-snug line-clamp-1 font-mono">{product.description}</p>
           ) : null}
           <div className="flex items-center justify-between pt-0.5">
             <div className="flex items-center gap-1.5">
               {comparePrice && comparePrice > lowestPrice && (
-                <span className="text-[10px] line-through text-gray-300 font-mono">${(comparePrice / 100).toFixed(2)}</span>
+                <span className="text-[10px] line-through text-white/30 font-mono">${(comparePrice / 100).toFixed(2)}</span>
               )}
               {lowestPrice > 0 ? (
-                <span className={`text-sm font-black font-mono ${isTop1 ? "text-green-700" : isTop2 ? "text-green-600" : "text-gray-900"}`}>
+                <span className={`text-sm font-black font-mono ${isTop1 ? "text-green-700" : isTop2 ? "text-green-600" : "text-white"}`}>
                   ${(lowestPrice / 100).toFixed(2)}
                 </span>
               ) : (
-                <span className="text-sm font-black font-mono text-gray-400">Free</span>
+                <span className="text-sm font-black font-mono text-white/40">Free</span>
               )}
             </div>
             <div className="flex items-center gap-0.5 text-green-600">
@@ -151,7 +151,7 @@ export default function ShopPage() {
   }, [sortedProducts, search]);
 
   if (isLoading) {
-    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-gray-300" /></div>;
+    return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-white/30" /></div>;
   }
 
   if (user?.isBanned) {
@@ -160,7 +160,7 @@ export default function ShopPage() {
         <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center space-y-3">
           <ShieldX className="h-8 w-8 text-red-400 mx-auto" />
           <p className="text-sm text-red-600 font-bold">Account Restricted</p>
-          <p className="text-xs text-gray-400 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
+          <p className="text-xs text-white/40 leading-relaxed">Your account has been restricted. Contact support if you believe this is an error.</p>
         </div>
       </div>
     );
@@ -170,28 +170,28 @@ export default function ShopPage() {
     <div className="max-w-sm mx-auto px-4 py-5 space-y-4">
       {/* Header */}
       <div className="space-y-0.5">
-        <h1 className="text-lg font-black text-gray-900">
+        <h1 className="text-lg font-black text-white">
           BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
-          <span className="ml-2 text-xs font-mono font-normal text-gray-400">Logs</span>
+          <span className="ml-2 text-xs font-mono font-normal text-white/40">Logs</span>
         </h1>
-        <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">BEST HIGH QUALITY CARDS</p>
+        <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">BEST HIGH QUALITY CARDS</p>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
         <input
           type="text"
           placeholder="Search logs..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 bg-white border border-gray-200 rounded-2xl pl-9 pr-4 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300 transition-colors shadow-sm"
+          className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 transition-colors shadow-sm"
           data-testid="input-search"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-sm">No products found</div>
+        <div className="text-center py-20 text-white/40 text-sm">No products found</div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {filtered.map((product: any) => {

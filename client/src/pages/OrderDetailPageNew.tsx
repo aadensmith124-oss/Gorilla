@@ -21,7 +21,7 @@ function statusColor(s: string) {
   if (s === "replaced") return "text-blue-400";
   if (s === "waiting_payment") return "text-orange-400";
   if (s === "refunded") return "text-orange-400";
-  return "text-gray-500";
+  return "text-white/45";
 }
 
 function parseDeliveryMap(raw: string | null | undefined): Record<string, string> | null {
@@ -61,13 +61,13 @@ export default function OrderDetailPageNew() {
   const order = orders?.find((o: any) => o.orderId === params?.id || o.id.toString() === params?.id);
 
   if (!orders) {
-    return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-[#0d0d0d]"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 gap-4">
-        <p className="text-gray-900 font-bold">Order not found</p>
+      <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-4 gap-4">
+        <p className="text-white font-bold">Order not found</p>
         <button onClick={() => setLocation("/orders")} className="text-sm text-primary hover:underline">← Back to Orders</button>
       </div>
     );
@@ -133,12 +133,12 @@ export default function OrderDetailPageNew() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-20">
+    <div className="min-h-screen bg-[#111] flex flex-col pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 flex flex-col flex-1">
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => setLocation("/orders")}
-            className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors text-sm"
+            className="flex items-center gap-1.5 text-white/45 hover:text-white transition-colors text-sm"
             data-testid="btn-back"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -146,7 +146,7 @@ export default function OrderDetailPageNew() {
           </button>
         </div>
 
-        <div className="border-b border-gray-200 flex gap-8 mb-6">
+        <div className="border-b border-white/10 flex gap-8 mb-6">
           {(["info", "products"] as const).map((tab) => (
             <button
               key={tab}
@@ -154,7 +154,7 @@ export default function OrderDetailPageNew() {
               className={`pb-3 text-sm font-bold transition-colors border-b-2 -mb-px ${
                 activeTab === tab
                   ? "text-primary border-primary"
-                  : "text-gray-500 border-transparent hover:text-gray-600"
+                  : "text-white/45 border-transparent hover:text-white/60"
               }`}
             >
               {tab}
@@ -164,7 +164,7 @@ export default function OrderDetailPageNew() {
 
         {activeTab === "info" && (
           <div className="space-y-5">
-            <InfoRow label="ID" value={<span className="font-mono break-all text-sm text-gray-900">{order.orderId}</span>} />
+            <InfoRow label="ID" value={<span className="font-mono break-all text-sm text-white">{order.orderId}</span>} />
             <InfoRow label="Creation date" value={new Date(order.createdAt).toLocaleString("en-US")} />
             <InfoRow label="Reason" value="cart" />
             <InfoRow label="Expected amount" value={`$${(expected / 100).toFixed(2)}`} />
@@ -188,19 +188,19 @@ export default function OrderDetailPageNew() {
               const label = isAch ? "ACH Account" : isCard ? "Card" : "Item";
               return (
                 <div className="space-y-4">
-                  <InfoRow label="Type" value={<span className="font-bold text-sm text-gray-900">{label}</span>} />
+                  <InfoRow label="Type" value={<span className="font-bold text-sm text-white">{label}</span>} />
                   <InfoRow label="Price" value={`$${(order.total / 100).toFixed(2)}`} />
                   <div className="space-y-2 pt-1">
                     <button
                       onClick={() => toggleStock(key)}
-                      className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-gray-900 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                      className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                     >
                       {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       {isOpen ? `Hide ${label}` : `View ${label}`}
                     </button>
                     {isOpen && (
-                      <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 space-y-3">
-                        <p className="text-xs font-mono text-gray-900 whitespace-pre-wrap leading-relaxed break-all">
+                      <div className="bg-[#111]/5 border border-white/10 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed break-all">
                           {order.deliveryContent}
                         </p>
                         <button
@@ -219,7 +219,7 @@ export default function OrderDetailPageNew() {
 
             {/* Standard orders with orderItems */}
             {grouped.length === 0 && !order.deliveryContent && (
-              <p className="text-sm text-gray-500">No products found</p>
+              <p className="text-sm text-white/45">No products found</p>
             )}
             {grouped.map((item, idx) => {
               const stockContent = getStockForKey(item);
@@ -229,17 +229,17 @@ export default function OrderDetailPageNew() {
               return (
                 <div key={item.key}>
                   <div className="space-y-4">
-                    <InfoRow label="Product" value={<span className="font-bold text-sm text-gray-900">{item.productName}</span>} />
+                    <InfoRow label="Product" value={<span className="font-bold text-sm text-white">{item.productName}</span>} />
                     <InfoRow label="Option" value={item.variantName} />
                     <InfoRow label="Quantity" value={String(item.qty)} />
                     <InfoRow label="Unit price" value={`$${(item.unitPrice / 100).toFixed(2)}`} />
-                    <InfoRow label="Total" value={<span className="font-bold text-sm text-gray-900">${((item.unitPrice * item.qty) / 100).toFixed(2)}</span>} />
+                    <InfoRow label="Total" value={<span className="font-bold text-sm text-white">${((item.unitPrice * item.qty) / 100).toFixed(2)}</span>} />
 
                     {stockContent ? (
                       <div className="space-y-2 pt-1">
                         <button
                           onClick={() => toggleStock(item.key)}
-                          className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-gray-900 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                          className="w-full h-11 rounded-xl bg-[#3b5bdb] hover:bg-[#3451c7] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                         >
                           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           {isOpen
@@ -248,14 +248,14 @@ export default function OrderDetailPageNew() {
                         </button>
 
                         {isOpen && (
-                          <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 space-y-3">
+                          <div className="bg-[#111]/5 border border-white/10 rounded-xl p-4 space-y-3">
                             {stockContent.split(/\n\n+/).filter(Boolean).map((chunk, ci, arr) => (
                               <div key={ci}>
-                                <p className="text-xs font-mono text-gray-900 whitespace-pre-wrap leading-relaxed break-all">
+                                <p className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed break-all">
                                   {chunk.trim()}
                                 </p>
                                 {ci < arr.length - 1 && (
-                                  <div className="my-3 border-t border-gray-200" />
+                                  <div className="my-3 border-t border-white/10" />
                                 )}
                               </div>
                             ))}
@@ -270,13 +270,13 @@ export default function OrderDetailPageNew() {
                         )}
                       </div>
                     ) : (
-                      <div className="w-full h-11 rounded-xl bg-gray-50 border border-gray-200 text-gray-400 font-bold text-sm flex items-center justify-center">
+                      <div className="w-full h-11 rounded-xl bg-[#0d0d0d] border border-white/10 text-white/40 font-bold text-sm flex items-center justify-center">
                         {isFulfilled ? "No stock data" : "Pending Order"}
                       </div>
                     )}
                   </div>
 
-                  {idx < grouped.length - 1 && <div className="border-b border-gray-200 mt-6" />}
+                  {idx < grouped.length - 1 && <div className="border-b border-white/10 mt-6" />}
                 </div>
               );
             })}
@@ -290,8 +290,8 @@ export default function OrderDetailPageNew() {
 function InfoRow({ label, value }: { label: string; value: string | ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      {typeof value === "string" ? <p className="text-sm text-gray-900">{value}</p> : value}
+      <p className="text-xs text-white/45 mb-1">{label}</p>
+      {typeof value === "string" ? <p className="text-sm text-white">{value}</p> : value}
     </div>
   );
 }

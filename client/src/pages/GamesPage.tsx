@@ -49,7 +49,7 @@ export default function GamesPage() {
           <Card 
             key={game.id} 
             className={cn(
-              "bg-white border-gray-200 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden",
+              "bg-[#111] border-white/10 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden",
               "before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-0 group-hover:before:opacity-100 before:transition-opacity",
               game.id === 'dice' ? "before:from-primary/10 before:to-transparent" : "before:from-destructive/10 before:to-transparent"
             )}
@@ -66,7 +66,7 @@ export default function GamesPage() {
                 {game.description}
               </p>
               
-              <Button className="mt-8 bg-white/5 hover:bg-primary hover:text-black text-gray-900 font-bold border border-gray-200">
+              <Button className="mt-8 bg-[#111]/5 hover:bg-primary hover:text-black text-white font-bold border border-white/10">
                 Play Now
               </Button>
             </CardContent>

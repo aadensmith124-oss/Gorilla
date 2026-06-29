@@ -206,16 +206,16 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto px-0 py-0">
 
       {/* Search + controls */}
-      <div className="px-3 pt-3 pb-2 space-y-2 bg-white border-b border-gray-200 sticky top-[52px] z-30">
+      <div className="px-3 pt-3 pb-2 space-y-2 bg-[#111] border-b border-white/10 sticky top-[52px] z-30">
         {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
           <input
             type="text"
             placeholder="Search cards, base name, BIN, brand..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300 focus:bg-white transition-colors"
+            className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 focus:bg-[#111] transition-colors"
             data-testid="input-search"
           />
         </div>
@@ -224,17 +224,17 @@ export default function CardsPage() {
         <div className="relative">
           <button
             onClick={() => setShowBaseDropdown(d => !d)}
-            className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-3.5 h-10 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center justify-between bg-[#0d0d0d] border border-white/10 rounded-xl px-3.5 h-10 text-sm text-white/70 hover:bg-[#111]/5 transition-colors"
             data-testid="btn-base-dropdown"
           >
             <span>{selectedBaseName}</span>
-            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
+            <ChevronDown className={`h-4 w-4 text-white/40 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
           </button>
           {showBaseDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden">
               <button
                 onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
-                className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-gray-50 ${selectedBase === null ? "font-semibold text-gray-900" : "text-gray-600"}`}
+                className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#0d0d0d] ${selectedBase === null ? "font-semibold text-white" : "text-white/60"}`}
                 data-testid="btn-base-all"
               >
                 All Bases
@@ -243,7 +243,7 @@ export default function CardsPage() {
                 <button
                   key={b.id}
                   onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
-                  className={`w-full text-left px-4 py-3 text-sm border-t border-gray-100 transition-colors hover:bg-gray-50 ${selectedBase === b.id ? "font-semibold text-gray-900" : "text-gray-600"}`}
+                  className={`w-full text-left px-4 py-3 text-sm border-t border-white/8 transition-colors hover:bg-[#0d0d0d] ${selectedBase === b.id ? "font-semibold text-white" : "text-white/60"}`}
                   data-testid={`btn-base-${b.id}`}
                 >
                   {b.name} ({b.count})
@@ -258,7 +258,7 @@ export default function CardsPage() {
           onClick={() => setShowFilters(f => !f)}
           className={`w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-colors ${
             showFilters || activeFilters > 0
-              ? "bg-gray-800 border-gray-800 text-gray-900"
+              ? "bg-gray-800 border-gray-800 text-white"
               : "bg-gray-800 border-gray-800 text-white hover:bg-gray-700"
           }`}
           data-testid="btn-toggle-filters"
@@ -269,36 +269,36 @@ export default function CardsPage() {
 
         {/* Filter panel */}
         {showFilters && (
-          <div className="space-y-2 bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <div className="space-y-2 bg-[#0d0d0d] border border-white/10 rounded-xl p-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">ZIP Code</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">ZIP Code</p>
               <input
                 type="text"
                 placeholder="Enter ZIP..."
                 value={zipSearch}
                 onChange={e => setZipSearch(e.target.value)}
-                className="w-full h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:border-gray-300"
+                className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15"
                 data-testid="input-zip"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Bank</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">Bank</p>
                 <select
                   value={selectedBank}
                   onChange={e => setSelectedBank(e.target.value)}
-                  className="w-full h-9 bg-white border border-gray-200 rounded-lg px-2 text-xs text-gray-700 outline-none"
+                  className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-white/70 outline-none"
                 >
                   <option value="">All Banks</option>
                   {availableBanks.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Country</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1.5">Country</p>
                 <select
                   value={selectedCountry}
                   onChange={e => setSelectedCountry(e.target.value)}
-                  className="w-full h-9 bg-white border border-gray-200 rounded-lg px-2 text-xs text-gray-700 outline-none"
+                  className="w-full h-9 bg-[#111] border border-white/10 rounded-lg px-2 text-xs text-white/70 outline-none"
                 >
                   <option value="">All</option>
                   {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
@@ -307,12 +307,12 @@ export default function CardsPage() {
             </div>
             <div className="flex gap-2 items-center">
               <input type="number" step="0.01" placeholder="Min $" value={priceMin} onChange={e => setPriceMin(e.target.value)}
-                className="flex-1 h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none"
+                className="flex-1 h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none"
                 data-testid="input-price-min"
               />
-              <span className="text-gray-300 text-xs shrink-0">—</span>
+              <span className="text-white/30 text-xs shrink-0">—</span>
               <input type="number" step="0.01" placeholder="Max $" value={priceMax} onChange={e => setPriceMax(e.target.value)}
-                className="flex-1 h-9 bg-white border border-gray-200 rounded-lg px-3 text-xs text-gray-800 placeholder:text-gray-400 outline-none"
+                className="flex-1 h-9 bg-[#111] border border-white/10 rounded-lg px-3 text-xs text-white/90 placeholder:text-white/40 outline-none"
                 data-testid="input-price-max"
               />
             </div>
@@ -351,34 +351,34 @@ export default function CardsPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto bg-white">
+      <div className="overflow-x-auto bg-[#0a0a0a]">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+            <Loader2 className="h-5 w-5 animate-spin text-white/30" />
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400">No cards available</div>
+          <div className="py-16 text-center text-sm text-white/40">No cards available</div>
         ) : (
           <table className="w-full text-sm border-collapse" style={{ minWidth: "560px" }}>
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-white/10">
                 <th className="w-10 px-3 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={filteredCards.length > 0 && cartCardIds.size === filteredCards.length}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-green-700"
+                    className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
                     data-testid="checkbox-all"
                   />
                 </th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BIN</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">TYPE</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BANK</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ZIP</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">COUNTRY</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ST</th>
-                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">PRICE</th>
-                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">BUY</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">BIN</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">TYPE</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">BANK</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">ZIP</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">COUNTRY</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-white/40">ST</th>
+                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-white/40">PRICE</th>
+                <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-white/40">BUY</th>
               </tr>
             </thead>
             <tbody>
@@ -427,7 +427,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
 
   return (
     <tr
-      className={`border-b border-gray-100 transition-colors ${inCart ? "bg-green-50" : "hover:bg-gray-50"}`}
+      className={`border-b border-white/8 transition-colors ${inCart ? "bg-green-50" : "hover:bg-[#0d0d0d]"}`}
       data-testid={`card-row-${card.id}`}
     >
       <td className="px-3 py-3">
@@ -435,36 +435,36 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
           type="checkbox"
           checked={inCart}
           onChange={() => onToggleCart(card)}
-          className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-green-700"
+          className="w-4 h-4 rounded border-white/15 cursor-pointer accent-green-500"
           data-testid={`checkbox-card-${card.id}`}
         />
       </td>
       <td className="px-3 py-3">
-        <span className="font-bold font-mono text-sm text-gray-900">{bin || "—"}</span>
+        <span className="font-bold font-mono text-sm text-white">{bin || "—"}</span>
       </td>
       <td className="px-3 py-3">
-        <span className="text-xs font-mono text-gray-600">{cardType || "—"}</span>
+        <span className="text-xs font-mono text-white/60">{cardType || "—"}</span>
       </td>
       <td className="px-3 py-3 max-w-[140px]">
-        <span className="text-xs text-gray-600 truncate block">{bank || "—"}</span>
+        <span className="text-xs text-white/60 truncate block">{bank || "—"}</span>
       </td>
       <td className="px-3 py-3">
-        <span className="text-xs font-mono text-gray-600">{zip || "—"}</span>
+        <span className="text-xs font-mono text-white/60">{zip || "—"}</span>
       </td>
       <td className="px-3 py-3">
         <span className="text-lg leading-none">{flag || "—"}</span>
       </td>
       <td className="px-3 py-3">
-        <span className="text-xs font-mono text-gray-600">{state || "—"}</span>
+        <span className="text-xs font-mono text-white/60">{state || "—"}</span>
       </td>
       <td className="px-3 py-3 text-right">
-        <span className="font-bold text-sm text-gray-900">${(card.price / 100).toFixed(2)}</span>
+        <span className="font-bold text-sm text-white">${(card.price / 100).toFixed(2)}</span>
       </td>
       <td className="px-3 py-3 text-right">
         <button
           onClick={() => purchaseMutation.mutate()}
           disabled={purchaseMutation.isPending}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors disabled:opacity-50"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-[#111]/5 hover:bg-[#111]/8 text-white/60 transition-colors disabled:opacity-50"
           data-testid={`btn-buy-card-${card.id}`}
         >
           {purchaseMutation.isPending

@@ -12,7 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const RANKS = [
-  { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-gray-500",  bar: "#ffffff40", bg: "bg-gray-50",        discount: 0,  threshold: 0       },
+  { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-white/45",  bar: "#ffffff40", bg: "bg-[#0d0d0d]",        discount: 0,  threshold: 0       },
   { key: "regular", label: "Regular", emoji: "⭐", color: "text-blue-400",  bar: "#60a5fa",   bg: "bg-blue-500/10",    discount: 2,  threshold: 10000   },
   { key: "vip",     label: "VIP",     emoji: "💎", color: "text-purple-400",bar: "#c084fc",   bg: "bg-purple-500/10",  discount: 5,  threshold: 50000   },
   { key: "nyc",     label: "NYC",     emoji: "🫆", color: "text-amber-400", bar: "#fbbf24",   bg: "bg-amber-500/10",   discount: 10, threshold: 100000  },
@@ -28,13 +28,13 @@ function RankCard({ rankData }: { rankData: any }) {
     : 100;
 
   return (
-    <div className={`rounded-xl border border-gray-200 ${current.bg} p-4 space-y-3`}>
+    <div className={`rounded-xl border border-white/10 ${current.bg} p-4 space-y-3`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">{current.emoji}</span>
           <div>
             <p className={`text-sm font-bold ${current.color}`}>{current.label}</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Your rank</p>
+            <p className="text-[10px] text-white/40 uppercase tracking-widest">Your rank</p>
           </div>
         </div>
         {current.discount > 0 && (
@@ -43,17 +43,17 @@ function RankCard({ rankData }: { rankData: any }) {
           </span>
         )}
         {current.discount === 0 && (
-          <span className="text-xs text-gray-300 font-mono">no discount yet</span>
+          <span className="text-xs text-white/30 font-mono">no discount yet</span>
         )}
       </div>
 
       {next && (
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] text-gray-400">
+          <div className="flex justify-between text-[10px] text-white/40">
             <span>${(totalDeposited / 100).toFixed(0)} deposited</span>
             <span>${(next.threshold / 100).toFixed(0)} for {next.label}</span>
           </div>
-          <div className="h-1 rounded-full bg-gray-50 overflow-hidden">
+          <div className="h-1 rounded-full bg-[#0d0d0d] overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${progress}%`, backgroundColor: current.bar }}
@@ -67,10 +67,10 @@ function RankCard({ rankData }: { rankData: any }) {
 
       <div className="grid grid-cols-4 gap-1 pt-1">
         {RANKS.map((r, i) => (
-          <div key={r.key} className={`text-center py-1.5 rounded-lg ${i <= currentIdx ? r.bg : "bg-gray-50"} border border-gray-200`}>
+          <div key={r.key} className={`text-center py-1.5 rounded-lg ${i <= currentIdx ? r.bg : "bg-[#0d0d0d]"} border border-white/10`}>
             <div className="text-sm">{r.emoji}</div>
-            <div className={`text-[9px] font-bold mt-0.5 ${i <= currentIdx ? r.color : "text-gray-300"}`}>{r.label}</div>
-            <div className="text-[8px] text-gray-300">{r.discount > 0 ? `${r.discount}%` : "—"}</div>
+            <div className={`text-[9px] font-bold mt-0.5 ${i <= currentIdx ? r.color : "text-white/30"}`}>{r.label}</div>
+            <div className="text-[8px] text-white/30">{r.discount > 0 ? `${r.discount}%` : "—"}</div>
           </div>
         ))}
       </div>
@@ -93,56 +93,56 @@ export default function ProfilePage() {
     if (tabFromUrl) setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="h-7 w-7 animate-spin text-gray-400" /></div>;
+  if (isLoading || !user) return <div className="flex h-screen items-center justify-center bg-[#0d0d0d]"><Loader2 className="h-7 w-7 animate-spin text-white/40" /></div>;
 
   return (
     <div className="space-y-5 pb-20">
       <div>
-        <p className="text-[11px] text-gray-400 uppercase tracking-widest">Your account</p>
+        <p className="text-[11px] text-white/40 uppercase tracking-widest">Your account</p>
         <h1 className="text-2xl font-bold text-white mt-0.5">Dashboard</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start border-b border-gray-200 bg-transparent p-0 h-auto rounded-none gap-5">
-          <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-gray-500 data-[state=active]:text-green-800">
+        <TabsList className="w-full justify-start border-b border-white/10 bg-transparent p-0 h-auto rounded-none gap-5">
+          <TabsTrigger value="dashboard" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/45 data-[state=active]:text-green-800">
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-gray-500 data-[state=active]:text-green-800">
+          <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/45 data-[state=active]:text-green-800">
             Orders
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-gray-500 data-[state=active]:text-green-800">
+          <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/45 data-[state=active]:text-green-800">
             Settings
           </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-gray-500 data-[state=active]:text-green-800">
+          <TabsTrigger value="balance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-700 data-[state=active]:bg-transparent px-0 py-2.5 text-xs font-semibold text-white/45 data-[state=active]:text-green-800">
             Balance
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="pt-6 space-y-4">
           {rankData && <RankCard rankData={rankData} />}
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden">
-            <div className="px-4 py-3.5 border-b border-gray-200">
-              <p className="text-xs font-semibold text-gray-900">Account Information</p>
+          <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-white/10">
+              <p className="text-xs font-semibold text-white">Account Information</p>
             </div>
             <div className="divide-y divide-white/[0.05]">
               <div className="px-4 py-3 flex justify-between items-center">
-                <p className="text-[11px] text-gray-400">Username</p>
-                <p className="text-xs font-semibold text-gray-900">{user.username}</p>
+                <p className="text-[11px] text-white/40">Username</p>
+                <p className="text-xs font-semibold text-white">{user.username}</p>
               </div>
               <div className="px-4 py-3 flex justify-between items-center">
-                <p className="text-[11px] text-gray-400">Email</p>
-                <p className="text-xs font-semibold text-gray-900">{user.email}</p>
+                <p className="text-[11px] text-white/40">Email</p>
+                <p className="text-xs font-semibold text-white">{user.email}</p>
               </div>
               <div className="px-4 py-3 flex justify-between items-center">
-                <p className="text-[11px] text-gray-400">Telegram</p>
-                <p className="text-xs font-semibold text-gray-900">{user.telegramUsername || "—"}</p>
+                <p className="text-[11px] text-white/40">Telegram</p>
+                <p className="text-xs font-semibold text-white">{user.telegramUsername || "—"}</p>
               </div>
               <div className="px-4 py-3 flex justify-between items-center">
-                <p className="text-[11px] text-gray-400">Member Since</p>
-                <p className="text-xs text-gray-600">{new Date(user.createdAt).toLocaleDateString()}</p>
+                <p className="text-[11px] text-white/40">Member Since</p>
+                <p className="text-xs text-white/60">{new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
-            <div className="px-4 py-3 border-t border-gray-200">
+            <div className="px-4 py-3 border-t border-white/10">
               <button
                 onClick={() => logout()}
                 className="w-full h-9 bg-destructive/15 border border-destructive/25 text-destructive rounded-xl hover:bg-destructive/25 transition-colors font-semibold text-xs"
@@ -161,21 +161,21 @@ export default function ProfilePage() {
                 <p className="text-sm text-white mb-4">
                   {visibleOrders.length} ORDER{visibleOrders.length !== 1 ? "S" : ""} FOUND
                 </p>
-                <div className="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-gray-200">
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Amount</span>
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</span>
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Date</span>
+                <div className="bg-[#0d0d0d] rounded-2xl border border-white/10 overflow-hidden">
+                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/10">
+                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Amount</span>
+                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Status</span>
+                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Date</span>
                   </div>
                   {visibleOrders.map((order: any) => (
                     <button
                       key={order.id}
                       onClick={() => setLocation(`/order/${order.orderId}`)}
-                      className="w-full grid grid-cols-3 px-4 py-3 border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors text-left"
+                      className="w-full grid grid-cols-3 px-4 py-3 border-b border-white/10 last:border-0 hover:bg-[#0d0d0d] transition-colors text-left"
                     >
-                      <span className="text-xs font-bold text-gray-900">${(order.total / 100).toFixed(2)}</span>
+                      <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
                       <span className={`text-xs font-semibold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
-                      <span className="text-[11px] text-gray-500">{formatDate(order.createdAt)}</span>
+                      <span className="text-[11px] text-white/45">{formatDate(order.createdAt)}</span>
                     </button>
                   ))}
                 </div>
@@ -226,16 +226,16 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
 
   return (
     <div className="space-y-5">
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-[#111] border-white/10">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">Current Balance</span>
-            <span className="text-2xl font-bold text-gray-900">${((user.balance || 0) / 100).toFixed(2)}</span>
+            <span className="text-2xl font-bold text-white">${((user.balance || 0) / 100).toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-[#111] border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Gift className="h-4 w-4 text-primary" />
@@ -249,7 +249,7 @@ function BalanceTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="XXXX-XXXX-XXXX-XXXX"
-              className="bg-gray-50 border-gray-200 text-gray-900 font-mono placeholder:text-gray-300 h-11"
+              className="bg-[#0d0d0d] border-white/10 text-white font-mono placeholder:text-white/30 h-11"
               data-testid="input-redeem-code"
             />
           </div>
@@ -284,7 +284,7 @@ function statusColor(s: string) {
   if (s === "fulfilled" || s === "delivering") return "text-green-400";
   if (s === "refunded") return "text-orange-400";
   if (s === "replaced") return "text-blue-400";
-  return "text-gray-500";
+  return "text-white/45";
 }
 
 function formatDate(d: string) {
@@ -364,7 +364,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-card/40 border-gray-200">
+      <Card className="bg-card/40 border-white/10">
         <CardHeader>
           <CardTitle>Update Email</CardTitle>
         </CardHeader>
@@ -375,7 +375,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="name@example.com"
-              className="bg-gray-50 border-gray-200 text-gray-900"
+              className="bg-[#0d0d0d] border-white/10 text-white"
               data-testid="input-new-email"
             />
           </div>
@@ -385,7 +385,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
               placeholder="name@example.com"
-              className="bg-gray-50 border-gray-200 text-gray-900"
+              className="bg-[#0d0d0d] border-white/10 text-white"
               data-testid="input-confirm-email"
             />
           </div>
@@ -401,7 +401,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-card/40 border-gray-200">
+      <Card className="bg-card/40 border-white/10">
         <CardHeader>
           <CardTitle>Update Telegram</CardTitle>
         </CardHeader>
@@ -412,7 +412,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
               value={newTelegram}
               onChange={(e) => setNewTelegram(e.target.value)}
               placeholder="@username"
-              className="bg-gray-50 border-gray-200 text-gray-900"
+              className="bg-[#0d0d0d] border-white/10 text-white"
             />
           </div>
           <Button
@@ -426,22 +426,22 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-card/40 border-gray-200">
+      <Card className="bg-card/40 border-white/10">
         <CardHeader>
           <CardTitle>Update Password</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-2">Current Password</label>
-            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-gray-50 border-gray-200 text-gray-900" placeholder="Enter current password" />
+            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-[#0d0d0d] border-white/10 text-white" placeholder="Enter current password" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-2">New Password</label>
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-gray-50 border-gray-200 text-gray-900" placeholder="Enter new password" />
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0d0d0d] border-white/10 text-white" placeholder="Enter new password" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-2">Confirm New Password</label>
-            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-gray-50 border-gray-200 text-gray-900" placeholder="Confirm new password" />
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-[#0d0d0d] border-white/10 text-white" placeholder="Confirm new password" />
           </div>
           <Button
             onClick={() => passwordMutation.mutate()}
