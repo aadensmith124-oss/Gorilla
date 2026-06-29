@@ -3,366 +3,200 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronDown, Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle, RefreshCw, ExternalLink, ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle, RefreshCw, ExternalLink } from "lucide-react";
 import { SiBitcoin, SiEthereum, SiLitecoin, SiSolana, SiTether, SiCashapp } from "react-icons/si";
 
-type ManualResult = { note: string; handle: string; amount: number; method: string };
+type Method = "crypto" | "cashapp" | "chime" | "zelle";
+
+type ManualResult = { note: string; handle: string; amount: number; method: Method };
+
 type Deposit = {
-  id: string; type: string; amount: number; status: string;
-  paymentId?: string; checkoutUrl?: string; paymentNote?: string; createdAt: string;
+  id: string;
+  type: "crypto" | "cashapp" | "chime" | "zelle";
+  amount: number;
+  status: string;
+  paymentId?: string;
+  checkoutUrl?: string;
+  paymentNote?: string;
+  createdAt: string;
 };
 
 const COINS = [
-  { id: "BTC", label: "Bitcoin",  sub: "BTC",  Icon: SiBitcoin,   color: "#F7931A" },
-  { id: "ETH", label: "Ethereum", sub: "ETH",  Icon: SiEthereum,  color: "#627EEA" },
-  { id: "LTC", label: "Litecoin", sub: "LTC",  Icon: SiLitecoin,  color: "#A6A9AA" },
-  { id: "SOL", label: "Solana",   sub: "SOL",  Icon: SiSolana,    color: "#9945FF" },
-  { id: "USDT",label: "Tether",   sub: "USDT", Icon: SiTether,    color: "#26A17B" },
-  { id: "USDC",label: "USD Coin", sub: "USDC", Icon: SiBitcoin,   color: "#2775CA" },
+  { id: "BTC", label: "Bitcoin", sub: "BTC", Icon: SiBitcoin, color: "#F7931A" },
+  { id: "ETH", label: "Ethereum", sub: "ETH", Icon: SiEthereum, color: "#627EEA" },
+  { id: "LTC", label: "Litecoin", sub: "LTC", Icon: SiLitecoin, color: "#A6A9AA" },
+  { id: "SOL", label: "Solana", sub: "SOL", Icon: SiSolana, color: "#9945FF" },
+  { id: "USDT", label: "Tether", sub: "USDT", Icon: SiTether, color: "#26A17B" },
+  { id: "USDC", label: "USD Coin", sub: "USDC", Icon: SiBitcoin, color: "#2775CA" },
 ];
 
 const BONUS_TIERS = [
-  { min: 100,  max: 249,  bonus: "+10%" },
-  { min: 250,  max: 499,  bonus: "+13%" },
-  { min: 500,  max: 999,  bonus: "+16%" },
+  { min: 100, max: 249, bonus: "+10%" },
+  { min: 250, max: 499, bonus: "+13%" },
+  { min: 500, max: 999, bonus: "+16%" },
   { min: 1000, max: 2499, bonus: "+20%" },
   { min: 2500, max: 4999, bonus: "+25%" },
   { min: 5000, max: null, bonus: "+30%" },
 ];
 
-function CopyBtn({ value, label }: { value: string; label?: string }) {
+function CopyButton({ value, label }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
+  const handle = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
     <button
-      onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-[11px] text-gray-600 transition-colors"
+      onClick={handle}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/60 hover:text-white transition-colors"
+      data-testid="btn-copy"
     >
-      {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-      {copied ? "Copied" : (label ?? "Copy")}
+      {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied!" : (label || "Copy")}
     </button>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  if (["completed","delivering","fulfilled"].includes(status))
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-green-600"><CheckCircle2 className="h-3 w-3" />credited</span>;
-  if (["failed","expired"].includes(status))
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-red-500"><XCircle className="h-3 w-3" />{status}</span>;
-  if (status === "underpaid")
-    return <span className="flex items-center gap-1 text-[10px] font-mono text-amber-500"><AlertTriangle className="h-3 w-3" />underpaid</span>;
-  return <span className="flex items-center gap-1 text-[10px] font-mono text-gray-400 animate-pulse"><Clock className="h-3 w-3" />pending</span>;
+  if (status === "completed" || status === "delivering" || status === "fulfilled") {
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-green-400"><CheckCircle2 className="h-3 w-3" /> credited</span>;
+  }
+  if (status === "failed" || status === "expired") {
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-red-400/70"><XCircle className="h-3 w-3" /> {status}</span>;
+  }
+  if (status === "underpaid") {
+    return <span className="flex items-center gap-1 text-[10px] font-mono text-yellow-400/70"><AlertTriangle className="h-3 w-3" /> underpaid</span>;
+  }
+  return <span className="flex items-center gap-1 text-[10px] font-mono text-white/40 animate-pulse"><Clock className="h-3 w-3" /> pending</span>;
 }
 
 function methodColor(type: string) {
   if (type === "cashapp") return "#00D632";
-  if (type === "chime")   return "#7BC67E";
-  if (type === "zelle")   return "#6D1ED4";
+  if (type === "chime") return "#7BC67E";
+  if (type === "zelle") return "#6D1ED4";
   return "#F7931A";
 }
 
+function methodLabel(type: string) {
+  if (type === "cashapp") return "CashApp";
+  if (type === "chime") return "Chime";
+  if (type === "zelle") return "Zelle";
+  return "Crypto";
+}
+
 function DepositRow({ deposit }: { deposit: Deposit }) {
-  const isCredited = ["completed","delivering","fulfilled"].includes(deposit.status);
+  const isCredited = ["completed", "delivering", "fulfilled"].includes(deposit.status);
+  const amountLabel = deposit.amount > 0 ? `$${(deposit.amount / 100).toFixed(2)}` : "pending";
   const color = methodColor(deposit.type);
+
   return (
-    <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${
-      isCredited ? "bg-green-50 border-green-200" :
-      ["failed","expired"].includes(deposit.status) ? "bg-red-50 border-red-200" :
-      "bg-white border-gray-200"
+    <div className={`flex items-center justify-between px-3 py-2.5 rounded border ${
+      isCredited ? "bg-green-950/10 border-green-900/30" :
+      deposit.status === "failed" || deposit.status === "expired" ? "bg-red-950/10 border-red-900/20" :
+      "bg-[#0e0e0e] border-white/5"
     }`}>
-      <div className="flex items-center gap-2.5">
-        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-          style={{ background: `${color}22`, color }}>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: `${color}22`, color }}>
           {deposit.type === "crypto" ? "₿" : deposit.type.charAt(0).toUpperCase()}
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-gray-900">
-              {deposit.amount > 0 ? `$${(deposit.amount / 100).toFixed(2)}` : "pending"}
-            </span>
+            <span className="text-xs font-mono font-bold text-white">{amountLabel}</span>
             <StatusBadge status={deposit.status} />
           </div>
-          <p className="text-[10px] text-gray-400 font-mono mt-0.5">
-            {deposit.type} · {new Date(deposit.createdAt).toLocaleDateString()}
-            {deposit.paymentNote ? ` · ${deposit.paymentNote}` : ""}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[10px] text-white/25 font-mono">
+              {methodLabel(deposit.type)} · {new Date(deposit.createdAt).toLocaleDateString()}
+            </span>
+            {deposit.paymentNote && <span className="text-[10px] font-mono" style={{ color: `${color}80` }}>{deposit.paymentNote}</span>}
+          </div>
         </div>
       </div>
       {deposit.checkoutUrl && !isCredited && (
         <a href={deposit.checkoutUrl} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="h-3.5 w-3.5 text-gray-300 hover:text-gray-600 transition-colors" />
+          <button className="ml-2 flex-shrink-0 text-white/20 hover:text-white/60 transition-colors" title="Reopen checkout">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
         </a>
       )}
     </div>
   );
 }
 
-function ManualResult({ result, onReset }: { result: ManualResult; onReset: () => void }) {
+function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset: () => void }) {
   const color = methodColor(result.method);
-  const name = result.method === "cashapp" ? "CashApp" : result.method === "chime" ? "Chime" : "Zelle";
+  const name = methodLabel(result.method);
+  const sendLabel = result.method === "cashapp" ? "Send to $Cashtag" : result.method === "chime" ? "Send to Chime" : "Send to Zelle";
+
   return (
-    <div className="space-y-2 mt-3">
-      <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
-        <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono mb-1">Send to</p>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-bold text-gray-900">{result.handle || `(no ${name} handle set)`}</p>
-          {result.handle && <CopyBtn value={result.handle} />}
+    <div className="border rounded-xl p-4 space-y-3" style={{ borderColor: `${color}40`, background: `${color}08` }}>
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: color, color: "#000" }}>
+          {name.charAt(0)}
+        </div>
+        <p className="text-xs font-bold" style={{ color }}>Send via {name}</p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="bg-black/40 rounded px-3 py-2">
+          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">{sendLabel}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-white font-mono">{result.handle || `(no ${name} handle set)`}</p>
+            {result.handle && <CopyButton value={result.handle} />}
+          </div>
+        </div>
+
+        <div className="bg-black/40 rounded px-3 py-2">
+          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Amount (send EXACTLY this)</p>
+          <div className="flex items-center justify-between">
+            <p className="text-lg font-bold text-white font-mono">${(result.amount / 100).toFixed(2)}</p>
+            <CopyButton value={(result.amount / 100).toFixed(2)} label="Copy" />
+          </div>
+          <p className="text-[10px] text-yellow-400/70 font-mono mt-1">⚠ You must send exactly this amount</p>
+        </div>
+
+        <div className="bg-black/40 rounded px-3 py-2">
+          <p className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-mono">Payment Note (required)</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold font-mono" style={{ color }}>{result.note}</p>
+            <CopyButton value={result.note} />
+          </div>
         </div>
       </div>
-      <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
-        <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono mb-1">Amount (EXACT)</p>
-        <div className="flex items-center justify-between">
-          <p className="text-xl font-black text-gray-900 font-mono">${(result.amount / 100).toFixed(2)}</p>
-          <CopyBtn value={(result.amount / 100).toFixed(2)} />
-        </div>
-        <p className="text-[10px] text-amber-600 font-mono mt-1">⚠ Send exactly this amount</p>
-      </div>
-      <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
-        <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono mb-1">Note (required)</p>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-bold font-mono" style={{ color }}>{result.note}</p>
-          <CopyBtn value={result.note} />
-        </div>
-      </div>
-      <p className="text-[10px] text-gray-400 font-mono text-center">include the note when sending · admin will confirm and credit your balance</p>
-      <button onClick={onReset} className="w-full text-[11px] text-gray-400 hover:text-gray-700 font-mono transition-colors" data-testid="btn-new-deposit">
+
+      <p className="text-[10px] text-white/25 font-mono leading-relaxed">
+        include the exact note when sending · admin will confirm and credit your balance
+      </p>
+      <button
+        onClick={onReset}
+        className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors font-mono"
+        data-testid="btn-new-deposit"
+      >
         ← create new deposit
       </button>
     </div>
   );
 }
 
-/* ─── Individual method sections ─── */
-
-function CryptoSection({ minDeposits }: { minDeposits?: Record<string, number> }) {
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [selectedCoin, setSelectedCoin] = useState("BTC");
-  const [amount, setAmount] = useState("");
-  const [showMore, setShowMore] = useState(false);
-  const qc = useQueryClient();
-
-  const parsed = parseFloat(amount) || 0;
-  const activeTier = BONUS_TIERS.find(t => parsed >= t.min && (t.max === null || parsed <= t.max));
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
-      if (!parsed || parsed < cryptoMin) throw new Error(`Minimum crypto deposit is $${cryptoMin.toFixed(2)}`);
-      const res = await apiRequest("POST", "/api/payments/forebit/create", { amount: String(Math.round(parsed * 100)), purpose: "deposit" });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
-      return res.json();
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-      const url = data.checkoutUrl || data.url;
-      if (url) {
-        if (data.paymentId) { sessionStorage.setItem("lastForebitPaymentId", data.paymentId); sessionStorage.setItem("lastForebitPurpose", "deposit"); }
-        window.location.href = url;
-      }
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const coins = showMore ? COINS : COINS.slice(0, 6);
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-4"
-        data-testid="btn-section-crypto"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-            <SiBitcoin className="h-5 w-5 text-amber-500" />
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-bold text-gray-900">Crypto</p>
-            <p className="text-[11px] text-green-700 font-mono font-bold">+bonus up to 30%</p>
-          </div>
-        </div>
-        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="border-t border-gray-100 px-4 pb-4 space-y-3 pt-3">
-          {/* Bonus tiers */}
-          <div className="bg-green-50 border border-green-200 rounded-xl overflow-hidden">
-            <div className="px-3 py-2 border-b border-green-100">
-              <p className="text-[10px] font-bold text-green-800 uppercase tracking-widest">Deposit Bonus Milestones</p>
-            </div>
-            <div className="divide-y divide-green-100">
-              <div className="grid grid-cols-2 px-3 py-1">
-                <span className="text-[9px] text-green-600 font-mono font-bold uppercase">Range</span>
-                <span className="text-[9px] text-green-600 font-mono font-bold uppercase text-right">Bonus</span>
-              </div>
-              {BONUS_TIERS.map((tier, i) => {
-                const isActive = activeTier === tier;
-                return (
-                  <div key={i} className={`grid grid-cols-2 px-3 py-1 ${isActive ? "bg-green-200/50" : ""}`}>
-                    <span className={`text-xs font-mono font-semibold ${isActive ? "text-green-900" : "text-gray-700"}`}>
-                      ${tier.min.toLocaleString()}{tier.max ? ` – $${tier.max.toLocaleString()}` : "+"}
-                    </span>
-                    <span className={`text-xs font-mono font-bold text-right ${isActive ? "text-green-800" : "text-green-600"}`}>{tier.bonus}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Coin selector */}
-          <div>
-            <p className="text-[9px] text-gray-400 font-mono uppercase font-bold mb-1.5">Choose coin</p>
-            <div className="grid grid-cols-3 gap-2">
-              {coins.map(coin => {
-                const isSelected = selectedCoin === coin.id;
-                const { Icon } = coin;
-                return (
-                  <button key={coin.id} onClick={() => setSelectedCoin(coin.id)}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition-all ${isSelected ? "border-gray-300 bg-gray-100" : "border-gray-200 bg-gray-50 hover:bg-gray-100"}`}
-                    data-testid={`btn-coin-${coin.id}`}
-                  >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: `${coin.color}22` }}>
-                      <Icon className="h-4 w-4" style={{ color: coin.color }} />
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-800 font-mono">{coin.sub}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button onClick={() => setShowMore(v => !v)} className="w-full mt-2 py-1.5 text-[10px] text-gray-400 hover:text-gray-600 font-mono transition-colors border border-gray-200 rounded-lg">
-              {showMore ? "▲ fewer" : "▼ more coins"}
-            </button>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="text-[9px] text-gray-400 uppercase tracking-widest font-mono font-bold">Amount (USD)</label>
-            <div className="relative mt-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm">$</span>
-              <input type="number" step="0.01" min="1" placeholder="0.00" value={amount}
-                onChange={e => setAmount(e.target.value)}
-                className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-3 text-sm text-gray-900 font-mono outline-none focus:border-green-300 focus:bg-white transition-colors"
-                data-testid="input-amount-crypto"
-              />
-            </div>
-            {activeTier && parsed > 0 && (
-              <p className="text-[10px] text-green-700 font-mono font-bold mt-1">🎉 {activeTier.bonus} bonus on this deposit!</p>
-            )}
-          </div>
-
-          <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !amount || parsed <= 0}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-40"
-            style={{ background: "#2d6a2d" }} data-testid="btn-deposit-crypto"
-          >
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ExternalLink className="h-4 w-4" />Deposit {parsed > 0 ? `$${parsed.toFixed(2)}` : ""} with {selectedCoin}</>}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ManualSection({ id, label, color, icon, tag, tagLabel, enabled, minDeposits }: {
-  id: string; label: string; color: string; icon: React.ReactNode; tag: string; tagLabel: string; enabled: boolean; minDeposits?: Record<string, number>;
-}) {
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [result, setResult] = useState<ManualResult | null>(null);
-  const qc = useQueryClient();
-
-  const parsed = parseFloat(amount) || 0;
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      if (!parsed || parsed < 0.01) throw new Error("Enter the amount you want to deposit");
-      const min = minDeposits?.[id] ?? 0;
-      if (min > 0 && parsed < min) throw new Error(`Minimum deposit is $${min.toFixed(2)}`);
-      let endpoint = "";
-      if (id === "cashapp") endpoint = "/api/orders/cashapp";
-      else if (id === "chime") endpoint = "/api/deposits/chime";
-      else if (id === "zelle") endpoint = "/api/deposits/zelle";
-      const res = await apiRequest("POST", endpoint, { amount: parsed });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
-      return res.json();
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-      const handle = id === "cashapp" ? (data.cashappTag || tag) : (data.handle || tag);
-      setResult({ note: data.paymentNote, handle, amount: Math.round(parsed * 100), method: id });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  if (!enabled) return null;
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-4"
-        data-testid={`btn-section-${id}`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${color}18` }}>
-            <div style={{ color }}>{icon}</div>
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-bold text-gray-900">{label}</p>
-            <p className="text-[11px] text-gray-400 font-mono">{tagLabel || "instant"}</p>
-          </div>
-        </div>
-        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="border-t border-gray-100 px-4 pb-4 pt-3">
-          {result ? (
-            <ManualResult result={result} onReset={() => { setResult(null); setAmount(""); }} />
-          ) : (
-            <div className="space-y-3">
-              <p className="text-[11px] text-gray-500 font-mono leading-relaxed bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
-                enter how much you want to deposit · you'll get a unique note · send exactly that amount with the note · admin will credit your balance
-              </p>
-              <div>
-                {(() => { const min = minDeposits?.[id] ?? 0; return min > 0 ? <p className="text-[9px] text-amber-600 font-mono font-bold mb-1">Min: ${min.toFixed(2)}</p> : null; })()}
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm">$</span>
-                  <input type="number" step="0.01" min="0.01" placeholder="0.00" value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    className="w-full h-11 bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-3 text-sm text-gray-900 font-mono outline-none focus:border-gray-300 focus:bg-white transition-colors"
-                    data-testid={`input-amount-${id}`}
-                  />
-                </div>
-              </div>
-              <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !amount || parsed <= 0}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all disabled:opacity-40"
-                style={{ borderColor: `${color}40`, color, background: `${color}0c` }}
-                data-testid={`btn-generate-${id}`}
-              >
-                {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : `Generate payment note →`}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Main page ─── */
-
 export default function DepositPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const qc = useQueryClient();
+  const [method, setMethod] = useState<Method>("crypto");
+  const [selectedCoin, setSelectedCoin] = useState("BTC");
+  const [amountInput, setAmountInput] = useState("");
+  const [showMoreCoins, setShowMoreCoins] = useState(false);
+  const [manualResult, setManualResult] = useState<ManualResult | null>(null);
 
   const { data: manualMethods } = useQuery<{
     cashapp: { enabled: boolean; tag: string };
-    chime:   { enabled: boolean; handle: string };
-    zelle:   { enabled: boolean; handle: string };
-    venmo:   { enabled: boolean; handle: string };
-  }>({ queryKey: ["/api/site-settings/manual-payments"] });
+    chime: { enabled: boolean; handle: string };
+    zelle: { enabled: boolean; handle: string };
+    venmo: { enabled: boolean; handle: string };
+  }>({
+    queryKey: ["/api/site-settings/manual-payments"],
+  });
 
   const { data: minDeposits } = useQuery<Record<string, number>>({
     queryKey: ["/api/site-settings/min-deposits"],
@@ -374,84 +208,355 @@ export default function DepositPage() {
     refetchInterval: 15000,
   });
 
+  const cryptoMutation = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(amountInput);
+      const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
+      if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit for Crypto is $${cryptoMin.toFixed(2)}`);
+      if (amount > 1000000000) throw new Error("Maximum deposit is $1,000,000,000");
+      const res = await apiRequest("POST", "/api/payments/forebit/create", {
+        amount: String(Math.round(amount * 100)),
+        purpose: "deposit",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to create payment");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
+      if (data.checkoutUrl || data.url) {
+        const url = data.checkoutUrl || data.url;
+        if (data.paymentId) {
+          sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
+          sessionStorage.setItem("lastForebitPurpose", "deposit");
+          sessionStorage.removeItem("lastForebitOrderId");
+        }
+        window.location.href = url;
+      } else {
+        toast({ title: "Payment created", description: "Check your email for the payment link" });
+      }
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const cashappMutation = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(amountInput);
+      if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.cashapp ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for CashApp is $${min.toFixed(2)}`);
+      const res = await apiRequest("POST", "/api/orders/cashapp", { amount });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setManualResult({ note: data.paymentNote, handle: data.cashappTag || manualMethods?.cashapp.tag || "", amount: Math.round(parseFloat(amountInput) * 100), method: "cashapp" });
+      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const chimeMutation = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(amountInput);
+      if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.chime ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for Chime is $${min.toFixed(2)}`);
+      const res = await apiRequest("POST", "/api/deposits/chime", { amount });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setManualResult({ note: data.paymentNote, handle: data.handle || manualMethods?.chime.handle || "", amount: Math.round(parseFloat(amountInput) * 100), method: "chime" });
+      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const zelleMutation = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(amountInput);
+      if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
+      const min = minDeposits?.zelle ?? 0;
+      if (min > 0 && amount < min) throw new Error(`Minimum deposit for Zelle is $${min.toFixed(2)}`);
+      const res = await apiRequest("POST", "/api/deposits/zelle", { amount });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setManualResult({ note: data.paymentNote, handle: data.handle || manualMethods?.zelle.handle || "", amount: Math.round(parseFloat(amountInput) * 100), method: "zelle" });
+      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const recentDeposits = deposits?.slice(0, 20) ?? [];
-  const pendingDeposits = deposits?.filter(d => !["completed","delivering","fulfilled","failed","expired"].includes(d.status)) ?? [];
+  const pendingDeposits = deposits?.filter(d => !["completed", "delivering", "fulfilled", "failed", "expired"].includes(d.status)) ?? [];
+  const parsedAmount = parseFloat(amountInput) || 0;
+  const activeTier = BONUS_TIERS.find(t => parsedAmount >= t.min && (t.max === null || parsedAmount <= t.max));
+  const visibleCoins = showMoreCoins ? COINS : COINS.slice(0, 6);
 
   const cashappEnabled = manualMethods?.cashapp.enabled !== false;
-  const chimeEnabled   = manualMethods?.chime.enabled === true;
-  const zelleEnabled   = manualMethods?.zelle.enabled === true;
+  const chimeEnabled = manualMethods?.chime.enabled === true;
+  const zelleEnabled = manualMethods?.zelle.enabled === true;
+
+  const handleGenerate = () => {
+    if (method === "cashapp") cashappMutation.mutate();
+    else if (method === "chime") chimeMutation.mutate();
+    else if (method === "zelle") zelleMutation.mutate();
+  };
+
+  const isManualPending = cashappMutation.isPending || chimeMutation.isPending || zelleMutation.isPending;
+  const isManual = method !== "crypto";
 
   return (
-    <div className="max-w-sm mx-auto px-3 py-4 space-y-3">
-
+    <div className="max-w-sm mx-auto px-3 py-3 space-y-3">
       {/* Payment issues banner */}
       <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer">
-        <div className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs text-gray-500 hover:bg-gray-50 transition-colors shadow-sm cursor-pointer" data-testid="btn-payment-issues">
-          <div className="flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+        <button className="w-full flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded text-xs text-white/50 hover:bg-white/8 transition-colors" data-testid="btn-payment-issues">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse flex-shrink-0" />
             <span className="font-mono">payment issues? click here</span>
           </div>
-          <ChevronRight className="h-3 w-3 text-gray-300" />
-        </div>
+          <ChevronRight className="h-3 w-3 flex-shrink-0" />
+        </button>
       </a>
 
       {pendingDeposits.length > 0 && (
-        <div className="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
-          <p className="text-[11px] text-amber-700 font-mono">
+        <div className="border border-yellow-500/20 bg-yellow-950/10 rounded px-3 py-2 flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-yellow-400/60 flex-shrink-0" />
+          <p className="text-[11px] text-yellow-400/70 font-mono">
             {pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""} — awaiting confirmation
           </p>
         </div>
       )}
 
-      {/* Section label */}
-      <div className="pt-1">
-        <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono font-bold px-1">Choose payment method</p>
+      {/* Method selector */}
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${1 + (cashappEnabled ? 1 : 0) + (chimeEnabled ? 1 : 0) + (zelleEnabled ? 1 : 0)}, 1fr)` }}>
+        {/* Crypto always shown */}
+        <button
+          onClick={() => { setMethod("crypto"); setManualResult(null); setAmountInput(""); }}
+          className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "crypto" ? "border-primary/50 bg-primary/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+          data-testid="btn-method-crypto"
+        >
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "crypto" ? "bg-primary" : "bg-white/10"}`}>
+            <SiBitcoin className={`h-5 w-5 ${method === "crypto" ? "text-black" : "text-white/60"}`} />
+          </div>
+          <div className="text-center">
+            <p className={`text-xs font-bold ${method === "crypto" ? "text-primary" : "text-white/50"}`}>Crypto</p>
+            <p className="text-[10px] text-white/25 font-mono">+bonus</p>
+          </div>
+        </button>
+
+        {cashappEnabled && (
+          <button
+            onClick={() => { setMethod("cashapp"); setManualResult(null); setAmountInput(""); }}
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "cashapp" ? "border-[#00D632]/50 bg-[#00D632]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            data-testid="btn-method-cashapp"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${method === "cashapp" ? "bg-[#00D632]" : "bg-white/10"}`}>
+              <SiCashapp className={`h-5 w-5 ${method === "cashapp" ? "text-white" : "text-white/60"}`} />
+            </div>
+            <div className="text-center">
+              <p className={`text-xs font-bold ${method === "cashapp" ? "text-[#00D632]" : "text-white/50"}`}>CashApp</p>
+              <p className="text-[10px] text-white/25 font-mono">instant</p>
+            </div>
+          </button>
+        )}
+
+        {chimeEnabled && (
+          <button
+            onClick={() => { setMethod("chime"); setManualResult(null); setAmountInput(""); }}
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "chime" ? "border-[#7BC67E]/50 bg-[#7BC67E]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            data-testid="btn-method-chime"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${method === "chime" ? "bg-[#7BC67E] text-white" : "bg-white/10 text-white/60"}`}>
+              C
+            </div>
+            <div className="text-center">
+              <p className={`text-xs font-bold ${method === "chime" ? "text-[#7BC67E]" : "text-white/50"}`}>Chime</p>
+              <p className="text-[10px] text-white/25 font-mono">instant</p>
+            </div>
+          </button>
+        )}
+
+        {zelleEnabled && (
+          <button
+            onClick={() => { setMethod("zelle"); setManualResult(null); setAmountInput(""); }}
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${method === "zelle" ? "border-[#6D1ED4]/50 bg-[#6D1ED4]/10" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+            data-testid="btn-method-zelle"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${method === "zelle" ? "bg-[#6D1ED4] text-white" : "bg-white/10 text-white/60"}`}>
+              Z
+            </div>
+            <div className="text-center">
+              <p className={`text-xs font-bold ${method === "zelle" ? "text-[#6D1ED4]" : "text-white/50"}`}>Zelle</p>
+              <p className="text-[10px] text-white/25 font-mono">instant</p>
+            </div>
+          </button>
+        )}
       </div>
 
-      {/* Crypto */}
-      <CryptoSection minDeposits={minDeposits} />
+      {/* === CRYPTO SECTION === */}
+      {method === "crypto" && (
+        <div className="space-y-3">
+          <div className="border border-primary/20 bg-primary/5 rounded-xl overflow-hidden">
+            <div className="px-3 py-2 border-b border-primary/10">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Deposit Bonus Milestones · Crypto Only</p>
+              <p className="text-[10px] text-white/30 mt-0.5">More you deposit, more you get back</p>
+            </div>
+            <div className="divide-y divide-white/5">
+              <div className="grid grid-cols-2 px-3 py-1.5">
+                <span className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Range</span>
+                <span className="text-[9px] text-white/30 uppercase tracking-widest font-mono text-right">Bonus</span>
+              </div>
+              {BONUS_TIERS.map((tier, i) => {
+                const isActive = activeTier === tier;
+                return (
+                  <div key={i} className={`grid grid-cols-2 px-3 py-1.5 transition-colors ${isActive ? "bg-primary/10" : ""}`}>
+                    <span className={`text-xs font-mono ${isActive ? "text-white" : "text-white/40"}`}>
+                      ${tier.min.toLocaleString()}{tier.max ? ` — $${tier.max.toLocaleString()}` : "+"}
+                    </span>
+                    <span className={`text-xs font-mono text-right font-bold ${isActive ? "text-primary" : "text-primary/60"}`}>{tier.bonus}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* CashApp */}
-      <ManualSection
-        id="cashapp" label="CashApp" color="#00D632"
-        icon={<SiCashapp className="h-5 w-5" />}
-        tag={manualMethods?.cashapp.tag ?? ""}
-        tagLabel={manualMethods?.cashapp.tag ? `$${manualMethods.cashapp.tag}` : "instant"}
-        enabled={cashappEnabled}
-        minDeposits={minDeposits}
-      />
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Tap a coin to deposit</p>
+            <div className="grid grid-cols-3 gap-2">
+              {visibleCoins.map(coin => {
+                const isSelected = selectedCoin === coin.id;
+                const { Icon } = coin;
+                return (
+                  <button
+                    key={coin.id}
+                    onClick={() => setSelectedCoin(coin.id)}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${isSelected ? "border-white/30 bg-white/8" : "border-white/8 bg-[#0e0e0e] hover:border-white/15"}`}
+                    data-testid={`btn-coin-${coin.id}`}
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: `${coin.color}22` }}>
+                      <Icon className="h-4 w-4" style={{ color: coin.color }} />
+                    </div>
+                    <span className="text-[10px] font-bold text-white font-mono">{coin.sub}</span>
+                    <span className="text-[9px] text-white/30">{coin.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowMoreCoins(v => !v)}
+              className="w-full py-1.5 border border-white/8 rounded text-[10px] text-white/30 hover:text-white hover:border-white/15 transition-colors font-mono"
+              data-testid="btn-more-coins"
+            >
+              {showMoreCoins ? "▲ FEWER COINS ▲" : "▶ MORE COINS ▼"}
+            </button>
+          </div>
 
-      {/* Chime */}
-      <ManualSection
-        id="chime" label="Chime" color="#7BC67E"
-        icon={<span className="text-lg font-black">C</span>}
-        tag={manualMethods?.chime.handle ?? ""}
-        tagLabel={manualMethods?.chime.handle || "instant"}
-        enabled={chimeEnabled}
-        minDeposits={minDeposits}
-      />
+          <div className="space-y-1.5">
+            <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Amount (USD)</label>
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="1"
+                placeholder="0.00"
+                value={amountInput}
+                onChange={e => setAmountInput(e.target.value)}
+                className="w-full h-10 bg-[#0e0e0e] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-primary/40 transition-colors"
+                data-testid="input-amount"
+              />
+            </div>
+            {activeTier && parsedAmount > 0 && (
+              <p className="text-[10px] text-primary font-mono font-bold">
+                🎉 You qualify for a {activeTier.bonus} bonus on this deposit!
+              </p>
+            )}
+          </div>
 
-      {/* Zelle */}
-      <ManualSection
-        id="zelle" label="Zelle" color="#6D1ED4"
-        icon={<span className="text-lg font-black">Z</span>}
-        tag={manualMethods?.zelle.handle ?? ""}
-        tagLabel={manualMethods?.zelle.handle || "instant"}
-        enabled={zelleEnabled}
-        minDeposits={minDeposits}
-      />
+          <button
+            onClick={() => cryptoMutation.mutate()}
+            disabled={cryptoMutation.isPending || !amountInput || parsedAmount <= 0}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-40"
+            data-testid="btn-deposit-crypto"
+          >
+            {cryptoMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <>
+                <ExternalLink className="h-4 w-4" />
+                Deposit {parsedAmount > 0 ? `$${parsedAmount.toFixed(2)}` : ""} with {selectedCoin}
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* === MANUAL PAYMENT SECTION (CashApp / Chime / Zelle) === */}
+      {isManual && (
+        <div className="space-y-2">
+          {manualResult ? (
+            <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setAmountInput(""); }} />
+          ) : (
+            <>
+              <div className="px-3 py-2.5 bg-[#0e0e0e] border border-white/8 rounded text-xs text-white/40 font-mono leading-relaxed">
+                enter how much you want to deposit · you will get a unique note · send EXACTLY that amount with the note · admin will credit your balance
+              </div>
+
+              {/* Amount input */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[9px] text-white/30 uppercase tracking-widest font-mono">Deposit Amount (USD)</label>
+                  {(() => {
+                    const min = minDeposits?.[method as string] ?? 0;
+                    return min > 0 ? <span className="text-[9px] font-mono text-yellow-400/70">Min: ${min.toFixed(2)}</span> : null;
+                  })()}
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40 font-mono">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    value={amountInput}
+                    onChange={e => setAmountInput(e.target.value)}
+                    className="w-full h-10 bg-[#0e0e0e] border border-white/10 rounded-lg pl-7 pr-3 text-sm text-white font-mono outline-none focus:border-white/20 transition-colors"
+                    data-testid="input-manual-amount"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleGenerate}
+                disabled={isManualPending || !amountInput || parsedAmount <= 0}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border rounded text-xs font-mono transition-all disabled:opacity-40"
+                style={{
+                  borderColor: method === "cashapp" ? "#00D63240" : method === "chime" ? "#7BC67E40" : "#6D1ED440",
+                  color: method === "cashapp" ? "#00D632" : method === "chime" ? "#7BC67E" : "#9B59E8",
+                }}
+                data-testid="btn-generate-note"
+              >
+                {isManualPending ? <Loader2 className="h-3 w-3 animate-spin" /> : `generate payment note →`}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Topup History */}
       {recentDeposits.length > 0 && (
-        <div className="space-y-1.5 pt-2">
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono font-bold">Topup History</p>
-            <button onClick={() => refetchDeposits()} className="text-gray-300 hover:text-gray-500 transition-colors" data-testid="btn-refresh-deposits">
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between">
+            <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono">Topup History</p>
+            <button onClick={() => refetchDeposits()} className="text-white/20 hover:text-white/50 transition-colors" title="Refresh" data-testid="btn-refresh-deposits">
               <RefreshCw className="h-3 w-3" />
             </button>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {recentDeposits.map(dep => <DepositRow key={dep.id} deposit={dep} />)}
           </div>
         </div>

@@ -375,7 +375,7 @@ export default function CardsPage() {
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">TYPE</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">BANK</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ZIP</th>
-                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">FLAG</th>
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">COUNTRY</th>
                 <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">ST</th>
                 <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">PRICE</th>
                 <th className="px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">BUY</th>

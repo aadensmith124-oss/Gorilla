@@ -114,11 +114,11 @@ export default function OrdersPage() {
 
   const now = new Date();
 
-  const tabs: { key: TabType; label: string; count: number }[] = [
+  const tabs: { key: TabType; label: string; count: number; href?: string }[] = [
     { key: "all", label: "all", count: allOrders.length },
-    { key: "cards", label: "cards", count: cardOrders.length },
-    { key: "ach", label: "ach", count: achOrders.length },
-    { key: "logs", label: "logs", count: logOrders.length },
+    ...(cardOrders.length > 0 ? [{ key: "cards" as TabType, label: "cards", count: cardOrders.length, href: "/acctplug" }] : []),
+    ...(achOrders.length > 0 ? [{ key: "ach" as TabType, label: "ach", count: achOrders.length }] : []),
+    ...(logOrders.length > 0 ? [{ key: "logs" as TabType, label: "logs", count: logOrders.length, href: "/shop" }] : []),
   ];
 
   return (
@@ -167,18 +167,26 @@ export default function OrdersPage() {
       {/* Tabs */}
       <div className="flex items-center gap-0 border-b border-gray-200">
         {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-1 pb-2 text-xs transition-colors border-b-2 mr-4 -mb-px ${
-              tab === t.key
-                ? "text-gray-900 border-gray-900"
-                : "text-gray-400 border-transparent hover:text-gray-600"
-            }`}
-            data-testid={`tab-${t.key}`}
-          >
-            {t.label} <span className="text-gray-400">{t.count}</span>
-          </button>
+          <div key={t.key} className="flex items-center gap-1 mr-4">
+            <button
+              onClick={() => setTab(t.key)}
+              className={`px-1 pb-2 text-xs transition-colors border-b-2 -mb-px ${
+                tab === t.key
+                  ? "text-gray-900 border-gray-900"
+                  : "text-gray-400 border-transparent hover:text-gray-600"
+              }`}
+              data-testid={`tab-${t.key}`}
+            >
+              {t.label} <span className="text-gray-400">{t.count}</span>
+            </button>
+            {t.href && (
+              <Link href={t.href}>
+                <span className="text-[9px] pb-2 -mb-px text-green-600 hover:text-green-700 cursor-pointer font-mono underline underline-offset-2 transition-colors" data-testid={`link-shop-${t.key}`}>
+                  shop →
+                </span>
+              </Link>
+            )}
+          </div>
         ))}
       </div>
 

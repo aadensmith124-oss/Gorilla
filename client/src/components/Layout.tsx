@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  Menu, Plus, ChevronDown, LogOut, KeyRound, Settings, Send,
-  Home, Package, Store, LayoutDashboard, Trophy, Briefcase, Bot, BadgeCheck, X,
+  Plus, ChevronDown, LogOut, KeyRound, Settings, Send,
+  Home, Package, Store, LayoutDashboard, Trophy, Briefcase, Bot, BadgeCheck, X, Menu,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -69,8 +69,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Brand + close */}
       <div className="px-5 py-5 flex items-center justify-between border-b border-gray-100">
         <div>
-          <span className="text-lg font-black tracking-tight text-gray-900">NYC</span>
-          <span className="text-lg font-black tracking-tight" style={{ color: "#2d6a2d" }}>HQ</span>
+          <span className="text-lg font-black tracking-tight text-gray-900">BEAST</span>
+          <span className="text-lg font-black tracking-tight" style={{ color: "#2d6a2d" }}>CC</span>
         </div>
         <button
           onClick={() => setIsMobileOpen(false)}
@@ -154,27 +154,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
+      {/* Top Bar — no hamburger, just brand + user controls */}
       <header className="h-[52px] border-b border-gray-200 bg-white sticky top-0 z-40 px-4 flex items-center justify-between shadow-sm">
-        {/* Left: Hamburger + brand */}
-        <div className="flex items-center gap-3">
+        {/* Left: brand only (tapping opens sidebar) */}
+        <div className="flex items-center gap-2">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-gray-200"
-                data-testid="btn-menu"
-              >
-                <Menu className="h-[16px] w-[16px]" />
+              <button className="flex items-center gap-0 cursor-pointer select-none" data-testid="btn-brand">
+                <span className="text-sm font-black tracking-tight text-gray-900">BEAST</span>
+                <span className="text-sm font-black tracking-tight" style={{ color: "#2d6a2d" }}>CC</span>
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[260px] p-0 border-r border-gray-200 bg-white">
               <NavContent />
             </SheetContent>
           </Sheet>
-
-          <span className="text-sm font-black tracking-tight text-gray-900">
-            NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
-          </span>
         </div>
 
         {/* Right: Balance + User */}

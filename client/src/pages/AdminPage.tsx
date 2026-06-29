@@ -69,7 +69,7 @@ export default function AdminPage() {
       <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
           <p className="text-base font-black text-gray-900">
-            NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
+            BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
           </p>
           <p className="text-[10px] text-gray-400 uppercase tracking-widest font-mono mt-0.5">Admin</p>
         </div>
@@ -116,7 +116,7 @@ export default function AdminPage() {
         <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
           <div>
             <p className="text-sm font-black text-gray-900">
-              NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
+              BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
               <span className="ml-1.5 text-xs font-normal text-gray-400">Admin</span>
             </p>
             <p className="text-[10px] text-gray-400 font-mono">{activeLabel}</p>

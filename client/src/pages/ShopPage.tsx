@@ -171,7 +171,7 @@ export default function ShopPage() {
       {/* Header */}
       <div className="space-y-0.5">
         <h1 className="text-lg font-black text-gray-900">
-          NYC<span style={{ color: "#2d6a2d" }}>HQ</span>
+          BEAST<span style={{ color: "#2d6a2d" }}>CC</span>
           <span className="ml-2 text-xs font-mono font-normal text-gray-400">Logs</span>
         </h1>
         <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">BEST HIGH QUALITY CARDS</p>
