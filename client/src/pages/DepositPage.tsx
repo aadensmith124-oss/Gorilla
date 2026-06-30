@@ -249,10 +249,10 @@ function CryptoInvoicePanel({ invoice, onNew }: { invoice: CryptoInvoice; onNew:
       <div className="pt-3 space-y-2">
         <p className="text-[11px] text-white/25 font-mono text-center">
           Payment issues?{" "}
-          <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
+          <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
         </p>
-        <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer">
-          <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold hover:bg-blue-500/15 transition-colors">
+        <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
+          <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold hover:bg-blue-500/15 transition-colors">
             <Send className="h-3.5 w-3.5" /> Join our Telegram
           </button>
         </a>
@@ -322,10 +322,10 @@ export default function DepositPage() {
   const [showBonusTable, setShowBonusTable] = useState(true);
 
   const { data: manualMethods } = useQuery<{
-    cashapp: { enabled: boolean; tag: string };
-    chime: { enabled: boolean; handle: string };
-    zelle: { enabled: boolean; handle: string };
-    venmo: { enabled: boolean; handle: string };
+    cashapp: { enabled: boolean; tag: string; fee: number };
+    chime: { enabled: boolean; handle: string; fee: number };
+    zelle: { enabled: boolean; handle: string; fee: number };
+    venmo: { enabled: boolean; handle: string; fee: number };
   }>({ queryKey: ["/api/site-settings/manual-payments"] });
 
   const { data: minDeposits } = useQuery<Record<string, number>>({
@@ -424,11 +424,17 @@ export default function DepositPage() {
 
   const methodBgColor = method === "cashapp" ? "#00D632" : method === "chime" ? "#7BC67E" : method === "zelle" ? "#6D1ED4" : "";
 
+  function feeLabel(fee: number | undefined, isCrypto = false) {
+    if (isCrypto) return "0% fee · bonus up to +30%";
+    if (!fee || fee === 0) return undefined;
+    return `${fee}% fee`;
+  }
+
   const availableMethods = [
-    { id: "crypto" as Method, label: "Crypto",  fee: "0% fee · bonus up to +30%", show: true,          color: "#F7931A", Icon: SiBitcoin },
-    { id: "cashapp" as Method,label: "CashApp", fee: "20% fee",                   show: cashappEnabled, color: "#00D632", Icon: SiCashapp },
-    { id: "chime" as Method,  label: "Chime",   fee: "20% fee",                   show: chimeEnabled,   color: "#7BC67E", Icon: null },
-    { id: "zelle" as Method,  label: "Zelle",   fee: "20% fee",                   show: zelleEnabled,   color: "#6D1ED4", Icon: null },
+    { id: "crypto" as Method, label: "Crypto",  fee: feeLabel(0, true),                              show: true,          color: "#F7931A", Icon: SiBitcoin },
+    { id: "cashapp" as Method,label: "CashApp", fee: feeLabel(manualMethods?.cashapp?.fee),           show: cashappEnabled, color: "#00D632", Icon: SiCashapp },
+    { id: "chime" as Method,  label: "Chime",   fee: feeLabel(manualMethods?.chime?.fee),             show: chimeEnabled,   color: "#7BC67E", Icon: null },
+    { id: "zelle" as Method,  label: "Zelle",   fee: feeLabel(manualMethods?.zelle?.fee),             show: zelleEnabled,   color: "#6D1ED4", Icon: null },
   ].filter(m => m.show);
 
   return (
@@ -472,7 +478,7 @@ export default function DepositPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold leading-tight truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</p>
-                <p className="text-[9px] text-white/30 font-mono mt-0.5 leading-tight truncate">{m.fee}</p>
+                {m.fee && <p className="text-[9px] text-white/30 font-mono mt-0.5 leading-tight truncate">{m.fee}</p>}
               </div>
             </button>
           );
@@ -509,12 +515,12 @@ export default function DepositPage() {
 
                 <div className="space-y-2">
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-white/30 font-mono">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/30 font-mono">$</span>
                     <input
                       type="number" step="0.01" min="1" placeholder="0.00"
                       value={amountInput}
                       onChange={e => setAmountInput(e.target.value)}
-                      className="w-full h-14 bg-[#0d0d0d] border border-white/10 rounded-xl pl-8 pr-4 text-2xl text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
+                      className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
                       data-testid="input-amount"
                       autoFocus
                     />
@@ -522,7 +528,7 @@ export default function DepositPage() {
                   <div className="grid grid-cols-5 gap-1">
                     {[10,25,50,100,250].map(a => (
                       <button key={a} onClick={() => setAmountInput(String(a))}
-                        className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${
+                        className={`py-1 rounded-lg text-[10px] font-bold border transition-colors ${
                           parsedAmount === a ? "bg-primary/15 border-primary/30 text-primary" : "bg-white/[0.03] border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
                         }`}>
                         ${a}
@@ -534,11 +540,11 @@ export default function DepositPage() {
                 <button
                   onClick={() => cryptoMutation.mutate()}
                   disabled={cryptoMutation.isPending || !amountInput || parsedAmount <= 0}
-                  className="w-full h-12 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="w-full h-9 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary/90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                   data-testid="btn-get-address"
                 >
                   {cryptoMutation.isPending
-                    ? <><Loader2 className="h-4 w-4 animate-spin" />Generating address...</>
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating...</>
                     : <>Generate deposit address →</>
                   }
                 </button>
@@ -605,10 +611,10 @@ export default function DepositPage() {
             <div className="space-y-2 pt-1">
               <p className="text-[11px] text-white/25 font-mono text-center">
                 Payment issues?{" "}
-                <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
+                <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
               </p>
-              <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer">
-                <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
+              <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
+                <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
                   <Send className="h-3.5 w-3.5" /> Join our Telegram
                 </button>
               </a>
@@ -634,19 +640,19 @@ export default function DepositPage() {
                   {(() => { const min = minDeposits?.[method] ?? 0; return min > 0 ? <span className="text-[9px] font-mono text-yellow-400/60">Min: ${min.toFixed(2)}</span> : null; })()}
                 </div>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-white/30 font-mono">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/30 font-mono">$</span>
                   <input
                     type="number" step="0.01" min="0.01" placeholder="0.00"
                     value={amountInput}
                     onChange={e => setAmountInput(e.target.value)}
-                    className="w-full h-14 bg-[#0d0d0d] border border-white/10 rounded-xl pl-8 pr-4 text-2xl text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
+                    className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
                     data-testid="input-manual-amount"
                   />
                 </div>
                 <div className="grid grid-cols-5 gap-1">
                   {[10,25,50,100,250].map(a => (
                     <button key={a} onClick={() => setAmountInput(String(a))}
-                      className="py-1.5 rounded-lg text-[10px] font-bold border transition-colors border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
+                      className="py-1 rounded-lg text-[10px] font-bold border transition-colors border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
                       style={parsedAmount === a ? { background: `${methodBgColor}12`, borderColor: `${methodBgColor}35`, color: methodBgColor } : {}}>
                       ${a}
                     </button>
@@ -657,20 +663,20 @@ export default function DepositPage() {
               <button
                 onClick={handleManualGenerate}
                 disabled={isManualPending || !amountInput || parsedAmount <= 0}
-                className="w-full h-12 rounded-xl font-black text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2 border"
+                className="w-full h-9 rounded-xl font-bold text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-2 border"
                 style={{ background: `${methodBgColor}12`, borderColor: `${methodBgColor}40`, color: methodBgColor }}
                 data-testid="btn-generate-note"
               >
-                {isManualPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate Payment Note →"}
+                {isManualPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate Payment Note →"}
               </button>
 
               <div className="space-y-2 pt-1">
                 <p className="text-[11px] text-white/25 font-mono text-center">
                   Payment issues?{" "}
-                  <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
+                  <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
                 </p>
-                <a href="https://t.me/omzri" target="_blank" rel="noopener noreferrer">
-                  <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
+                <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
+                  <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
                     <Send className="h-3.5 w-3.5" /> Join our Telegram
                   </button>
                 </a>

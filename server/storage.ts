@@ -684,9 +684,15 @@ export class DatabaseStorage implements IStorage {
     // Deposit-only order (no items) — credit user's wallet balance with paidAmount
     if (items.length === 0) {
       const grossAmount = paidAmount !== undefined ? paidAmount : order.total;
-      // Apply 20% fee for manual payment methods (CashApp, Chime, Zelle)
+      // Apply configured fee for manual payment methods (CashApp, Chime, Zelle)
+      let feeRate = 0;
       const manualMethods = ["CashApp", "Chime", "Zelle"];
-      const feeRate = manualMethods.includes(order.paymentMethod || "") ? 0.20 : 0;
+      if (manualMethods.includes(order.paymentMethod || "")) {
+        const feeKey = order.paymentMethod === "CashApp" ? "cashapp_fee"
+          : order.paymentMethod === "Chime" ? "chime_fee" : "zelle_fee";
+        const feePct = parseFloat(await this.getSetting(feeKey, "0")) || 0;
+        feeRate = feePct / 100;
+      }
       const creditAmount = Math.round(grossAmount * (1 - feeRate));
       const feeAmount = grossAmount - creditAmount;
       await db.update(users)

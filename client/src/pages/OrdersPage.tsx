@@ -124,9 +124,9 @@ export default function OrdersPage() {
 
   const tabs: { key: TabType; label: string; count: number; href?: string }[] = [
     { key: "all", label: "all", count: allOrders.length },
-    ...(showCards && cardOrders.length > 0 ? [{ key: "cards" as TabType, label: "cards", count: cardOrders.length, href: "/acctplug" }] : []),
+    ...(showCards ? [{ key: "cards" as TabType, label: "cards", count: cardOrders.length, href: "/acctplug" }] : []),
     ...(achOrders.length > 0 ? [{ key: "ach" as TabType, label: "ach", count: achOrders.length }] : []),
-    ...(showLogs && logOrders.length > 0 ? [{ key: "logs" as TabType, label: "logs", count: logOrders.length, href: "/shop" }] : []),
+    ...(showLogs ? [{ key: "logs" as TabType, label: "logs", count: logOrders.length, href: "/shop" }] : []),
   ];
 
   return (

@@ -1999,6 +1999,52 @@ function HandleSettingCard({ label, description, settingKey, placeholder, color 
   );
 }
 
+function FeeSettingCard({ method, label, color }: { method: string; label: string; color: string }) {
+  const { toast } = useToast();
+  const [input, setInput] = useState("");
+  const { data } = useQuery<{ fee: number }>({
+    queryKey: [`/api/admin/settings/${method}-fee`],
+  });
+  useEffect(() => {
+    if (data !== undefined) setInput(String(data.fee ?? 0));
+  }, [data]);
+  const saveMutation = useMutation({
+    mutationFn: async (val: string) => {
+      const res = await apiRequest("POST", `/api/admin/settings/${method}-fee`, { fee: parseFloat(val) || 0 });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/settings/${method}-fee`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings/manual-payments"] });
+      toast({ title: `${label} fee saved` });
+    },
+    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+  });
+  return (
+    <Card className="bg-[#111] border-white/10">
+      <CardContent className="p-4 space-y-2">
+        <p className="font-bold text-sm mb-0.5" style={{ color }}>Fee % — {label}</p>
+        <p className="text-xs text-muted-foreground">Percentage deducted from deposit before crediting. Set 0 for no fee.</p>
+        <div className="flex gap-2">
+          <Input
+            type="number" min="0" max="100" step="1"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="0"
+            className="flex-1 bg-[#0d0d0d] border-white/10 text-white font-mono"
+            data-testid={`input-fee-${method}`}
+          />
+          <span className="flex items-center text-sm text-white/40 pr-1">%</span>
+          <Button size="sm" onClick={() => saveMutation.mutate(input)} disabled={saveMutation.isPending}
+            data-testid={`button-save-fee-${method}`}>
+            {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function IntegrationsSection() {
   const { toast } = useToast();
 
@@ -2089,6 +2135,7 @@ function IntegrationsSection() {
             color="#00D632"
           />
           <MinDepositCard method="cashapp" label="CashApp" color="#00D632" />
+          <FeeSettingCard method="cashapp" label="CashApp" color="#00D632" />
         </div>
       </div>
 
@@ -2112,6 +2159,7 @@ function IntegrationsSection() {
             color="#9B59E8"
           />
           <MinDepositCard method="zelle" label="Zelle" color="#9B59E8" />
+          <FeeSettingCard method="zelle" label="Zelle" color="#9B59E8" />
           <HandleSettingCard
             label="Chime Handle"
             description="Phone number or email customers send Chime payments to."
@@ -2120,6 +2168,7 @@ function IntegrationsSection() {
             color="#7BC67E"
           />
           <MinDepositCard method="chime" label="Chime" color="#7BC67E" />
+          <FeeSettingCard method="chime" label="Chime" color="#7BC67E" />
         </div>
       </div>
 

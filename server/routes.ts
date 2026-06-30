@@ -1790,20 +1790,39 @@ export async function registerRoutes(
 
   // ── Public: manual payment methods config (for deposit page) ─────────────
   app.get("/api/site-settings/manual-payments", async (req, res) => {
-    const [methods, cashappTag, chimeHandle, zelleHandle, venmoHandle] = await Promise.all([
+    const [methods, cashappTag, chimeHandle, zelleHandle, venmoHandle,
+           cashappFee, chimeFee, zelleFee] = await Promise.all([
       storage.getPaymentMethodsConfig(),
       storage.getSetting("cashapp_tag", ""),
       storage.getSetting("chime_handle", ""),
       storage.getSetting("zelle_handle", ""),
       storage.getSetting("venmo_handle", ""),
+      storage.getSetting("cashapp_fee", "0"),
+      storage.getSetting("chime_fee", "0"),
+      storage.getSetting("zelle_fee", "0"),
     ]);
     res.json({
-      cashapp: { enabled: methods.cashapp !== false, tag: cashappTag },
-      chime:   { enabled: methods.chime === true,   handle: chimeHandle },
-      zelle:   { enabled: methods.zelle === true,   handle: zelleHandle },
-      venmo:   { enabled: (methods as any).venmo === true, handle: venmoHandle },
+      cashapp: { enabled: methods.cashapp !== false, tag: cashappTag, fee: parseFloat(cashappFee) || 0 },
+      chime:   { enabled: methods.chime === true,   handle: chimeHandle, fee: parseFloat(chimeFee) || 0 },
+      zelle:   { enabled: methods.zelle === true,   handle: zelleHandle, fee: parseFloat(zelleFee) || 0 },
+      venmo:   { enabled: (methods as any).venmo === true, handle: venmoHandle, fee: 0 },
     });
   });
+
+  // ── Admin: payment method fee settings ───────────────────────────────────
+  for (const method of ["cashapp", "chime", "zelle"]) {
+    app.get(`/api/admin/settings/${method}-fee`, async (req, res) => {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+      const fee = await storage.getSetting(`${method}_fee`, "0");
+      res.json({ fee: parseFloat(fee) || 0 });
+    });
+    app.post(`/api/admin/settings/${method}-fee`, async (req, res) => {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
+      const val = Math.max(0, Math.min(100, parseFloat(req.body.fee) || 0));
+      await storage.setSetting(`${method}_fee`, String(val));
+      res.json({ fee: val });
+    });
+  }
 
   // ── Telegram Stars order ──────────────────────────────────────────────────
   app.post("/api/orders/stars", async (req, res) => {

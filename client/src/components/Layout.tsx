@@ -47,7 +47,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "SUPPORT",
       items: [
-        { href: "https://t.me/+5pZdw9Czcro1OTFh", icon: Send, label: "Telegram Support", external: true },
+        { href: "https://t.me/+FJLl-nL1mxAwNmZh", icon: Send, label: "Telegram Support", external: true },
       ],
     },
     ...(features?.reseller !== false ? [{
