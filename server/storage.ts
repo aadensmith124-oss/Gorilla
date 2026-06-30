@@ -683,19 +683,25 @@ export class DatabaseStorage implements IStorage {
 
     // Deposit-only order (no items) — credit user's wallet balance with paidAmount
     if (items.length === 0) {
-      const creditAmount = paidAmount !== undefined ? paidAmount : order.total;
+      const grossAmount = paidAmount !== undefined ? paidAmount : order.total;
+      // Apply 20% fee for manual payment methods (CashApp, Chime, Zelle)
+      const manualMethods = ["CashApp", "Chime", "Zelle"];
+      const feeRate = manualMethods.includes(order.paymentMethod || "") ? 0.20 : 0;
+      const creditAmount = Math.round(grossAmount * (1 - feeRate));
+      const feeAmount = grossAmount - creditAmount;
       await db.update(users)
         .set({ balance: sql`balance + ${creditAmount}` })
         .where(eq(users.id, order.userId));
+      const feeNote = feeAmount > 0 ? ` (20% fee: -$${(feeAmount/100).toFixed(2)})` : "";
       await db.insert(transactions).values({
         userId: order.userId,
         amount: creditAmount,
         type: "deposit",
-        description: `${order.paymentMethod || "Manual"} deposit confirmed (${order.orderId})`,
+        description: `${order.paymentMethod || "Manual"} deposit confirmed (${order.orderId})${feeNote}`,
         paymentMethod: order.paymentMethod || "CashApp",
       });
       const [updated] = await db.update(orders)
-        .set({ status: "fulfilled", paidAmount: creditAmount, total: creditAmount })
+        .set({ status: "fulfilled", paidAmount: grossAmount, total: grossAmount })
         .where(eq(orders.id, orderId))
         .returning();
       return updated;

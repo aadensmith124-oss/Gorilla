@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Package, Gift } from "lucide-react";
+import { Loader2, Package, Gift, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -154,39 +154,7 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="orders" className="pt-6">
-          {(() => {
-            const visibleOrders = (orders || []);
-            return visibleOrders.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm text-white mb-4">
-                  {visibleOrders.length} ORDER{visibleOrders.length !== 1 ? "S" : ""} FOUND
-                </p>
-                <div className="bg-[#0d0d0d] rounded-2xl border border-white/10 overflow-hidden">
-                  <div className="grid grid-cols-3 px-4 py-2.5 border-b border-white/10">
-                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Amount</span>
-                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Status</span>
-                    <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Date</span>
-                  </div>
-                  {visibleOrders.map((order: any) => (
-                    <button
-                      key={order.id}
-                      onClick={() => setLocation(`/order/${order.orderId}`)}
-                      className="w-full grid grid-cols-3 px-4 py-3 border-b border-white/10 last:border-0 hover:bg-[#0d0d0d] transition-colors text-left"
-                    >
-                      <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
-                      <span className={`text-xs font-semibold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
-                      <span className="text-[11px] text-white/45">{formatDate(order.createdAt)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-16 text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-bold">No orders yet</p>
-              </div>
-            );
-          })()}
+          <OrdersTab orders={orders || []} onNavigate={setLocation} />
         </TabsContent>
 
         <TabsContent value="settings" className="pt-6">
@@ -197,6 +165,102 @@ export default function ProfilePage() {
           <BalanceTab user={user} onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/user"] })} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function parseDeliveryContent(raw: string | null | undefined): Record<string, string> | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, string>;
+  } catch {}
+  return null;
+}
+
+function OrdersTab({ orders, onNavigate }: { orders: any[]; onNavigate: (path: string) => void }) {
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [copied, setCopied] = useState<Record<string, boolean>>({});
+
+  const copyText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(c => ({ ...c, [key]: true }));
+    setTimeout(() => setCopied(c => ({ ...c, [key]: false })), 2000);
+  };
+
+  if (orders.length === 0) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        <p className="text-sm font-bold">No orders yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-white/40 uppercase tracking-widest mb-4">
+        {orders.length} Order{orders.length !== 1 ? "s" : ""}
+      </p>
+      {orders.map((order: any) => {
+        const isDelivered = order.status === "fulfilled" || order.status === "delivering" || order.status === "replaced";
+        const deliveryMap = isDelivered ? parseDeliveryContent(order.deliveryContent) : null;
+        const hasContent = deliveryMap && Object.keys(deliveryMap).length > 0;
+        const isOpen = expanded[order.id];
+
+        return (
+          <div
+            key={order.id}
+            className="bg-[#0d0d0d] rounded-2xl border border-white/10 overflow-hidden"
+          >
+            <button
+              onClick={() => hasContent ? setExpanded(e => ({ ...e, [order.id]: !e[order.id] })) : onNavigate(`/order/${order.orderId}`)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">${(order.total / 100).toFixed(2)}</span>
+                    <span className={`text-[10px] font-semibold ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-0.5 font-mono">#{order.orderId} · {formatDate(order.createdAt)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasContent && (
+                  isOpen
+                    ? <ChevronUp className="h-3.5 w-3.5 text-white/30" />
+                    : <ChevronDown className="h-3.5 w-3.5 text-white/30" />
+                )}
+              </div>
+            </button>
+
+            {isOpen && hasContent && (
+              <div className="border-t border-white/10 divide-y divide-white/[0.04]">
+                {Object.entries(deliveryMap!).map(([variantId, content]) => (
+                  <div key={variantId} className="px-4 py-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider">Delivered</span>
+                      <button
+                        onClick={() => copyText(content, `${order.id}-${variantId}`)}
+                        className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                      >
+                        {copied[`${order.id}-${variantId}`]
+                          ? <><Check className="h-3 w-3 text-green-400" /> <span className="text-green-400">Copied</span></>
+                          : <><Copy className="h-3 w-3" /> Copy</>
+                        }
+                      </button>
+                    </div>
+                    <pre className="text-[11px] text-white/70 font-mono whitespace-pre-wrap break-all leading-relaxed bg-[#060606] rounded-xl px-3 py-2.5 max-h-48 overflow-y-auto">
+                      {content}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

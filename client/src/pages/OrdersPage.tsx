@@ -73,6 +73,11 @@ export default function OrdersPage() {
     enabled: !!user,
   });
 
+  const { data: features } = useQuery<any>({
+    queryKey: ["/api/settings/features"],
+    enabled: !!user,
+  });
+
   const totalDepositsCents = useMemo(() => {
     if (!transactions) return 0;
     return transactions
@@ -114,11 +119,14 @@ export default function OrdersPage() {
 
   const now = new Date();
 
+  const showCards = features?.checker === true || features?.cards === true;
+  const showLogs = features?.logs === true;
+
   const tabs: { key: TabType; label: string; count: number; href?: string }[] = [
     { key: "all", label: "all", count: allOrders.length },
-    ...(cardOrders.length > 0 ? [{ key: "cards" as TabType, label: "cards", count: cardOrders.length, href: "/acctplug" }] : []),
+    ...(showCards && cardOrders.length > 0 ? [{ key: "cards" as TabType, label: "cards", count: cardOrders.length, href: "/acctplug" }] : []),
     ...(achOrders.length > 0 ? [{ key: "ach" as TabType, label: "ach", count: achOrders.length }] : []),
-    ...(logOrders.length > 0 ? [{ key: "logs" as TabType, label: "logs", count: logOrders.length, href: "/shop" }] : []),
+    ...(showLogs && logOrders.length > 0 ? [{ key: "logs" as TabType, label: "logs", count: logOrders.length, href: "/shop" }] : []),
   ];
 
   return (
