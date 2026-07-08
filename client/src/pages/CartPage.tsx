@@ -10,9 +10,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api } from "@shared/routes";
 
-const CASHAPP_FEE_PERCENT = 0;
-const CRYPTO_FEE_PERCENT = 0;
-
 type PaymentMethod = "balance" | "cashapp" | "crypto";
 
 interface AppliedDiscount {
@@ -130,6 +127,12 @@ export default function CartPage() {
   const walletEnabled = enabledMethods?.wallet !== false;
   const cryptoEnabled = enabledMethods?.crypto !== false;
 
+  const { data: manualMethods } = useQuery<{
+    cashapp: { enabled: boolean; tag: string; fee: number };
+  }>({ queryKey: ["/api/site-settings/manual-payments"] });
+
+  const feePercentFor = (m: PaymentMethod) => m === "cashapp" ? (manualMethods?.cashapp?.fee ?? 0) : 0;
+
   useEffect(() => {
     if (selectedMethod === "cashapp" && !cashappEnabled) {
       setSelectedMethod(walletEnabled ? "balance" : cryptoEnabled ? "crypto" : "balance");
@@ -167,7 +170,7 @@ export default function CartPage() {
     },
   });
 
-  const processorFeePercent = selectedMethod === "crypto" ? CRYPTO_FEE_PERCENT : CASHAPP_FEE_PERCENT;
+  const processorFeePercent = selectedMethod === "balance" ? 0 : feePercentFor(selectedMethod);
   const processorFee = Math.round(finalTotal * processorFeePercent / 100);
   const dueTotal = finalTotal + processorFee;
 
@@ -188,7 +191,7 @@ export default function CartPage() {
       clearCart();
       setCashappModal({
         orderId: data.order?.orderId || data.orderId || "N/A",
-        total: dueTotal,
+        total: data.order?.total ?? dueTotal,
         paymentNote: data.paymentNote || data.order?.orderId || "",
         cashappTag: data.cashappTag || "",
       });
@@ -401,9 +404,15 @@ export default function CartPage() {
                 <span className="text-amber-400 font-bold">-${(rankDiscountAmount / 100).toFixed(2)}</span>
               </div>
             )}
+            {processorFee > 0 && (
+              <div className="flex justify-between py-2.5 text-xs">
+                <span className="text-white/50">Processing fee ({processorFeePercent}%)</span>
+                <span className="text-white/70 font-bold">+${(processorFee / 100).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between py-2.5 text-xs font-bold">
               <span className="text-white">Total</span>
-              <span className="text-white">${(finalTotal / 100).toFixed(2)}</span>
+              <span className="text-white">${(dueTotal / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -427,6 +436,9 @@ export default function CartPage() {
                 </div>
                 <SiCashapp className="h-4 w-4 text-[#00D632] flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-bold text-white">CashApp</span>
+                <span className="text-[11px] font-semibold text-white/45">
+                  {feePercentFor("cashapp") > 0 ? `${feePercentFor("cashapp")}% Fee` : "0% Fee"}
+                </span>
               </button>
             )}
 
@@ -445,6 +457,7 @@ export default function CartPage() {
                 </div>
                 <SiBitcoin className="h-4 w-4 text-[#f7931a] flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-bold text-white">Crypto</span>
+                <span className="text-[11px] font-semibold text-white/45">0% Fee</span>
               </button>
             )}
 
@@ -463,6 +476,7 @@ export default function CartPage() {
                 </div>
                 <Wallet className="h-4 w-4 text-white/45 flex-shrink-0" />
                 <span className="flex-1 text-left text-xs font-bold text-white">Balance</span>
+                <span className="text-[11px] font-semibold text-white/45">0% Fee</span>
                 <span className={`text-[11px] font-semibold ${hasEnoughBalance ? "text-primary" : "text-red-400"}`}>
                   You have ${(userBalance / 100).toFixed(2)}
                 </span>

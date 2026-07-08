@@ -1388,16 +1388,15 @@ export async function registerRoutes(
   });
 
   app.post("/api/orders/crypto", async (req, res) => {
-    return res.status(400).json({ message: "Crypto payments are currently unavailable." });
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     let pendingOrderId: number | null = null;
     try {
       const userId = (req.user as any).id;
-      const { items, cardIds } = req.body;
+      const { items, cardIds, discountCodeId } = req.body;
       const productItems = (items || []).filter((i: any) => !i.cardId && i.variantId > 0);
       const cardIdList: number[] = cardIds || [];
 
-      const order = await storage.createPendingOrder(userId, productItems, cardIdList);
+      const order = await storage.createPendingOrder(userId, productItems, cardIdList, discountCodeId ?? null);
       pendingOrderId = order.id;
 
       const totalWithFee = order.total;
@@ -1894,11 +1893,27 @@ export async function registerRoutes(
       }
 
       // Checkout mode: reserve stock
-      const order = await storage.createPendingOrder(userId, productItems, []);
+      const { discountCodeId } = req.body;
+      const order = await storage.createPendingOrder(userId, productItems, [], discountCodeId ?? null);
       pendingOrderId = order.id;
-      await db.update(orders).set({ paymentMethod: "CashApp", paymentNote }).where(eq(orders.id, order.id));
+
+      // Apply configured processing fee as a surcharge the buyer pays on top
+      const feePct = parseFloat(await storage.getSetting("cashapp_fee", "0")) || 0;
+      const feeAmount = Math.round(order.total * feePct / 100);
+      const dueTotal = order.total + feeAmount;
+
+      const [updatedOrder] = await db.update(orders)
+        .set({ paymentMethod: "CashApp", paymentNote, total: dueTotal })
+        .where(eq(orders.id, order.id))
+        .returning();
       pendingOrderId = null;
-      res.status(201).json({ order: { ...order, paymentMethod: "CashApp", paymentNote }, paymentNote, cashappTag });
+      res.status(201).json({
+        order: { ...updatedOrder, paymentMethod: "CashApp", paymentNote },
+        paymentNote,
+        cashappTag,
+        fee: feeAmount,
+        feePct,
+      });
     } catch (e: any) {
       console.error("CashApp order creation failed:", e);
       if (pendingOrderId != null) { try { await storage.cancelPendingOrder(pendingOrderId as number); } catch {} }

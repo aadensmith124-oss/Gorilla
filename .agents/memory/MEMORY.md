@@ -1,0 +1,1 @@
+- [Order fee/discount model](order-fee-discount-model.md) — cashapp/crypto checkout must go through createPendingOrder with server-side fee+discount calc; never trust client-computed totals.

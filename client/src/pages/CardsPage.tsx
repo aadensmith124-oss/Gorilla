@@ -11,6 +11,19 @@ function countryFlag(code: string): string {
   return String.fromCodePoint(...upper.split("").map(c => 0x1F1E6 - 65 + c.charCodeAt(0)));
 }
 
+const countryDisplayNames = typeof Intl !== "undefined" && (Intl as any).DisplayNames
+  ? new (Intl as any).DisplayNames(["en"], { type: "region" })
+  : null;
+
+function countryName(code: string): string {
+  if (!code || code.length !== 2) return "";
+  try {
+    return countryDisplayNames?.of(code.toUpperCase()) || code.toUpperCase();
+  } catch {
+    return code.toUpperCase();
+  }
+}
+
 function extractBin(cardNumber: string): string {
   return (cardNumber ?? "").replace(/\D/g, "").substring(0, 6);
 }
@@ -59,16 +72,6 @@ function extractCity(extras: string): string {
       }
       break;
     }
-  }
-  return "";
-}
-
-function extractState(extras: string): string {
-  if (!extras) return "";
-  const parts = extras.split(/[|\t]/);
-  for (const part of parts) {
-    const t = part.trim();
-    if (US_STATES.has(t)) return t;
   }
   return "";
 }
@@ -377,8 +380,7 @@ export default function CardsPage() {
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">TYPE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BANK</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ZIP</th>
-                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">CC</th>
-                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ST</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">CC Country</th>
                 <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">$</th>
                 <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">BUY</th>
               </tr>
@@ -407,7 +409,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
   const bin = extractBin(card.cardNumber);
   const zip = extractZip(card.extras ?? "");
   const flag = countryFlag(card.binData?.countryCode ?? "");
-  const state = extractState(card.extras ?? "");
+  const ccCountry = countryName(card.binData?.countryCode ?? "");
   const cardType = formatType(card.binData);
   const bank = formatBank(card.binData);
 
@@ -454,10 +456,10 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
         <span className="text-[11px] font-mono text-white/55">{zip || "—"}</span>
       </td>
       <td className="px-2.5 py-2">
-        <span className="text-sm leading-none">{flag || "—"}</span>
-      </td>
-      <td className="px-2.5 py-2">
-        <span className="text-[11px] font-mono text-white/55">{state || "—"}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-sm leading-none">{flag}</span>
+          <span className="text-[11px] text-white/55">{ccCountry || "—"}</span>
+        </span>
       </td>
       <td className="px-2.5 py-2 text-right">
         <span className="font-bold text-xs text-white">${(card.price / 100).toFixed(2)}</span>

@@ -543,7 +543,7 @@ export class DatabaseStorage implements IStorage {
     return order;
   }
 
-  async createPendingOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = []): Promise<Order> {
+  async createPendingOrder(userId: number, items: { variantId: number; quantity: number }[], cardIds: number[] = [], discountCodeId?: number | null): Promise<Order> {
     let total = 0;
     const heldItems: { variantId: number; stockItemId: number; price: number; quantity: number }[] = [];
 
@@ -559,6 +559,33 @@ export class DatabaseStorage implements IStorage {
       if (Number(avail.count) < item.quantity) {
         throw new Error(`Insufficient stock for ${variant.name}`);
       }
+    }
+
+    const rawTotal = total;
+    let activeDiscount: typeof discountCodes.$inferSelect | null = null;
+    if (discountCodeId) {
+      const [dc] = await db.select().from(discountCodes).where(eq(discountCodes.id, discountCodeId));
+      if (dc && dc.isActive && !(dc.maxUses !== null && dc.usedCount >= dc.maxUses) && !(dc.expiresAt && new Date(dc.expiresAt) < new Date())) {
+        const discountAmount = dc.type === "percent"
+          ? Math.round(rawTotal * dc.value / 100)
+          : Math.min(dc.value, rawTotal);
+        total = Math.max(0, rawTotal - discountAmount);
+        activeDiscount = dc;
+      }
+    }
+
+    // Apply rank discount automatically
+    const rankResult = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), sql`amount > 0`, sql`type IN ('deposit', 'manual_deposit')`));
+    const totalDeposited = Number(rankResult[0]?.total ?? 0);
+    const rankDiscountPct = totalDeposited >= 100000 ? 10 : totalDeposited >= 50000 ? 5 : totalDeposited >= 10000 ? 2 : 0;
+    if (rankDiscountPct > 0) {
+      total = Math.max(0, Math.round(total * (1 - rankDiscountPct / 100)));
+    }
+
+    if (activeDiscount) {
+      await db.update(discountCodes).set({ usedCount: activeDiscount.usedCount + 1 }).where(eq(discountCodes.id, activeDiscount.id));
     }
 
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -698,7 +725,8 @@ export class DatabaseStorage implements IStorage {
       await db.update(users)
         .set({ balance: sql`balance + ${creditAmount}` })
         .where(eq(users.id, order.userId));
-      const feeNote = feeAmount > 0 ? ` (20% fee: -$${(feeAmount/100).toFixed(2)})` : "";
+      const feePct = Math.round(feeRate * 10000) / 100;
+      const feeNote = feeAmount > 0 ? ` (${feePct}% fee: -$${(feeAmount/100).toFixed(2)})` : "";
       await db.insert(transactions).values({
         userId: order.userId,
         amount: creditAmount,
@@ -1054,7 +1082,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCard(insertCard: InsertCard): Promise<Card> {
-    const [card] = await db.insert(cards).values(insertCard).returning();
+    const [card] = await db.insert(cards).values(insertCard as typeof cards.$inferInsert).returning();
     return card;
   }
 

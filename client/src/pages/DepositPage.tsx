@@ -426,7 +426,7 @@ export default function DepositPage() {
 
   function feeLabel(fee: number | undefined, isCrypto = false) {
     if (isCrypto) return "0% fee · bonus up to +30%";
-    if (!fee || fee === 0) return undefined;
+    if (!fee || fee === 0) return "0% fee";
     return `${fee}% fee`;
   }
 

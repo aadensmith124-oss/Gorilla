@@ -2819,7 +2819,7 @@ function AdminCardsSection() {
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
-            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|ST|12345"}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|12345"}
             rows={3}
             className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-white/30"
             data-testid="input-full-item"
