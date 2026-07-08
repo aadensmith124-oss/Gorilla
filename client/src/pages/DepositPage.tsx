@@ -447,14 +447,14 @@ export default function DepositPage() {
             <button
               key={m.id}
               onClick={() => { setMethod(m.id); setManualResult(null); setCryptoInvoice(null); setSelectedCoin(null); setAmountInput(""); }}
-              className="flex items-center gap-3 px-3 py-3 border transition-all text-left rounded-none"
+              className="flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all text-left"
               style={{
                 borderColor: isActive ? `${m.color}60` : "rgba(255,255,255,0.18)",
                 background: isActive ? `${m.color}10` : "rgba(255,255,255,0.03)",
               }}
               data-testid={`btn-method-${m.id}`}
             >
-              <div className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0"
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: isActive ? m.color : "rgba(255,255,255,0.08)" }}>
                 {m.Icon
                   ? <m.Icon className="h-4 w-4" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }} />
