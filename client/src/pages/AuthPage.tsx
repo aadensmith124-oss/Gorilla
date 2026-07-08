@@ -70,6 +70,10 @@ function CaptchaImage({ code, width = 200, height = 52 }: { code: string; width?
 function useCaptcha() {
   const [code, setCode] = useState(() => generateCaptchaCode());
   const refresh = useCallback(() => setCode(generateCaptchaCode()), []);
+  useEffect(() => {
+    const id = setInterval(() => setCode(generateCaptchaCode()), 200);
+    return () => clearInterval(id);
+  }, []);
   return { code, refresh };
 }
 

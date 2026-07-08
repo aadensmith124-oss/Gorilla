@@ -380,7 +380,7 @@ export default function CardsPage() {
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">TYPE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BANK</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ZIP</th>
-                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">CC Country</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">Country</th>
                 <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">$</th>
                 <th className="px-2.5 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-white/35">BUY</th>
               </tr>
@@ -456,10 +456,7 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
         <span className="text-[11px] font-mono text-white/55">{zip || "—"}</span>
       </td>
       <td className="px-2.5 py-2">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-sm leading-none">{flag}</span>
-          <span className="text-[11px] text-white/55">{ccCountry || "—"}</span>
-        </span>
+        <span className="text-base leading-none">{flag || "—"}</span>
       </td>
       <td className="px-2.5 py-2 text-right">
         <span className="font-bold text-xs text-white">${(card.price / 100).toFixed(2)}</span>
