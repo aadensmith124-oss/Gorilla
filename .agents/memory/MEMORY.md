@@ -1,1 +1,2 @@
 - [Order fee/discount model](order-fee-discount-model.md) — cashapp/crypto checkout must go through createPendingOrder with server-side fee+discount calc; never trust client-computed totals.
+- [Auth-gated screenshot testing](auth-gated-screenshot-testing.md) — login requires a captcha, so the screenshot tool can't get past sign-in to visually verify pages behind auth.

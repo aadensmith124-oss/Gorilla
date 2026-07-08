@@ -314,12 +314,10 @@ export default function DepositPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [method, setMethod] = useState<Method>("crypto");
-  const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [amountInput, setAmountInput] = useState("");
   const [manualResult, setManualResult] = useState<ManualResult | null>(null);
   const [cryptoInvoice, setCryptoInvoice] = useState<CryptoInvoice | null>(null);
-  const [showBonusTable, setShowBonusTable] = useState(true);
 
   const { data: manualMethods } = useQuery<{
     cashapp: { enabled: boolean; tag: string; fee: number };
@@ -349,26 +347,25 @@ export default function DepositPage() {
 
   /* ── Crypto mutation ── */
   const cryptoMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedCoin) throw new Error("Select a coin first");
+    mutationFn: async (coinId: string) => {
       const amount = parsedAmount;
       const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
       if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit is $${cryptoMin.toFixed(2)}`);
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
         amount: String(Math.round(amount * 100)),
         purpose: "deposit",
-        coin: selectedCoin,
+        coin: coinId,
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed to create payment"); }
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, coinId) => {
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
       setCryptoInvoice({
         paymentId: data.paymentId,
         checkoutUrl: data.checkoutUrl,
         address: data.address,
-        coin: selectedCoin || "BTC",
+        coin: coinId || "BTC",
         network: data.network,
         amount: Math.round(parsedAmount * 100),
       });
@@ -414,261 +411,151 @@ export default function DepositPage() {
   });
 
   const isManualPending = cashappMutation.isPending || chimeMutation.isPending || zelleMutation.isPending;
+  const isPending = cryptoMutation.isPending || isManualPending;
 
-  function handleManualGenerate() {
-    if (method === "cashapp") cashappMutation.mutate();
-    else if (method === "chime") chimeMutation.mutate();
-    else if (method === "zelle") zelleMutation.mutate();
-  }
-
-  const methodBgColor = method === "cashapp" ? "#00D632" : method === "chime" ? "#7BC67E" : method === "zelle" ? "#6D1ED4" : "";
-
-  function feeLabel(fee: number | undefined, isCrypto = false) {
-    if (isCrypto) return "0% fee · bonus up to +30%";
+  function feeLabel(fee: number | undefined) {
     if (!fee || fee === 0) return "0% fee";
     return `${fee}% fee`;
   }
 
-  const availableMethods = [
-    { id: "crypto" as Method, label: "Crypto",  fee: feeLabel(0, true),                              show: true,          color: "#F7931A", Icon: SiBitcoin },
-    { id: "cashapp" as Method,label: "CashApp", fee: feeLabel(manualMethods?.cashapp?.fee),           show: cashappEnabled, color: "#00D632", Icon: SiCashapp },
-    { id: "chime" as Method,  label: "Chime",   fee: feeLabel(manualMethods?.chime?.fee),             show: chimeEnabled,   color: "#7BC67E", Icon: null },
-    { id: "zelle" as Method,  label: "Zelle",   fee: feeLabel(manualMethods?.zelle?.fee),             show: zelleEnabled,   color: "#6D1ED4", Icon: null },
-  ].filter(m => m.show);
+  const CRYPTO_IDS = COINS.map(c => c.id);
+
+  const paymentOptions = [
+    ...COINS.map(c => ({ id: c.id, label: c.label, sub: c.id, Icon: c.Icon, color: c.color, fee: "0% fee" })),
+    ...(cashappEnabled ? [{ id: "cashapp", label: "CashApp", sub: "instant", Icon: SiCashapp, color: "#00D632", fee: feeLabel(manualMethods?.cashapp?.fee) }] : []),
+    ...(chimeEnabled ? [{ id: "chime", label: "Chime", sub: "instant", Icon: null, color: "#7BC67E", fee: feeLabel(manualMethods?.chime?.fee) }] : []),
+    ...(zelleEnabled ? [{ id: "zelle", label: "Zelle", sub: "instant", Icon: null, color: "#6D1ED4", fee: feeLabel(manualMethods?.zelle?.fee) }] : []),
+  ];
+
+  const selected = paymentOptions.find(o => o.id === selectedOption) || null;
+  const isSelectedCrypto = selectedOption ? CRYPTO_IDS.includes(selectedOption) : false;
+
+  function handleContinue() {
+    if (!selectedOption) return;
+    if (isSelectedCrypto) cryptoMutation.mutate(selectedOption);
+    else if (selectedOption === "cashapp") cashappMutation.mutate();
+    else if (selectedOption === "chime") chimeMutation.mutate();
+    else if (selectedOption === "zelle") zelleMutation.mutate();
+  }
 
   return (
     <div className="max-w-sm mx-auto px-4 py-4 space-y-4">
 
-      {/* ── Method selector — 2 per row, sharp-edged boxes ── */}
-      <div className="grid grid-cols-2 gap-2">
-        {availableMethods.map(m => {
-          const isActive = method === m.id;
-          return (
-            <button
-              key={m.id}
-              onClick={() => { setMethod(m.id); setManualResult(null); setCryptoInvoice(null); setSelectedCoin(null); setAmountInput(""); }}
-              className="flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all text-left"
-              style={{
-                borderColor: isActive ? `${m.color}60` : "rgba(255,255,255,0.18)",
-                background: isActive ? `${m.color}10` : "rgba(255,255,255,0.03)",
-              }}
-              data-testid={`btn-method-${m.id}`}
-            >
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: isActive ? m.color : "rgba(255,255,255,0.08)" }}>
-                {m.Icon
-                  ? <m.Icon className="h-4 w-4" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }} />
-                  : <span className="text-sm font-black" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }}>{m.label.charAt(0)}</span>
-                }
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold leading-tight truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</p>
-                {m.fee && <p className="text-[9px] text-white/30 font-mono mt-0.5 leading-tight truncate">{m.fee}</p>}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {cryptoInvoice ? (
+        <CryptoInvoicePanel invoice={cryptoInvoice} onNew={() => { setCryptoInvoice(null); setSelectedOption(null); }} />
+      ) : manualResult ? (
+        <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />
+      ) : (
+        <>
+          {/* ── Current balance ── */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] px-4 py-3 flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-widest text-white/50">Current Balance</p>
+            <p className="text-lg font-black text-primary font-mono">${((user?.balance ?? 0) / 100).toFixed(2)}</p>
+          </div>
 
-      {/* ══ CRYPTO FLOW ══ */}
-      {method === "crypto" && (
-        cryptoInvoice ? (
-          <CryptoInvoicePanel invoice={cryptoInvoice} onNew={() => { setCryptoInvoice(null); setSelectedCoin(null); }} />
-        ) : selectedCoin ? (
-          /* Amount input after coin selected */
-          (() => {
-            const coin = COINS.find(c => c.id === selectedCoin)!;
-            return (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setSelectedCoin(null)} className="text-white/30 hover:text-white/60 transition-colors text-[11px] font-mono">← back</button>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: `${coin.color}20` }}>
-                      <coin.Icon className="h-3 w-3" style={{ color: coin.color }} />
-                    </div>
-                    <span className="text-[11px] font-bold" style={{ color: coin.color }}>{coin.label}</span>
-                    <span className="text-[10px] text-white/25 font-mono">{coin.network}</span>
-                  </div>
-                </div>
-
-                {activeTier && parsedAmount > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20">
-                    <Zap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                    <p className="text-[11px] text-primary font-mono font-bold">{activeTier.bonus} bonus on this deposit!</p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/30 font-mono">$</span>
-                    <input
-                      type="number" step="0.01" min="1" placeholder="0.00"
-                      value={amountInput}
-                      onChange={e => setAmountInput(e.target.value)}
-                      className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
-                      data-testid="input-amount"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="grid grid-cols-5 gap-1">
-                    {[10,25,50,100,250].map(a => (
-                      <button key={a} onClick={() => setAmountInput(String(a))}
-                        className={`py-1 rounded-lg text-[10px] font-bold border transition-colors ${
-                          parsedAmount === a ? "bg-primary/15 border-primary/30 text-primary" : "bg-white/[0.03] border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
-                        }`}>
-                        ${a}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => cryptoMutation.mutate()}
-                  disabled={cryptoMutation.isPending || !amountInput || parsedAmount <= 0}
-                  className="w-full h-9 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary/90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                  data-testid="btn-get-address"
-                >
-                  {cryptoMutation.isPending
-                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating...</>
-                    : <>Generate deposit address →</>
-                  }
-                </button>
-              </div>
-            );
-          })()
-        ) : (
-          /* Coin selection view */
-          <div className="space-y-4">
-            {/* Bonus milestones table */}
-            <div className="rounded-2xl border border-white/8 overflow-hidden">
-              <button
-                onClick={() => setShowBonusTable(v => !v)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left bg-[#0d0d0d] hover:bg-white/[0.02] transition-colors"
-              >
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary font-mono">DEPOSIT BONUS MILESTONES · CRYPTO ONLY</p>
-                  <p className="text-[10px] text-white/30 font-mono mt-0.5">More you deposit, more you get back</p>
-                </div>
-                <ChevronRight className={`h-4 w-4 text-white/20 transition-transform ${showBonusTable ? "rotate-90" : ""}`} />
-              </button>
-              {showBonusTable && (
-                <div className="bg-[#0a0a0a]">
-                  <div className="grid grid-cols-3 px-4 py-1.5 border-t border-white/[0.06]">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 font-mono">RANGE</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 font-mono text-center">BONUS</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/25 font-mono text-right">EXAMPLE</span>
-                  </div>
-                  {BONUS_TIERS.map((tier, i) => (
-                    <div key={i} className="grid grid-cols-3 px-4 py-2 border-t border-white/[0.04]">
-                      <span className="text-[11px] text-white/50 font-mono">${tier.min.toLocaleString()}{tier.max ? `–$${tier.max.toLocaleString()}` : "+"}</span>
-                      <span className="text-[11px] font-bold font-mono text-primary text-center">{tier.bonus}</span>
-                      <span className="text-[11px] text-white/30 font-mono text-right">{tier.example}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* ── Amount input ── */}
+          <div className="space-y-2">
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-primary/60 font-mono font-bold">$</span>
+              <input
+                type="number" step="0.01" min="0.01" placeholder="Enter amount in USD"
+                value={amountInput}
+                onChange={e => setAmountInput(e.target.value)}
+                className="w-full h-12 bg-primary/[0.06] border-2 border-primary/25 rounded-2xl pl-8 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-primary/50 transition-colors placeholder:text-white/30 placeholder:font-normal"
+                data-testid="input-amount"
+              />
             </div>
+            <div className="grid grid-cols-5 gap-1">
+              {[10,25,50,100,250].map(a => (
+                <button key={a} onClick={() => setAmountInput(String(a))}
+                  className={`py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                    parsedAmount === a ? "bg-primary/15 border-primary/30 text-primary" : "bg-white/[0.03] border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
+                  }`}>
+                  ${a}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-white/30 font-mono text-center">Pick a payment method below — your balance credits automatically.</p>
+          </div>
 
-            {/* Coin grid */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40 font-mono">TAP A COIN TO DEPOSIT</p>
-              <div className="grid grid-cols-3 gap-2">
-                {COINS.map(coin => (
+          {/* ── Bonus milestones strip ── */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-3 space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary font-mono">🎁 Topup bonus — the more you add, the more you get</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {BONUS_TIERS.map((tier, i) => (
+                <div key={i} className={`rounded-xl border px-1 py-2 text-center ${activeTier === tier ? "border-primary/50 bg-primary/10" : "border-white/8 bg-black/20"}`}>
+                  <p className="text-[9px] text-white/40 font-mono leading-tight">${tier.min.toLocaleString()}+</p>
+                  <p className="text-[10px] font-black text-green-400 font-mono leading-tight mt-0.5">{tier.bonus}</p>
+                </div>
+              ))}
+            </div>
+            {activeTier && parsedAmount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20">
+                <Zap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                <p className="text-[11px] text-primary font-mono font-bold">{activeTier.bonus} bonus on this deposit!</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Choose a payment method ── */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 font-mono">Choose a payment method</p>
+            <div className="grid grid-cols-2 gap-2">
+              {paymentOptions.map(opt => {
+                const isActive = selectedOption === opt.id;
+                return (
                   <button
-                    key={coin.id}
-                    onClick={() => setSelectedCoin(coin.id)}
-                    className="flex flex-col items-center gap-2 py-4 rounded-2xl border border-white/8 bg-[#0d0d0d] hover:border-white/15 hover:bg-white/[0.03] transition-all"
-                    data-testid={`btn-coin-${coin.id}`}
+                    key={opt.id}
+                    onClick={() => setSelectedOption(opt.id)}
+                    className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all"
+                    style={{
+                      borderColor: isActive ? opt.color : "rgba(255,255,255,0.1)",
+                      background: isActive ? `${opt.color}12` : "rgba(255,255,255,0.02)",
+                    }}
+                    data-testid={`btn-payment-${opt.id}`}
                   >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${coin.color}20` }}>
-                      <coin.Icon className="h-5 w-5" style={{ color: coin.color }} />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${opt.color}20` }}>
+                      {opt.Icon
+                        ? <opt.Icon className="h-5 w-5" style={{ color: opt.color }} />
+                        : <span className="text-sm font-black" style={{ color: opt.color }}>{opt.label.charAt(0)}</span>
+                      }
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-bold text-white">{coin.id}</p>
-                      <p className="text-[10px] text-white/30 font-mono">{coin.label}</p>
+                      <p className="text-xs font-bold text-white">{opt.label}</p>
+                      <p className="text-[10px] text-white/30 font-mono">{opt.sub} · {opt.fee}</p>
                     </div>
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Support links */}
-            <div className="space-y-2 pt-1">
-              <p className="text-[11px] text-white/25 font-mono text-center">
-                Payment issues?{" "}
-                <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
-              </p>
-              <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
-                <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
-                  <Send className="h-3.5 w-3.5" /> Join our Telegram
-                </button>
-              </a>
+                );
+              })}
             </div>
           </div>
-        )
-      )}
 
-      {/* ══ MANUAL FLOW ══ */}
-      {method !== "crypto" && (
-        <div className="space-y-3">
-          {manualResult ? (
-            <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setAmountInput(""); }} />
-          ) : (
-            <>
-              <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-[11px] text-white/25 font-mono leading-relaxed">
-                Enter how much you want to deposit · You'll get a unique note · Send EXACTLY that amount with the note · Admin will confirm and credit your balance
-              </div>
+          {/* ── CTA ── */}
+          <button
+            onClick={handleContinue}
+            disabled={!selectedOption || isPending || !amountInput || parsedAmount <= 0}
+            className="w-full h-11 rounded-2xl font-bold text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            style={selected ? { background: `${selected.color}20`, border: `2px solid ${selected.color}60`, color: selected.color } : { background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+            data-testid="btn-continue-deposit"
+          >
+            {isPending
+              ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</>
+              : selected ? `Continue with ${selected.label} →` : "Select a method"
+            }
+          </button>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[9px] text-white/25 uppercase tracking-widest font-mono">Amount (USD)</p>
-                  {(() => { const min = minDeposits?.[method] ?? 0; return min > 0 ? <span className="text-[9px] font-mono text-yellow-400/60">Min: ${min.toFixed(2)}</span> : null; })()}
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/30 font-mono">$</span>
-                  <input
-                    type="number" step="0.01" min="0.01" placeholder="0.00"
-                    value={amountInput}
-                    onChange={e => setAmountInput(e.target.value)}
-                    className="w-full h-10 bg-[#0d0d0d] border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-white/20 transition-colors"
-                    data-testid="input-manual-amount"
-                  />
-                </div>
-                <div className="grid grid-cols-5 gap-1">
-                  {[10,25,50,100,250].map(a => (
-                    <button key={a} onClick={() => setAmountInput(String(a))}
-                      className="py-1 rounded-lg text-[10px] font-bold border transition-colors border-white/8 text-white/30 hover:text-white/55 hover:border-white/15"
-                      style={parsedAmount === a ? { background: `${methodBgColor}12`, borderColor: `${methodBgColor}35`, color: methodBgColor } : {}}>
-                      ${a}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={handleManualGenerate}
-                disabled={isManualPending || !amountInput || parsedAmount <= 0}
-                className="w-full h-9 rounded-xl font-bold text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-2 border"
-                style={{ background: `${methodBgColor}12`, borderColor: `${methodBgColor}40`, color: methodBgColor }}
-                data-testid="btn-generate-note"
-              >
-                {isManualPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate Payment Note →"}
+          <div className="space-y-2 pt-1">
+            <p className="text-[11px] text-white/25 font-mono text-center">
+              Payment issues?{" "}
+              <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
+            </p>
+            <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
+              <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
+                <Send className="h-3.5 w-3.5" /> Join our Telegram
               </button>
-
-              <div className="space-y-2 pt-1">
-                <p className="text-[11px] text-white/25 font-mono text-center">
-                  Payment issues?{" "}
-                  <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
-                </p>
-                <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
-                  <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
-                    <Send className="h-3.5 w-3.5" /> Join our Telegram
-                  </button>
-                </a>
-              </div>
-            </>
-          )}
-        </div>
+            </a>
+          </div>
+        </>
       )}
 
       {/* ── History ── */}
