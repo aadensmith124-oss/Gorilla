@@ -1228,7 +1228,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || ((req.user as any).role !== 'admin' && !(req.user as any).isWorker)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const fullItem = req.body.extras || "";
+    const rawInput: string = req.body.extras || "";
 
     // Robust card number extractor — works with any delimiter or spacing
     function findCardNumber(line: string): string {
@@ -1251,45 +1251,62 @@ export async function registerRoutes(
       return "";
     }
 
-    const cardNumber = findCardNumber(fullItem) || req.body.cardNumber || "";
-    const masked = cardNumber.length >= 4
-      ? cardNumber.substring(0, 6) + "*".repeat(Math.max(0, cardNumber.length - 10)) + cardNumber.slice(-4)
-      : cardNumber;
-    let country = "Unknown";
-    let storedBinData: any = null;
-
-    if (cardNumber.length >= 6) {
-      const bin = cardNumber.substring(0, 6);
-      try {
-        const binResult = await lookupBin(bin);
-        if (binResult) {
-          storedBinData = binResult;
-          country = binResult.country || "Unknown";
-        }
-      } catch {}
+    // Multiple cards can be pasted at once, separated by a blank line
+    const entries = rawInput.split(/\n\s*\n/).map((e: string) => e.trim()).filter(Boolean);
+    if (entries.length === 0) {
+      return res.status(400).json({ message: "Full item is required" });
     }
 
     const baseId = req.body.baseId ? Number(req.body.baseId) : undefined;
+    const priceCents = Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price;
 
-    const card = await storage.createCard({
-      cardNumber,
-      maskedCard: masked,
-      expiry: "",
-      cvv: "",
-      country,
-      extras: fullItem.trim(),
-      price: Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price,
-      isFirstHand: false,
-      hrPercent: 80,
-      ...(baseId ? { baseId } : {}),
-    } as any);
+    const createdCards: any[] = [];
 
-    // Save binData to DB immediately so it's always available
-    if (storedBinData) {
-      await db.execute(sql`UPDATE cards SET bin_data = ${JSON.stringify(storedBinData)}::jsonb WHERE id = ${card.id}`);
+    for (const fullItem of entries) {
+      const cardNumber = findCardNumber(fullItem) || req.body.cardNumber || "";
+      const masked = cardNumber.length >= 4
+        ? cardNumber.substring(0, 6) + "*".repeat(Math.max(0, cardNumber.length - 10)) + cardNumber.slice(-4)
+        : cardNumber;
+      let country = "Unknown";
+      let storedBinData: any = null;
+
+      if (cardNumber.length >= 6) {
+        const bin = cardNumber.substring(0, 6);
+        try {
+          const binResult = await lookupBin(bin);
+          if (binResult) {
+            storedBinData = binResult;
+            country = binResult.country || "Unknown";
+          }
+        } catch {}
+      }
+
+      const card = await storage.createCard({
+        cardNumber,
+        maskedCard: masked,
+        expiry: "",
+        cvv: "",
+        country,
+        extras: fullItem,
+        price: priceCents,
+        isFirstHand: false,
+        hrPercent: 80,
+        ...(baseId ? { baseId } : {}),
+      } as any);
+
+      // Save binData to DB immediately so it's always available
+      if (storedBinData) {
+        await db.execute(sql`UPDATE cards SET bin_data = ${JSON.stringify(storedBinData)}::jsonb WHERE id = ${card.id}`);
+      }
+
+      createdCards.push({ ...card, binData: storedBinData });
     }
 
-    res.status(201).json({ ...card, binData: storedBinData });
+    if (createdCards.length === 1) {
+      res.status(201).json(createdCards[0]);
+    } else {
+      res.status(201).json({ cards: createdCards, count: createdCards.length });
+    }
   });
 
   app.post("/api/cards/:id/purchase", async (req, res) => {

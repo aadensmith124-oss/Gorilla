@@ -87,8 +87,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-[11px] font-black uppercase text-primary">{user.username?.[0] || "U"}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-white/80 truncate">{user.username}</p>
-            <p className="text-[10px] font-mono font-bold text-primary">${balanceDollars}</p>
+            <p className="text-xs font-semibold text-white/80 truncate">Welcome back</p>
+            <p className="text-[10px] font-mono font-bold text-primary truncate">{user.email}</p>
           </div>
         </div>
       )}

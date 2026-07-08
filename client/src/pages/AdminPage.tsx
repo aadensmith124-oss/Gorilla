@@ -2777,9 +2777,10 @@ function AdminCardsSection() {
   const { data: cards, isLoading } = useQuery<any[]>({ queryKey: ["/api/cards"] });
   const { data: bases } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
-  // Auto-extract BIN + ZIP preview from full item
-  const previewBin = findCardNumberPreview(fullItem).substring(0, 6);
-  const previewZip = extractZipPreview(fullItem);
+  // Auto-extract BIN + ZIP preview from first card entry
+  const cardEntries = fullItem.split(/\n\s*\n/).map(e => e.trim()).filter(Boolean);
+  const previewBin = findCardNumberPreview(cardEntries[0] || "").substring(0, 6);
+  const previewZip = extractZipPreview(cardEntries[0] || "");
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -2791,11 +2792,12 @@ function AdminCardsSection() {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Failed to add card"); }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["/api/cards"] });
       qc.invalidateQueries({ queryKey: ["/api/card-bases"] });
       setFullItem(""); setPrice(""); setSelectedBaseId("");
-      toast({ title: "Card added" });
+      const count = data?.count ?? 1;
+      toast({ title: count > 1 ? `${count} cards added` : "Card added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -2819,12 +2821,16 @@ function AdminCardsSection() {
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
-            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|12345"}
-            rows={3}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|12345\n\n4222222222222222|12/26|456|Jane Doe|456 Oak Ave|City|54321"}
+            rows={5}
             className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-white/30"
             data-testid="input-full-item"
           />
+          <p className="text-[10px] text-white/30">Leave one blank line between cards to add multiple at once.</p>
           <div className="flex gap-3">
+            {cardEntries.length > 1 && (
+              <p className="text-[10px] text-white/50 font-mono">{cardEntries.length} cards detected</p>
+            )}
             {previewBin.length === 6 && (
               <p className="text-[10px] text-primary/60 font-mono">BIN: {previewBin}</p>
             )}
@@ -2870,7 +2876,7 @@ function AdminCardsSection() {
           className="w-full h-8 text-xs"
           data-testid="btn-add-card"
         >
-          {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Card"}
+          {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : cardEntries.length > 1 ? `Add ${cardEntries.length} Cards` : "Add Card"}
         </Button>
       </div>
 

@@ -346,7 +346,6 @@ export default function DepositPage() {
   const activeTier = BONUS_TIERS.find(t => parsedAmount >= t.min && (t.max === null || parsedAmount <= t.max));
 
   const recentDeposits = deposits?.slice(0, 15) ?? [];
-  const pendingManual = deposits?.filter(d => d.type !== "crypto" && !["completed","delivering","fulfilled","failed","expired"].includes(d.status)) ?? [];
 
   /* ── Crypto mutation ── */
   const cryptoMutation = useMutation({
@@ -440,29 +439,15 @@ export default function DepositPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-4 space-y-4">
 
-      {/* Pending manual alert */}
-      {pendingManual.length > 0 && (
-        <div className="px-4 py-3 rounded-xl border border-yellow-500/15 bg-yellow-500/5 space-y-1">
-          {pendingManual.map(dep => (
-            <div key={dep.id} className="flex items-center gap-2">
-              <Clock className="h-3 w-3 text-yellow-400/50 flex-shrink-0" />
-              <p className="text-[11px] text-yellow-400/60 font-mono">
-                {methodLabel(dep.type)} ${dep.amount > 0 ? (dep.amount / 100).toFixed(2) : "?"} — awaiting confirmation
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Method selector — 2 per row, flat horizontal ── */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* ── Method selector — long full-width rows ── */}
+      <div className="space-y-1.5">
         {availableMethods.map(m => {
           const isActive = method === m.id;
           return (
             <button
               key={m.id}
               onClick={() => { setMethod(m.id); setManualResult(null); setCryptoInvoice(null); setSelectedCoin(null); setAmountInput(""); }}
-              className="flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all text-left"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left"
               style={{
                 borderColor: isActive ? `${m.color}60` : "rgba(255,255,255,0.18)",
                 background: isActive ? `${m.color}10` : "rgba(255,255,255,0.03)",
@@ -476,10 +461,8 @@ export default function DepositPage() {
                   : <span className="text-sm font-black" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }}>{m.label.charAt(0)}</span>
                 }
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold leading-tight truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</p>
-                {m.fee && <p className="text-[9px] text-white/30 font-mono mt-0.5 leading-tight truncate">{m.fee}</p>}
-              </div>
+              <span className="flex-1 text-xs font-bold truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</span>
+              {m.fee && <span className="text-[11px] font-semibold text-white/40 font-mono">{m.fee}</span>}
             </button>
           );
         })}
