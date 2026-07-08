@@ -439,30 +439,32 @@ export default function DepositPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-4 space-y-4">
 
-      {/* ── Method selector — long full-width rows ── */}
-      <div className="space-y-1.5">
+      {/* ── Method selector — 2 per row, sharp-edged boxes ── */}
+      <div className="grid grid-cols-2 gap-2">
         {availableMethods.map(m => {
           const isActive = method === m.id;
           return (
             <button
               key={m.id}
               onClick={() => { setMethod(m.id); setManualResult(null); setCryptoInvoice(null); setSelectedCoin(null); setAmountInput(""); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left"
+              className="flex items-center gap-3 px-3 py-3 border transition-all text-left rounded-none"
               style={{
                 borderColor: isActive ? `${m.color}60` : "rgba(255,255,255,0.18)",
                 background: isActive ? `${m.color}10` : "rgba(255,255,255,0.03)",
               }}
               data-testid={`btn-method-${m.id}`}
             >
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              <div className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0"
                 style={{ background: isActive ? m.color : "rgba(255,255,255,0.08)" }}>
                 {m.Icon
                   ? <m.Icon className="h-4 w-4" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }} />
                   : <span className="text-sm font-black" style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.4)" }}>{m.label.charAt(0)}</span>
                 }
               </div>
-              <span className="flex-1 text-xs font-bold truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</span>
-              {m.fee && <span className="text-[11px] font-semibold text-white/40 font-mono">{m.fee}</span>}
+              <div className="min-w-0">
+                <p className="text-xs font-bold leading-tight truncate" style={{ color: isActive ? m.color : "rgba(255,255,255,0.6)" }}>{m.label}</p>
+                {m.fee && <p className="text-[9px] text-white/30 font-mono mt-0.5 leading-tight truncate">{m.fee}</p>}
+              </div>
             </button>
           );
         })}
