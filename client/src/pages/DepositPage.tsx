@@ -5,9 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, ExternalLink, Zap, ChevronRight, Send
+  RefreshCw, ExternalLink, Zap, Send
 } from "lucide-react";
-import { SiBitcoin, SiEthereum, SiLitecoin, SiSolana, SiTether, SiCashapp } from "react-icons/si";
+import { SiBitcoin, SiCashapp } from "react-icons/si";
 
 type Method = "crypto" | "cashapp" | "chime" | "zelle";
 
@@ -22,25 +22,7 @@ type Deposit = {
   createdAt: string;
 };
 
-type CryptoInvoice = {
-  paymentId: string;
-  checkoutUrl: string;
-  address?: string;
-  coin: string;
-  network?: string;
-  amount: number;
-};
-
 type ManualResult = { note: string; handle: string; amount: number; method: Method };
-
-const COINS = [
-  { id: "BTC", label: "Bitcoin",   Icon: SiBitcoin,   color: "#F7931A", network: "Bitcoin Network"   },
-  { id: "ETH", label: "Ethereum",  Icon: SiEthereum,  color: "#627EEA", network: "Ethereum Network"  },
-  { id: "LTC", label: "Litecoin",  Icon: SiLitecoin,  color: "#A6A9AA", network: "Litecoin Network"   },
-  { id: "SOL", label: "Solana",    Icon: SiSolana,    color: "#9945FF", network: "Solana Network"     },
-  { id: "USDT",label: "Tether",    Icon: SiTether,    color: "#26A17B", network: "TRC-20 / ERC-20"   },
-  { id: "USDC",label: "USD Coin",  Icon: SiBitcoin,   color: "#2775CA", network: "Solana / ERC-20"   },
-];
 
 const BONUS_TIERS = [
   { min: 100,  max: 249,  bonus: "+10%", example: "$100 → $110"     },
@@ -119,147 +101,6 @@ function DepositRow({ deposit }: { deposit: Deposit }) {
   );
 }
 
-/* ── CRYPTO INVOICE PANEL ── */
-function CryptoInvoicePanel({ invoice, onNew }: { invoice: CryptoInvoice; onNew: () => void }) {
-  const { toast } = useToast();
-  const [status, setStatus] = useState<"pending" | "completed" | "failed">("pending");
-  const [lastChecked, setLastChecked] = useState<Date>(new Date());
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const coin = COINS.find(c => c.id === invoice.coin) || COINS[0];
-
-  const qrData = invoice.address || invoice.checkoutUrl;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=ffffff&bgcolor=0a0a0a&data=${encodeURIComponent(qrData)}`;
-
-  async function checkStatus() {
-    try {
-      const res = await fetch(`/api/payments/forebit/${invoice.paymentId}/status`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setLastChecked(new Date());
-      if (data.status === "completed") {
-        setStatus("completed");
-        if (pollRef.current) clearInterval(pollRef.current);
-        toast({ title: "Payment received!", description: "Balance credited to your account" });
-      } else if (["failed","expired"].includes(data.status)) {
-        setStatus("failed");
-        if (pollRef.current) clearInterval(pollRef.current);
-      }
-    } catch {}
-  }
-
-  useEffect(() => {
-    pollRef.current = setInterval(checkStatus, 5 * 60 * 1000); // every 5 minutes
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [invoice.paymentId]);
-
-  if (status === "completed") {
-    return (
-      <div className="flex flex-col items-center gap-4 py-8">
-        <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
-          <CheckCircle2 className="h-8 w-8 text-green-400" />
-        </div>
-        <div className="text-center">
-          <p className="text-base font-black text-white">Payment received!</p>
-          <p className="text-xs text-white/40 font-mono mt-1">Your balance has been credited</p>
-        </div>
-        <button onClick={onNew} className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold">New deposit</button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-0">
-      {/* Invoice status bar */}
-      <div className="flex items-center justify-between px-4 py-3 rounded-t-2xl border-x border-t border-white/10" style={{ background: "#0d0d0d" }}>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: coin.color }} />
-          <span className="text-[11px] font-mono text-white/60">invoice active — send {coin.id}</span>
-        </div>
-        <button onClick={onNew} className="text-[10px] font-bold text-white/30 hover:text-white/60 transition-colors flex items-center gap-0.5">
-          new <ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
-
-      {/* Info rows */}
-      <div className="border-x border-white/10 divide-y divide-white/[0.06]" style={{ background: "#0a0a0a" }}>
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-[11px] text-white/30 font-mono">currency</span>
-          <span className="text-[11px] text-white font-mono font-bold">USD</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-[11px] text-white/30 font-mono">network</span>
-          <span className="text-[11px] text-white font-mono font-bold">{invoice.network || coin.network}</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-[11px] text-white/30 font-mono">fee</span>
-          <span className="text-[11px] font-mono font-bold" style={{ color: coin.color }}>0% — full value credited</span>
-        </div>
-      </div>
-
-      {/* QR code */}
-      <div className="border-x border-white/10 flex items-center justify-center py-6" style={{ background: "#0a0a0a" }}>
-        <div className="p-3 rounded-2xl bg-white">
-          <img
-            src={qrUrl}
-            alt="Deposit QR"
-            className="w-44 h-44 block"
-            style={{ imageRendering: "pixelated" }}
-          />
-        </div>
-      </div>
-
-      {/* Address */}
-      <div className="border-x border-white/10 px-4 py-3 space-y-2" style={{ background: "#0a0a0a" }}>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 font-mono">DEPOSIT ADDRESS</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-9 bg-[#111] border border-white/10 rounded-lg flex items-center px-3 overflow-hidden">
-            <span className="text-[11px] font-mono text-white/70 truncate">{qrData}</span>
-          </div>
-          <CopyBtn value={qrData} />
-        </div>
-        <p className="text-[10px] text-white/25 font-mono leading-relaxed">
-          only send <strong className="text-white/50">{coin.id}</strong> on <strong className="text-white/50">{invoice.network || coin.network}</strong> — wrong coin or network = permanent loss
-        </p>
-      </div>
-
-      {/* Amount note */}
-      {invoice.amount > 0 && (
-        <div className="border-x border-white/10 px-4 py-2.5" style={{ background: "#0a0a0a" }}>
-          <p className="text-[10px] text-white/25 font-mono">
-            Invoice amount: <span className="text-white/50 font-bold">${(invoice.amount / 100).toFixed(2)}</span> · send any amount, it will be credited
-          </p>
-        </div>
-      )}
-
-      {/* Poll status */}
-      <div className="border border-white/10 rounded-b-2xl px-4 py-3 flex items-center justify-between" style={{ background: "#0d0d0d" }}>
-        <div className="flex items-center gap-2">
-          <Clock className="h-3 w-3 text-white/20 animate-pulse" />
-          <span className="text-[10px] text-white/25 font-mono">checking every 5 min</span>
-        </div>
-        <button
-          onClick={checkStatus}
-          className="text-[10px] text-white/30 hover:text-white/60 transition-colors flex items-center gap-1 font-mono"
-        >
-          <RefreshCw className="h-3 w-3" /> check now
-        </button>
-      </div>
-
-      {/* Links */}
-      <div className="pt-3 space-y-2">
-        <p className="text-[11px] text-white/25 font-mono text-center">
-          Payment issues?{" "}
-          <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
-        </p>
-        <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
-          <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold hover:bg-blue-500/15 transition-colors">
-            <Send className="h-3.5 w-3.5" /> Join our Telegram
-          </button>
-        </a>
-      </div>
-    </div>
-  );
-}
 
 /* ── MANUAL DEPOSIT PANEL ── */
 function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset: () => void }) {
@@ -317,7 +158,6 @@ export default function DepositPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [amountInput, setAmountInput] = useState("");
   const [manualResult, setManualResult] = useState<ManualResult | null>(null);
-  const [cryptoInvoice, setCryptoInvoice] = useState<CryptoInvoice | null>(null);
 
   const { data: manualMethods } = useQuery<{
     cashapp: { enabled: boolean; tag: string; fee: number };
@@ -347,29 +187,24 @@ export default function DepositPage() {
 
   /* ── Crypto mutation ── */
   const cryptoMutation = useMutation({
-    mutationFn: async (coinId: string) => {
+    mutationFn: async () => {
       const amount = parsedAmount;
       const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
       if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit is $${cryptoMin.toFixed(2)}`);
       const res = await apiRequest("POST", "/api/payments/forebit/create", {
         amount: String(Math.round(amount * 100)),
         purpose: "deposit",
-        coin: coinId,
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed to create payment"); }
       return res.json();
     },
-    onSuccess: (data, coinId) => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-      setCryptoInvoice({
-        paymentId: data.paymentId,
-        checkoutUrl: data.checkoutUrl,
-        address: data.address,
-        coin: coinId || "BTC",
-        network: data.network,
-        amount: Math.round(parsedAmount * 100),
-      });
-      setAmountInput("");
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast({ title: "Error", description: "Payment provider did not return a checkout link.", variant: "destructive" });
+      }
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -418,21 +253,19 @@ export default function DepositPage() {
     return `${fee}% fee`;
   }
 
-  const CRYPTO_IDS = COINS.map(c => c.id);
-
   const paymentOptions = [
-    ...COINS.map(c => ({ id: c.id, label: c.label, sub: c.id, Icon: c.Icon, color: c.color, fee: "0% fee" })),
+    { id: "crypto", label: "Crypto", sub: "BTC · ETH · LTC · SOL · USDT", Icon: SiBitcoin, color: "#F7931A", fee: "0% fee" },
     ...(cashappEnabled ? [{ id: "cashapp", label: "CashApp", sub: "instant", Icon: SiCashapp, color: "#00D632", fee: feeLabel(manualMethods?.cashapp?.fee) }] : []),
     ...(chimeEnabled ? [{ id: "chime", label: "Chime", sub: "instant", Icon: null, color: "#7BC67E", fee: feeLabel(manualMethods?.chime?.fee) }] : []),
     ...(zelleEnabled ? [{ id: "zelle", label: "Zelle", sub: "instant", Icon: null, color: "#6D1ED4", fee: feeLabel(manualMethods?.zelle?.fee) }] : []),
   ];
 
   const selected = paymentOptions.find(o => o.id === selectedOption) || null;
-  const isSelectedCrypto = selectedOption ? CRYPTO_IDS.includes(selectedOption) : false;
+  const isSelectedCrypto = selectedOption === "crypto";
 
   function handleContinue() {
     if (!selectedOption) return;
-    if (isSelectedCrypto) cryptoMutation.mutate(selectedOption);
+    if (isSelectedCrypto) cryptoMutation.mutate();
     else if (selectedOption === "cashapp") cashappMutation.mutate();
     else if (selectedOption === "chime") chimeMutation.mutate();
     else if (selectedOption === "zelle") zelleMutation.mutate();
@@ -441,9 +274,7 @@ export default function DepositPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-4 space-y-4">
 
-      {cryptoInvoice ? (
-        <CryptoInvoicePanel invoice={cryptoInvoice} onNew={() => { setCryptoInvoice(null); setSelectedOption(null); }} />
-      ) : manualResult ? (
+      {manualResult ? (
         <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />
       ) : (
         <>
