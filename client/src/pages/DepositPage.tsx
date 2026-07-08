@@ -279,12 +279,12 @@ export default function DepositPage() {
       ) : (
         <>
           {/* ── Hero card: balance + amount ── */}
-          <div className="relative rounded-3xl border border-primary/25 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
-            <div className="relative px-5 pt-4 pb-5 space-y-4" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), transparent)" }}>
+          <div className="relative rounded-2xl border border-primary/25 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+            <div className="relative px-4 pt-3 pb-4 space-y-3" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Current Balance</p>
-                <p className="text-xl font-black text-white font-mono tabular-nums">${((user?.balance ?? 0) / 100).toFixed(2)}</p>
+                <p className="text-sm font-bold text-white font-mono tabular-nums">${((user?.balance ?? 0) / 100).toFixed(2)}</p>
               </div>
 
               <div className="h-px bg-white/[0.06]" />
@@ -292,20 +292,20 @@ export default function DepositPage() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Amount to add</p>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-primary font-mono font-black">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-primary font-mono font-bold">$</span>
                   <input
                     type="number" step="0.01" min="0.01" placeholder="0.00"
                     value={amountInput}
                     onChange={e => setAmountInput(e.target.value)}
-                    className="w-full h-14 bg-black/30 border-2 border-white/10 rounded-2xl pl-10 pr-4 text-2xl text-white font-mono font-black outline-none focus:border-primary/50 transition-colors placeholder:text-white/15"
+                    className="w-full h-10 bg-black/30 border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-primary/50 transition-colors placeholder:text-white/20"
                     data-testid="input-amount"
                   />
                 </div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {[10,25,50,100,250].map(a => (
                     <button key={a} onClick={() => setAmountInput(String(a))}
-                      className={`py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
-                        parsedAmount === a ? "bg-primary text-primary-foreground border-primary shadow-[0_0_12px_-2px_hsl(var(--primary)/0.6)]" : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70 hover:border-white/20"
+                      className={`py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                        parsedAmount === a ? "bg-primary text-primary-foreground border-primary" : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70 hover:border-white/20"
                       }`}
                       data-testid={`btn-quick-amount-${a}`}>
                       ${a}
@@ -346,35 +346,36 @@ export default function DepositPage() {
           {/* ── Choose a payment method ── */}
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Choose a payment method</p>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {paymentOptions.map(opt => {
                 const isActive = selectedOption === opt.id;
                 return (
                   <button
                     key={opt.id}
                     onClick={() => setSelectedOption(opt.id)}
-                    className="relative flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all"
+                    className="relative flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
                     style={{
                       borderColor: isActive ? opt.color : "rgba(255,255,255,0.08)",
                       background: isActive ? `${opt.color}14` : "#111",
-                      boxShadow: isActive ? `0 0 0 1px ${opt.color}30, 0 8px 20px -8px ${opt.color}50` : undefined,
+                      boxShadow: isActive ? `0 0 0 1px ${opt.color}30, 0 6px 16px -6px ${opt.color}40` : undefined,
                     }}
                     data-testid={`btn-payment-${opt.id}`}
                   >
                     {isActive && (
-                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: opt.color }}>
-                        <Check className="h-2.5 w-2.5 text-black" />
+                      <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: opt.color }}>
+                        <Check className="h-2 w-2 text-black" />
                       </div>
                     )}
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center transition-transform" style={{ background: `${opt.color}20`, transform: isActive ? "scale(1.05)" : "scale(1)" }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: `${opt.color}20` }}>
                       {opt.Icon
-                        ? <opt.Icon className="h-5 w-5" style={{ color: opt.color }} />
-                        : <span className="text-sm font-black" style={{ color: opt.color }}>{opt.label.charAt(0)}</span>
+                        ? <opt.Icon className="h-4 w-4" style={{ color: opt.color }} />
+                        : <span className="text-xs font-black" style={{ color: opt.color }}>{opt.label.charAt(0)}</span>
                       }
                     </div>
-                    <div className="text-center">
+                    <div className="text-center px-1">
                       <p className="text-xs font-bold text-white">{opt.label}</p>
-                      <p className="text-[10px] text-white/35 font-mono">{opt.sub} · {opt.fee}</p>
+                      <p className="text-[9px] text-white/35 font-mono leading-tight">{opt.sub}</p>
+                      <p className="text-[9px] text-white/25 font-mono">{opt.fee}</p>
                     </div>
                   </button>
                 );
@@ -386,7 +387,7 @@ export default function DepositPage() {
           <button
             onClick={handleContinue}
             disabled={!selectedOption || isPending || !amountInput || parsedAmount <= 0}
-            className="w-full h-12 rounded-2xl font-bold text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-xl font-bold text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-2"
             style={selected
               ? { background: `linear-gradient(135deg, ${selected.color}, ${selected.color}cc)`, color: "#000", boxShadow: `0 8px 24px -8px ${selected.color}80` }
               : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
