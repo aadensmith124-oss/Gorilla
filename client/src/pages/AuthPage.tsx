@@ -18,7 +18,7 @@ function generateCaptchaCode(len = 5) {
   return Array.from({ length: len }, randomChar).join("");
 }
 
-function CaptchaImage({ code, width = 200, height = 52 }: { code: string; width?: number; height?: number }) {
+function CaptchaImage({ code, tick, width = 200, height = 52 }: { code: string; tick: number; width?: number; height?: number }) {
   const chars = code.split("");
   const cellW = width / chars.length;
 
@@ -69,12 +69,13 @@ function CaptchaImage({ code, width = 200, height = 52 }: { code: string; width?
 
 function useCaptcha() {
   const [code, setCode] = useState(() => generateCaptchaCode());
+  const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setCode(generateCaptchaCode()), []);
   useEffect(() => {
-    const id = setInterval(() => setCode(generateCaptchaCode()), 200);
+    const id = setInterval(() => setTick(t => t + 1), 200);
     return () => clearInterval(id);
   }, []);
-  return { code, refresh };
+  return { code, tick, refresh };
 }
 
 /* ── Shared password input ──────────────────────────────────── */
@@ -113,7 +114,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaInput, setCaptchaInput] = useState("");
-  const { code: captchaCode, refresh: refreshCaptcha } = useCaptcha();
+  const { code: captchaCode, tick: captchaTick, refresh: refreshCaptcha } = useCaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +155,7 @@ function LoginForm() {
         <Label className="text-[10px] uppercase tracking-widest font-bold text-primary/70">Verification</Label>
         <div className="flex items-center gap-2">
           <div className="flex-1 rounded-xl overflow-hidden border border-primary/15">
-            <CaptchaImage code={captchaCode} width={180} height={50} />
+            <CaptchaImage code={captchaCode} tick={captchaTick} width={180} height={50} />
           </div>
           <button
             type="button"
