@@ -208,35 +208,6 @@ export default function CardsPage() {
       {/* Bases + Search + controls */}
       <div className="px-3 pt-3 pb-2 space-y-2.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
 
-        {/* Base filter pills */}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setSelectedBase(null)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-              selectedBase === null
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-            }`}
-            data-testid="btn-base-all"
-          >
-            All
-          </button>
-          {(bases ?? []).map((b: any) => (
-            <button
-              key={b.id}
-              onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                selectedBase === b.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-              }`}
-              data-testid={`btn-base-${b.id}`}
-            >
-              {b.name}
-            </button>
-          ))}
-        </div>
-
         {/* Search bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/35" />
@@ -250,11 +221,47 @@ export default function CardsPage() {
           />
         </div>
 
-        {/* Filters toggle */}
-        <div className="flex gap-1.5 items-center">
+        {/* Base pills + Filters button */}
+        <div className="flex items-center gap-2">
+          {/* Scrollable pills */}
+          <div className="flex gap-1.5 overflow-x-auto flex-1 scrollbar-none pb-0.5">
+            <button
+              onClick={() => setSelectedBase(null)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                selectedBase === null
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+              }`}
+              data-testid="btn-base-all"
+            >
+              All
+              <span className={`text-[10px] font-mono ${selectedBase === null ? "text-primary-foreground/70" : "text-white/30"}`}>
+                {(bases ?? []).reduce((s: number, b: any) => s + (b.count ?? 0), 0)}
+              </span>
+            </button>
+            {(bases ?? []).map((b: any) => (
+              <button
+                key={b.id}
+                onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                  selectedBase === b.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+                }`}
+                data-testid={`btn-base-${b.id}`}
+              >
+                {b.name}
+                <span className={`text-[10px] font-mono ${selectedBase === b.id ? "text-primary-foreground/70" : "text-white/30"}`}>
+                  {b.count ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Filters button pinned right */}
           <button
             onClick={() => setShowFilters(f => !f)}
-            className={`flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
               showFilters || activeFilters > 0
                 ? "bg-white/10 border-white/20 text-white"
                 : "bg-[#0d0d0d] border-white/10 text-white/50 hover:text-white/70"
