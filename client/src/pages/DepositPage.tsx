@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, ExternalLink, Zap, Send
+  RefreshCw, ExternalLink, Zap, Send, Link as LinkIcon
 } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 
@@ -143,6 +143,83 @@ function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset
           ← create new deposit
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   TELEGRAM NAME REWARD CARD
+══════════════════════════════════════════════ */
+function TelegramNameRewardCard() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const { data: status, refetch } = useQuery<{ linked: boolean; lastReward: string | null }>({
+    queryKey: ["/api/telegram/link/status"],
+    staleTime: 30_000,
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/telegram/link", {});
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed"); }
+      return res.json() as Promise<{ botUrl: string }>;
+    },
+    onSuccess: (data) => {
+      window.open(data.botUrl, "_blank");
+      // Poll for link completion
+      const interval = setInterval(async () => {
+        const r = await refetch();
+        if (r.data?.linked) { clearInterval(interval); qc.invalidateQueries({ queryKey: ["/api/telegram/link/status"] }); }
+      }, 3000);
+      setTimeout(() => clearInterval(interval), 120_000);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const linked = status?.linked ?? false;
+  const lastReward = status?.lastReward ? new Date(status.lastReward) : null;
+  const nextRewardMs = lastReward ? lastReward.getTime() + 24 * 3600 * 1000 - Date.now() : 0;
+  const nextRewardHrs = nextRewardMs > 0 ? Math.ceil(nextRewardMs / 3_600_000) : 0;
+
+  return (
+    <div className="rounded-2xl border border-[#229ED9]/20 bg-[#229ED9]/5 px-4 py-3 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Send className="h-3.5 w-3.5 text-[#229ED9]" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#229ED9]">Telegram Name Reward</p>
+        </div>
+        {linked && (
+          <span className="flex items-center gap-1 text-[9px] font-mono text-green-400">
+            <CheckCircle2 className="h-2.5 w-2.5" /> linked
+          </span>
+        )}
+      </div>
+
+      <p className="text-[11px] text-white/50 leading-relaxed">
+        Add <span className="font-mono text-white font-bold">beastcc.xyz $1 ccs</span> to your Telegram display name and earn <span className="text-[#229ED9] font-bold">$1.00</span> credited to your balance every day it stays there.
+      </p>
+
+      {!linked ? (
+        <button
+          onClick={() => linkMutation.mutate()}
+          disabled={linkMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/25 text-[#229ED9] text-[11px] font-bold hover:bg-[#229ED9]/22 transition-colors disabled:opacity-50"
+        >
+          {linkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
+          Link Telegram Account
+        </button>
+      ) : (
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <span className="text-white/35">
+            {lastReward
+              ? nextRewardHrs > 0
+                ? `Next reward in ~${nextRewardHrs}h`
+                : "Reward available — name check runs hourly"
+              : "No reward yet — set your name and wait up to 1 hour"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,6 +392,9 @@ export default function DepositPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Telegram name reward card ── */}
+          <TelegramNameRewardCard />
 
           {/* ── Bonus milestones strip ── */}
           <div className="pro-card p-3.5 space-y-2.5">

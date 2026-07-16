@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses, telegramLinkTokens,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
@@ -173,6 +173,45 @@ export class DatabaseStorage implements IStorage {
 
   async updateLastDailySpin(userId: number): Promise<void> {
     await db.update(users).set({ lastDailySpin: new Date() }).where(eq(users.id, userId));
+  }
+
+  async createTelegramLinkToken(userId: number, token: string): Promise<void> {
+    // Remove any existing tokens for this user first
+    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.userId, userId));
+    await db.insert(telegramLinkTokens).values({ token, userId });
+  }
+
+  async getTelegramLinkToken(token: string): Promise<{ userId: number } | undefined> {
+    const [row] = await db.select().from(telegramLinkTokens).where(eq(telegramLinkTokens.token, token));
+    if (!row) return undefined;
+    // Expire tokens older than 15 minutes
+    const age = Date.now() - new Date(row.createdAt).getTime();
+    if (age > 15 * 60 * 1000) {
+      await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.id, row.id));
+      return undefined;
+    }
+    return { userId: row.userId };
+  }
+
+  async deleteTelegramLinkToken(token: string): Promise<void> {
+    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.token, token));
+  }
+
+  async setUserTelegramChatId(userId: number, chatId: string): Promise<void> {
+    await db.execute(sql`UPDATE users SET telegram_chat_id = ${chatId} WHERE id = ${userId}`);
+  }
+
+  async getUsersWithTelegramLinked(): Promise<{ id: number; telegramChatId: string; lastTelegramNameReward: Date | null }[]> {
+    const rows = await db.execute(sql`SELECT id, telegram_chat_id, last_telegram_name_reward FROM users WHERE telegram_chat_id IS NOT NULL AND telegram_chat_id != ''`);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id,
+      telegramChatId: r.telegram_chat_id,
+      lastTelegramNameReward: r.last_telegram_name_reward ? new Date(r.last_telegram_name_reward) : null,
+    }));
+  }
+
+  async setLastTelegramNameReward(userId: number): Promise<void> {
+    await db.execute(sql`UPDATE users SET last_telegram_name_reward = NOW() WHERE id = ${userId}`);
   }
 
   async getAllUsers(): Promise<User[]> {

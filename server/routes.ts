@@ -7,7 +7,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook } from "./telegram";
+import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook, sendMessage, getBotUsername } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
@@ -2030,7 +2030,33 @@ export async function registerRoutes(
     }
   });
 
-  // ── Telegram webhook (pre_checkout_query + successful_payment) ────────────
+  // ── Telegram: generate account-link URL ──────────────────────────────────
+  app.post("/api/telegram/link", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!process.env.TELEGRAM_BOT_TOKEN) return res.status(503).json({ message: "Telegram not configured" });
+    try {
+      const userId = (req.user as any).id;
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      await storage.createTelegramLinkToken(userId, token);
+      const botUsername = await getBotUsername();
+      if (!botUsername) return res.status(503).json({ message: "Could not reach Telegram API" });
+      res.json({ botUrl: `https://t.me/${botUsername}?start=${token}` });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ── Telegram: link status ─────────────────────────────────────────────────
+  app.get("/api/telegram/link/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const u = await storage.getUser((req.user as any).id) as any;
+    res.json({
+      linked: !!(u?.telegramChatId || u?.telegram_chat_id),
+      lastReward: u?.lastTelegramNameReward || u?.last_telegram_name_reward || null,
+    });
+  });
+
+  // ── Telegram webhook (pre_checkout_query + successful_payment + /start) ───
   app.post("/api/telegram/webhook", async (req, res) => {
     res.status(200).json({ ok: true });
     try {
@@ -2051,6 +2077,33 @@ export async function registerRoutes(
         if (order && order.status === "pending") {
           await storage.fulfillPendingOrder(orderId);
           console.log(`Telegram Stars: order ${orderId} fulfilled`);
+        }
+      } else if (update.message?.text) {
+        const text: string = update.message.text;
+        const from = update.message.from;
+        const chatId = String(from?.id ?? "");
+        if (text.startsWith("/start") && chatId) {
+          const parts = text.split(" ");
+          const linkToken = parts[1]?.trim();
+          if (linkToken) {
+            const info = await storage.getTelegramLinkToken(linkToken);
+            if (info) {
+              await storage.setUserTelegramChatId(info.userId, chatId);
+              await storage.deleteTelegramLinkToken(linkToken);
+              await sendMessage(chatId,
+                "✅ <b>Telegram linked!</b>\n\n" +
+                "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
+                "We check names every hour — reward is credited to your site balance."
+              );
+            } else {
+              await sendMessage(chatId, "❌ Invalid or expired link. Please generate a new link from the website.");
+            }
+          } else {
+            await sendMessage(chatId,
+              "👋 <b>Welcome to BeastCC bot!</b>\n\n" +
+              "To link your account, go to the website and click <b>Link Telegram</b> on the deposit page."
+            );
+          }
         }
       }
     } catch (e) {

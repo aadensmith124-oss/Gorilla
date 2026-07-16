@@ -8,6 +8,7 @@ import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
+import { getChatInfo, sendMessage } from "./telegram";
 
 const app = express();
 const httpServer = createServer(app);
@@ -72,6 +73,18 @@ app.use((req, res, next) => {
 
 (async () => {
   // Ensure the session table exists (connect-pg-simple needs this)
+  // Telegram name-reward schema migrations
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_telegram_name_reward TIMESTAMP`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS telegram_link_tokens (
+      id SERIAL PRIMARY KEY,
+      token TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
       "sid" varchar NOT NULL COLLATE "default",
@@ -159,6 +172,47 @@ app.use((req, res, next) => {
   // This runs server-side so balance is credited even if user closes their browser
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
+
+  // ── Telegram name-reward poller ────────────────────────────────────────────
+  // Runs every hour. For each user whose Telegram display name contains
+  // "beastcc.xyz $1 ccs", credits $1 if 24 h have passed since last reward.
+  const PROMO_PHRASE = "beastcc.xyz $1 ccs";
+  const NAME_REWARD_CENTS = 100; // $1.00
+
+  const runTelegramNameRewards = async () => {
+    if (!process.env.TELEGRAM_BOT_TOKEN) return;
+    try {
+      const linkedUsers = await storage.getUsersWithTelegramLinked();
+      for (const u of linkedUsers) {
+        try {
+          const info = await getChatInfo(u.telegramChatId);
+          if (!info) continue;
+          const displayName = `${info.firstName}${info.lastName ? " " + info.lastName : ""}`;
+          if (!displayName.toLowerCase().includes(PROMO_PHRASE.toLowerCase())) continue;
+
+          // Only reward once per 24 hours
+          if (u.lastTelegramNameReward) {
+            const hoursSince = (Date.now() - new Date(u.lastTelegramNameReward).getTime()) / 3_600_000;
+            if (hoursSince < 24) continue;
+          }
+
+          await storage.updateUserBalance(u.id, NAME_REWARD_CENTS);
+          await storage.createTransaction(u.id, NAME_REWARD_CENTS, "telegram_name_reward", `Daily Telegram name reward — "${PROMO_PHRASE}"`);
+          await storage.setLastTelegramNameReward(u.id);
+          await sendMessage(u.telegramChatId, `💸 <b>+$1.00 credited!</b> Thanks for keeping <code>${PROMO_PHRASE}</code> in your name. See you tomorrow!`);
+          log(`Telegram name reward: +$1 credited to user ${u.id}`);
+        } catch (err) {
+          console.error(`Telegram name reward error for user ${u.id}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error("Telegram name reward poller error:", err);
+    }
+  };
+
+  // Run once at startup then every hour
+  runTelegramNameRewards();
+  setInterval(runTelegramNameRewards, 60 * 60 * 1000);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

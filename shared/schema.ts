@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   balance: integer("balance").default(0).notNull(),
   protectedBalance: integer("protected_balance").default(0).notNull(),
   lastDailySpin: timestamp("last_daily_spin"),
+  telegramChatId: text("telegram_chat_id"),
+  lastTelegramNameReward: timestamp("last_telegram_name_reward"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -33,6 +35,14 @@ export const insertUserSchema = createInsertSchema(users).omit({
   loginCode: true,
 }).extend({
   email: z.string().email("Valid email required"),
+});
+
+// === TELEGRAM LINK TOKENS ===
+export const telegramLinkTokens = pgTable("telegram_link_tokens", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // === UPLOADED IMAGES ===

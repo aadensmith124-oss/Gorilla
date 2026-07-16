@@ -1,5 +1,49 @@
 const TELEGRAM_API = (token: string) => `https://api.telegram.org/bot${token}`;
 
+export async function sendMessage(chatId: string | number, text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  await fetch(`${TELEGRAM_API(token)}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+  }).catch(() => {});
+}
+
+export async function getChatInfo(chatId: string | number): Promise<{ firstName: string; lastName?: string; username?: string } | null> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(`${TELEGRAM_API(token)}/getChat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId }),
+    });
+    const data = await res.json();
+    if (!data.ok) return null;
+    return {
+      firstName: data.result.first_name ?? "",
+      lastName: data.result.last_name,
+      username: data.result.username,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getBotUsername(): Promise<string | null> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(`${TELEGRAM_API(token)}/getMe`);
+    const data = await res.json();
+    if (!data.ok) return null;
+    return data.result.username as string;
+  } catch {
+    return null;
+  }
+}
+
 export function usdCentsToStars(cents: number): number {
   return Math.max(1, Math.round(cents / 2));
 }
