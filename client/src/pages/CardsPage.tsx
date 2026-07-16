@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart, X, Loader2, SlidersHorizontal } from "lucide-react";
+import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -98,6 +98,7 @@ export default function CardsPage() {
   const [zipSearch, setZipSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedBase, setSelectedBase] = useState<number | null>(null);
+  const [showBaseDropdown, setShowBaseDropdown] = useState(false);
   const [selectedBank, setSelectedBank] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -221,47 +222,52 @@ export default function CardsPage() {
           />
         </div>
 
-        {/* Base pills + Filters button */}
-        <div className="flex items-center gap-2">
-          {/* Scrollable pills */}
-          <div className="flex gap-1.5 overflow-x-auto flex-1 scrollbar-none pb-0.5">
+        {/* Base dropdown + Filters button */}
+        <div className="flex gap-1.5">
+          {/* Base dropdown */}
+          <div className="relative flex-1">
             <button
-              onClick={() => setSelectedBase(null)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                selectedBase === null
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-              }`}
-              data-testid="btn-base-all"
+              onClick={() => setShowBaseDropdown(d => !d)}
+              className="w-full flex items-center justify-between bg-[#0d0d0d] border border-white/10 rounded-lg px-2.5 h-8 text-[11px] text-white/60 hover:text-white/80 transition-colors"
+              data-testid="btn-base-dropdown"
             >
-              All Bases
-              <span className={`text-[10px] font-mono ${selectedBase === null ? "text-primary-foreground/70" : "text-white/30"}`}>
-                {(bases ?? []).reduce((s: number, b: any) => s + (b.count ?? 0), 0)}
+              <span className="truncate">
+                {selectedBase === null
+                  ? `All Bases · ${(bases ?? []).reduce((s: number, b: any) => s + (b.count ?? 0), 0)}`
+                  : (() => { const b = (bases ?? []).find((b: any) => b.id === selectedBase); return b ? `${b.name} · ${b.count ?? 0}` : "All Bases"; })()
+                }
               </span>
+              <ChevronDown className={`h-3 w-3 text-white/30 ml-1 flex-shrink-0 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
             </button>
-            {(bases ?? []).map((b: any) => (
-              <button
-                key={b.id}
-                onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                  selectedBase === b.id
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-                }`}
-                data-testid={`btn-base-${b.id}`}
-              >
-                {b.name}
-                <span className={`text-[10px] font-mono ${selectedBase === b.id ? "text-primary-foreground/70" : "text-white/30"}`}>
-                  {b.count ?? 0}
-                </span>
-              </button>
-            ))}
+            {showBaseDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden max-h-48 overflow-y-auto">
+                <button
+                  onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
+                  className={`w-full text-left px-3 py-2 text-[11px] flex justify-between transition-colors hover:bg-[#0d0d0d] ${selectedBase === null ? "font-semibold text-white" : "text-white/55"}`}
+                  data-testid="btn-base-all"
+                >
+                  <span>All Bases</span>
+                  <span className="text-white/30 font-mono">{(bases ?? []).reduce((s: number, b: any) => s + (b.count ?? 0), 0)}</span>
+                </button>
+                {(bases ?? []).map((b: any) => (
+                  <button
+                    key={b.id}
+                    onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
+                    className={`w-full text-left px-3 py-2 text-[11px] flex justify-between border-t border-white/[0.06] transition-colors hover:bg-[#0d0d0d] ${selectedBase === b.id ? "font-semibold text-white" : "text-white/55"}`}
+                    data-testid={`btn-base-${b.id}`}
+                  >
+                    <span className="truncate pr-2">{b.name}</span>
+                    <span className="text-white/30 font-mono shrink-0">{b.count ?? 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Filters button pinned right */}
+          {/* Filters button */}
           <button
             onClick={() => setShowFilters(f => !f)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
               showFilters || activeFilters > 0
                 ? "bg-white/10 border-white/20 text-white"
                 : "bg-[#0d0d0d] border-white/10 text-white/50 hover:text-white/70"
@@ -377,7 +383,7 @@ export default function CardsPage() {
                     data-testid="checkbox-all"
                   />
                 </th>
-                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BIN</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BIN / BASE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">TYPE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BANK</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ZIP</th>
@@ -446,6 +452,9 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
       </td>
       <td className="px-2.5 py-2">
         <span className="font-bold font-mono text-xs text-white">{bin || "—"}</span>
+        {card.baseName && (
+          <span className="block text-[9px] text-white/35 truncate max-w-[90px] mt-0.5">{card.baseName}</span>
+        )}
       </td>
       <td className="px-2.5 py-2">
         <span className="text-[11px] font-mono text-white/55">{cardType || "—"}</span>
