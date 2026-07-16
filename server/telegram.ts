@@ -157,6 +157,18 @@ export async function setupTelegramWebhook(webhookUrl: string): Promise<void> {
     } else {
       console.warn("Telegram: webhook setup failed:", data.description);
     }
+
+    // Register bot commands so they appear in the menu
+    await fetch(`${TELEGRAM_API(token)}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commands: [
+          { command: "balance",  description: "Check your balance & reward status" },
+          { command: "referral", description: "Get your referral link & count" },
+        ],
+      }),
+    }).catch(() => {});
   } catch (e) {
     console.warn("Telegram: webhook setup error:", e);
   }

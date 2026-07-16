@@ -2090,7 +2090,65 @@ export async function registerRoutes(
         const text: string = update.message.text;
         const from = update.message.from;
         const chatId = String(from?.id ?? "");
-        if (!text.startsWith("/start") || !chatId) return;
+        if (!chatId) return;
+
+        // ── /balance command ────────────────────────────────────────────────
+        if (text.startsWith("/balance")) {
+          const u = await storage.getUserByTelegramChatId(chatId);
+          if (!u) {
+            await sendMessage(chatId,
+              "❌ <b>Account not linked.</b>\n\nGo to the website and click <b>Link Telegram</b> on the deposit page to connect your account."
+            );
+            return;
+          }
+          const bal = (u.balance / 100).toFixed(2);
+          const lastReward = (u as any).lastTelegramNameReward || (u as any).last_telegram_name_reward;
+          let rewardLine = "❌ No name reward active.";
+          if (lastReward) {
+            const hoursSince = (Date.now() - new Date(lastReward).getTime()) / 3_600_000;
+            const hoursLeft = Math.max(0, 24 - hoursSince);
+            rewardLine = hoursLeft < 1
+              ? "✅ Name reward: eligible now!"
+              : `✅ Name reward: next in ~${Math.ceil(hoursLeft)}h`;
+          }
+          const refCount = await storage.getTelegramReferralCount(u.id);
+          await sendMessage(chatId,
+            `💰 <b>Your Balance</b>\n\n` +
+            `Balance: <b>${bal}</b>\n` +
+            `${rewardLine}\n` +
+            `Referrals: <b>${refCount}</b> user${refCount !== 1 ? "s" : ""}\n\n` +
+            `<i>Use /referral to get your referral link.</i>`
+          );
+          return;
+        }
+
+        // ── /referral command ───────────────────────────────────────────────
+        if (text.startsWith("/referral")) {
+          const u = await storage.getUserByTelegramChatId(chatId);
+          if (!u) {
+            await sendMessage(chatId,
+              "❌ <b>Account not linked.</b>\n\nGo to the website and click <b>Link Telegram</b> on the deposit page to connect your account."
+            );
+            return;
+          }
+          const botUsername = await getBotUsername();
+          const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${u.id}` : null;
+          const refCount = await storage.getTelegramReferralCount(u.id);
+          if (!refLink) {
+            await sendMessage(chatId, "⚠️ Could not generate referral link. Try again later.");
+            return;
+          }
+          await sendMessage(chatId,
+            `🔗 <b>Your Referral Link</b>\n\n` +
+            `<code>${refLink}</code>\n\n` +
+            `Referrals so far: <b>${refCount}</b> user${refCount !== 1 ? "s" : ""}\n\n` +
+            `When someone joins via your link and earns their first name reward, you both get <b>+$0.50</b>!\n\n` +
+            `Share your link and watch the bonuses stack up. 💸`
+          );
+          return;
+        }
+
+        if (!text.startsWith("/start")) return;
 
         const param = text.split(" ")[1]?.trim() ?? "";
 
@@ -2162,6 +2220,19 @@ export async function registerRoutes(
             if (referrerUserId && referrerUserId !== info.userId) {
               await storage.setTelegramReferral(info.userId, referrerUserId);
               await storage.deletePendingTelegramReferral(chatId);
+
+              // Notify the referrer immediately
+              const referrerChatId = await storage.getReferrerChatId(referrerUserId);
+              if (referrerChatId) {
+                const botUsername = await getBotUsername();
+                const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
+                await sendMessage(referrerChatId,
+                  `🎉 <b>Someone joined via your referral link!</b>\n\n` +
+                  `They've linked their account — you'll both earn <b>+$0.50</b> once they add ` +
+                  `<code>beastcc.xyz $1 ccs</code> to their Telegram name.\n\n` +
+                  (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
+                );
+              }
             }
 
             await sendMessage(chatId,

@@ -135,6 +135,7 @@ export interface IStorage {
   getReferrerChatId(referrerUserId: number): Promise<string | null>;
   markTelegramReferralBonusPaid(userId: number): Promise<void>;
   getTelegramReferralCount(userId: number): Promise<number>;
+  getUserByTelegramChatId(chatId: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -269,6 +270,11 @@ export class DatabaseStorage implements IStorage {
   async getTelegramReferralCount(userId: number): Promise<number> {
     const rows = await db.execute(sql`SELECT COUNT(*) as n FROM users WHERE telegram_referred_by = ${userId}`);
     return Number((rows.rows[0] as any)?.n ?? 0);
+  }
+
+  async getUserByTelegramChatId(chatId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.telegramChatId, chatId));
+    return user;
   }
 
   async getAllUsers(): Promise<User[]> {
