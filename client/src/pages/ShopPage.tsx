@@ -129,6 +129,7 @@ export default function ShopPage() {
     refetchInterval: 60 * 60 * 1000,
   });
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   const [shuffleSeed] = useState(() => Math.random() * 233280);
 
   const topIds: number[] = useMemo(() => (topProducts ?? []).map((p: any) => p.id), [topProducts]);
@@ -143,12 +144,16 @@ export default function ShopPage() {
   }, [products, shuffleSeed, topIds]);
 
   const filtered = useMemo(() => {
+    let base = sortedProducts;
+    if (activeFilter !== "all") {
+      base = base.filter((p: any) => p.name === activeFilter);
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return sortedProducts;
-    return sortedProducts.filter((p: any) =>
+    if (!q) return base;
+    return base.filter((p: any) =>
       p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)
     );
-  }, [sortedProducts, search]);
+  }, [sortedProducts, search, activeFilter]);
 
   if (isLoading) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-white/30" /></div>;
@@ -167,7 +172,7 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-5 space-y-4">
+    <div className="max-w-sm mx-auto px-4 py-5 space-y-3">
       {/* Header */}
       <div className="space-y-0.5">
         <h1 className="text-lg font-black text-white">
@@ -177,12 +182,43 @@ export default function ShopPage() {
         <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">BEST HIGH QUALITY CARDS</p>
       </div>
 
+      {/* Filter pills */}
+      {sortedProducts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setActiveFilter("all")}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+              activeFilter === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+            }`}
+            data-testid="filter-all"
+          >
+            All
+          </button>
+          {sortedProducts.map((p: any) => (
+            <button
+              key={p.id}
+              onClick={() => setActiveFilter(activeFilter === p.name ? "all" : p.name)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                activeFilter === p.name
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+              }`}
+              data-testid={`filter-product-${p.id}`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
         <input
           type="text"
-          placeholder="Search logs..."
+          placeholder="Search by card type, category, keywords..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 transition-colors shadow-sm"
