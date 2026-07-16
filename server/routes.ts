@@ -174,7 +174,7 @@ export async function registerRoutes(
     }
     const sellerId = req.body.sellerId ? Number(req.body.sellerId) : undefined;
     const count = await storage.addStockItems(req.body.variantId, req.body.rawContent, sellerId);
-    res.json({ addedCount: count });
+    res.json({ addedCount: count.added });
   });
 
   // Orders
@@ -1258,7 +1258,7 @@ export async function registerRoutes(
     }
 
     const baseId = req.body.baseId ? Number(req.body.baseId) : undefined;
-    const priceCents = Math.round(parseFloat(req.body.price || "0") * 100) || req.body.price;
+    const priceCents = Math.round(parseFloat(req.body.price || "0") * 100);
 
     const createdCards: any[] = [];
 
@@ -2116,7 +2116,7 @@ export async function registerRoutes(
     });
 
     await storage.addStockItems(variant.id, 
-      "user1@email.com\npass1\nextra_info1\nuser2@email.com\npass2\nextra_info2"
+      "user1@email.com\npass1\nextra_info1\n\nuser2@email.com\npass2\nextra_info2"
     );
   }
 

@@ -180,7 +180,7 @@ export default function OrdersPage() {
               onClick={() => setTab(t.key)}
               className={`px-1 pb-2 text-xs transition-colors border-b-2 -mb-px ${
                 tab === t.key
-                  ? "text-white border-gray-900"
+                  ? "text-white border-white"
                   : "text-white/40 border-transparent hover:text-white/60"
               }`}
               data-testid={`tab-${t.key}`}

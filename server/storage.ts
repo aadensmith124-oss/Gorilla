@@ -285,7 +285,7 @@ export class DatabaseStorage implements IStorage {
     let skipped = 0;
     for (const itemContent of items) {
       const existing = await db.select({ id: stockItems.id }).from(stockItems)
-        .where(eq(stockItems.content, itemContent)).limit(1);
+        .where(and(eq(stockItems.variantId, variantId), eq(stockItems.content, itemContent))).limit(1);
       if (existing.length > 0) { skipped++; continue; }
       await db.insert(stockItems).values({ variantId, content: itemContent, isSold: false, sellerId: sellerId ?? null });
       added++;
@@ -584,10 +584,6 @@ export class DatabaseStorage implements IStorage {
       total = Math.max(0, Math.round(total * (1 - rankDiscountPct / 100)));
     }
 
-    if (activeDiscount) {
-      await db.update(discountCodes).set({ usedCount: activeDiscount.usedCount + 1 }).where(eq(discountCodes.id, activeDiscount.id));
-    }
-
     const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const [order] = await db.insert(orders).values({
       userId,
@@ -615,6 +611,11 @@ export class DatabaseStorage implements IStorage {
       await this.releaseHeldStock(order.id);
       await db.delete(orders).where(eq(orders.id, order.id));
       throw err;
+    }
+
+    // Only increment discount usage after stock holds succeed — prevents count leaking on failed orders
+    if (activeDiscount) {
+      await db.update(discountCodes).set({ usedCount: activeDiscount.usedCount + 1 }).where(eq(discountCodes.id, activeDiscount.id));
     }
 
     // Create one order item per held stock item (each unit gets its own row)
@@ -1194,6 +1195,7 @@ export class DatabaseStorage implements IStorage {
     const [app] = await db.select().from(sellerApplications).where(eq(sellerApplications.id, id));
     if (!app) return;
     await db.update(sellerApplications).set({ status: "approved" }).where(eq(sellerApplications.id, id));
+    await db.update(users).set({ isWorker: true }).where(eq(users.id, app.userId));
   }
 
   async rejectSellerApplication(id: number): Promise<void> {
