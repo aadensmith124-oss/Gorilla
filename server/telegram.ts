@@ -41,6 +41,7 @@ export async function checkGroupMembership(groupChatId: string, userChatId: stri
   if (!token) return true;
   const uid = Number(userChatId);
   if (!uid) return false; // empty string or non-numeric → reject immediately
+  console.log(`[TG join-gate] checking uid=${uid} against groupChatId="${groupChatId}"`);
   try {
     const res = await fetch(`${TELEGRAM_API(token)}/getChatMember`, {
       method: "POST",
@@ -48,10 +49,32 @@ export async function checkGroupMembership(groupChatId: string, userChatId: stri
       body: JSON.stringify({ chat_id: groupChatId, user_id: uid }),
     });
     const data = await res.json();
-    if (!data.ok) return false;
+    console.log(`[TG join-gate] response ok=${data.ok} status=${data.result?.status ?? "–"} err=${data.description ?? "–"}`);
+
+    if (!data.ok) {
+      // If the error is about the chat itself (bad ID, bot not in group, no permission)
+      // rather than the user's membership — log a clear warning but don't block the user,
+      // because the gate is misconfigured, not the user's fault.
+      const errCode: number = data.error_code ?? 0;
+      const desc: string   = data.description ?? "";
+      const isChatError = errCode === 400 || errCode === 403 ||
+                          desc.includes("chat not found") ||
+                          desc.includes("bot is not a member") ||
+                          desc.includes("need administrator rights") ||
+                          desc.includes("CHAT_ID_INVALID");
+      if (isChatError) {
+        console.warn(`[TG join-gate] ⚠️  Bot cannot check this group (${desc}). Gate skipped — fix TELEGRAM_GROUP_CHAT_ID to a numeric chat ID and ensure the bot is an admin.`);
+        return true; // misconfiguration → don't punish users
+      }
+      return false; // some other API error → deny
+    }
+
     const status: string = data.result?.status ?? "left";
-    return ["creator", "administrator", "member", "restricted"].includes(status);
-  } catch {
+    const isMember = ["creator", "administrator", "member", "restricted"].includes(status);
+    console.log(`[TG join-gate] uid=${uid} status="${status}" → isMember=${isMember}`);
+    return isMember;
+  } catch (e) {
+    console.error("[TG join-gate] exception:", e);
     return false;
   }
 }
