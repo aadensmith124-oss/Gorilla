@@ -234,7 +234,7 @@ export default function CardsPage() {
               }`}
               data-testid="btn-base-all"
             >
-              All
+              All Bases
               <span className={`text-[10px] font-mono ${selectedBase === null ? "text-primary-foreground/70" : "text-white/30"}`}>
                 {(bases ?? []).reduce((s: number, b: any) => s + (b.count ?? 0), 0)}
               </span>
