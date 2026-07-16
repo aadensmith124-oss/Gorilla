@@ -198,9 +198,9 @@ export class DatabaseStorage implements IStorage {
   async getTelegramLinkToken(token: string): Promise<{ userId: number } | undefined> {
     const [row] = await db.select().from(telegramLinkTokens).where(eq(telegramLinkTokens.token, token));
     if (!row) return undefined;
-    // Expire tokens older than 15 minutes
+    // Expire tokens older than 1 hour
     const age = Date.now() - new Date(row.createdAt).getTime();
-    if (age > 15 * 60 * 1000) {
+    if (age > 60 * 60 * 1000) {
       await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.id, row.id));
       return undefined;
     }

@@ -2212,12 +2212,16 @@ export async function registerRoutes(
   });
 
   // ── Register Telegram webhook on server start ─────────────────────────────
-  // Always prefer the stable production domain so dev-server restarts/crashes
-  // don't hijack the webhook and break the bot for live users.
+  // Only register in production. The dev server uses a different DB than the
+  // deployed app, so if it wins the webhook race the bot looks up tokens in
+  // the wrong DB and every link appears "invalid". Let the deployed server own
+  // the webhook exclusively.
   (async () => {
-    const prodDomain = (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
-    const devDomain  = process.env.REPLIT_DEV_DOMAIN || "";
-    const domain = prodDomain || devDomain;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Telegram: skipping webhook registration in dev mode (production server owns the webhook)");
+      return;
+    }
+    const domain = (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
     if (domain) {
       await setupTelegramWebhook(`https://${domain}/api/telegram/webhook`);
     }
