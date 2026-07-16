@@ -39,11 +39,13 @@ export async function getChatInfo(chatId: string | number): Promise<{ firstName:
 export async function checkGroupMembership(groupChatId: string, userChatId: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return true;
+  const uid = Number(userChatId);
+  if (!uid) return false; // empty string or non-numeric → reject immediately
   try {
     const res = await fetch(`${TELEGRAM_API(token)}/getChatMember`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: groupChatId, user_id: Number(userChatId) }),
+      body: JSON.stringify({ chat_id: groupChatId, user_id: uid }),
     });
     const data = await res.json();
     if (!data.ok) return false;

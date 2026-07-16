@@ -154,6 +154,17 @@ function TelegramNameRewardCard() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [copied, setCopied] = useState(false);
+  // Hold the polling interval so we can cancel it if the component unmounts
+  const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeout  = useRef<ReturnType<typeof setTimeout>  | null>(null);
+
+  // Clean up timers on unmount to prevent state updates on an unmounted tree
+  useEffect(() => {
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+      if (pollTimeout.current)  clearTimeout(pollTimeout.current);
+    };
+  }, []);
 
   const { data: status, refetch } = useQuery<{
     linked: boolean;
@@ -173,12 +184,22 @@ function TelegramNameRewardCard() {
     },
     onSuccess: (data) => {
       window.open(data.botUrl, "_blank");
-      // Poll for link completion
-      const interval = setInterval(async () => {
+      // Poll every 3 s until the user has linked (max 2 min)
+      pollInterval.current = setInterval(async () => {
         const r = await refetch();
-        if (r.data?.linked) { clearInterval(interval); qc.invalidateQueries({ queryKey: ["/api/telegram/link/status"] }); }
+        if (r.data?.linked) {
+          clearInterval(pollInterval.current!);
+          clearTimeout(pollTimeout.current!);
+          pollInterval.current = null;
+          pollTimeout.current  = null;
+          qc.invalidateQueries({ queryKey: ["/api/telegram/link/status"] });
+        }
       }, 3000);
-      setTimeout(() => clearInterval(interval), 120_000);
+      pollTimeout.current = setTimeout(() => {
+        clearInterval(pollInterval.current!);
+        pollInterval.current = null;
+        pollTimeout.current  = null;
+      }, 120_000);
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
