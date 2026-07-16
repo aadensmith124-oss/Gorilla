@@ -153,8 +153,14 @@ function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset
 function TelegramNameRewardCard() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [copied, setCopied] = useState(false);
 
-  const { data: status, refetch } = useQuery<{ linked: boolean; lastReward: string | null }>({
+  const { data: status, refetch } = useQuery<{
+    linked: boolean;
+    lastReward: string | null;
+    referralLink: string | null;
+    referralCount: number;
+  }>({
     queryKey: ["/api/telegram/link/status"],
     staleTime: 30_000,
   });
@@ -181,9 +187,20 @@ function TelegramNameRewardCard() {
   const lastReward = status?.lastReward ? new Date(status.lastReward) : null;
   const nextRewardMs = lastReward ? lastReward.getTime() + 24 * 3600 * 1000 - Date.now() : 0;
   const nextRewardHrs = nextRewardMs > 0 ? Math.ceil(nextRewardMs / 3_600_000) : 0;
+  const referralLink = status?.referralLink ?? null;
+  const referralCount = status?.referralCount ?? 0;
+
+  function copyReferral() {
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   return (
     <div className="rounded-2xl border border-[#229ED9]/20 bg-[#229ED9]/5 px-4 py-3 space-y-2.5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Send className="h-3.5 w-3.5 text-[#229ED9]" />
@@ -196,29 +213,62 @@ function TelegramNameRewardCard() {
         )}
       </div>
 
+      {/* Description */}
       <p className="text-[11px] text-white/50 leading-relaxed">
-        Add <span className="font-mono text-white font-bold">beastcc.xyz $1 ccs</span> to your Telegram display name and earn <span className="text-[#229ED9] font-bold">$1.00</span> credited to your balance every day it stays there.
+        Join our group, add <span className="font-mono text-white font-bold">beastcc.xyz $1 ccs</span> to your Telegram name, and earn <span className="text-[#229ED9] font-bold">$1.00/day</span> automatically. Refer a friend and you both earn <span className="text-green-400 font-bold">+$0.50</span> when they qualify.
       </p>
 
       {!linked ? (
-        <button
-          onClick={() => linkMutation.mutate()}
-          disabled={linkMutation.isPending}
-          className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/25 text-[#229ED9] text-[11px] font-bold hover:bg-[#229ED9]/22 transition-colors disabled:opacity-50"
-        >
-          {linkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
-          Link Telegram Account
-        </button>
+        <>
+          {/* Must join group first */}
+          <a
+            href="https://t.me/+oxGX1KUYsadmNGUx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-white/5 border border-white/10 text-white/50 text-[11px] font-bold hover:bg-white/8 hover:text-white/70 transition-colors"
+          >
+            <Send className="h-3.5 w-3.5" />
+            Step 1 — Join our Telegram Group
+          </a>
+          <button
+            onClick={() => linkMutation.mutate()}
+            disabled={linkMutation.isPending}
+            className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/25 text-[#229ED9] text-[11px] font-bold hover:bg-[#229ED9]/22 transition-colors disabled:opacity-50"
+          >
+            {linkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
+            Step 2 — Link Telegram Account
+          </button>
+        </>
       ) : (
-        <div className="flex items-center justify-between text-[10px] font-mono">
-          <span className="text-white/35">
+        <>
+          {/* Reward status */}
+          <p className="text-[10px] font-mono text-white/35">
             {lastReward
               ? nextRewardHrs > 0
-                ? `Next reward in ~${nextRewardHrs}h`
-                : "Reward available — name check runs hourly"
-              : "No reward yet — set your name and wait up to 1 hour"}
-          </span>
-        </div>
+                ? `⏳ Next reward in ~${nextRewardHrs}h`
+                : "✅ Reward available — name check runs hourly"
+              : "⏳ No reward yet — add the phrase and wait up to 1 hour"}
+          </p>
+
+          {/* Referral link */}
+          {referralLink && (
+            <div className="space-y-1">
+              <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">
+                Your referral link{referralCount > 0 ? ` · ${referralCount} referral${referralCount !== 1 ? "s" : ""}` : ""}
+              </p>
+              <div className="flex items-center gap-2 bg-black/30 border border-white/8 rounded-xl px-3 py-2">
+                <span className="text-[10px] font-mono text-white/50 truncate flex-1">{referralLink}</span>
+                <button
+                  onClick={copyReferral}
+                  className="flex-shrink-0 text-white/30 hover:text-white/70 transition-colors"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <p className="text-[9px] text-white/25 font-mono">Share this link — both earn $0.50 when they first qualify</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

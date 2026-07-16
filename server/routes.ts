@@ -7,7 +7,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createForebitPayment, getForebitPayment } from "./forebit";
-import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook, sendMessage, getBotUsername } from "./telegram";
+import { createStarsInvoiceLink, answerPreCheckoutQuery, setupTelegramWebhook, sendMessage, getBotUsername, checkGroupMembership } from "./telegram";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
@@ -2046,17 +2046,25 @@ export async function registerRoutes(
     }
   });
 
-  // ── Telegram: link status ─────────────────────────────────────────────────
+  // ── Telegram: link status + referral info ────────────────────────────────
   app.get("/api/telegram/link/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const u = await storage.getUser((req.user as any).id) as any;
+    const userId = (req.user as any).id;
+    const u = await storage.getUser(userId) as any;
+    const linked = !!(u?.telegramChatId || u?.telegram_chat_id);
+    const referralCount = linked ? await storage.getTelegramReferralCount(userId) : 0;
+    const botUsername = linked ? await getBotUsername() : null;
     res.json({
-      linked: !!(u?.telegramChatId || u?.telegram_chat_id),
+      linked,
       lastReward: u?.lastTelegramNameReward || u?.last_telegram_name_reward || null,
+      referralLink: botUsername ? `https://t.me/${botUsername}?start=REF${userId}` : null,
+      referralCount,
     });
   });
 
   // ── Telegram webhook (pre_checkout_query + successful_payment + /start) ───
+  const TG_GROUP_INVITE = "https://t.me/+oxGX1KUYsadmNGUx";
+
   app.post("/api/telegram/webhook", async (req, res) => {
     res.status(200).json({ ok: true });
     try {
@@ -2082,29 +2090,107 @@ export async function registerRoutes(
         const text: string = update.message.text;
         const from = update.message.from;
         const chatId = String(from?.id ?? "");
-        if (text.startsWith("/start") && chatId) {
-          const parts = text.split(" ");
-          const linkToken = parts[1]?.trim();
-          if (linkToken) {
-            const info = await storage.getTelegramLinkToken(linkToken);
-            if (info) {
-              await storage.setUserTelegramChatId(info.userId, chatId);
-              await storage.deleteTelegramLinkToken(linkToken);
-              await sendMessage(chatId,
-                "✅ <b>Telegram linked!</b>\n\n" +
-                "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
-                "We check names every hour — reward is credited to your site balance."
-              );
-            } else {
-              await sendMessage(chatId, "❌ Invalid or expired link. Please generate a new link from the website.");
-            }
-          } else {
-            await sendMessage(chatId,
-              "👋 <b>Welcome to BeastCC bot!</b>\n\n" +
-              "To link your account, go to the website and click <b>Link Telegram</b> on the deposit page."
-            );
+        if (!text.startsWith("/start") || !chatId) return;
+
+        const param = text.split(" ")[1]?.trim() ?? "";
+
+        // ── Referral link: /start REF<userId> ──────────────────────────────
+        if (param.startsWith("REF")) {
+          const referrerUserId = parseInt(param.slice(3), 10);
+          if (!isNaN(referrerUserId) && referrerUserId > 0) {
+            await storage.setPendingTelegramReferral(chatId, referrerUserId);
           }
+          // Send join gate message
+          const token = process.env.TELEGRAM_BOT_TOKEN;
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text:
+                "👋 <b>Welcome to BeastCC!</b>\n\n" +
+                "Your referral has been registered.\n\n" +
+                "<b>Step 1:</b> Join our group below\n" +
+                "<b>Step 2:</b> Go to the website and click <b>Link Telegram</b>\n" +
+                "<b>Step 3:</b> Add <code>beastcc.xyz $1 ccs</code> to your name\n\n" +
+                "You and your referrer each earn <b>$0.50</b> when you earn your first name reward!",
+              parse_mode: "HTML",
+              reply_markup: JSON.stringify({
+                inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
+              }),
+            }),
+          }).catch(() => {});
+          return;
         }
+
+        // ── Account link token: /start <token> ─────────────────────────────
+        if (param) {
+          // Join gate check
+          const groupId = process.env.TELEGRAM_GROUP_CHAT_ID || await storage.getSetting("telegram_group_id", "");
+          if (groupId) {
+            const isMember = await checkGroupMembership(groupId, chatId);
+            if (!isMember) {
+              const token = process.env.TELEGRAM_BOT_TOKEN;
+              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text:
+                    "⚠️ <b>You must join our group first!</b>\n\n" +
+                    "Join the group below, then go back to the website and click <b>Link Telegram</b> again.",
+                  parse_mode: "HTML",
+                  reply_markup: JSON.stringify({
+                    inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
+                  }),
+                }),
+              }).catch(() => {});
+              return;
+            }
+          }
+
+          // Link the account
+          const info = await storage.getTelegramLinkToken(param);
+          if (info) {
+            await storage.setUserTelegramChatId(info.userId, chatId);
+            await storage.deleteTelegramLinkToken(param);
+
+            // Attach any pending referral for this chatId
+            const referrerUserId = await storage.getPendingTelegramReferral(chatId);
+            if (referrerUserId && referrerUserId !== info.userId) {
+              await storage.setTelegramReferral(info.userId, referrerUserId);
+              await storage.deletePendingTelegramReferral(chatId);
+            }
+
+            await sendMessage(chatId,
+              "✅ <b>Telegram linked!</b>\n\n" +
+              "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
+              "We check names every hour — reward is credited to your site balance." +
+              (referrerUserId ? "\n\n🎁 Referral registered! You'll both earn <b>$0.50</b> when you earn your first name reward." : "")
+            );
+          } else {
+            await sendMessage(chatId, "❌ Invalid or expired link. Please generate a new link from the website.");
+          }
+          return;
+        }
+
+        // ── Plain /start with no param ──────────────────────────────────────
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text:
+              "👋 <b>Welcome to BeastCC bot!</b>\n\n" +
+              "To link your account, go to the website and click <b>Link Telegram</b> on the deposit page.\n\n" +
+              "You must join our group first!",
+            parse_mode: "HTML",
+            reply_markup: JSON.stringify({
+              inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
+            }),
+          }),
+        }).catch(() => {});
       }
     } catch (e) {
       console.error("Telegram webhook error:", e);

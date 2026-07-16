@@ -31,6 +31,29 @@ export async function getChatInfo(chatId: string | number): Promise<{ firstName:
   }
 }
 
+/**
+ * Check whether a user (by their numeric chat ID) is a member of a group/channel.
+ * Returns true if they are a creator, admin, member, or restricted member.
+ * Returns false if they have left or been kicked, or on any error.
+ */
+export async function checkGroupMembership(groupChatId: string, userChatId: string): Promise<boolean> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return true;
+  try {
+    const res = await fetch(`${TELEGRAM_API(token)}/getChatMember`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: groupChatId, user_id: userChatId }),
+    });
+    const data = await res.json();
+    if (!data.ok) return false;
+    const status: string = data.result?.status ?? "left";
+    return ["creator", "administrator", "member", "restricted"].includes(status);
+  } catch {
+    return false;
+  }
+}
+
 export async function getBotUsername(): Promise<string | null> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return null;
