@@ -16,6 +16,9 @@ export function useAuth() {
       return api.auth.me.responses[200].parse(await res.json());
     },
     retry: false,
+    // Always re-fetch the current user on mount so role/ban changes
+    // take effect without requiring a full logout/login cycle.
+    staleTime: 0,
   });
 
   const loginMutation = useMutation({
