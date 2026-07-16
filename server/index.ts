@@ -142,11 +142,31 @@ app.use((req, res, next) => {
     await db.update(users)
       .set({ role: "admin" } as any)
       .where(eq(users.username, "anon_4344841a4b"));
+    // Promote noitactv@gmail.com to admin
+    await db.update(users)
+      .set({ role: "admin" } as any)
+      .where(eq(users.email, "noitactv@gmail.com"));
     // Fix any remaining @usauhq.fo emails to @nychq.fo
     await db.execute(sql`UPDATE users SET email = replace(email, '@usauhq.fo', '@nychq.fo') WHERE email LIKE '%@usauhq.fo'`);
     log("Auto-promotion check complete");
   } catch (e) {
     console.error("Auto-promotion failed:", e);
+  }
+
+  // Seed default site settings (idempotent — only sets if not already present)
+  try {
+    await db.execute(sql`
+      INSERT INTO site_settings (key, value) VALUES
+        ('cashapp_tag',            '$Jacobgettinmotionx'),
+        ('payment_method_cashapp', 'true'),
+        ('payment_method_chime',   'false'),
+        ('payment_method_zelle',   'false'),
+        ('payment_method_crypto',  'true')
+      ON CONFLICT (key) DO NOTHING
+    `);
+    log("Site settings seed complete");
+  } catch (e) {
+    console.error("Site settings seed failed:", e);
   }
 
   // Cancel stale pending orders (older than 1 hour) — releases reserved stock back
