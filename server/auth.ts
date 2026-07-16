@@ -104,6 +104,9 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
+      // If the user row was deleted (DB reset, manual delete, etc.) treat the
+      // session as invalid so Passport clears it rather than serving a ghost user.
+      if (!user) return done(null, false);
       done(null, user);
     } catch (err) {
       done(err);
