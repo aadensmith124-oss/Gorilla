@@ -2115,9 +2115,9 @@ export async function registerRoutes(
                 "<b>Step 3:</b> Add <code>beastcc.xyz $1 ccs</code> to your name\n\n" +
                 "You and your referrer each earn <b>$0.50</b> when you earn your first name reward!",
               parse_mode: "HTML",
-              reply_markup: JSON.stringify({
+              reply_markup: {
                 inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
-              }),
+              },
             }),
           }).catch(() => {});
           return;
@@ -2126,7 +2126,7 @@ export async function registerRoutes(
         // ── Account link token: /start <token> ─────────────────────────────
         if (param) {
           // Join gate check
-          const groupId = process.env.TELEGRAM_GROUP_CHAT_ID || await storage.getSetting("telegram_group_id", "");
+          const groupId = process.env.TELEGRAM_GROUP_CHAT_ID || process.env.Telegram_group_id || await storage.getSetting("telegram_group_id", "");
           if (groupId) {
             const isMember = await checkGroupMembership(groupId, chatId);
             if (!isMember) {
@@ -2140,9 +2140,9 @@ export async function registerRoutes(
                     "⚠️ <b>You must join our group first!</b>\n\n" +
                     "Join the group below, then go back to the website and click <b>Link Telegram</b> again.",
                   parse_mode: "HTML",
-                  reply_markup: JSON.stringify({
+                  reply_markup: {
                     inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
-                  }),
+                  },
                 }),
               }).catch(() => {});
               return;
@@ -2186,9 +2186,9 @@ export async function registerRoutes(
               "To link your account, go to the website and click <b>Link Telegram</b> on the deposit page.\n\n" +
               "You must join our group first!",
             parse_mode: "HTML",
-            reply_markup: JSON.stringify({
+            reply_markup: {
               inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
-            }),
+            },
           }),
         }).catch(() => {});
       }

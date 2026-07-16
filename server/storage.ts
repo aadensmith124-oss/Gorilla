@@ -121,6 +121,20 @@ export interface IStorage {
   getCryptoAddresses(userId: number): Promise<CryptoAddress[]>;
   setCryptoAddress(userId: number, currency: string, address: string): Promise<CryptoAddress>;
 
+  // Telegram
+  createTelegramLinkToken(userId: number, token: string): Promise<void>;
+  getTelegramLinkToken(token: string): Promise<{ userId: number } | undefined>;
+  deleteTelegramLinkToken(token: string): Promise<void>;
+  setUserTelegramChatId(userId: number, chatId: string): Promise<void>;
+  getUsersWithTelegramLinked(): Promise<{ id: number; telegramChatId: string; lastTelegramNameReward: Date | null; referredByUserId: number | null; referralBonusPaid: boolean }[]>;
+  setLastTelegramNameReward(userId: number): Promise<void>;
+  setPendingTelegramReferral(chatId: string, referrerUserId: number): Promise<void>;
+  getPendingTelegramReferral(chatId: string): Promise<number | null>;
+  deletePendingTelegramReferral(chatId: string): Promise<void>;
+  setTelegramReferral(userId: number, referrerUserId: number): Promise<void>;
+  getReferrerChatId(referrerUserId: number): Promise<string | null>;
+  markTelegramReferralBonusPaid(userId: number): Promise<void>;
+  getTelegramReferralCount(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {

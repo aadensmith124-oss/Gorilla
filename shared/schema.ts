@@ -20,7 +20,7 @@ export const users = pgTable("users", {
   telegramChatId: text("telegram_chat_id"),
   lastTelegramNameReward: timestamp("last_telegram_name_reward"),
   telegramReferredBy: integer("telegram_referred_by"),
-  telegramReferralBonusPaid: boolean("telegram_referral_bonus_paid").default(false).notNull(),
+  telegramReferralBonusPaid: boolean("telegram_referral_bonus_paid").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -35,6 +35,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   lastDailySpin: true,
   password: true,
   loginCode: true,
+  telegramChatId: true,
+  lastTelegramNameReward: true,
+  telegramReferredBy: true,
+  telegramReferralBonusPaid: true,
 }).extend({
   email: z.string().email("Valid email required"),
 });

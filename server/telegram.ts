@@ -43,7 +43,7 @@ export async function checkGroupMembership(groupChatId: string, userChatId: stri
     const res = await fetch(`${TELEGRAM_API(token)}/getChatMember`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: groupChatId, user_id: userChatId }),
+      body: JSON.stringify({ chat_id: groupChatId, user_id: Number(userChatId) }),
     });
     const data = await res.json();
     if (!data.ok) return false;
