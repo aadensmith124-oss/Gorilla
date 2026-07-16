@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from "lucide-react";
+import { Search, ShoppingCart, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -98,7 +98,6 @@ export default function CardsPage() {
   const [zipSearch, setZipSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedBase, setSelectedBase] = useState<number | null>(null);
-  const [showBaseDropdown, setShowBaseDropdown] = useState(false);
   const [selectedBank, setSelectedBank] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -203,61 +202,60 @@ export default function CardsPage() {
   const activeFilters = (zipSearch ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (selectedBank ? 1 : 0) + (selectedCountry ? 1 : 0);
   const clearFilters = () => { setZipSearch(""); setPriceMin(""); setPriceMax(""); setSelectedBank(""); setSelectedCountry(""); };
 
-  const selectedBaseName = bases?.find((b: any) => b.id === selectedBase)?.name ?? "All Bases";
-
   return (
     <div className="max-w-2xl mx-auto px-0 py-0">
 
-      {/* Search + controls */}
-      <div className="px-3 pt-2.5 pb-2 space-y-1.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
+      {/* Bases + Search + controls */}
+      <div className="px-3 pt-3 pb-2 space-y-2.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
+
+        {/* BASES label + pills */}
+        <div className="flex items-start gap-2.5">
+          <span className="text-[10px] font-black uppercase tracking-widest text-white/30 pt-1.5 shrink-0">Bases</span>
+          <div className="flex flex-wrap gap-1.5">
+            {/* All pill */}
+            <button
+              onClick={() => setSelectedBase(null)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wide border transition-all ${
+                selectedBase === null
+                  ? "bg-[#00bcd4] border-[#00bcd4] text-black shadow-[0_0_10px_rgba(0,188,212,0.3)]"
+                  : "bg-[#111] border-white/15 text-white/70 hover:border-white/30 hover:text-white"
+              }`}
+              data-testid="btn-base-all"
+            >
+              All
+            </button>
+            {(bases ?? []).map((b: any) => (
+              <button
+                key={b.id}
+                onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wide border transition-all ${
+                  selectedBase === b.id
+                    ? "bg-[#00bcd4] border-[#00bcd4] text-black shadow-[0_0_10px_rgba(0,188,212,0.3)]"
+                    : "bg-[#111] border-white/15 text-white/70 hover:border-white/30 hover:text-white"
+                }`}
+                data-testid={`btn-base-${b.id}`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/35" />
           <input
             type="text"
-            placeholder="Search cards, base name, BIN, brand..."
+            placeholder="Search by card type, category, keywords..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-8 bg-[#0d0d0d] border border-white/10 rounded-lg pl-8 pr-3 text-[11px] text-white/90 placeholder:text-white/35 outline-none focus:border-white/15 transition-colors"
+            className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-3 text-xs text-white/90 placeholder:text-white/35 outline-none focus:border-white/20 transition-colors"
             data-testid="input-search"
           />
         </div>
 
-        <div className="flex gap-1.5">
-          {/* All Bases dropdown */}
-          <div className="relative flex-1">
-            <button
-              onClick={() => setShowBaseDropdown(d => !d)}
-              className="w-full flex items-center justify-between bg-[#0d0d0d] border border-white/10 rounded-lg px-2.5 h-8 text-[11px] text-white/60 hover:text-white/80 transition-colors"
-              data-testid="btn-base-dropdown"
-            >
-              <span className="truncate">{selectedBaseName}</span>
-              <ChevronDown className={`h-3 w-3 text-white/30 ml-1 flex-shrink-0 transition-transform ${showBaseDropdown ? "rotate-180" : ""}`} />
-            </button>
-            {showBaseDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden max-h-48 overflow-y-auto">
-                <button
-                  onClick={() => { setSelectedBase(null); setShowBaseDropdown(false); }}
-                  className={`w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-[#0d0d0d] ${selectedBase === null ? "font-semibold text-white" : "text-white/55"}`}
-                  data-testid="btn-base-all"
-                >
-                  All Bases
-                </button>
-                {(bases ?? []).map((b: any) => (
-                  <button
-                    key={b.id}
-                    onClick={() => { setSelectedBase(b.id); setShowBaseDropdown(false); }}
-                    className={`w-full text-left px-3 py-2 text-[11px] border-t border-white/8 transition-colors hover:bg-[#0d0d0d] ${selectedBase === b.id ? "font-semibold text-white" : "text-white/55"}`}
-                    data-testid={`btn-base-${b.id}`}
-                  >
-                    {b.name} ({b.count})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Filters button */}
+        {/* Filters toggle */}
+        <div className="flex gap-1.5 items-center">
           <button
             onClick={() => setShowFilters(f => !f)}
             className={`flex items-center gap-1.5 px-3 h-8 rounded-lg border text-[11px] font-medium transition-colors ${
