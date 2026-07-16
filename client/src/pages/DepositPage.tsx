@@ -482,9 +482,9 @@ export default function DepositPage() {
           <div className="space-y-2 pt-1">
             <p className="text-[11px] text-white/25 font-mono text-center">
               Payment issues?{" "}
-              <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
+              <a href="https://t.me/+oxGX1KUYsadmNGUx" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
             </p>
-            <a href="https://t.me/+FJLl-nL1mxAwNmZh" target="_blank" rel="noopener noreferrer">
+            <a href="https://t.me/+oxGX1KUYsadmNGUx" target="_blank" rel="noopener noreferrer">
               <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
                 <Send className="h-3.5 w-3.5" /> Join our Telegram
               </button>
