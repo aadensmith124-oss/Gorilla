@@ -54,7 +54,7 @@ function Router() {
         <Route path="/cart" component={CartPage} />
         <Route path="/ranks" component={RanksPage} />
         <Route path="/worker" component={WorkerDashboardPage} />
-        <Route path="/acctplug" component={CardsPage} />
+        <Route path="/cards" component={CardsPage} />
         <Route path="/checker" component={CheckerPage} />
         <Route path="/become-reseller" component={BecomeResellerPage} />
         <Route path="/admin">

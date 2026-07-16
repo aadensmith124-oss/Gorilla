@@ -37,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       label: "SHOP",
       items: [
         ...(features?.logs !== false ? [{ href: "/shop", icon: Store, label: "Logs" }] : []),
-        { href: "/acctplug", icon: LayoutDashboard, label: "Cards" },
+        { href: "/cards", icon: LayoutDashboard, label: "Cards" },
       ],
     },
     ...(features?.checker !== false ? [{
