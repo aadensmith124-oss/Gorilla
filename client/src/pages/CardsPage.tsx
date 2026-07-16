@@ -383,7 +383,8 @@ export default function CardsPage() {
                     data-testid="checkbox-all"
                   />
                 </th>
-                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BIN / BASE</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BIN</th>
+                <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BASE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">TYPE</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">BANK</th>
                 <th className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-white/35">ZIP</th>
@@ -452,9 +453,9 @@ function CardTableRow({ card, inCart, onToggleCart }: { card: any; inCart: boole
       </td>
       <td className="px-2.5 py-2">
         <span className="font-bold font-mono text-xs text-white">{bin || "—"}</span>
-        {card.baseName && (
-          <span className="block text-[9px] text-white/35 truncate max-w-[90px] mt-0.5">{card.baseName}</span>
-        )}
+      </td>
+      <td className="px-2.5 py-2 max-w-[100px]">
+        <span className="text-[10px] text-white/50 truncate block">{card.baseName || "—"}</span>
       </td>
       <td className="px-2.5 py-2">
         <span className="text-[11px] font-mono text-white/55">{cardType || "—"}</span>
