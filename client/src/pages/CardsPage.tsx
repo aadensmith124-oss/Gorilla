@@ -208,37 +208,33 @@ export default function CardsPage() {
       {/* Bases + Search + controls */}
       <div className="px-3 pt-3 pb-2 space-y-2.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
 
-        {/* BASES label + pills */}
-        <div className="flex items-start gap-2.5">
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/30 pt-1.5 shrink-0">Bases</span>
-          <div className="flex flex-wrap gap-1.5">
-            {/* All pill */}
+        {/* Base filter pills */}
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setSelectedBase(null)}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+              selectedBase === null
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+            }`}
+            data-testid="btn-base-all"
+          >
+            All
+          </button>
+          {(bases ?? []).map((b: any) => (
             <button
-              onClick={() => setSelectedBase(null)}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wide border transition-all ${
-                selectedBase === null
-                  ? "bg-[#00bcd4] border-[#00bcd4] text-black shadow-[0_0_10px_rgba(0,188,212,0.3)]"
-                  : "bg-[#111] border-white/15 text-white/70 hover:border-white/30 hover:text-white"
+              key={b.id}
+              onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                selectedBase === b.id
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
               }`}
-              data-testid="btn-base-all"
+              data-testid={`btn-base-${b.id}`}
             >
-              All
+              {b.name}
             </button>
-            {(bases ?? []).map((b: any) => (
-              <button
-                key={b.id}
-                onClick={() => setSelectedBase(selectedBase === b.id ? null : b.id)}
-                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wide border transition-all ${
-                  selectedBase === b.id
-                    ? "bg-[#00bcd4] border-[#00bcd4] text-black shadow-[0_0_10px_rgba(0,188,212,0.3)]"
-                    : "bg-[#111] border-white/15 text-white/70 hover:border-white/30 hover:text-white"
-                }`}
-                data-testid={`btn-base-${b.id}`}
-              >
-                {b.name}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
 
         {/* Search bar */}
