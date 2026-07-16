@@ -157,6 +157,8 @@ function TelegramNameRewardCard() {
   // Hold the polling interval so we can cancel it if the component unmounts
   const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollTimeout  = useRef<ReturnType<typeof setTimeout>  | null>(null);
+  // Opened synchronously on click so the browser doesn't block it as a popup
+  const telegramWin  = useRef<Window | null>(null);
 
   // Clean up timers on unmount to prevent state updates on an unmounted tree
   useEffect(() => {
@@ -183,7 +185,13 @@ function TelegramNameRewardCard() {
       return res.json() as Promise<{ botUrl: string }>;
     },
     onSuccess: (data) => {
-      window.open(data.botUrl, "_blank");
+      // Redirect the window we opened synchronously on click (avoids popup blocker)
+      if (telegramWin.current && !telegramWin.current.closed) {
+        telegramWin.current.location.href = data.botUrl;
+      } else {
+        window.open(data.botUrl, "_blank");
+      }
+      telegramWin.current = null;
       // Poll every 3 s until the user has linked (max 2 min)
       pollInterval.current = setInterval(async () => {
         const r = await refetch();
@@ -252,7 +260,11 @@ function TelegramNameRewardCard() {
             Step 1 — Join our Telegram Group
           </a>
           <button
-            onClick={() => linkMutation.mutate()}
+            onClick={() => {
+              // Open now (synchronous user gesture) so the browser doesn't block it
+              telegramWin.current = window.open("", "_blank");
+              linkMutation.mutate();
+            }}
             disabled={linkMutation.isPending}
             className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/25 text-[#229ED9] text-[11px] font-bold hover:bg-[#229ED9]/22 transition-colors disabled:opacity-50"
           >
