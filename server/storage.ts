@@ -212,7 +212,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setUserTelegramChatId(userId: number, chatId: string): Promise<void> {
-    await db.execute(sql`UPDATE users SET telegram_chat_id = ${chatId} WHERE id = ${userId}`);
+    await db.update(users).set({ telegramChatId: chatId }).where(eq(users.id, userId));
   }
 
   async getUsersWithTelegramLinked(): Promise<{ id: number; telegramChatId: string; lastTelegramNameReward: Date | null; referredByUserId: number | null; referralBonusPaid: boolean }[]> {

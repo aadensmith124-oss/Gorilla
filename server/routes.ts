@@ -2151,8 +2151,10 @@ export async function registerRoutes(
 
           // Link the account
           const info = await storage.getTelegramLinkToken(param);
+          console.log(`[TG link] token="${param}" lookup=${info ? `userId=${info.userId}` : "NOT FOUND"}`);
           if (info) {
             await storage.setUserTelegramChatId(info.userId, chatId);
+            console.log(`[TG link] setUserTelegramChatId userId=${info.userId} chatId=${chatId}`);
             await storage.deleteTelegramLinkToken(param);
 
             // Attach any pending referral for this chatId
@@ -2210,8 +2212,12 @@ export async function registerRoutes(
   });
 
   // ── Register Telegram webhook on server start ─────────────────────────────
+  // Always prefer the stable production domain so dev-server restarts/crashes
+  // don't hijack the webhook and break the bot for live users.
   (async () => {
-    const domain = process.env.REPLIT_DEV_DOMAIN || (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
+    const prodDomain = (process.env.REPLIT_DOMAINS || "").split(",")[0].trim();
+    const devDomain  = process.env.REPLIT_DEV_DOMAIN || "";
+    const domain = prodDomain || devDomain;
     if (domain) {
       await setupTelegramWebhook(`https://${domain}/api/telegram/webhook`);
     }
