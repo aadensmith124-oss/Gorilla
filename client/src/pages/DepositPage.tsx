@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 
-type Method = "crypto" | "cashapp" | "chime" | "zelle";
+type Method = "crypto" | "cashapp";
 
 type Deposit = {
   id: string;
@@ -35,14 +35,10 @@ const BONUS_TIERS = [
 
 function methodColor(type: string) {
   if (type === "cashapp") return "#00D632";
-  if (type === "chime")   return "#7BC67E";
-  if (type === "zelle")   return "#6D1ED4";
   return "#F7931A";
 }
 function methodLabel(type: string) {
   if (type === "cashapp") return "CashApp";
-  if (type === "chime")   return "Chime";
-  if (type === "zelle")   return "Zelle";
   return "Crypto";
 }
 
@@ -321,9 +317,6 @@ export default function DepositPage() {
 
   const { data: manualMethods } = useQuery<{
     cashapp: { enabled: boolean; tag: string; fee: number };
-    chime: { enabled: boolean; handle: string; fee: number };
-    zelle: { enabled: boolean; handle: string; fee: number };
-    venmo: { enabled: boolean; handle: string; fee: number };
   }>({ queryKey: ["/api/site-settings/manual-payments"] });
 
   const { data: minDeposits } = useQuery<Record<string, number>>({
@@ -337,8 +330,6 @@ export default function DepositPage() {
   });
 
   const cashappEnabled = manualMethods?.cashapp.enabled !== false;
-  const chimeEnabled   = manualMethods?.chime.enabled === true;
-  const zelleEnabled   = manualMethods?.zelle.enabled === true;
 
   const parsedAmount = parseFloat(amountInput) || 0;
   const activeTier = BONUS_TIERS.find(t => parsedAmount >= t.min && (t.max === null || parsedAmount <= t.max));
@@ -388,24 +379,7 @@ export default function DepositPage() {
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
-  const chimeMutation = useMutation({
-    mutationFn: () => createManual("/api/deposits/chime", "chime"),
-    onSuccess: (data) => {
-      setManualResult({ note: data.paymentNote, handle: data.handle || manualMethods?.chime.handle || "", amount: Math.round(parsedAmount * 100), method: "chime" });
-      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-  const zelleMutation = useMutation({
-    mutationFn: () => createManual("/api/deposits/zelle", "zelle"),
-    onSuccess: (data) => {
-      setManualResult({ note: data.paymentNote, handle: data.handle || manualMethods?.zelle.handle || "", amount: Math.round(parsedAmount * 100), method: "zelle" });
-      qc.invalidateQueries({ queryKey: ["/api/deposits"] });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const isManualPending = cashappMutation.isPending || chimeMutation.isPending || zelleMutation.isPending;
+  const isManualPending = cashappMutation.isPending;
   const isPending = cryptoMutation.isPending || isManualPending;
 
   function feeLabel(fee: number | undefined) {
@@ -416,8 +390,6 @@ export default function DepositPage() {
   const paymentOptions = [
     { id: "crypto", label: "Crypto", sub: "BTC · ETH · LTC · SOL · USDT", Icon: SiBitcoin, color: "#F7931A", fee: "0% fee" },
     ...(cashappEnabled ? [{ id: "cashapp", label: "CashApp", sub: "instant", Icon: SiCashapp, color: "#00D632", fee: feeLabel(manualMethods?.cashapp?.fee) }] : []),
-    ...(chimeEnabled ? [{ id: "chime", label: "Chime", sub: "instant", Icon: null, color: "#7BC67E", fee: feeLabel(manualMethods?.chime?.fee) }] : []),
-    ...(zelleEnabled ? [{ id: "zelle", label: "Zelle", sub: "instant", Icon: null, color: "#6D1ED4", fee: feeLabel(manualMethods?.zelle?.fee) }] : []),
   ];
 
   const selected = paymentOptions.find(o => o.id === selectedOption) || null;
@@ -427,8 +399,6 @@ export default function DepositPage() {
     if (!selectedOption) return;
     if (isSelectedCrypto) cryptoMutation.mutate();
     else if (selectedOption === "cashapp") cashappMutation.mutate();
-    else if (selectedOption === "chime") chimeMutation.mutate();
-    else if (selectedOption === "zelle") zelleMutation.mutate();
   }
 
   return (
