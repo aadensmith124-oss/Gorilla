@@ -2092,12 +2092,90 @@ export async function registerRoutes(
         const chatId = String(from?.id ?? "");
         if (!chatId) return;
 
+        // ── /link command ────────────────────────────────────────────────────
+        if (text.startsWith("/link")) {
+          const parts = text.trim().split(/\s+/);
+          const email = parts[1];
+          const password = parts[2];
+          if (!email || !password) {
+            await sendMessage(chatId,
+              "🔗 <b>Link Your Account</b>\n\n" +
+              "Usage: <code>/link your@email.com yourpassword</code>\n\n" +
+              "Use the same email and password you log in with on the website."
+            );
+            return;
+          }
+
+          // Look up user by email
+          const u = await storage.getUserByEmail(email);
+          if (!u) {
+            await sendMessage(chatId, "❌ No account found with that email. Check your email and try again.");
+            return;
+          }
+
+          // Verify password
+          const valid = await comparePassword(password, u.password);
+          if (!valid) {
+            await sendMessage(chatId, "❌ Incorrect password. Try again.");
+            return;
+          }
+
+          // Join gate check
+          const groupId = process.env.TELEGRAM_GROUP_CHAT_ID || process.env.Telegram_group_id || await storage.getSetting("telegram_group_id", "");
+          if (groupId) {
+            const isMember = await checkGroupMembership(groupId, chatId);
+            if (!isMember) {
+              const token = process.env.TELEGRAM_BOT_TOKEN;
+              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: "⚠️ <b>You must join our group first!</b>\n\nJoin below, then send /link again.",
+                  parse_mode: "HTML",
+                  reply_markup: { inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]] },
+                }),
+              }).catch(() => {});
+              return;
+            }
+          }
+
+          // Link the account
+          await storage.setUserTelegramChatId(u.id, chatId);
+
+          // Attach any pending referral for this chatId
+          const referrerUserId = await storage.getPendingTelegramReferral(chatId);
+          if (referrerUserId && referrerUserId !== u.id) {
+            await storage.setTelegramReferral(u.id, referrerUserId);
+            await storage.deletePendingTelegramReferral(chatId);
+            const referrerChatId = await storage.getReferrerChatId(referrerUserId);
+            if (referrerChatId) {
+              const botUsername = await getBotUsername();
+              const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
+              await sendMessage(referrerChatId,
+                `🎉 <b>Someone joined via your referral link!</b>\n\n` +
+                `They've linked their account — you'll both earn <b>+$0.50</b> once they add ` +
+                `<code>beastcc.xyz $1 ccs</code> to their Telegram name.\n\n` +
+                (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
+              );
+            }
+          }
+
+          await sendMessage(chatId,
+            "✅ <b>Telegram linked!</b>\n\n" +
+            "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
+            "We check names every hour — reward is credited to your site balance." +
+            (referrerUserId ? "\n\n🎁 Referral registered! You'll both earn <b>$0.50</b> when you earn your first name reward." : "")
+          );
+          return;
+        }
+
         // ── /balance command ────────────────────────────────────────────────
         if (text.startsWith("/balance")) {
           const u = await storage.getUserByTelegramChatId(chatId);
           if (!u) {
             await sendMessage(chatId,
-              "❌ <b>Account not linked.</b>\n\nGo to the website and click <b>Link Telegram</b> on the deposit page to connect your account."
+              "❌ <b>Account not linked.</b>\n\nUse <code>/link your@email.com yourpassword</code> to connect your account."
             );
             return;
           }
@@ -2127,7 +2205,7 @@ export async function registerRoutes(
           const u = await storage.getUserByTelegramChatId(chatId);
           if (!u) {
             await sendMessage(chatId,
-              "❌ <b>Account not linked.</b>\n\nGo to the website and click <b>Link Telegram</b> on the deposit page to connect your account."
+              "❌ <b>Account not linked.</b>\n\nUse <code>/link your@email.com yourpassword</code> to connect your account."
             );
             return;
           }
@@ -2169,7 +2247,7 @@ export async function registerRoutes(
                 "👋 <b>Welcome to BeastCC!</b>\n\n" +
                 "Your referral has been registered.\n\n" +
                 "<b>Step 1:</b> Join our group below\n" +
-                "<b>Step 2:</b> Go to the website and click <b>Link Telegram</b>\n" +
+                "<b>Step 2:</b> Send <code>/link your@email.com yourpassword</code>\n" +
                 "<b>Step 3:</b> Add <code>beastcc.xyz $1 ccs</code> to your name\n\n" +
                 "You and your referrer each earn <b>$0.50</b> when you earn your first name reward!",
               parse_mode: "HTML",
@@ -2256,8 +2334,9 @@ export async function registerRoutes(
             chat_id: chatId,
             text:
               "👋 <b>Welcome to BeastCC bot!</b>\n\n" +
-              "To link your account, go to the website and click <b>Link Telegram</b> on the deposit page.\n\n" +
-              "You must join our group first!",
+              "To link your account, send:\n" +
+              "<code>/link your@email.com yourpassword</code>\n\n" +
+              "Make sure you join our group first!",
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],

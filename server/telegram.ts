@@ -164,6 +164,7 @@ export async function setupTelegramWebhook(webhookUrl: string): Promise<void> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         commands: [
+          { command: "link",     description: "Link your account — /link email password" },
           { command: "balance",  description: "Check your balance & reward status" },
           { command: "referral", description: "Get your referral link & count" },
         ],
