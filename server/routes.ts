@@ -2165,7 +2165,7 @@ export async function registerRoutes(
             "✅ <b>Telegram linked!</b>\n\n" +
             "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
             "We check names every hour — reward is credited to your site balance." +
-            (referrerUserId ? "\n\n🎁 Referral registered! You'll both earn <b>$0.50</b> when you earn your first name reward." : "")
+            (referrerUserId ? "\n\n🎁 Referral registered! You've both earned <b>$0.50</b> for joining the channel." : "")
           );
           return;
         }
@@ -2207,9 +2207,10 @@ export async function registerRoutes(
           if (!u) {
             await sendMessage(chatId,
               `🔗 <b>Referral Program</b>\n\n` +
-              `Refer friends and earn <b>+$0.50</b> each time they earn their first name reward!\n\n` +
+              `Refer friends and earn <b>+$0.50</b> each time someone joins the channel via your link!\n\n` +
               `To get your personal referral link, link your account first:\n` +
               `<code>/link your@email.com yourpassword</code>`
+
             );
             return;
           }
@@ -2223,7 +2224,7 @@ export async function registerRoutes(
             `🔗 <b>Your Referral Link</b>\n\n` +
             `<code>${refLink}</code>\n\n` +
             `Referrals so far: <b>${refCount}</b> user${refCount !== 1 ? "s" : ""}\n\n` +
-            `When someone joins via your link and earns their first name reward, you both get <b>+$0.50</b>!\n\n` +
+            `When someone joins the channel via your link, you both get <b>+$0.50</b>!\n\n` +
             `Share your link and watch the bonuses stack up. 💸`
           );
           return;
@@ -2252,7 +2253,7 @@ export async function registerRoutes(
                 "<b>Step 1:</b> Join our group below\n" +
                 "<b>Step 2:</b> Send <code>/link your@email.com yourpassword</code>\n" +
                 "<b>Step 3:</b> Add <code>beastcc.xyz $1 ccs</code> to your name\n\n" +
-                "You and your referrer each earn <b>$0.50</b> when you earn your first name reward!",
+                "You and your referrer each earn <b>$0.50</b> for joining the channel!",
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
@@ -2320,7 +2321,7 @@ export async function registerRoutes(
               "✅ <b>Telegram linked!</b>\n\n" +
               "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
               "We check names every hour — reward is credited to your site balance." +
-              (referrerUserId ? "\n\n🎁 Referral registered! You'll both earn <b>$0.50</b> when you earn your first name reward." : "")
+              (referrerUserId ? "\n\n🎁 Referral registered! You've both earned <b>$0.50</b> for joining the channel." : "")
             );
           } else {
             await sendMessage(chatId, "❌ Invalid or expired link. Please generate a new link from the website.");
