@@ -2203,13 +2203,16 @@ export async function registerRoutes(
         // ── /referral command ───────────────────────────────────────────────
         if (text.startsWith("/referral")) {
           const u = await storage.getUserByTelegramChatId(chatId);
+          const botUsername = await getBotUsername();
           if (!u) {
             await sendMessage(chatId,
-              "❌ <b>Account not linked.</b>\n\nUse <code>/link your@email.com yourpassword</code> to connect your account."
+              `🔗 <b>Referral Program</b>\n\n` +
+              `Refer friends and earn <b>+$0.50</b> each time they earn their first name reward!\n\n` +
+              `To get your personal referral link, link your account first:\n` +
+              `<code>/link your@email.com yourpassword</code>`
             );
             return;
           }
-          const botUsername = await getBotUsername();
           const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${u.id}` : null;
           const refCount = await storage.getTelegramReferralCount(u.id);
           if (!refLink) {
