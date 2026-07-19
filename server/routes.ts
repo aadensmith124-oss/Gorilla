@@ -2106,14 +2106,12 @@ export async function registerRoutes(
             return;
           }
 
-          // Look up user by email
           const u = await storage.getUserByEmail(email);
           if (!u) {
             await sendMessage(chatId, "❌ No account found with that email. Check your email and try again.");
             return;
           }
 
-          // Verify password
           const valid = await comparePassword(password, u.password);
           if (!valid) {
             await sendMessage(chatId, "❌ Incorrect password. Try again.");
@@ -2143,34 +2141,39 @@ export async function registerRoutes(
           // Link the account
           await storage.setUserTelegramChatId(u.id, chatId);
 
-          // Attach any pending referral for this chatId
+          // Attach any pending referral and credit $0.50 to both parties immediately
           const referrerUserId = await storage.getPendingTelegramReferral(chatId);
+          let referralBonusGiven = false;
           if (referrerUserId && referrerUserId !== u.id) {
             await storage.setTelegramReferral(u.id, referrerUserId);
             await storage.deletePendingTelegramReferral(chatId);
+            // Credit $0.50 to the new user
+            await storage.createTransaction(u.id, 50, "deposit", "Referral bonus — joined via referral link");
+            // Credit $0.50 to the referrer
+            await storage.createTransaction(referrerUserId, 50, "deposit", "Referral bonus — someone joined via your link");
+            referralBonusGiven = true;
+            // Notify the referrer
             const referrerChatId = await storage.getReferrerChatId(referrerUserId);
             if (referrerChatId) {
               const botUsername = await getBotUsername();
               const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
               await sendMessage(referrerChatId,
                 `🎉 <b>Someone joined via your referral link!</b>\n\n` +
-                `They've linked their account — you'll both earn <b>+$0.50</b> once they add ` +
-                `<code>beastcc.xyz $1 ccs</code> to their Telegram name.\n\n` +
+                `<b>+$0.50</b> has been added to your balance.\n\n` +
                 (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
               );
             }
           }
 
           await sendMessage(chatId,
-            "✅ <b>Telegram linked!</b>\n\n" +
-            "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
-            "We check names every hour — reward is credited to your site balance." +
-            (referrerUserId ? "\n\n🎁 Referral registered! You've both earned <b>$0.50</b> for joining the channel." : "")
+            "✅ <b>Account linked!</b>\n\n" +
+            "Your BeastCC account is now connected to Telegram." +
+            (referralBonusGiven ? "\n\n🎁 <b>+$0.50</b> referral bonus added to your balance!" : "")
           );
           return;
         }
 
-        // ── /balance command ────────────────────────────────────────────────
+        // ── /balance command ─────────────────────────────────────────────────
         if (text.startsWith("/balance")) {
           const u = await storage.getUserByTelegramChatId(chatId);
           if (!u) {
@@ -2180,37 +2183,26 @@ export async function registerRoutes(
             return;
           }
           const bal = (u.balance / 100).toFixed(2);
-          const lastReward = (u as any).lastTelegramNameReward || (u as any).last_telegram_name_reward;
-          let rewardLine = "❌ No name reward active.";
-          if (lastReward) {
-            const hoursSince = (Date.now() - new Date(lastReward).getTime()) / 3_600_000;
-            const hoursLeft = Math.max(0, 24 - hoursSince);
-            rewardLine = hoursLeft < 1
-              ? "✅ Name reward: eligible now!"
-              : `✅ Name reward: next in ~${Math.ceil(hoursLeft)}h`;
-          }
           const refCount = await storage.getTelegramReferralCount(u.id);
           await sendMessage(chatId,
             `💰 <b>Your Balance</b>\n\n` +
-            `Balance: <b>${bal}</b>\n` +
-            `${rewardLine}\n` +
+            `Balance: <b>$${bal}</b>\n` +
             `Referrals: <b>${refCount}</b> user${refCount !== 1 ? "s" : ""}\n\n` +
             `<i>Use /referral to get your referral link.</i>`
           );
           return;
         }
 
-        // ── /referral command ───────────────────────────────────────────────
+        // ── /referral command ────────────────────────────────────────────────
         if (text.startsWith("/referral")) {
           const u = await storage.getUserByTelegramChatId(chatId);
           const botUsername = await getBotUsername();
           if (!u) {
             await sendMessage(chatId,
               `🔗 <b>Referral Program</b>\n\n` +
-              `Refer friends and earn <b>+$0.50</b> each time someone joins the channel via your link!\n\n` +
+              `Refer friends and earn <b>+$0.50</b> every time someone signs up via your link!\n\n` +
               `To get your personal referral link, link your account first:\n` +
               `<code>/link your@email.com yourpassword</code>`
-
             );
             return;
           }
@@ -2224,7 +2216,7 @@ export async function registerRoutes(
             `🔗 <b>Your Referral Link</b>\n\n` +
             `<code>${refLink}</code>\n\n` +
             `Referrals so far: <b>${refCount}</b> user${refCount !== 1 ? "s" : ""}\n\n` +
-            `When someone joins the channel via your link, you both get <b>+$0.50</b>!\n\n` +
+            `You both earn <b>+$0.50</b> when they sign up via your link!\n\n` +
             `Share your link and watch the bonuses stack up. 💸`
           );
           return;
@@ -2234,13 +2226,12 @@ export async function registerRoutes(
 
         const param = text.split(" ")[1]?.trim() ?? "";
 
-        // ── Referral link: /start REF<userId> ──────────────────────────────
+        // ── Referral link: /start REF<userId> ───────────────────────────────
         if (param.startsWith("REF")) {
           const referrerUserId = parseInt(param.slice(3), 10);
           if (!isNaN(referrerUserId) && referrerUserId > 0) {
             await storage.setPendingTelegramReferral(chatId, referrerUserId);
           }
-          // Send join gate message
           const token = process.env.TELEGRAM_BOT_TOKEN;
           await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: "POST",
@@ -2251,9 +2242,9 @@ export async function registerRoutes(
                 "👋 <b>Welcome to BeastCC!</b>\n\n" +
                 "Your referral has been registered.\n\n" +
                 "<b>Step 1:</b> Join our group below\n" +
-                "<b>Step 2:</b> Send <code>/link your@email.com yourpassword</code>\n" +
-                "<b>Step 3:</b> Add <code>beastcc.xyz $1 ccs</code> to your name\n\n" +
-                "You and your referrer each earn <b>$0.50</b> for joining the channel!",
+                "<b>Step 2:</b> Sign up on the website\n" +
+                "<b>Step 3:</b> Send <code>/link your@email.com yourpassword</code>\n\n" +
+                "You and your referrer each earn <b>$0.50</b> when you link your account!",
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
@@ -2263,73 +2254,7 @@ export async function registerRoutes(
           return;
         }
 
-        // ── Account link token: /start <token> ─────────────────────────────
-        if (param) {
-          // Join gate check
-          const groupId = process.env.TELEGRAM_GROUP_CHAT_ID || process.env.Telegram_group_id || await storage.getSetting("telegram_group_id", "");
-          if (groupId) {
-            const isMember = await checkGroupMembership(groupId, chatId);
-            if (!isMember) {
-              const token = process.env.TELEGRAM_BOT_TOKEN;
-              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text:
-                    "⚠️ <b>You must join our group first!</b>\n\n" +
-                    "Join the group below, then go back to the website and click <b>Link Telegram</b> again.",
-                  parse_mode: "HTML",
-                  reply_markup: {
-                    inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
-                  },
-                }),
-              }).catch(() => {});
-              return;
-            }
-          }
-
-          // Link the account
-          const info = await storage.getTelegramLinkToken(param);
-          console.log(`[TG link] token="${param}" lookup=${info ? `userId=${info.userId}` : "NOT FOUND"}`);
-          if (info) {
-            await storage.setUserTelegramChatId(info.userId, chatId);
-            console.log(`[TG link] setUserTelegramChatId userId=${info.userId} chatId=${chatId}`);
-            await storage.deleteTelegramLinkToken(param);
-
-            // Attach any pending referral for this chatId
-            const referrerUserId = await storage.getPendingTelegramReferral(chatId);
-            if (referrerUserId && referrerUserId !== info.userId) {
-              await storage.setTelegramReferral(info.userId, referrerUserId);
-              await storage.deletePendingTelegramReferral(chatId);
-
-              // Notify the referrer immediately
-              const referrerChatId = await storage.getReferrerChatId(referrerUserId);
-              if (referrerChatId) {
-                const botUsername = await getBotUsername();
-                const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
-                await sendMessage(referrerChatId,
-                  `🎉 <b>Someone joined via your referral link!</b>\n\n` +
-                  `They've linked their account — you'll both earn <b>+$0.50</b> once they add ` +
-                  `<code>beastcc.xyz $1 ccs</code> to their Telegram name.\n\n` +
-                  (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
-                );
-              }
-            }
-
-            await sendMessage(chatId,
-              "✅ <b>Telegram linked!</b>\n\n" +
-              "Add <code>beastcc.xyz $1 ccs</code> to your Telegram display name and earn <b>$1.00 every day</b> automatically.\n\n" +
-              "We check names every hour — reward is credited to your site balance." +
-              (referrerUserId ? "\n\n🎁 Referral registered! You've both earned <b>$0.50</b> for joining the channel." : "")
-            );
-          } else {
-            await sendMessage(chatId, "❌ Invalid or expired link. Please generate a new link from the website.");
-          }
-          return;
-        }
-
-        // ── Plain /start with no param ──────────────────────────────────────
+        // ── Plain /start ─────────────────────────────────────────────────────
         const token = process.env.TELEGRAM_BOT_TOKEN;
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: "POST",
@@ -2337,7 +2262,7 @@ export async function registerRoutes(
           body: JSON.stringify({
             chat_id: chatId,
             text:
-              "👋 <b>Welcome to BeastCC bot!</b>\n\n" +
+              "👋 <b>Welcome to BeastCC!</b>\n\n" +
               "To link your account, send:\n" +
               "<code>/link your@email.com yourpassword</code>\n\n" +
               "Make sure you join our group first!",
