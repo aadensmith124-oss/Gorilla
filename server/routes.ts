@@ -2141,28 +2141,16 @@ export async function registerRoutes(
           // Link the account
           await storage.setUserTelegramChatId(u.id, chatId);
 
-          // Attach any pending referral and credit $0.50 to both parties immediately
+          // Attach any pending referral; credit $0.50 to the new user only
+          // (referrer was already credited when the user first clicked the referral link)
           const referrerUserId = await storage.getPendingTelegramReferral(chatId);
           let referralBonusGiven = false;
           if (referrerUserId && referrerUserId !== u.id) {
             await storage.setTelegramReferral(u.id, referrerUserId);
             await storage.deletePendingTelegramReferral(chatId);
-            // Credit $0.50 to the new user
-            await storage.createTransaction(u.id, 50, "deposit", "Referral bonus — joined via referral link");
-            // Credit $0.50 to the referrer
-            await storage.createTransaction(referrerUserId, 50, "deposit", "Referral bonus — someone joined via your link");
+            // Credit $0.50 to the new user for completing signup
+            await storage.createTransaction(u.id, 50, "deposit", "Referral bonus — signed up via referral link");
             referralBonusGiven = true;
-            // Notify the referrer
-            const referrerChatId = await storage.getReferrerChatId(referrerUserId);
-            if (referrerChatId) {
-              const botUsername = await getBotUsername();
-              const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
-              await sendMessage(referrerChatId,
-                `🎉 <b>Someone joined via your referral link!</b>\n\n` +
-                `<b>+$0.50</b> has been added to your balance.\n\n` +
-                (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
-              );
-            }
           }
 
           await sendMessage(chatId,
@@ -2231,6 +2219,19 @@ export async function registerRoutes(
           const referrerUserId = parseInt(param.slice(3), 10);
           if (!isNaN(referrerUserId) && referrerUserId > 0) {
             await storage.setPendingTelegramReferral(chatId, referrerUserId);
+            // Credit the referrer $0.50 immediately for this channel join
+            await storage.createTransaction(referrerUserId, 50, "deposit", "Referral bonus — someone joined via your link");
+            // Notify the referrer
+            const referrerChatId = await storage.getReferrerChatId(referrerUserId);
+            if (referrerChatId) {
+              const botUsername = await getBotUsername();
+              const refLink = botUsername ? `https://t.me/${botUsername}?start=REF${referrerUserId}` : null;
+              await sendMessage(referrerChatId,
+                `🎉 <b>Someone joined via your referral link!</b>\n\n` +
+                `<b>+$0.50</b> has been added to your balance.\n\n` +
+                (refLink ? `Keep sharing: <code>${refLink}</code>` : ``)
+              );
+            }
           }
           const token = process.env.TELEGRAM_BOT_TOKEN;
           await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -2240,11 +2241,10 @@ export async function registerRoutes(
               chat_id: chatId,
               text:
                 "👋 <b>Welcome to BeastCC!</b>\n\n" +
-                "Your referral has been registered.\n\n" +
+                "You've joined via a referral link.\n\n" +
                 "<b>Step 1:</b> Join our group below\n" +
                 "<b>Step 2:</b> Sign up on the website\n" +
-                "<b>Step 3:</b> Send <code>/link your@email.com yourpassword</code>\n\n" +
-                "You and your referrer each earn <b>$0.50</b> when you link your account!",
+                "<b>Step 3:</b> Send <code>/link your@email.com yourpassword</code> to earn <b>$0.50</b>!",
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
