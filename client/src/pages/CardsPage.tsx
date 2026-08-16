@@ -2,9 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Redirect } from "wouter";
 
 function countryFlag(code: string): string {
   if (!code || code.length !== 2) return "";

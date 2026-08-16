@@ -185,7 +185,6 @@ export default function DepositPage() {
         amount: String(Math.round(amount * 100)),
         purpose: "deposit",
       });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed to create payment"); }
       return res.json();
     },
     onSuccess: (data) => {
@@ -206,7 +205,6 @@ export default function DepositPage() {
     const min = minDeposits?.[method] ?? 0;
     if (min > 0 && amount < min) throw new Error(`Minimum deposit for ${methodLabel(method)} is $${min.toFixed(2)}`);
     const res = await apiRequest("POST", endpoint, { amount });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || "Failed"); }
     return res.json();
   }
 
@@ -215,6 +213,7 @@ export default function DepositPage() {
     onSuccess: (data) => {
       setManualResult({ note: data.paymentNote, handle: data.cashappTag || manualMethods?.cashapp.tag || "", amount: Math.round(parsedAmount * 100), method: "cashapp" });
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
+      qc.invalidateQueries({ queryKey: ["/api/orders"] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });

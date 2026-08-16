@@ -105,7 +105,7 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
 
 export default function ShopPage() {
   const { user } = useAuth();
-  const { data: products, isLoading } = useProducts();
+  const { data: products, isLoading, isError } = useProducts();
   const { data: topProducts } = useQuery<any[]>({
     queryKey: ["/api/products/top-selling"],
     refetchInterval: 60 * 60 * 1000,
@@ -139,6 +139,10 @@ export default function ShopPage() {
 
   if (isLoading) {
     return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-white/30" /></div>;
+  }
+
+  if (isError) {
+    return <div className="flex h-[50vh] items-center justify-center text-sm text-red-400">Failed to load products. Please refresh.</div>;
   }
 
   if (user?.isBanned) {

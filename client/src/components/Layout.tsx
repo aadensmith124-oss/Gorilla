@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { ChevronDown, LogOut, Send, ShoppingCart, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, LogOut, Send, ShoppingCart, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+
+  // Close nav whenever the route changes
+  useEffect(() => {
+    setNavOpen(false);
+    setAccountOpen(false);
+  }, [location]);
 
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
 

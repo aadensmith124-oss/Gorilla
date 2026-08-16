@@ -62,7 +62,7 @@ function statusBadge(status: string) {
 }
 
 export default function OrdersPage() {
-  const { data: orders, isLoading, refetch, isRefetching } = useOrders();
+  const { data: orders, isLoading, isError, refetch, isRefetching } = useOrders();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<TabType>("all");
@@ -113,6 +113,14 @@ export default function OrdersPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-sm text-red-400">
+        Failed to load orders. Please refresh.
       </div>
     );
   }

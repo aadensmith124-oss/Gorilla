@@ -1566,9 +1566,10 @@ export async function registerRoutes(
       console.log("NOWPayments IPN received:", JSON.stringify(req.body, null, 2));
       const body = req.body || {};
       const sig = req.headers["x-nowpayments-sig"] as string || "";
+      const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET;
 
-      if (sig && !verifyNowPaymentsWebhook(body, sig)) {
-        console.warn("NOWPayments IPN: invalid signature");
+      if (ipnSecret && (!sig || !verifyNowPaymentsWebhook(body, sig))) {
+        console.warn("NOWPayments IPN: missing or invalid signature");
         return res.status(200).json({ received: true });
       }
 

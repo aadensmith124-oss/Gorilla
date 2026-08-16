@@ -83,7 +83,7 @@ export async function getNowPaymentsInvoice(invoiceId: string): Promise<NowPayme
 /** Verify the IPN webhook signature (HMAC-SHA512 of sorted JSON body) */
 export function verifyNowPaymentsWebhook(body: Record<string, any>, signature: string): boolean {
   const secret = process.env.NOWPAYMENTS_IPN_SECRET;
-  if (!secret) return true; // Skip verification if secret not configured
+  if (!secret) return false; // Fail closed — require secret to be configured
 
   try {
     const { createHmac } = require("crypto");
