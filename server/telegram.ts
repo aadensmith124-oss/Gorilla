@@ -57,19 +57,12 @@ export function startTelegramBot() {
       const member = await ctx.api.getChatMember(GROUP_ID, userId);
       const allowed = ["creator", "administrator", "member", "restricted"].includes(member.status);
       if (!allowed) {
-        await ctx.reply(
-          `🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`,
-          MD
-        );
+        await ctx.reply(`🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
         return;
       }
     } catch (err: any) {
       console.error("[telegram] membership check failed:", err?.message ?? err);
-      // Fail closed — block access if check can't be performed
-      await ctx.reply(
-        `🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`,
-        MD
-      );
+      await ctx.reply(`🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
       return;
     }
 
