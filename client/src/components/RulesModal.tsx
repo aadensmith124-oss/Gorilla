@@ -50,7 +50,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-destructive" />
-            <h2 className="font-display font-black uppercase tracking-tight text-lg text-foreground">Store Rules</h2>
+            <h2 className="font-semibold text-lg text-foreground">Store Rules</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-white transition-colors">
             <X className="h-5 w-5" />

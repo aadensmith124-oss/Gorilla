@@ -335,7 +335,7 @@ export default function AuthPage() {
         {/* Brand */}
         <div className="text-center space-y-0.5">
           <h1 className="text-xl font-black tracking-tight text-white">
-            <span style={{fontFamily:"var(--font-display)"}}>UTO<span className="text-primary">PIA</span></span>
+            <span>UTO<span className="text-primary">PIA</span></span>
           </h1>
           <p className="text-[10px] uppercase tracking-widest font-semibold text-primary/50">PREMIUM CARD SHOP</p>
         </div>

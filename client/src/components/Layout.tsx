@@ -71,8 +71,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
         <Link href="/" onClick={onClose}>
           <div className="cursor-pointer">
-            <span className="text-lg font-black tracking-tight text-white" style={{ fontFamily: "var(--font-display)" }}>UTO</span>
-            <span className="text-lg font-black tracking-tight text-primary" style={{ fontFamily: "var(--font-display)" }}>PIA</span>
+            <span className="text-lg font-bold text-white">UTO</span>
+            <span className="text-lg font-bold text-primary">PIA</span>
           </div>
         </Link>
         {onClose && (

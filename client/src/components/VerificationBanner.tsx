@@ -134,7 +134,7 @@ export function VerificationBanner() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-white/10">
-              <h2 className="font-display font-black uppercase tracking-tight text-lg text-foreground">Account Verification</h2>
+              <h2 className="font-semibold text-lg text-foreground">Account Verification</h2>
               <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-white transition-colors">
                 <X className="h-5 w-5" />
               </button>

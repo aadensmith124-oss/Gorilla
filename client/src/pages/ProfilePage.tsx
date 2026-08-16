@@ -429,7 +429,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-md bg-[#0e0e0e] border-l border-white/10 text-foreground p-0">
           <div className="p-6 space-y-6 h-full flex flex-col">
-            <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
+            <h2 className="text-lg font-semibold">Order info</h2>
 
             <div className="flex-1 flex flex-col gap-4">
               <div
@@ -462,7 +462,7 @@ function OrderDetailsSheet({ order, open, onOpenChange }: { order: any; open: bo
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md bg-[#0e0e0e] border-l border-white/10 text-foreground p-0">
         <div className="p-6 space-y-6 h-full flex flex-col">
-          <h2 className="text-lg font-display font-black tracking-tighter italic uppercase">Order info</h2>
+          <h2 className="text-lg font-semibold">Order info</h2>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1">
             <TabsList className="w-full bg-transparent border-b border-white/10 rounded-none p-0 h-auto gap-8">
