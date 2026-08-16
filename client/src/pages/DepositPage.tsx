@@ -241,7 +241,7 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-4 space-y-4">
+    <div className="max-w-sm sm:max-w-lg lg:max-w-xl mx-auto px-4 py-4 sm:py-6 space-y-4">
 
       {manualResult ? (
         <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />

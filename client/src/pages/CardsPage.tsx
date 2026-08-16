@@ -204,7 +204,7 @@ export default function CardsPage() {
   const clearFilters = () => { setZipSearch(""); setPriceMin(""); setPriceMax(""); setSelectedBank(""); setSelectedCountry(""); };
 
   return (
-    <div className="max-w-2xl mx-auto px-0 py-0">
+    <div className="max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-0 py-0">
 
       {/* Bases + Search + controls */}
       <div className="px-3 pt-3 pb-2 space-y-2.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">

@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   Plus, ChevronDown, LogOut, KeyRound, Settings, Send,
   Home, Package, Store, LayoutDashboard, Trophy, Briefcase, Bot, BadgeCheck, X, PanelLeft,
+  Wallet,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -64,20 +65,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }] : []),
   ];
 
-  const NavContent = () => (
+  const NavContent = ({ onClose }: { onClose?: () => void }) => (
     <div className="flex flex-col h-full overflow-y-auto bg-background">
-      {/* Brand + close */}
+      {/* Brand */}
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
-        <div>
-          <span className="text-lg font-black tracking-tight text-white" style={{fontFamily:"var(--font-display)"}}>UTO</span>
-          <span className="text-lg font-black tracking-tight text-primary" style={{fontFamily:"var(--font-display)"}}>PIA</span>
-        </div>
-        <button
-          onClick={() => setIsMobileOpen(false)}
-          className="h-7 w-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/80 hover:bg-white/8 transition-all"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <Link href="/" onClick={onClose}>
+          <div className="cursor-pointer">
+            <span className="text-lg font-black tracking-tight text-white" style={{ fontFamily: "var(--font-display)" }}>UTO</span>
+            <span className="text-lg font-black tracking-tight text-primary" style={{ fontFamily: "var(--font-display)" }}>PIA</span>
+          </div>
+        </Link>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="h-7 w-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/80 hover:bg-white/8 transition-all"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {/* User pill */}
@@ -115,7 +120,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   );
                 }
                 return (
-                  <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
+                  <Link key={item.href} href={item.href} onClick={onClose}>
                     <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                       isActive
                         ? "bg-primary/12 text-primary border border-primary/20"
@@ -135,7 +140,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {user && (
         <div className="p-4 border-t border-white/8">
           <button
-            onClick={() => { logout(); setIsMobileOpen(false); }}
+            onClick={() => { logout(); onClose?.(); }}
             className="flex items-center gap-2.5 text-xs text-white/30 hover:text-red-400 transition-colors w-full px-3 py-2 rounded-xl hover:bg-red-950/20"
           >
             <LogOut className="h-3.5 w-3.5" />
@@ -151,84 +156,125 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Bar */}
-      <header className="h-[52px] border-b border-white/7 sticky top-0 z-40 px-4 flex items-center justify-between bg-background">
-        {/* Left: Panel icon hamburger + brand */}
-        <div className="flex items-center gap-3">
-          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-            <SheetTrigger asChild>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-white/50 hover:text-white/80"
-                data-testid="btn-menu"
-              >
-                <PanelLeft className="h-[15px] w-[15px]" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[260px] p-0 border-r border-white/8 bg-background">
-              <NavContent />
-            </SheetContent>
-          </Sheet>
+      {/* ── Desktop Sidebar (lg+) ── */}
+      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-[240px] border-r border-white/7 bg-background z-30">
+        <NavContent />
+      </aside>
 
-        </div>
-
-        {/* Right: Balance + User */}
-        <div className="flex items-center gap-2">
-          {user && (
-            <>
-              <Link href="/">
+      {/* ── Main area (offset on desktop) ── */}
+      <div className="lg:pl-[240px]">
+        {/* Top Bar */}
+        <header className="h-[52px] border-b border-white/7 sticky top-0 z-40 px-4 flex items-center justify-between bg-background/95 backdrop-blur-sm">
+          {/* Left: hamburger (mobile only) */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+              <SheetTrigger asChild>
                 <button
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border bg-primary/10 border-primary/25 text-primary hover:bg-primary/15"
-                  data-testid="btn-balance"
+                  className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-white/50 hover:text-white/80"
+                  data-testid="btn-menu"
                 >
-                  <span>${balanceDollars}</span>
-                  <Plus className="h-2.5 w-2.5 opacity-60" />
+                  <PanelLeft className="h-[15px] w-[15px]" />
                 </button>
-              </Link>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[260px] p-0 border-r border-white/8 bg-background">
+                <NavContent onClose={() => setIsMobileOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1 text-xs text-white/45 hover:text-white/80 transition-colors" data-testid="btn-user-dropdown">
-                    <span className="max-w-[80px] truncate">{user.username}</span>
-                    <ChevronDown className="h-3 w-3" />
+          {/* Desktop left: spacer */}
+          <div className="hidden lg:block" />
+
+          {/* Right: Balance + User */}
+          <div className="flex items-center gap-2">
+            {user && (
+              <>
+                <Link href="/">
+                  <button
+                    className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border bg-primary/10 border-primary/25 text-primary hover:bg-primary/15"
+                    data-testid="btn-balance"
+                  >
+                    <span>${balanceDollars}</span>
+                    <Plus className="h-2.5 w-2.5 opacity-60" />
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="border border-white/10 text-xs min-w-[200px] rounded-2xl shadow-xl bg-[#111] text-white/80" align="end">
-                  <div className="px-3 py-2.5 border-b border-white/7">
-                    <p className="text-[10px] text-white/35 truncate">{user.username}</p>
-                  </div>
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-code">
-                      <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/55 hover:text-white">
-                        <KeyRound className="h-3 w-3" />
-                        Login Code
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  {(user as any)?.isWorker && (
+                </Link>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1 text-xs text-white/45 hover:text-white/80 transition-colors" data-testid="btn-user-dropdown">
+                      <span className="max-w-[80px] truncate">{user.username}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="border border-white/10 text-xs min-w-[200px] rounded-2xl shadow-xl bg-[#111] text-white/80" align="end">
+                    <div className="px-3 py-2.5 border-b border-white/7">
+                      <p className="text-[10px] text-white/35 truncate">{user.username}</p>
+                    </div>
                     <DropdownMenuItem asChild>
-                      <Link href="/worker">
+                      <Link href="/my-code">
                         <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/55 hover:text-white">
-                          <Briefcase className="h-3 w-3" />
-                          Worker Dashboard
+                          <KeyRound className="h-3 w-3" />
+                          Login Code
                         </div>
                       </Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator className="bg-white/7" />
-                  <DropdownMenuItem onClick={() => logout()} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
-                    <LogOut className="h-3 w-3 mr-2" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          )}
-        </div>
-      </header>
+                    {(user as any)?.isWorker && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/worker">
+                          <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/55 hover:text-white">
+                            <Briefcase className="h-3 w-3" />
+                            Worker Dashboard
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator className="bg-white/7" />
+                    <DropdownMenuItem onClick={() => logout()} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
+                      <LogOut className="h-3 w-3 mr-2" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+        </header>
 
-      <main className="min-h-screen">
-        {children}
-      </main>
+        <main className="min-h-screen pb-[64px] lg:pb-0">
+          {children}
+        </main>
+
+        {/* ── Mobile Bottom Tab Bar (hidden on desktop) ── */}
+        {user && (
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/8 bg-background/95 backdrop-blur-sm">
+            <div className="grid grid-cols-4 h-[60px]">
+              {[
+                { href: "/", icon: Wallet, label: "Deposit" },
+                { href: "/orders", icon: Package, label: "Orders" },
+                { href: "/shop", icon: Store, label: "Shop" },
+                { href: "/cards", icon: LayoutDashboard, label: "Cards" },
+              ].map(({ href, icon: Icon, label }) => {
+                const isActive = location === href;
+                return (
+                  <Link key={href} href={href}>
+                    <div className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${
+                      isActive ? "text-primary" : "text-white/35 hover:text-white/60"
+                    }`}>
+                      <Icon className={`h-[18px] w-[18px] ${isActive ? "text-primary" : "text-white/35"}`} />
+                      <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? "text-primary" : "text-white/30"}`}>
+                        {label}
+                      </span>
+                      {isActive && (
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+      </div>
     </div>
   );
 }

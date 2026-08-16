@@ -47,7 +47,7 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
   return (
     <Link href={`/product/${encodeURIComponent(product.name)}`}>
       <div
-        className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.99] bg-[#111]"
+        className="rounded-2xl overflow-hidden border cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.99] bg-[#111] h-full flex flex-col"
         style={{
           borderColor: isTop1 ? "hsl(38 95% 55% / 0.4)" : isTop2 ? "hsl(38 95% 55% / 0.2)" : "rgba(255,255,255,0.1)",
           boxShadow: isTop1
@@ -62,7 +62,7 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
         <div
           className="relative w-full flex items-center justify-center overflow-hidden"
           style={{
-            height: 100,
+            height: 110,
             background: hasImage ? "#f9fafb" : cardGradient(product.name),
           }}
         >
@@ -92,12 +92,14 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
         </div>
 
         {/* Info */}
-        <div className="px-3 py-2.5 space-y-1">
-          <p className="text-xs font-bold text-white leading-tight line-clamp-1">{product.name}</p>
-          {product.description ? (
-            <p className="text-[10px] text-white/40 leading-snug line-clamp-1 font-mono">{product.description}</p>
-          ) : null}
-          <div className="flex items-center justify-between pt-0.5">
+        <div className="px-3 py-2.5 space-y-1 flex-1 flex flex-col justify-between">
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-white leading-tight line-clamp-2">{product.name}</p>
+            {product.description ? (
+              <p className="text-[10px] text-white/40 leading-snug line-clamp-1 font-mono">{product.description}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center justify-between pt-1.5">
             <div className="flex items-center gap-1.5">
               {comparePrice && comparePrice > lowestPrice && (
                 <span className="text-[10px] line-through text-white/30 font-mono">${(comparePrice / 100).toFixed(2)}</span>
@@ -161,7 +163,7 @@ export default function ShopPage() {
 
   if (user?.isBanned) {
     return (
-      <div className="max-w-sm mx-auto px-4 py-10">
+      <div className="max-w-lg mx-auto px-4 py-10">
         <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl text-center space-y-3">
           <ShieldX className="h-8 w-8 text-red-400 mx-auto" />
           <p className="text-sm text-red-400 font-bold">Account Restricted</p>
@@ -172,64 +174,68 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-5 space-y-3">
+    <div className="max-w-xs sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 py-5 sm:py-6 space-y-4">
       {/* Header */}
       <div className="space-y-0.5">
-        <h1 className="text-lg font-black text-white">
-          <span style={{fontFamily:"var(--font-display)"}}>UTO<span className="text-primary">PIA</span></span>
+        <h1 className="text-lg sm:text-xl font-black text-white">
+          <span style={{ fontFamily: "var(--font-display)" }}>UTO<span className="text-primary">PIA</span></span>
           <span className="ml-2 text-xs font-mono font-normal text-white/40">Shop</span>
         </h1>
         <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">PREMIUM CARD SHOP</p>
       </div>
 
-      {/* Filter pills */}
-      {sortedProducts.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-              activeFilter === "all"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-            }`}
-            data-testid="filter-all"
-          >
-            All
-          </button>
-          {sortedProducts.map((p: any) => (
+      {/* Search + Filter row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search by card type, category, keywords..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 transition-colors shadow-sm"
+            data-testid="input-search"
+          />
+        </div>
+
+        {/* Filter pills */}
+        {sortedProducts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 items-center">
             <button
-              key={p.id}
-              onClick={() => setActiveFilter(activeFilter === p.name ? "all" : p.name)}
+              onClick={() => setActiveFilter("all")}
               className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                activeFilter === p.name
+                activeFilter === "all"
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
               }`}
-              data-testid={`filter-product-${p.id}`}
+              data-testid="filter-all"
             >
-              {p.name}
+              All
             </button>
-          ))}
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
-        <input
-          type="text"
-          placeholder="Search by card type, category, keywords..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 transition-colors shadow-sm"
-          data-testid="input-search"
-        />
+            {sortedProducts.map((p: any) => (
+              <button
+                key={p.id}
+                onClick={() => setActiveFilter(activeFilter === p.name ? "all" : p.name)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                  activeFilter === p.name
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
+                }`}
+                data-testid={`filter-product-${p.id}`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-white/40 text-sm">No products found</div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {filtered.map((product: any) => {
             const rank = !search.trim() ? topIds.indexOf(product.id) : -1;
             return <ProductCard key={product.id} product={product} rank={rank} />;

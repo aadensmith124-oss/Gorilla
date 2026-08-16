@@ -130,7 +130,7 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+    <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 py-5 sm:py-6 space-y-4">
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-xl font-bold text-white">Order History</h1>

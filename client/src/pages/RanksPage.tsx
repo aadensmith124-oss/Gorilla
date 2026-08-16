@@ -30,7 +30,7 @@ export default function RanksPage() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] pb-20">
-      <div className="max-w-md mx-auto px-4 pt-6">
+      <div className="max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto px-4 pt-6">
 
         <div className="flex items-center gap-3 mb-8">
           <button
