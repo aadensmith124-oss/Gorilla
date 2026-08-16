@@ -1,6 +1,6 @@
 import { useProducts } from "@/hooks/use-products";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ShieldX, Search, Zap } from "lucide-react";
+import { Loader2, ShieldX, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
@@ -92,30 +92,10 @@ function ProductCard({ product, rank }: { product: any; rank: number }) {
         </div>
 
         {/* Info */}
-        <div className="px-3 py-2.5 space-y-1 flex-1 flex flex-col justify-between">
-          <div className="space-y-0.5">
-            <p className="text-xs font-bold text-white leading-tight line-clamp-2">{product.name}</p>
-            {product.description ? (
-              <p className="text-[10px] text-white/40 leading-snug line-clamp-1 font-mono">{product.description}</p>
-            ) : null}
-          </div>
-          <div className="flex items-center justify-between pt-1.5">
-            <div className="flex items-center gap-1.5">
-              {comparePrice && comparePrice > lowestPrice && (
-                <span className="text-[10px] line-through text-white/30 font-mono">${(comparePrice / 100).toFixed(2)}</span>
-              )}
-              {lowestPrice > 0 ? (
-                <span className={`text-sm font-black font-mono ${isTop1 ? "text-primary" : isTop2 ? "text-primary/80" : "text-white"}`}>
-                  ${(lowestPrice / 100).toFixed(2)}
-                </span>
-              ) : (
-                <span className="text-sm font-black font-mono text-white/40">Free</span>
-              )}
-            </div>
-            <div className="flex items-center gap-0.5 text-primary/70">
-              <Zap className="h-2.5 w-2.5" />
-              <span className="text-[9px] font-mono">instant</span>
-            </div>
+        <div className="px-3 pt-2.5 pb-3 space-y-2.5">
+          <p className="text-sm font-semibold text-white leading-tight line-clamp-2">{product.name}</p>
+          <div className="w-full bg-[#ec4899] hover:bg-[#db2777] rounded text-white text-xs font-semibold py-2 text-center transition-colors">
+            Purchase | {lowestPrice > 0 ? `$${(lowestPrice / 100).toFixed(2)}` : "Free"}
           </div>
         </div>
       </div>
@@ -178,7 +158,7 @@ export default function ShopPage() {
       {/* Header */}
       <div className="space-y-0.5">
         <h1 className="text-lg sm:text-xl font-black text-white">
-          <span>UTO<span className="text-primary">PIA</span></span>
+          <span>food<span className="text-primary">plug</span></span>
           <span className="ml-2 text-xs font-mono font-normal text-white/40">Shop</span>
         </h1>
         <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">PREMIUM CARD SHOP</p>

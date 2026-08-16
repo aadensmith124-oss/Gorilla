@@ -132,32 +132,32 @@ export default function OrdersPage() {
   return (
     <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 py-5 sm:py-6 space-y-4">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold text-white">Order History</h1>
-        <p className="text-xs text-white/40">
-          {allOrders.length} total · ${(totalSpentCents / 100).toFixed(2)} spent · {formatDateTime(now)}
-        </p>
+      <div className="text-center pb-2">
+        <h1 className="text-lg font-bold tracking-widest uppercase text-primary inline-block border-b-2 border-primary pb-1">
+          Orders
+        </h1>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => refetch()}
-          disabled={isRefetching}
-          className="flex items-center gap-1.5 border border-white/10 bg-[#0d0d0d] rounded px-3 py-1.5 text-xs text-white/45 hover:text-white/70 hover:border-white/15 transition-all disabled:opacity-50"
-          data-testid="btn-refresh"
-        >
-          <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
-          refresh
-        </button>
-        <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-white">
+          <span className="text-primary">{allOrders.length}</span> Orders Found
+        </p>
+        <div className="flex gap-2">
           <button
-            className="flex items-center gap-1.5 border border-white/10 bg-[#0d0d0d] rounded px-3 py-1.5 text-xs text-white/45 hover:text-white/70 hover:border-white/15 transition-all"
-            data-testid="btn-support"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="flex items-center gap-1.5 border border-white/10 bg-[#111] rounded px-3 py-1.5 text-xs text-white/45 hover:text-white/70 transition-all disabled:opacity-50"
+            data-testid="btn-refresh"
           >
-            support
+            <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
+            Refresh
           </button>
-        </a>
+          <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer">
+            <button className="flex items-center gap-1.5 border border-white/10 bg-[#111] rounded px-3 py-1.5 text-xs text-white/45 hover:text-white/70 transition-all" data-testid="btn-support">
+              Support
+            </button>
+          </a>
+        </div>
       </div>
 
       {/* Deposits + Tier panel */}

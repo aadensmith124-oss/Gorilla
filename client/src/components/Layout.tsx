@@ -25,6 +25,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     staleTime: 30000,
   });
 
+  const { data: announcements } = useQuery<{ id: number; text: string; active: boolean }[]>({
+    queryKey: ["/api/announcements"],
+    staleTime: 60000,
+  });
+  const activeAnnouncement = announcements?.find(a => a.active);
+
   const navSections = [
     {
       label: "MAIN",
@@ -71,8 +77,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
         <Link href="/" onClick={onClose}>
           <div className="cursor-pointer">
-            <span className="text-lg font-bold text-white">UTO</span>
-            <span className="text-lg font-bold text-primary">PIA</span>
+            <span className="text-lg font-bold text-white">food</span>
+            <span className="text-lg font-bold text-primary">plug</span>
           </div>
         </Link>
         {onClose && (
@@ -156,13 +162,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* ── Announcement banner ── */}
+      {activeAnnouncement && (
+        <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden" style={{ height: 32, background: "linear-gradient(90deg,#be185d,#ec4899,#be185d)" }}>
+          <div className="flex items-center h-full whitespace-nowrap animate-[marquee_18s_linear_infinite]">
+            {[...Array(4)].map((_, i) => (
+              <span key={i} className="text-[11px] font-bold tracking-widest text-white uppercase px-12">
+                {activeAnnouncement.text}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Desktop Sidebar (lg+) ── */}
-      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-[240px] border-r border-white/7 bg-background z-30">
+      <aside className={`hidden lg:flex flex-col fixed left-0 ${activeAnnouncement ? "top-8" : "top-0"} h-screen w-[240px] border-r border-white/7 bg-background z-30`}>
         <NavContent />
       </aside>
 
       {/* ── Main area (offset on desktop) ── */}
-      <div className="lg:pl-[240px]">
+      <div className={`lg:pl-[240px] ${activeAnnouncement ? "pt-8" : ""}`}>
         {/* Top Bar */}
         <header className="h-[52px] border-b border-white/7 sticky top-0 z-40 px-4 flex items-center justify-between bg-background/95 backdrop-blur-sm">
           {/* Left: hamburger (mobile only) */}

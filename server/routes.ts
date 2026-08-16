@@ -96,6 +96,12 @@ export async function registerRoutes(
   // Auth setup (handles /api/login, /api/register, /api/logout, /api/user)
   setupAuth(app);
 
+  // Public announcements
+  app.get("/api/announcements", async (req, res) => {
+    const all = await storage.getAnnouncements();
+    res.json(all);
+  });
+
   // Products
   app.get(api.products.list.path, async (req, res) => {
     const products = await storage.getProducts();
