@@ -181,7 +181,7 @@ export default function DepositPage() {
       const amount = parsedAmount;
       const cryptoMin = Math.max(1, minDeposits?.crypto ?? 0);
       if (!amount || amount < cryptoMin) throw new Error(`Minimum deposit is $${cryptoMin.toFixed(2)}`);
-      const res = await apiRequest("POST", "/api/payments/forebit/create", {
+      const res = await apiRequest("POST", "/api/payments/crypto/create", {
         amount: String(Math.round(amount * 100)),
         purpose: "deposit",
       });

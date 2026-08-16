@@ -10,24 +10,28 @@ export function useForebitPolling() {
   useEffect(() => {
     if (!user) return;
 
-    const lastPaymentId = sessionStorage.getItem("lastForebitPaymentId");
+    const lastPaymentId = sessionStorage.getItem("lastCryptoPaymentId");
     if (!lastPaymentId) return;
 
-    const lastPurpose = sessionStorage.getItem("lastForebitPurpose") || "deposit";
-    const lastOrderId = sessionStorage.getItem("lastForebitOrderId");
+    const lastPurpose = sessionStorage.getItem("lastCryptoPurpose") || "deposit";
+    const lastOrderId = sessionStorage.getItem("lastCryptoOrderId");
+
+    function clearSession() {
+      sessionStorage.removeItem("lastCryptoPaymentId");
+      sessionStorage.removeItem("lastCryptoPurpose");
+      sessionStorage.removeItem("lastCryptoOrderId");
+    }
 
     let attempts = 0;
     const pollInterval = setInterval(async () => {
       attempts++;
       try {
-        const res = await fetch(`/api/payments/forebit/${lastPaymentId}/status`);
+        const res = await fetch(`/api/payments/crypto/${lastPaymentId}/status`);
         if (res.ok) {
           const data = await res.json();
           if (data.status === "completed") {
             clearInterval(pollInterval);
-            sessionStorage.removeItem("lastForebitPaymentId");
-            sessionStorage.removeItem("lastForebitPurpose");
-            sessionStorage.removeItem("lastForebitOrderId");
+            clearSession();
 
             queryClient.invalidateQueries({ queryKey: ["/api/user"] });
             queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
@@ -39,9 +43,7 @@ export function useForebitPolling() {
                 description: "Your crypto payment was confirmed. Check your orders for details.",
               });
               const orderId = data.orderId || lastOrderId;
-              if (orderId) {
-                window.location.href = `/order/${orderId}`;
-              }
+              if (orderId) window.location.href = `/order/${orderId}`;
             } else {
               toast({
                 title: "Payment completed!",
@@ -50,33 +52,23 @@ export function useForebitPolling() {
             }
           } else if (data.status === "failed" || data.status === "expired") {
             clearInterval(pollInterval);
-            sessionStorage.removeItem("lastForebitPaymentId");
-            sessionStorage.removeItem("lastForebitPurpose");
-            sessionStorage.removeItem("lastForebitOrderId");
+            clearSession();
 
             queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
 
-            if (lastPurpose === "order") {
-              toast({
-                title: "Payment " + data.status,
-                description: "Your order has been cancelled. Stock has been released.",
-                variant: "destructive",
-              });
-            } else {
-              toast({
-                title: "Payment " + data.status,
-                description: "Your crypto payment did not go through.",
-                variant: "destructive",
-              });
-            }
+            toast({
+              title: "Payment " + data.status,
+              description: lastPurpose === "order"
+                ? "Your order has been cancelled. Stock has been released."
+                : "Your crypto payment did not go through.",
+              variant: "destructive",
+            });
           }
         }
       } catch {}
       if (attempts >= 60) {
         clearInterval(pollInterval);
-        sessionStorage.removeItem("lastForebitPaymentId");
-        sessionStorage.removeItem("lastForebitPurpose");
-        sessionStorage.removeItem("lastForebitOrderId");
+        clearSession();
       }
     }, 5000);
     return () => clearInterval(pollInterval);

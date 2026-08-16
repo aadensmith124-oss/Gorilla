@@ -1,29 +1,19 @@
 import { db } from "./db";
 import { cryptoPayments, orders, users } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { getForebitPayment } from "./forebit";
+import { getNowPaymentsInvoice, mapNowPaymentsStatus } from "./nowpayments";
 import { storage } from "./storage";
 import { log } from "./index";
 
-function mapForebitStatus(forebitStatus: string): "pending" | "completed" | "failed" | "expired" | "underpaid" {
-  switch (forebitStatus?.toUpperCase()) {
-    case "COMPLETED": case "PAID": case "CONFIRMED": case "DONE": case "SETTLED": return "completed";
-    case "FAILED": case "CANCELLED": case "CANCELED": case "REJECTED": return "failed";
-    case "EXPIRED": return "expired";
-    case "UNDERPAID": case "PARTIAL": return "underpaid";
-    default: return "pending";
-  }
-}
-
-async function processForebitCompletion(payment: typeof cryptoPayments.$inferSelect) {
+async function processCompletion(payment: typeof cryptoPayments.$inferSelect) {
   if (payment.purpose === "order" && payment.orderId) {
     await storage.fulfillPendingOrder(payment.orderId);
     await storage.createTransactionWithMethod(
       payment.userId,
       -payment.amount,
       "purchase",
-      `Crypto order payment via Forebit ($${(payment.amount / 100).toFixed(2)})`,
-      "Forebit"
+      `Crypto order payment ($${(payment.amount / 100).toFixed(2)})`,
+      "NOWPayments"
     );
   } else {
     await storage.updateUserBalance(payment.userId, payment.amount);
@@ -32,14 +22,14 @@ async function processForebitCompletion(payment: typeof cryptoPayments.$inferSel
       payment.userId,
       payment.amount,
       "deposit",
-      `Crypto deposit via Forebit ($${(payment.amount / 100).toFixed(2)})`,
-      "Forebit"
+      `Crypto deposit ($${(payment.amount / 100).toFixed(2)})`,
+      "NOWPayments"
     );
   }
 }
 
 export async function pollPendingCryptoPayments() {
-  if (!process.env.FOREBIT_ACCESS_KEY || !process.env.FOREBIT_ACCOUNT_ID) return;
+  if (!process.env.NOWPAYMENTS_API_KEY) return;
 
   try {
     const pending = await db
@@ -51,10 +41,8 @@ export async function pollPendingCryptoPayments() {
 
     for (const payment of pending) {
       try {
-        const resp = await getForebitPayment(payment.forebitPaymentId);
-        const nested = resp.data || resp.payment || resp.result || {};
-        const rawStatus = resp.status || (nested as any).status || "";
-        const newStatus = mapForebitStatus(typeof rawStatus === "string" ? rawStatus : "");
+        const invoice = await getNowPaymentsInvoice(payment.forebitPaymentId);
+        const newStatus = mapNowPaymentsStatus(invoice.payment_status || invoice.status || "");
 
         if (newStatus === payment.status) continue;
 
@@ -67,14 +55,14 @@ export async function pollPendingCryptoPayments() {
         if (!updated) continue;
 
         if (newStatus === "completed") {
-          await processForebitCompletion(payment);
+          await processCompletion(payment);
           log(`Auto-credited crypto payment ${payment.forebitPaymentId} ($${(payment.amount / 100).toFixed(2)}) for user ${payment.userId}`);
         } else if ((newStatus === "failed" || newStatus === "expired") && payment.purpose === "order" && payment.orderId) {
           await storage.cancelPendingOrder(payment.orderId);
           log(`Auto-cancelled order for failed crypto payment ${payment.forebitPaymentId}`);
         }
-      } catch (err: any) {
-        // Skip individual payment errors silently — don't crash the whole loop
+      } catch {
+        // Skip individual errors silently
       }
     }
   } catch (err: any) {

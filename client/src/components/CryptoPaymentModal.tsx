@@ -22,7 +22,7 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
 
   const createPaymentMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/payments/forebit/create", {
+      const res = await apiRequest("POST", "/api/payments/crypto/create", {
         amount: String(total),
         purpose,
         orderId,
@@ -33,8 +33,8 @@ export function CryptoPaymentModal({ open, onOpenChange, total, purpose = "depos
       if (data.checkoutUrl) {
         setCheckoutUrl(data.checkoutUrl);
         if (data.paymentId) {
-          sessionStorage.setItem("lastForebitPaymentId", data.paymentId);
-          sessionStorage.setItem("lastForebitPurpose", purpose);
+          sessionStorage.setItem("lastCryptoPaymentId", data.paymentId);
+          sessionStorage.setItem("lastCryptoPurpose", purpose);
         }
         if (onSuccess) onSuccess();
         window.location.href = data.checkoutUrl;

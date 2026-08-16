@@ -6,7 +6,7 @@ import { setupAuth, isFounderIdentity } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { createForebitPayment, getForebitPayment } from "./forebit";
+import { createNowPaymentsInvoice, getNowPaymentsInvoice, mapNowPaymentsStatus, verifyNowPaymentsWebhook } from "./nowpayments";
 import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
@@ -1408,15 +1408,15 @@ export async function registerRoutes(
       const amountUsd = totalWithFee / 100;
 
       const origin = (req.headers.origin as string) || `https://${req.headers.host}`;
-      const returnUrl = `${origin}/profile?tab=orders`;
-
-      const forebitPayment = await createForebitPayment({
+      const invoice = await createNowPaymentsInvoice({
         amount: amountUsd,
-        currency: "USD",
-        returnUrl,
+        orderId: `order-${order.id}`,
+        successUrl: `${origin}/profile?tab=orders`,
+        cancelUrl: `${origin}/profile?tab=orders`,
+        ipnCallbackUrl: `${origin}/api/webhooks/nowpayments`,
       });
 
-      if (!forebitPayment.id || !forebitPayment.url) {
+      if (!invoice.id || !invoice.url) {
         await storage.cancelPendingOrder(order.id);
         pendingOrderId = null;
         return res.status(502).json({ message: "Payment provider error. Please try again." });
@@ -1424,21 +1424,21 @@ export async function registerRoutes(
 
       await db.insert(cryptoPayments).values({
         userId,
-        forebitPaymentId: forebitPayment.id,
+        forebitPaymentId: invoice.id,
         amount: totalWithFee,
         currency: "USD",
         status: "pending",
         purpose: "order",
         orderId: order.id,
-        checkoutUrl: forebitPayment.url,
+        checkoutUrl: invoice.url,
         metadata: null,
       });
 
       pendingOrderId = null;
       res.status(201).json({
         order,
-        paymentId: forebitPayment.id,
-        checkoutUrl: forebitPayment.url,
+        paymentId: invoice.id,
+        checkoutUrl: invoice.url,
       });
     } catch (e: any) {
       console.error("Crypto order creation failed:", e);
@@ -1449,14 +1449,14 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/payments/forebit/create", async (req, res) => {
+  app.post("/api/payments/crypto/create", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     try {
       const { amount, purpose, orderId } = req.body;
       // amount arrives in cents from the frontend (e.g. 500 = $5.00)
       const amountUsd = parseFloat(amount) / 100;
-      
+
       if (!amountUsd || amountUsd < 1) {
         return res.status(400).json({ message: "Minimum deposit is $1" });
       }
@@ -1465,53 +1465,46 @@ export async function registerRoutes(
       }
 
       const userId = (req.user as any).id;
-
       const baseUrl = `${req.protocol}://${req.get("host")}`;
-      const returnUrl = purpose === "order"
-        ? `${baseUrl}/orders`
-        : `${baseUrl}/deposit`;
+      const successUrl = purpose === "order" ? `${baseUrl}/orders` : `${baseUrl}/deposit`;
 
-      const forebitPayment = await createForebitPayment({
+      const invoice = await createNowPaymentsInvoice({
         amount: amountUsd,
-        currency: "USD",
-        returnUrl,
+        orderId: orderId ? `order-${orderId}` : `deposit-${userId}-${Date.now()}`,
+        successUrl,
+        cancelUrl: successUrl,
+        ipnCallbackUrl: `${baseUrl}/api/webhooks/nowpayments`,
       });
 
-      if (!forebitPayment.id) {
-        console.error("Forebit: payment created but missing ID", forebitPayment);
+      if (!invoice.id || !invoice.url) {
         return res.status(502).json({ message: "Payment provider returned an invalid response. Please try again." });
-      }
-
-      if (!forebitPayment.url) {
-        console.error("Forebit: payment created but missing checkout URL", forebitPayment);
-        return res.status(502).json({ message: "Payment provider did not return a checkout link. Please try again." });
       }
 
       await db.insert(cryptoPayments).values({
         userId,
-        forebitPaymentId: forebitPayment.id,
+        forebitPaymentId: invoice.id,
         amount: Math.round(amountUsd * 100),
         currency: "USD",
         status: "pending",
         purpose: purpose || "deposit",
         orderId: orderId ? Number(orderId) : null,
-        checkoutUrl: forebitPayment.url,
-        metadata: JSON.stringify({ forebitResponse: forebitPayment }),
+        checkoutUrl: invoice.url,
+        metadata: JSON.stringify({ nowpaymentsResponse: invoice }),
       });
 
-      res.json({
-        paymentId: forebitPayment.id,
-        checkoutUrl: forebitPayment.url,
-      });
+      res.json({ paymentId: invoice.id, checkoutUrl: invoice.url });
     } catch (error: any) {
-      console.error("Forebit payment creation failed:", error);
+      console.error("NOWPayments invoice creation failed:", error);
       res.status(500).json({ message: "Failed to create payment. Please try again later." });
     }
   });
 
-  app.get("/api/payments/forebit/:paymentId/status", async (req, res) => {
+  // Keep legacy alias so any in-flight links still resolve
+  app.post("/api/payments/forebit/create", (req, res) => res.redirect(307, "/api/payments/crypto/create"));
+
+  app.get("/api/payments/crypto/:paymentId/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     try {
       const { paymentId } = req.params;
       const userId = (req.user as any).id;
@@ -1531,20 +1524,18 @@ export async function registerRoutes(
       }
 
       try {
-        const forebitResp = await getForebitPayment(paymentId);
-        const nestedData = forebitResp.data || forebitResp.payment || forebitResp.result || {};
-        const rawStatus = forebitResp.status || (nestedData as any).status || "";
-        const newStatus = mapForebitStatus(typeof rawStatus === 'string' ? rawStatus : "");
+        const invoice = await getNowPaymentsInvoice(paymentId);
+        const newStatus = mapNowPaymentsStatus(invoice.payment_status || invoice.status || "");
 
         if (newStatus !== localPayment.status) {
           const [updated] = await db
             .update(cryptoPayments)
             .set({ status: newStatus, updatedAt: new Date() })
-            .where(and(eq(cryptoPayments.id, localPayment.id), ne(cryptoPayments.status, 'completed')))
+            .where(and(eq(cryptoPayments.id, localPayment.id), ne(cryptoPayments.status, "completed")))
             .returning();
 
           if (newStatus === "completed" && updated) {
-            await processForebitCompletion(localPayment);
+            await processCryptoCompletion(localPayment);
           }
           if ((newStatus === "failed" || newStatus === "expired") && updated && localPayment.purpose === "order" && localPayment.orderId) {
             await storage.cancelPendingOrder(localPayment.orderId);
@@ -1560,27 +1551,38 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/webhooks/forebit", async (req, res) => {
+  // Legacy alias
+  app.get("/api/payments/forebit/:paymentId/status", (req, res) =>
+    res.redirect(307, `/api/payments/crypto/${req.params.paymentId}/status`));
+
+  app.post("/api/webhooks/nowpayments", async (req, res) => {
     try {
-      console.log("Forebit webhook received:", JSON.stringify(req.body, null, 2));
+      console.log("NOWPayments IPN received:", JSON.stringify(req.body, null, 2));
       const body = req.body || {};
-      const nested = body.data || body.payment || body.result || {};
-      const id = body.id || body.paymentId || body.payment_id || nested.id || nested.paymentId || nested.payment_id;
-      const status = body.status || nested.status;
-      
-      if (!id) {
-        console.warn("Forebit webhook: could not extract payment ID from body:", JSON.stringify(body));
+      const sig = req.headers["x-nowpayments-sig"] as string || "";
+
+      if (sig && !verifyNowPaymentsWebhook(body, sig)) {
+        console.warn("NOWPayments IPN: invalid signature");
+        return res.status(200).json({ received: true });
+      }
+
+      // IPN body contains invoice_id and payment_status
+      const invoiceId = String(body.invoice_id || body.id || "");
+      const status = body.payment_status || body.status || "";
+
+      if (!invoiceId) {
+        console.warn("NOWPayments IPN: no invoice_id in body:", JSON.stringify(body));
         return res.status(200).json({ received: true });
       }
 
       const [payment] = await db
         .select()
         .from(cryptoPayments)
-        .where(eq(cryptoPayments.forebitPaymentId, id))
+        .where(eq(cryptoPayments.forebitPaymentId, invoiceId))
         .limit(1);
 
       if (!payment) {
-        console.warn("Forebit webhook: payment not found:", id);
+        console.warn("NOWPayments IPN: payment not found for invoice:", invoiceId);
         return res.status(200).json({ received: true });
       }
 
@@ -1588,20 +1590,15 @@ export async function registerRoutes(
         return res.status(200).json({ received: true, alreadyProcessed: true });
       }
 
-      const newStatus = mapForebitStatus(status);
+      const newStatus = mapNowPaymentsStatus(status);
       const [updated] = await db
         .update(cryptoPayments)
         .set({ status: newStatus, updatedAt: new Date() })
-        .where(and(eq(cryptoPayments.id, payment.id), ne(cryptoPayments.status, 'completed')))
+        .where(and(eq(cryptoPayments.id, payment.id), ne(cryptoPayments.status, "completed")))
         .returning();
 
       if (newStatus === "completed" && updated) {
-        const verified = await verifyForebitPayment(payment.forebitPaymentId);
-        if (verified) {
-          await processForebitCompletion(payment);
-        } else {
-          console.warn("Forebit webhook: payment verification failed for:", id);
-        }
+        await processCryptoCompletion(payment);
       }
       if ((newStatus === "failed" || newStatus === "expired") && updated && payment.purpose === "order" && payment.orderId) {
         await storage.cancelPendingOrder(payment.orderId);
@@ -1609,20 +1606,20 @@ export async function registerRoutes(
 
       res.status(200).json({ received: true });
     } catch (error: any) {
-      console.error("Forebit webhook error:", error);
+      console.error("NOWPayments IPN error:", error);
       res.status(200).json({ received: true });
     }
   });
 
-  async function processForebitCompletion(payment: typeof cryptoPayments.$inferSelect) {
+  async function processCryptoCompletion(payment: typeof cryptoPayments.$inferSelect) {
     if (payment.purpose === "order" && payment.orderId) {
       await storage.fulfillPendingOrder(payment.orderId);
       await storage.createTransactionWithMethod(
         payment.userId,
         -payment.amount,
         "purchase",
-        `Crypto order payment via Forebit ($${(payment.amount / 100).toFixed(2)})`,
-        "Forebit"
+        `Crypto order payment ($${(payment.amount / 100).toFixed(2)})`,
+        "NOWPayments"
       );
     } else {
       await storage.updateUserBalance(payment.userId, payment.amount);
@@ -1631,32 +1628,9 @@ export async function registerRoutes(
         payment.userId,
         payment.amount,
         "deposit",
-        `Crypto deposit via Forebit ($${(payment.amount / 100).toFixed(2)})`,
-        "Forebit"
+        `Crypto deposit ($${(payment.amount / 100).toFixed(2)})`,
+        "NOWPayments"
       );
-    }
-  }
-
-  function mapForebitStatus(forebitStatus: string): "pending" | "completed" | "failed" | "expired" | "underpaid" {
-    switch (forebitStatus?.toUpperCase()) {
-      case "COMPLETED": case "PAID": case "CONFIRMED": case "DONE": case "SETTLED": return "completed";
-      case "FAILED": case "CANCELLED": case "CANCELED": case "REJECTED": return "failed";
-      case "EXPIRED": return "expired";
-      case "UNDERPAID": case "PARTIAL": return "underpaid";
-      default: return "pending";
-    }
-  }
-
-  async function verifyForebitPayment(paymentId: string): Promise<boolean> {
-    try {
-      const resp = await getForebitPayment(paymentId);
-      const nestedData = resp.data || resp.payment || resp.result || {};
-      const rawStatus = resp.status || (nestedData as any).status || "";
-      const status = typeof rawStatus === 'string' ? rawStatus.toUpperCase() : "";
-      return ["COMPLETED", "PAID", "CONFIRMED", "DONE", "SETTLED"].includes(status);
-    } catch (error) {
-      console.error("Failed to verify Forebit payment:", error);
-      return false;
     }
   }
 
