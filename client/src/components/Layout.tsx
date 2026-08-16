@@ -1,22 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Plus, ChevronDown, LogOut, KeyRound, Settings, Send,
-  Home, Package, Store, LayoutDashboard, Trophy, Briefcase, Bot, BadgeCheck, X, PanelLeft,
-  Wallet,
-} from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ChevronDown, LogOut, Send, ShoppingCart, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const balanceDollars = user ? (user.balance / 100).toFixed(2) : "0.00";
 
@@ -31,140 +23,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
   const activeAnnouncement = announcements?.find(a => a.active);
 
-  const navSections = [
-    {
-      label: "MAIN",
-      items: [
-        { href: "/", icon: Home, label: "Deposit" },
-        { href: "/orders", icon: Package, label: "Orders" },
-        ...(features?.ranks !== false ? [{ href: "/ranks", icon: Trophy, label: "Ranks" }] : []),
-      ],
-    },
-    {
-      label: "SHOP",
-      items: [
-        ...(features?.logs !== false ? [{ href: "/shop", icon: Store, label: "Logs" }] : []),
-        { href: "/cards", icon: LayoutDashboard, label: "Cards" },
-      ],
-    },
-    ...(features?.checker !== false ? [{
-      label: "BOT",
-      items: [{ href: "/checker", icon: Bot, label: "Checker" }],
-    }] : []),
-    {
-      label: "SUPPORT",
-      items: [
-        { href: "https://t.me/+9_iBYCRURfgwNGUx", icon: Send, label: "Telegram Support", external: true },
-      ],
-    },
-    ...(features?.reseller !== false ? [{
-      label: "RESELLER",
-      items: [{ href: "/become-reseller", icon: BadgeCheck, label: "Become Reseller" }],
-    }] : []),
-    ...(user?.role === "admin" ? [{
-      label: "ADMIN",
-      items: [{ href: "/admin", icon: Settings, label: "Admin Panel" }],
-    }] : []),
-    ...((user as any)?.isWorker && user?.role !== "admin" ? [{
-      label: "WORKER",
-      items: [{ href: "/worker", icon: Briefcase, label: "Worker Dashboard" }],
-    }] : []),
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/orders", label: "Orders" },
+    ...(features?.logs !== false ? [{ href: "/shop", label: "Shop" }] : []),
+    { href: "/cards", label: "Cards" },
+    ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks" }] : []),
+    ...(features?.checker !== false ? [{ href: "/checker", label: "Checker" }] : []),
+    ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller" }] : []),
+    ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
+    ...((user as any)?.isWorker && user?.role !== "admin" ? [{ href: "/worker", label: "Worker" }] : []),
   ];
-
-  const NavContent = ({ onClose }: { onClose?: () => void }) => (
-    <div className="flex flex-col h-full overflow-y-auto bg-background">
-      {/* Brand */}
-      <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
-        <Link href="/" onClick={onClose}>
-          <div className="cursor-pointer">
-            <span className="text-lg font-bold text-white">food</span>
-            <span className="text-lg font-bold text-primary">plug</span>
-          </div>
-        </Link>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="h-7 w-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/80 hover:bg-white/8 transition-all"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* User pill */}
-      {user && (
-        <div className="mx-4 mt-4 mb-2 flex items-center gap-3 border border-primary/15 rounded-2xl px-3.5 py-3 bg-primary/7">
-          <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0 bg-primary/15">
-            <span className="text-[11px] font-black uppercase text-primary">{user.username?.[0] || "U"}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-white/80 truncate">Welcome back</p>
-            <p className="text-[10px] font-mono font-bold text-primary truncate">{user.email}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-4 px-3 py-3 flex-1">
-        {navSections.map((section) => (
-          <div key={section.label}>
-            <p className="text-[9px] font-black uppercase tracking-[0.18em] mb-1 px-2.5 text-white/25">{section.label}</p>
-            <div className="flex flex-col gap-0.5">
-              {section.items.map((item) => {
-                const isActive = location === item.href;
-                if ((item as any).external) {
-                  return (
-                    <a
-                      key={item.href}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-white/35 hover:text-white/70 hover:bg-white/5 transition-all"
-                    >
-                      <item.icon className="h-3.5 w-3.5 shrink-0" />
-                      {item.label}
-                    </a>
-                  );
-                }
-                return (
-                  <Link key={item.href} href={item.href} onClick={onClose}>
-                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-primary/12 text-primary border border-primary/20"
-                        : "text-white/45 hover:text-white/70 hover:bg-white/5"
-                    }`}>
-                      <item.icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-white/30"}`} />
-                      {item.label}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {user && (
-        <div className="p-4 border-t border-white/8">
-          <button
-            onClick={() => { logout(); onClose?.(); }}
-            className="flex items-center gap-2.5 text-xs text-white/30 hover:text-red-400 transition-colors w-full px-3 py-2 rounded-xl hover:bg-red-950/20"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign out
-          </button>
-        </div>
-      )}
-    </div>
-  );
 
   const isAuthPage = location === "/auth";
   if (isAuthPage) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-background">
+
       {/* ── Announcement banner ── */}
       {activeAnnouncement && (
-        <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden" style={{ height: 32, background: "linear-gradient(90deg,#be185d,#ec4899,#be185d)" }}>
+        <div className="w-full overflow-hidden z-50" style={{ height: 32, background: "linear-gradient(90deg,#be185d,#ec4899,#be185d)" }}>
           <div className="flex items-center h-full whitespace-nowrap animate-[marquee_18s_linear_infinite]">
             {[...Array(4)].map((_, i) => (
               <span key={i} className="text-[11px] font-bold tracking-widest text-white uppercase px-12">
@@ -175,125 +54,116 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* ── Desktop Sidebar (lg+) ── */}
-      <aside className={`hidden lg:flex flex-col fixed left-0 ${activeAnnouncement ? "top-8" : "top-0"} h-screen w-[240px] border-r border-white/7 bg-background z-30`}>
-        <NavContent />
-      </aside>
-
-      {/* ── Main area (offset on desktop) ── */}
-      <div className={`lg:pl-[240px] ${activeAnnouncement ? "pt-8" : ""}`}>
-        {/* Top Bar */}
-        <header className="h-[52px] border-b border-white/7 sticky top-0 z-40 px-4 flex items-center justify-between bg-background/95 backdrop-blur-sm">
-          {/* Left: hamburger (mobile only) */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-              <SheetTrigger asChild>
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded-xl transition-all text-white/50 hover:text-white/80"
-                  data-testid="btn-menu"
-                >
-                  <PanelLeft className="h-[15px] w-[15px]" />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[260px] p-0 border-r border-white/8 bg-background">
-                <NavContent onClose={() => setIsMobileOpen(false)} />
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Desktop left: spacer */}
-          <div className="hidden lg:block" />
-
-          {/* Right: Balance + User */}
-          <div className="flex items-center gap-2">
-            {user && (
-              <>
-                <Link href="/">
-                  <button
-                    className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all border bg-primary/10 border-primary/25 text-primary hover:bg-primary/15"
-                    data-testid="btn-balance"
-                  >
-                    <span>${balanceDollars}</span>
-                    <Plus className="h-2.5 w-2.5 opacity-60" />
-                  </button>
-                </Link>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 text-xs text-white/45 hover:text-white/80 transition-colors" data-testid="btn-user-dropdown">
-                      <span className="max-w-[80px] truncate">{user.username}</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="border border-white/10 text-xs min-w-[200px] rounded-2xl shadow-xl bg-[#111] text-white/80" align="end">
-                    <div className="px-3 py-2.5 border-b border-white/7">
-                      <p className="text-[10px] text-white/35 truncate">{user.username}</p>
-                    </div>
-                    <DropdownMenuItem asChild>
-                      <Link href="/my-code">
-                        <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/55 hover:text-white">
-                          <KeyRound className="h-3 w-3" />
-                          Login Code
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-                    {(user as any)?.isWorker && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/worker">
-                          <div className="flex items-center gap-2 cursor-pointer w-full text-xs py-1 text-white/55 hover:text-white">
-                            <Briefcase className="h-3 w-3" />
-                            Worker Dashboard
-                          </div>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator className="bg-white/7" />
-                    <DropdownMenuItem onClick={() => logout()} className="text-red-400 hover:text-red-300 cursor-pointer text-xs focus:text-red-300 focus:bg-red-950/30">
-                      <LogOut className="h-3 w-3 mr-2" />
-                      Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+      {/* ── Top bar ── */}
+      <header className="flex items-center justify-between px-4 h-[52px] border-b border-white/8 bg-background">
+        <button
+          onClick={() => { setNavOpen(o => !o); setAccountOpen(false); }}
+          className="flex flex-col gap-[5px] p-1"
+          data-testid="btn-menu"
+          aria-label="Toggle navigation"
+        >
+          {navOpen
+            ? <X className="h-5 w-5 text-white/70" />
+            : <>
+                <span className="block w-5 h-[2px] bg-white/70 rounded" />
+                <span className="block w-5 h-[2px] bg-white/70 rounded" />
+                <span className="block w-5 h-[2px] bg-white/70 rounded" />
               </>
-            )}
-          </div>
-        </header>
+          }
+        </button>
 
-        <main className="min-h-screen pb-[64px] lg:pb-0">
-          {children}
-        </main>
-
-        {/* ── Mobile Bottom Tab Bar (hidden on desktop) ── */}
+        {/* Right side: balance pill */}
         {user && (
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/8 bg-background/95 backdrop-blur-sm">
-            <div className="grid grid-cols-4 h-[60px]">
-              {[
-                { href: "/", icon: Wallet, label: "Deposit" },
-                { href: "/orders", icon: Package, label: "Orders" },
-                { href: "/shop", icon: Store, label: "Shop" },
-                { href: "/cards", icon: LayoutDashboard, label: "Cards" },
-              ].map(({ href, icon: Icon, label }) => {
-                const isActive = location === href;
-                return (
-                  <Link key={href} href={href}>
-                    <div className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${
-                      isActive ? "text-primary" : "text-white/35 hover:text-white/60"
-                    }`}>
-                      <Icon className={`h-[18px] w-[18px] ${isActive ? "text-primary" : "text-white/35"}`} />
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? "text-primary" : "text-white/30"}`}>
-                        {label}
-                      </span>
-                      {isActive && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
-                      )}
+          <Link href="/">
+            <button className="text-xs font-mono font-bold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded hover:bg-primary/15 transition-colors" data-testid="btn-balance">
+              ${balanceDollars}
+            </button>
+          </Link>
+        )}
+      </header>
+
+      {/* ── Inline nav (expands below header) ── */}
+      {navOpen && (
+        <nav className="border-b border-white/8 bg-background py-4 text-center space-y-1">
+          {navLinks.map(({ href, label }) => {
+            const isActive = location === href;
+            return (
+              <Link key={href} href={href}>
+                <div
+                  onClick={() => setNavOpen(false)}
+                  className={`block py-2.5 text-sm font-medium cursor-pointer transition-colors ${
+                    isActive ? "text-primary" : "text-white/75 hover:text-white"
+                  }`}
+                >
+                  {label}
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Contact support */}
+          <a
+            href="https://t.me/+9_iBYCRURfgwNGUx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block py-2.5 text-sm font-medium text-white/75 hover:text-white transition-colors"
+          >
+            Contact Support
+          </a>
+
+          {/* MY ACCOUNT dropdown */}
+          {user && (
+            <div>
+              <button
+                onClick={() => setAccountOpen(o => !o)}
+                className="inline-flex items-center gap-2 py-2.5 text-sm font-medium text-white/75 hover:text-white transition-colors"
+              >
+                My Account
+                <ChevronDown className={`h-4 w-4 transition-transform ${accountOpen ? "rotate-180" : ""}`} />
+              </button>
+              {accountOpen && (
+                <div className="mx-auto mt-1 w-48 border border-white/12 rounded bg-[#111] text-center overflow-hidden">
+                  <Link href="/my-code">
+                    <div onClick={() => { setNavOpen(false); setAccountOpen(false); }}
+                      className="block px-4 py-3 text-sm font-medium text-white/75 hover:text-white hover:bg-white/5 border-b border-white/8 cursor-pointer transition-colors">
+                      Setting
                     </div>
                   </Link>
-                );
-              })}
+                  <div className="px-4 py-3 text-sm font-medium text-white/75">
+                    Balance | ${balanceDollars}
+                  </div>
+                  <div className="border-t border-white/8">
+                    <button
+                      onClick={() => { logout(); setNavOpen(false); setAccountOpen(false); }}
+                      className="block w-full px-4 py-3 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </nav>
-        )}
-      </div>
+          )}
+
+          {/* Cart icon */}
+          <div className="pt-1 pb-1 flex justify-center">
+            <Link href="/orders">
+              <div onClick={() => setNavOpen(false)} className="relative inline-flex cursor-pointer text-primary hover:text-primary/80 transition-colors">
+                <ShoppingCart className="h-6 w-6" />
+                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center leading-none">
+                  0
+                </span>
+              </div>
+            </Link>
+          </div>
+        </nav>
+      )}
+
+      {/* ── Page content ── */}
+      <main className="min-h-screen">
+        {children}
+      </main>
+
     </div>
   );
 }

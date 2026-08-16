@@ -1,6 +1,6 @@
 import { useProducts } from "@/hooks/use-products";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ShieldX, Search } from "lucide-react";
+import { Loader2, ShieldX, Search, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
@@ -154,68 +154,60 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="max-w-xs sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 py-5 sm:py-6 space-y-4">
-      {/* Header */}
-      <div className="space-y-0.5">
-        <h1 className="text-lg sm:text-xl font-black text-white">
-          <span>food<span className="text-primary">plug</span></span>
-          <span className="ml-2 text-xs font-mono font-normal text-white/40">Shop</span>
+    <div className="max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 pb-8">
+      {/* ── Hero ── */}
+      <div className="text-center pt-8 pb-6 space-y-1">
+        <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">
+          foodplug
         </h1>
-        <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">PREMIUM CARD SHOP</p>
+        <p className="text-sm text-white/50">Providing high quality logs since 2022.</p>
       </div>
 
-      {/* Search + Filter row */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search by card type, category, keywords..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 bg-[#111] border border-white/10 rounded-2xl pl-9 pr-4 text-xs text-white/90 placeholder:text-white/40 outline-none focus:border-white/15 transition-colors shadow-sm"
-            data-testid="input-search"
-          />
-        </div>
+      {/* ── Search bar ── */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/35" />
+        <input
+          type="text"
+          placeholder="Search for a Product"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full h-11 bg-[#111] border border-white/12 rounded pl-10 pr-4 text-sm text-white/90 placeholder:text-white/35 outline-none focus:border-primary/40 transition-colors"
+          data-testid="input-search"
+        />
+      </div>
 
-        {/* Filter pills */}
-        {sortedProducts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 items-center">
-            <button
-              onClick={() => setActiveFilter("all")}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                activeFilter === "all"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-              }`}
-              data-testid="filter-all"
-            >
-              All
-            </button>
-            {sortedProducts.map((p: any) => (
-              <button
-                key={p.id}
-                onClick={() => setActiveFilter(activeFilter === p.name ? "all" : p.name)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                  activeFilter === p.name
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white/[0.04] border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-                }`}
-                data-testid={`filter-product-${p.id}`}
-              >
-                {p.name}
-              </button>
+      {/* ── Category dropdown ── */}
+      <div className="relative mb-6">
+        <div className="flex items-center gap-2 w-full h-11 bg-[#111] border border-white/12 rounded px-3 cursor-pointer"
+          onClick={() => setActiveFilter("all")}>
+          <div className="grid grid-cols-2 gap-0.5 flex-shrink-0">
+            {[...Array(4)].map((_, i) => (
+              <span key={i} className="w-1.5 h-1.5 rounded-sm bg-primary block" />
             ))}
           </div>
-        )}
+          <select
+            value={activeFilter}
+            onChange={e => setActiveFilter(e.target.value)}
+            className="flex-1 bg-transparent text-sm text-white/80 outline-none cursor-pointer appearance-none"
+            data-testid="filter-select"
+          >
+            <option value="all">All</option>
+            {sortedProducts.map((p: any) => (
+              <option key={p.id} value={p.name}>{p.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="h-4 w-4 text-white/40 flex-shrink-0" />
+        </div>
       </div>
 
-      {/* Grid */}
+      {/* ── Hot Products heading ── */}
+      <h2 className="text-base font-bold text-white text-center mb-4">Hot Products</h2>
+
+      {/* ── Grid ── */}
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-white/40 text-sm">No products found</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((product: any) => {
             const rank = !search.trim() ? topIds.indexOf(product.id) : -1;
             return <ProductCard key={product.id} product={product} rank={rank} />;
