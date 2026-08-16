@@ -8,7 +8,6 @@ import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
-import { getChatInfo, sendMessage } from "./telegram";
 
 const app = express();
 const httpServer = createServer(app);
@@ -73,26 +72,7 @@ app.use((req, res, next) => {
 
 (async () => {
   // Ensure the session table exists (connect-pg-simple needs this)
-  // Telegram schema migrations
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_telegram_name_reward TIMESTAMP`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_referred_by INTEGER REFERENCES users(id)`);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_referral_bonus_paid BOOLEAN DEFAULT false`);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS telegram_link_tokens (
-      id SERIAL PRIMARY KEY,
-      token TEXT UNIQUE NOT NULL,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at TIMESTAMP DEFAULT NOW() NOT NULL
-    )
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS telegram_referral_pending (
-      chat_id TEXT PRIMARY KEY,
-      referrer_user_id INTEGER NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW() NOT NULL
-    )
-  `);
+  // DB schema migrations
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
@@ -202,69 +182,6 @@ app.use((req, res, next) => {
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
 
-  // ── Telegram name-reward poller ────────────────────────────────────────────
-  // Runs every hour. For each user whose Telegram display name contains
-  // the promo phrase, credits $1 if 24 h have passed since last reward.
-  const PROMO_PHRASE = "utopia $1 ccs";
-  const NAME_REWARD_CENTS = 100;   // $1.00
-  const REFERRAL_BONUS_CENTS = 50; // $0.50
-
-  const runTelegramNameRewards = async () => {
-    if (!process.env.TELEGRAM_BOT_TOKEN) return;
-    try {
-      const linkedUsers = await storage.getUsersWithTelegramLinked();
-      for (const u of linkedUsers) {
-        try {
-          const info = await getChatInfo(u.telegramChatId);
-          if (!info) continue;
-          const displayName = `${info.firstName}${info.lastName ? " " + info.lastName : ""}`;
-          if (!displayName.toLowerCase().includes(PROMO_PHRASE.toLowerCase())) continue;
-
-          // Only reward once per 24 hours
-          if (u.lastTelegramNameReward) {
-            const hoursSince = (Date.now() - new Date(u.lastTelegramNameReward).getTime()) / 3_600_000;
-            if (hoursSince < 24) continue;
-          }
-
-          const isFirstReward = !u.lastTelegramNameReward;
-
-          // Credit the daily $1 reward
-          await storage.updateUserBalance(u.id, NAME_REWARD_CENTS);
-          await storage.createTransaction(u.id, NAME_REWARD_CENTS, "telegram_name_reward", `Daily Telegram name reward — "${PROMO_PHRASE}"`);
-          await storage.setLastTelegramNameReward(u.id);
-          await sendMessage(u.telegramChatId, `💸 <b>+$1.00 credited!</b> Thanks for keeping <code>${PROMO_PHRASE}</code> in your name. See you tomorrow!`);
-          log(`Telegram name reward: +$1 credited to user ${u.id}`);
-
-          // One-time referral bonus — paid when the referred user earns their first reward
-          if (isFirstReward && u.referredByUserId && !u.referralBonusPaid) {
-            // Bonus for referred user
-            await storage.updateUserBalance(u.id, REFERRAL_BONUS_CENTS);
-            await storage.createTransaction(u.id, REFERRAL_BONUS_CENTS, "telegram_referral_bonus", "Referral bonus — friend referred you");
-            await sendMessage(u.telegramChatId, `🎁 <b>+$0.50 referral bonus!</b> Your friend referred you and you just earned your first name reward!`);
-
-            // Bonus for referrer
-            await storage.updateUserBalance(u.referredByUserId, REFERRAL_BONUS_CENTS);
-            await storage.createTransaction(u.referredByUserId, REFERRAL_BONUS_CENTS, "telegram_referral_bonus", `Referral bonus — user ${u.id} added the promo phrase`);
-            const referrerChatId = await storage.getReferrerChatId(u.referredByUserId);
-            if (referrerChatId) {
-              await sendMessage(referrerChatId, `🎁 <b>+$0.50 referral bonus!</b> Someone you referred just added <code>${PROMO_PHRASE}</code> to their name!`);
-            }
-
-            await storage.markTelegramReferralBonusPaid(u.id);
-            log(`Telegram referral bonus: +$0.50 to user ${u.id} and referrer ${u.referredByUserId}`);
-          }
-        } catch (err) {
-          console.error(`Telegram name reward error for user ${u.id}:`, err);
-        }
-      }
-    } catch (err) {
-      console.error("Telegram name reward poller error:", err);
-    }
-  };
-
-  // Run once at startup then every hour
-  runTelegramNameRewards();
-  setInterval(runTelegramNameRewards, 60 * 60 * 1000);
 
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen({ port, host: "0.0.0.0", reusePort: true }, () => {

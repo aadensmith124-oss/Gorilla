@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses, telegramLinkTokens, telegramReferralPending,
+  users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
@@ -121,22 +121,6 @@ export interface IStorage {
   getCryptoAddresses(userId: number): Promise<CryptoAddress[]>;
   setCryptoAddress(userId: number, currency: string, address: string): Promise<CryptoAddress>;
 
-  // Telegram
-  createTelegramLinkToken(userId: number, token: string): Promise<void>;
-  getTelegramLinkToken(token: string): Promise<{ userId: number } | undefined>;
-  deleteTelegramLinkToken(token: string): Promise<void>;
-  setUserTelegramChatId(userId: number, chatId: string): Promise<void>;
-  getUsersWithTelegramLinked(): Promise<{ id: number; telegramChatId: string; lastTelegramNameReward: Date | null; referredByUserId: number | null; referralBonusPaid: boolean }[]>;
-  setLastTelegramNameReward(userId: number): Promise<void>;
-  setPendingTelegramReferral(chatId: string, referrerUserId: number): Promise<void>;
-  getPendingTelegramReferral(chatId: string): Promise<number | null>;
-  deletePendingTelegramReferral(chatId: string): Promise<void>;
-  setTelegramReferral(userId: number, referrerUserId: number): Promise<void>;
-  getReferrerChatId(referrerUserId: number): Promise<string | null>;
-  markTelegramReferralBonusPaid(userId: number): Promise<void>;
-  getTelegramReferralCount(userId: number): Promise<number>;
-  getUserByTelegramChatId(chatId: string): Promise<User | undefined>;
-}
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -190,92 +174,6 @@ export class DatabaseStorage implements IStorage {
     await db.update(users).set({ lastDailySpin: new Date() }).where(eq(users.id, userId));
   }
 
-  async createTelegramLinkToken(userId: number, token: string): Promise<void> {
-    // Remove any existing tokens for this user first
-    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.userId, userId));
-    await db.insert(telegramLinkTokens).values({ token, userId });
-  }
-
-  async getTelegramLinkToken(token: string): Promise<{ userId: number } | undefined> {
-    const [row] = await db.select().from(telegramLinkTokens).where(eq(telegramLinkTokens.token, token));
-    if (!row) return undefined;
-    // Expire tokens older than 1 hour
-    const age = Date.now() - new Date(row.createdAt).getTime();
-    if (age > 60 * 60 * 1000) {
-      await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.id, row.id));
-      return undefined;
-    }
-    return { userId: row.userId };
-  }
-
-  async deleteTelegramLinkToken(token: string): Promise<void> {
-    await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.token, token));
-  }
-
-  async setUserTelegramChatId(userId: number, chatId: string): Promise<void> {
-    await db.update(users).set({ telegramChatId: chatId }).where(eq(users.id, userId));
-  }
-
-  async getUsersWithTelegramLinked(): Promise<{ id: number; telegramChatId: string; lastTelegramNameReward: Date | null; referredByUserId: number | null; referralBonusPaid: boolean }[]> {
-    const rows = await db.execute(sql`
-      SELECT id, telegram_chat_id, last_telegram_name_reward,
-             telegram_referred_by, COALESCE(telegram_referral_bonus_paid, false) as telegram_referral_bonus_paid
-      FROM users WHERE telegram_chat_id IS NOT NULL AND telegram_chat_id != ''
-    `);
-    return (rows.rows as any[]).map(r => ({
-      id: r.id,
-      telegramChatId: r.telegram_chat_id,
-      lastTelegramNameReward: r.last_telegram_name_reward ? new Date(r.last_telegram_name_reward) : null,
-      referredByUserId: r.telegram_referred_by ?? null,
-      referralBonusPaid: !!r.telegram_referral_bonus_paid,
-    }));
-  }
-
-  async setLastTelegramNameReward(userId: number): Promise<void> {
-    await db.execute(sql`UPDATE users SET last_telegram_name_reward = NOW() WHERE id = ${userId}`);
-  }
-
-  async setPendingTelegramReferral(chatId: string, referrerUserId: number): Promise<void> {
-    await db.execute(sql`
-      INSERT INTO telegram_referral_pending (chat_id, referrer_user_id)
-      VALUES (${chatId}, ${referrerUserId})
-      ON CONFLICT (chat_id) DO UPDATE SET referrer_user_id = ${referrerUserId}, created_at = NOW()
-    `);
-  }
-
-  async getPendingTelegramReferral(chatId: string): Promise<number | null> {
-    const rows = await db.execute(sql`SELECT referrer_user_id FROM telegram_referral_pending WHERE chat_id = ${chatId}`);
-    const row = rows.rows[0] as any;
-    return row ? Number(row.referrer_user_id) : null;
-  }
-
-  async deletePendingTelegramReferral(chatId: string): Promise<void> {
-    await db.execute(sql`DELETE FROM telegram_referral_pending WHERE chat_id = ${chatId}`);
-  }
-
-  async setTelegramReferral(userId: number, referrerUserId: number): Promise<void> {
-    await db.execute(sql`UPDATE users SET telegram_referred_by = ${referrerUserId} WHERE id = ${userId}`);
-  }
-
-  async getReferrerChatId(referrerUserId: number): Promise<string | null> {
-    const rows = await db.execute(sql`SELECT telegram_chat_id FROM users WHERE id = ${referrerUserId}`);
-    const row = rows.rows[0] as any;
-    return row?.telegram_chat_id ?? null;
-  }
-
-  async markTelegramReferralBonusPaid(userId: number): Promise<void> {
-    await db.execute(sql`UPDATE users SET telegram_referral_bonus_paid = true WHERE id = ${userId}`);
-  }
-
-  async getTelegramReferralCount(userId: number): Promise<number> {
-    const rows = await db.execute(sql`SELECT COUNT(*) as n FROM users WHERE telegram_referred_by = ${userId}`);
-    return Number((rows.rows[0] as any)?.n ?? 0);
-  }
-
-  async getUserByTelegramChatId(chatId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.telegramChatId, chatId));
-    return user;
-  }
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).orderBy(desc(users.createdAt));

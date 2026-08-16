@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import beastBoyImg from "@assets/IMG_8176_1782687294972.jpeg";
+import utopiaLogoImg from "@assets/utopia-logo.jpeg";
 
 /* ── SVG Captcha ──────────────────────────────────────────── */
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -319,18 +319,15 @@ export default function AuthPage() {
           }}
         >
           <div
-            className="w-20 h-20 rounded-full overflow-hidden"
+            className="w-20 h-20 rounded-2xl overflow-hidden"
             style={{
-              boxShadow: "0 4px 32px 6px hsl(258 85% 65% / 0.30), 0 0 0 2px hsl(258 85% 65% / 0.20)",
-              maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+              boxShadow: "0 4px 32px 8px hsl(258 85% 65% / 0.40), 0 0 0 2px hsl(258 85% 65% / 0.25)",
             }}
           >
             <img
-              src={beastBoyImg}
+              src={utopiaLogoImg}
               alt="UTOPIA"
-              className="w-full h-full object-cover scale-125"
-              style={{ objectPosition: "50% 15%" }}
+              className="w-full h-full object-cover"
             />
           </div>
         </div>

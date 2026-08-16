@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, ExternalLink, Zap, Send, Link as LinkIcon
+  RefreshCw, ExternalLink, Zap, Send
 } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 
@@ -142,167 +142,6 @@ function ManualDepositPanel({ result, onReset }: { result: ManualResult; onReset
     </div>
   );
 }
-
-/* ══════════════════════════════════════════════
-   TELEGRAM NAME REWARD CARD
-══════════════════════════════════════════════ */
-function TelegramNameRewardCard() {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const [copied, setCopied] = useState(false);
-  // Hold the polling interval so we can cancel it if the component unmounts
-  const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollTimeout  = useRef<ReturnType<typeof setTimeout>  | null>(null);
-  // Opened synchronously on click so the browser doesn't block it as a popup
-  const telegramWin  = useRef<Window | null>(null);
-
-  // Clean up timers on unmount to prevent state updates on an unmounted tree
-  useEffect(() => {
-    return () => {
-      if (pollInterval.current) clearInterval(pollInterval.current);
-      if (pollTimeout.current)  clearTimeout(pollTimeout.current);
-    };
-  }, []);
-
-  const { data: status, refetch } = useQuery<{
-    linked: boolean;
-    lastReward: string | null;
-    referralLink: string | null;
-    referralCount: number;
-  }>({
-    queryKey: ["/api/telegram/link/status"],
-    staleTime: 30_000,
-  });
-
-  const linkMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/telegram/link", {});
-      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed"); }
-      return res.json() as Promise<{ botUrl: string }>;
-    },
-    onSuccess: (data) => {
-      // Redirect the window we opened synchronously on click (avoids popup blocker)
-      if (telegramWin.current && !telegramWin.current.closed) {
-        telegramWin.current.location.href = data.botUrl;
-      } else {
-        window.open(data.botUrl, "_blank");
-      }
-      telegramWin.current = null;
-      // Poll every 3 s until the user has linked (max 2 min)
-      pollInterval.current = setInterval(async () => {
-        const r = await refetch();
-        if (r.data?.linked) {
-          clearInterval(pollInterval.current!);
-          clearTimeout(pollTimeout.current!);
-          pollInterval.current = null;
-          pollTimeout.current  = null;
-          qc.invalidateQueries({ queryKey: ["/api/telegram/link/status"] });
-        }
-      }, 3000);
-      pollTimeout.current = setTimeout(() => {
-        clearInterval(pollInterval.current!);
-        pollInterval.current = null;
-        pollTimeout.current  = null;
-      }, 120_000);
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const linked = status?.linked ?? false;
-  const lastReward = status?.lastReward ? new Date(status.lastReward) : null;
-  const nextRewardMs = lastReward ? lastReward.getTime() + 24 * 3600 * 1000 - Date.now() : 0;
-  const nextRewardHrs = nextRewardMs > 0 ? Math.ceil(nextRewardMs / 3_600_000) : 0;
-  const referralLink = status?.referralLink ?? null;
-  const referralCount = status?.referralCount ?? 0;
-
-  function copyReferral() {
-    if (!referralLink) return;
-    navigator.clipboard.writeText(referralLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  return (
-    <div className="rounded-2xl border border-[#229ED9]/20 bg-[#229ED9]/5 px-4 py-3 space-y-2.5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Send className="h-3.5 w-3.5 text-[#229ED9]" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#229ED9]">Telegram Name Reward</p>
-        </div>
-        {linked && (
-          <span className="flex items-center gap-1 text-[9px] font-mono text-green-400">
-            <CheckCircle2 className="h-2.5 w-2.5" /> linked
-          </span>
-        )}
-      </div>
-
-      {/* Description */}
-      <p className="text-[11px] text-white/50 leading-relaxed">
-        Join our group, add <span className="font-mono text-white font-bold">utopia $1 ccs</span> to your Telegram name, and earn <span className="text-[#229ED9] font-bold">$1.00/day</span> automatically. Refer a friend and you both earn <span className="text-green-400 font-bold">+$0.50</span> when they qualify.
-      </p>
-
-      {!linked ? (
-        <>
-          {/* Must join group first */}
-          <a
-            href="https://t.me/+oxGX1KUYsadmNGUx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-white/5 border border-white/10 text-white/50 text-[11px] font-bold hover:bg-white/8 hover:text-white/70 transition-colors"
-          >
-            <Send className="h-3.5 w-3.5" />
-            Step 1 — Join our Telegram Group
-          </a>
-          <button
-            onClick={() => {
-              // Open now (synchronous user gesture) so the browser doesn't block it
-              telegramWin.current = window.open("", "_blank");
-              linkMutation.mutate();
-            }}
-            disabled={linkMutation.isPending}
-            className="w-full flex items-center justify-center gap-2 h-8 rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/25 text-[#229ED9] text-[11px] font-bold hover:bg-[#229ED9]/22 transition-colors disabled:opacity-50"
-          >
-            {linkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
-            Step 2 — Link Telegram Account
-          </button>
-        </>
-      ) : (
-        <>
-          {/* Reward status */}
-          <p className="text-[10px] font-mono text-white/35">
-            {lastReward
-              ? nextRewardHrs > 0
-                ? `⏳ Next reward in ~${nextRewardHrs}h`
-                : "✅ Reward available — name check runs hourly"
-              : "⏳ No reward yet — add the phrase and wait up to 1 hour"}
-          </p>
-
-          {/* Referral link */}
-          {referralLink && (
-            <div className="space-y-1">
-              <p className="text-[9px] text-white/30 uppercase tracking-widest font-mono">
-                Your referral link{referralCount > 0 ? ` · ${referralCount} referral${referralCount !== 1 ? "s" : ""}` : ""}
-              </p>
-              <div className="flex items-center gap-2 bg-black/30 border border-white/8 rounded-xl px-3 py-2">
-                <span className="text-[10px] font-mono text-white/50 truncate flex-1">{referralLink}</span>
-                <button
-                  onClick={copyReferral}
-                  className="flex-shrink-0 text-white/30 hover:text-white/70 transition-colors"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-              <p className="text-[9px] text-white/25 font-mono">Share this link — both earn $0.50 when they first qualify</p>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
 /* ══════════════════════════════════════════════
    MAIN DEPOSIT PAGE
 ══════════════════════════════════════════════ */
@@ -445,9 +284,6 @@ export default function DepositPage() {
               </div>
             </div>
           </div>
-
-          {/* ── Telegram name reward card ── */}
-          <TelegramNameRewardCard />
 
           {/* ── Bonus milestones strip ── */}
           <div className="pro-card p-3.5 space-y-2.5">
