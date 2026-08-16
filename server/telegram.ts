@@ -7,6 +7,8 @@ const DAILY_REWARD_CENTS = 100;  // $1.00
 const REFERRAL_BONUS_CENTS = 10; // $0.10
 const NAME_KEYWORD = "foodplug.lol";
 
+const MD = { parse_mode: "Markdown" as const };
+
 function fmt(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -20,6 +22,10 @@ function isToday(date: Date | null | undefined): boolean {
     d.getMonth()    === now.getMonth()    &&
     d.getDate()     === now.getDate()
   );
+}
+
+function getMatch(ctx: Context): string {
+  return (typeof ctx.match === "string" ? ctx.match : ctx.match?.[0] ?? "").trim();
 }
 
 async function userByChatId(chatId: string) {
@@ -41,7 +47,7 @@ export function startTelegramBot() {
   /* ── /start [ref_USERID] ── */
   bot.command("start", async (ctx: Context) => {
     const chatId = String(ctx.chat!.id);
-    const param  = (typeof ctx.match === "string" ? ctx.match : ctx.match?.[0] ?? "").trim();
+    const param  = getMatch(ctx);
 
     // Record referral before checking linked status
     if (param.startsWith("ref_")) {
@@ -61,20 +67,19 @@ export function startTelegramBot() {
     const user = await userByChatId(chatId);
     if (user) {
       await ctx.reply(
-        `👋 Welcome back, *${user.username}*\\!\n\n` +
+        `👋 Welcome back, *${user.username}*!\n\n` +
         `💰 Balance: *${fmt(user.balance)}*\n\n` +
-        `Use /claim to collect your daily *$1\\.00* \\(requires *${NAME_KEYWORD}* in your Telegram name\\)\\.\n` +
-        `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend\\.`,
-        { parse_mode: "MarkdownV2" }
+        `Use /claim to collect your daily *$1.00* (requires *${NAME_KEYWORD}* in your Telegram name).\n` +
+        `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend.`,
+        MD
       );
     } else {
       await ctx.reply(
-        `👋 Welcome to the *foodplug* rewards bot\\!\n\n` +
-        `*How to get started:*\n` +
-        `1️⃣ Go to *foodplug\\.lol* → My Account → Profile\n` +
-        `2️⃣ Send me: \`/link your@email.com\`\n\n` +
-        `Once linked, add *${NAME_KEYWORD}* to your Telegram display name and use /claim to earn *$1\\.00 every day\\!* 🎁`,
-        { parse_mode: "MarkdownV2" }
+        `👋 Welcome to the *foodplug* rewards bot!\n\n` +
+        `*How to link your account:*\n` +
+        `Send: \`/link your@email.com\`\n\n` +
+        `Once linked, add *${NAME_KEYWORD}* to your Telegram name and use /claim to earn *$1.00 every day!* 🎁`,
+        MD
       );
     }
   });
@@ -82,20 +87,26 @@ export function startTelegramBot() {
   /* ── /link EMAIL ── */
   bot.command("link", async (ctx: Context) => {
     const chatId = String(ctx.chat!.id);
-    const email  = (typeof ctx.match === "string" ? ctx.match : ctx.match?.[0] ?? "").trim().toLowerCase() || undefined;
+    const email  = getMatch(ctx).toLowerCase();
 
     if (!email || !email.includes("@")) {
-      await ctx.reply("❌ Usage: `/link your@email.com`\n\nSend the email address you used to sign up on foodplug\\.lol", { parse_mode: "MarkdownV2" });
+      await ctx.reply(
+        "❌ Usage: `/link your@email.com`\n\nSend the email you used to sign up on foodplug.lol",
+        MD
+      );
       return;
     }
 
-    // Look up user by email
+    // Look up user by email or username
     const userRes = await pool.query(
       "SELECT * FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $1 LIMIT 1",
       [email]
     );
     if (!userRes.rows[0]) {
-      await ctx.reply("❌ No account found with that email\\. Make sure it matches what you used to sign up\\.", { parse_mode: "MarkdownV2" });
+      await ctx.reply(
+        "❌ No account found with that email. Make sure it matches what you used to sign up.",
+        MD
+      );
       return;
     }
 
@@ -107,7 +118,10 @@ export function startTelegramBot() {
       [chatId]
     );
     if (already.rows.length > 0 && already.rows[0].id !== userId) {
-      await ctx.reply("❌ This Telegram account is already linked to a different store account\\.", { parse_mode: "MarkdownV2" });
+      await ctx.reply(
+        "❌ This Telegram account is already linked to a different store account.",
+        MD
+      );
       return;
     }
 
@@ -126,23 +140,35 @@ export function startTelegramBot() {
     if (refRes.rows.length > 0) {
       const referrerId = refRes.rows[0].referrer_user_id;
       if (referrerId !== userId) {
-        await pool.query("UPDATE users SET balance = balance + $1 WHERE id = $2", [REFERRAL_BONUS_CENTS, referrerId]);
+        await pool.query(
+          "UPDATE users SET balance = balance + $1 WHERE id = $2",
+          [REFERRAL_BONUS_CENTS, referrerId]
+        );
         await pool.query(
           `INSERT INTO transactions (user_id, amount, type, description, created_at)
            VALUES ($1, $2, 'referral_bonus', 'Telegram referral bonus', NOW())`,
           [referrerId, REFERRAL_BONUS_CENTS]
         );
-        await pool.query("UPDATE users SET telegram_referred_by = $1 WHERE id = $2", [referrerId, userId]);
+        await pool.query(
+          "UPDATE users SET telegram_referred_by = $1 WHERE id = $2",
+          [referrerId, userId]
+        );
         // Notify referrer
-        const refUser = await pool.query("SELECT telegram_chat_id FROM users WHERE id = $1", [referrerId]);
+        const refUser = await pool.query(
+          "SELECT telegram_chat_id FROM users WHERE id = $1",
+          [referrerId]
+        );
         if (refUser.rows[0]?.telegram_chat_id) {
           bot.api.sendMessage(
             refUser.rows[0].telegram_chat_id,
-            `🎉 Someone joined using your referral link\\! You earned *${fmt(REFERRAL_BONUS_CENTS)}* store credit\\!`,
-            { parse_mode: "MarkdownV2" }
+            `🎉 Someone joined using your referral link! You earned *${fmt(REFERRAL_BONUS_CENTS)}* store credit!`,
+            MD
           ).catch(() => {});
         }
-        await pool.query("DELETE FROM telegram_referral_pending WHERE chat_id = $1", [chatId]);
+        await pool.query(
+          "DELETE FROM telegram_referral_pending WHERE chat_id = $1",
+          [chatId]
+        );
       }
     }
 
@@ -150,11 +176,11 @@ export function startTelegramBot() {
     const user = updated.rows[0];
 
     await ctx.reply(
-      `✅ Account linked\\! Welcome, *${user.username}*\\!\n\n` +
+      `✅ Account linked! Welcome, *${user.username}*!\n\n` +
       `💰 Balance: *${fmt(user.balance)}*\n\n` +
-      `Now add *${NAME_KEYWORD}* to your Telegram display name, then use /claim to earn *$1\\.00 every day\\!* 🎁\n\n` +
-      `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend\\.`,
-      { parse_mode: "MarkdownV2" }
+      `Now add *${NAME_KEYWORD}* to your Telegram display name, then use /claim to earn *$1.00 every day!* 🎁\n\n` +
+      `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend.`,
+      MD
     );
   });
 
@@ -164,7 +190,10 @@ export function startTelegramBot() {
     const user = await userByChatId(chatId);
 
     if (!user) {
-      await ctx.reply("❌ Your Telegram is not linked to a store account\\.\n\nSend /start for instructions\\.", { parse_mode: "MarkdownV2" });
+      await ctx.reply(
+        "❌ Your Telegram is not linked yet.\n\nSend: `/link your@email.com`",
+        MD
+      );
       return;
     }
 
@@ -175,9 +204,9 @@ export function startTelegramBot() {
 
     if (!fullName.includes(NAME_KEYWORD)) {
       await ctx.reply(
-        `❌ Your Telegram name doesn't contain *${NAME_KEYWORD}*\\.\n\n` +
-        `Add it to your first or last name in Telegram settings, then try /claim again\\.`,
-        { parse_mode: "MarkdownV2" }
+        `❌ Your Telegram name doesn't contain *${NAME_KEYWORD}*.\n\n` +
+        `Add it to your first or last name in Telegram settings, then try /claim again.`,
+        MD
       );
       return;
     }
@@ -189,8 +218,8 @@ export function startTelegramBot() {
       tomorrow.setHours(0, 0, 0, 0);
       const hoursLeft = Math.ceil((tomorrow.getTime() - Date.now()) / 3_600_000);
       await ctx.reply(
-        `⏳ Already claimed today\\! Come back in ~*${hoursLeft}h* for your next *$1\\.00*\\. 🔥`,
-        { parse_mode: "MarkdownV2" }
+        `⏳ Already claimed today! Come back in ~*${hoursLeft}h* for your next *$1.00*. 🔥`,
+        MD
       );
       return;
     }
@@ -208,10 +237,10 @@ export function startTelegramBot() {
 
     const newBalance = user.balance + DAILY_REWARD_CENTS;
     await ctx.reply(
-      `🎉 *\\+${fmt(DAILY_REWARD_CENTS)}* added to your balance\\!\n\n` +
+      `🎉 *+${fmt(DAILY_REWARD_CENTS)}* added to your balance!\n\n` +
       `💰 New balance: *${fmt(newBalance)}*\n\n` +
-      `Come back tomorrow for another *$1\\.00\\!* 🔥`,
-      { parse_mode: "MarkdownV2" }
+      `Come back tomorrow for another *$1.00!* 🔥`,
+      MD
     );
   });
 
@@ -219,42 +248,42 @@ export function startTelegramBot() {
   bot.command("balance", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account\\. Send /start for instructions\\.", { parse_mode: "MarkdownV2" });
+      await ctx.reply("❌ No linked account. Send: `/link your@email.com`", MD);
       return;
     }
-    await ctx.reply(`💰 Balance: *${fmt(user.balance)}*`, { parse_mode: "MarkdownV2" });
+    await ctx.reply(`💰 Balance: *${fmt(user.balance)}*`, MD);
   });
 
   /* ── /ref ── */
   bot.command("ref", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account\\. Send /start for instructions\\.", { parse_mode: "MarkdownV2" });
+      await ctx.reply("❌ No linked account. Send: `/link your@email.com`", MD);
       return;
     }
     const botInfo = await bot.api.getMe();
-    const refLink = `https://t\\.me/${botInfo.username}?start=ref\\_${user.id}`;
+    const refLink = `https://t.me/${botInfo.username}?start=ref_${user.id}`;
     await ctx.reply(
       `🔗 *Your referral link:*\n${refLink}\n\n` +
-      `Share it with friends — you earn *${fmt(REFERRAL_BONUS_CENTS)}* store credit every time someone clicks your link and links their account\\!`,
-      { parse_mode: "MarkdownV2" }
+      `Share it with friends — you earn *${fmt(REFERRAL_BONUS_CENTS)}* store credit every time someone links their account through your link!`,
+      MD
     );
   });
 
   /* ── /help ── */
   bot.command("help", async (ctx: Context) => {
     await ctx.reply(
-      `*foodplug Rewards Bot — Commands*\n\n` +
-      `/claim — Claim your daily *$1\\.00* \\(need *${NAME_KEYWORD}* in your name\\)\n` +
+      `*foodplug Rewards Bot*\n\n` +
+      `/link email — Link your store account\n` +
+      `/claim — Claim your daily *$1.00* (need *${NAME_KEYWORD}* in your name)\n` +
       `/balance — Check your store balance\n` +
-      `/ref — Get your referral link \\(\\+${fmt(REFERRAL_BONUS_CENTS)} per friend\\)\n` +
-      `/link email — Link your store account with your email\n` +
+      `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
       `/help — Show this message`,
-      { parse_mode: "MarkdownV2" }
+      MD
     );
   });
 
-  // Start polling
+  // Start long polling
   bot.start({
     onStart: () => log("Telegram bot started (long polling)", "telegram"),
   });
