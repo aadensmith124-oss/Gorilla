@@ -48,10 +48,6 @@ export function startTelegramBot() {
 
   /* ── Group-membership gate (runs before every command) ── */
   bot.use(async (ctx, next) => {
-    // /start is always allowed so the invite link can be shown
-    const isStart = ctx.message?.text?.startsWith("/start");
-    if (isStart) return next();
-
     if (!GROUP_ID) return next(); // no group configured — open access
 
     const userId = ctx.from?.id;
