@@ -2131,7 +2131,7 @@ export async function registerRoutes(
                   chat_id: chatId,
                   text: "⚠️ <b>You must join our group first!</b>\n\nJoin below, then send /link again.",
                   parse_mode: "HTML",
-                  reply_markup: { inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]] },
+                  reply_markup: { inline_keyboard: [[{ text: "Join UTOPIA Group →", url: TG_GROUP_INVITE }]] },
                 }),
               }).catch(() => {});
               return;
@@ -2155,7 +2155,7 @@ export async function registerRoutes(
 
           await sendMessage(chatId,
             "✅ <b>Account linked!</b>\n\n" +
-            "Your BeastCC account is now connected to Telegram." +
+            "Your UTOPIA account is now connected to Telegram." +
             (referralBonusGiven ? "\n\n🎁 <b>+$0.50</b> referral bonus added to your balance!" : "")
           );
           return;
@@ -2240,14 +2240,14 @@ export async function registerRoutes(
             body: JSON.stringify({
               chat_id: chatId,
               text:
-                "👋 <b>Welcome to BeastCC!</b>\n\n" +
+                "👋 <b>Welcome to UTOPIA!</b>\n\n" +
                 "You've joined via a referral link.\n\n" +
                 "<b>Step 1:</b> Join our group below\n" +
                 "<b>Step 2:</b> Sign up on the website\n" +
                 "<b>Step 3:</b> Send <code>/link your@email.com yourpassword</code> to earn <b>$0.50</b>!",
               parse_mode: "HTML",
               reply_markup: {
-                inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
+                inline_keyboard: [[{ text: "Join UTOPIA Group →", url: TG_GROUP_INVITE }]],
               },
             }),
           }).catch(() => {});
@@ -2262,13 +2262,13 @@ export async function registerRoutes(
           body: JSON.stringify({
             chat_id: chatId,
             text:
-              "👋 <b>Welcome to BeastCC!</b>\n\n" +
+              "👋 <b>Welcome to UTOPIA!</b>\n\n" +
               "To link your account, send:\n" +
               "<code>/link your@email.com yourpassword</code>\n\n" +
               "Make sure you join our group first!",
             parse_mode: "HTML",
             reply_markup: {
-              inline_keyboard: [[{ text: "Join BeastCC Group →", url: TG_GROUP_INVITE }]],
+              inline_keyboard: [[{ text: "Join UTOPIA Group →", url: TG_GROUP_INVITE }]],
             },
           }),
         }).catch(() => {});

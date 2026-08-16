@@ -240,7 +240,7 @@ function TelegramNameRewardCard() {
 
       {/* Description */}
       <p className="text-[11px] text-white/50 leading-relaxed">
-        Join our group, add <span className="font-mono text-white font-bold">beastcc.xyz $1 ccs</span> to your Telegram name, and earn <span className="text-[#229ED9] font-bold">$1.00/day</span> automatically. Refer a friend and you both earn <span className="text-green-400 font-bold">+$0.50</span> when they qualify.
+        Join our group, add <span className="font-mono text-white font-bold">utopia $1 ccs</span> to your Telegram name, and earn <span className="text-[#229ED9] font-bold">$1.00/day</span> automatically. Refer a friend and you both earn <span className="text-green-400 font-bold">+$0.50</span> when they qualify.
       </p>
 
       {!linked ? (

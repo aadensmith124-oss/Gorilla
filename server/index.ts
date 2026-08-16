@@ -204,8 +204,8 @@ app.use((req, res, next) => {
 
   // ── Telegram name-reward poller ────────────────────────────────────────────
   // Runs every hour. For each user whose Telegram display name contains
-  // "beastcc.xyz $1 ccs", credits $1 if 24 h have passed since last reward.
-  const PROMO_PHRASE = "beastcc.xyz $1 ccs";
+  // the promo phrase, credits $1 if 24 h have passed since last reward.
+  const PROMO_PHRASE = "utopia $1 ccs";
   const NAME_REWARD_CENTS = 100;   // $1.00
   const REFERRAL_BONUS_CENTS = 50; // $0.50
 

@@ -1,32 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 4%;
-  --foreground: 0 0% 93%;
-  --card: 0 0% 7%;
-  --card-foreground: 0 0% 93%;
-  --popover: 0 0% 7%;
-  --popover-foreground: 0 0% 93%;
-  --primary: 112 45% 42%;
+  --background: 240 22% 4%;
+  --foreground: 240 5% 93%;
+  --card: 240 18% 7%;
+  --card-foreground: 240 5% 93%;
+  --popover: 240 18% 7%;
+  --popover-foreground: 240 5% 93%;
+  --primary: 258 85% 65%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 10%;
-  --secondary-foreground: 0 0% 85%;
-  --muted: 0 0% 10%;
-  --muted-foreground: 0 0% 50%;
-  --accent: 112 45% 42%;
+  --secondary: 240 14% 11%;
+  --secondary-foreground: 240 5% 80%;
+  --muted: 240 14% 11%;
+  --muted-foreground: 240 5% 48%;
+  --accent: 258 85% 65%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 13%;
-  --input: 0 0% 9%;
-  --ring: 112 45% 42%;
+  --border: 240 12% 15%;
+  --input: 240 14% 9%;
+  --ring: 258 85% 65%;
   --radius: 0.625rem;
-  --font-display: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -38,7 +38,7 @@
 
 @layer components {
   .btn-pro { @apply h-9 px-4 text-xs font-semibold transition-all hover:scale-[0.98] active:scale-[0.95]; }
-  .btn-buy { @apply bg-green-700 hover:bg-green-800 text-white font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
+  .btn-buy { @apply bg-[hsl(258_85%_65%)] hover:bg-[hsl(258_85%_58%)] text-white font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
   .mono { font-family: var(--font-mono); }
 }
 

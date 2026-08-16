@@ -176,10 +176,10 @@ export default function ShopPage() {
       {/* Header */}
       <div className="space-y-0.5">
         <h1 className="text-lg font-black text-white">
-          BEAST<span className="text-primary">CC</span>
-          <span className="ml-2 text-xs font-mono font-normal text-white/40">Logs</span>
+          <span style={{fontFamily:"var(--font-display)"}}>UTO<span className="text-primary">PIA</span></span>
+          <span className="ml-2 text-xs font-mono font-normal text-white/40">Shop</span>
         </h1>
-        <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">BEST HIGH QUALITY CARDS</p>
+        <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">PREMIUM CARD SHOP</p>
       </div>
 
       {/* Filter pills */}

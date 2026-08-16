@@ -321,14 +321,14 @@ export default function AuthPage() {
           <div
             className="w-20 h-20 rounded-full overflow-hidden"
             style={{
-              boxShadow: "0 4px 32px 6px hsl(38 95% 55% / 0.25), 0 0 0 2px hsl(38 95% 55% / 0.2)",
+              boxShadow: "0 4px 32px 6px hsl(258 85% 65% / 0.30), 0 0 0 2px hsl(258 85% 65% / 0.20)",
               maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
               WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
             }}
           >
             <img
               src={beastBoyImg}
-              alt="BEASTCC"
+              alt="UTOPIA"
               className="w-full h-full object-cover scale-125"
               style={{ objectPosition: "50% 15%" }}
             />
@@ -338,9 +338,9 @@ export default function AuthPage() {
         {/* Brand */}
         <div className="text-center space-y-0.5">
           <h1 className="text-xl font-black tracking-tight text-white">
-            BEAST<span className="text-primary">CC</span>
+            <span style={{fontFamily:"var(--font-display)"}}>UTO<span className="text-primary">PIA</span></span>
           </h1>
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-primary/50">BEST HIGH QUALITY CARDS</p>
+          <p className="text-[10px] uppercase tracking-widest font-semibold text-primary/50">PREMIUM CARD SHOP</p>
         </div>
 
         {/* Tab switcher */}

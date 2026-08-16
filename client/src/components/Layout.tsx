@@ -69,8 +69,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Brand + close */}
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/8">
         <div>
-          <span className="text-lg font-black tracking-tight text-white">BEAST</span>
-          <span className="text-lg font-black tracking-tight text-primary">CC</span>
+          <span className="text-lg font-black tracking-tight text-white" style={{fontFamily:"var(--font-display)"}}>UTO</span>
+          <span className="text-lg font-black tracking-tight text-primary" style={{fontFamily:"var(--font-display)"}}>PIA</span>
         </div>
         <button
           onClick={() => setIsMobileOpen(false)}
