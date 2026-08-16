@@ -2,7 +2,9 @@ import { Bot, Context } from "grammy";
 import { pool } from "./db";
 import { log } from "./index";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
+const GROUP_ID     = process.env.Telegram_group_id;   // must be a numeric chat ID
+const GROUP_INVITE = "https://t.me/+9_iBYCRURfgwNGUx";
 const DAILY_REWARD_CENTS = 100;  // $1.00
 const REFERRAL_BONUS_CENTS = 10; // $0.10
 const NAME_KEYWORD = "foodplug.lol";
@@ -43,6 +45,34 @@ export function startTelegramBot() {
   }
 
   const bot = new Bot(BOT_TOKEN);
+
+  /* ── Group-membership gate (runs before every command) ── */
+  bot.use(async (ctx, next) => {
+    // /start is always allowed so the invite link can be shown
+    const isStart = ctx.message?.text?.startsWith("/start");
+    if (isStart) return next();
+
+    if (!GROUP_ID) return next(); // no group configured — open access
+
+    const userId = ctx.from?.id;
+    if (!userId) return next();
+
+    try {
+      const member = await ctx.api.getChatMember(GROUP_ID, userId);
+      const allowed = ["creator", "administrator", "member", "restricted"].includes(member.status);
+      if (!allowed) {
+        await ctx.reply(
+          `🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`,
+          MD
+        );
+        return;
+      }
+    } catch {
+      // If the check fails (e.g. bot not in group) just let them through
+    }
+
+    return next();
+  });
 
   /* ── /start [ref_USERID] ── */
   bot.command("start", async (ctx: Context) => {
