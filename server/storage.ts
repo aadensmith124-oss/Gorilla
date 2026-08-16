@@ -6,6 +6,7 @@ import {
   type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
 } from "@shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
+import { pool } from "./db";
 
 export interface IStorage {
   // Users
@@ -1069,8 +1070,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSupportTicket(id: number, data: any): Promise<any> {
-    const [t] = await db.update(supportTickets).set(data).where(eq(supportTickets.id, id)).returning();
-    return t;
+    // Use raw SQL to avoid Drizzle's enum type-check on the status column
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+    for (const [key, value] of Object.entries(data)) {
+      const col = key.replace(/([A-Z])/g, '_$1').toLowerCase(); // camelCase → snake_case
+      setClauses.push(`${col} = $${idx++}`);
+      values.push(value);
+    }
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE support_tickets SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+    return result.rows[0];
   }
 
   async getCards(): Promise<Card[]> {
