@@ -139,11 +139,6 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 py-5 sm:py-6 space-y-4">
-      {/* ── Hero ── */}
-      <div className="text-center pt-2 pb-2 space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">foodplug</h1>
-        <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
-      </div>
 
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold text-white">
