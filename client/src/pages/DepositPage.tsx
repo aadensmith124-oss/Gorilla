@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Loader2, Copy, Check, Clock, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, ExternalLink, Zap, Send
+  RefreshCw, ExternalLink, Send
 } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 
@@ -241,161 +241,94 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="max-w-sm sm:max-w-lg lg:max-w-xl mx-auto px-4 py-4 sm:py-6 space-y-4">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-5">
 
-      {manualResult ? (
-        <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />
-      ) : (
-        <>
-          {/* ── Hero card: balance + amount ── */}
-          <div className="relative rounded-2xl border border-primary/25 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
-            <div className="relative px-4 pt-3 pb-4 space-y-3" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Current Balance</p>
-                <p className="text-sm font-bold text-white font-mono tabular-nums">${((user?.balance ?? 0) / 100).toFixed(2)}</p>
-              </div>
+        {manualResult ? (
+          <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />
+        ) : (
+          <>
+            {/* ── Amount ── */}
+            <div className="space-y-2">
+              <p className="text-sm font-bold text-white">Amount to charge</p>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="amount to charge in $"
+                value={amountInput}
+                onChange={e => setAmountInput(e.target.value)}
+                className="w-full h-11 bg-[#1a1a1a] border border-white/10 rounded px-3 text-sm text-white outline-none focus:border-primary/50 transition-colors placeholder:text-white/30"
+                data-testid="input-amount"
+              />
+            </div>
 
-              <div className="h-px bg-white/[0.06]" />
-
+            {/* ── Payment processor ── */}
+            <div className="space-y-2">
+              <p className="text-sm font-bold text-white">Select payment processor</p>
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Amount to add</p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-primary font-mono font-bold">$</span>
-                  <input
-                    type="number" step="0.01" min="0.01" placeholder="0.00"
-                    value={amountInput}
-                    onChange={e => setAmountInput(e.target.value)}
-                    className="w-full h-10 bg-black/30 border border-white/10 rounded-xl pl-7 pr-4 text-sm text-white font-mono font-bold outline-none focus:border-primary/50 transition-colors placeholder:text-white/20"
-                    data-testid="input-amount"
-                  />
-                </div>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[10,25,50,100,250].map(a => (
-                    <button key={a} onClick={() => setAmountInput(String(a))}
-                      className={`py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                        parsedAmount === a ? "bg-primary text-primary-foreground border-primary" : "bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70 hover:border-white/20"
-                      }`}
-                      data-testid={`btn-quick-amount-${a}`}>
-                      ${a}
+                {paymentOptions.map(opt => {
+                  const isActive = selectedOption === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSelectedOption(opt.id)}
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded border transition-all"
+                      style={{
+                        borderColor: isActive ? opt.color : "rgba(255,255,255,0.1)",
+                        background: isActive ? `${opt.color}12` : "#1a1a1a",
+                      }}
+                      data-testid={`btn-payment-${opt.id}`}
+                    >
+                      <opt.Icon className="h-6 w-6 flex-shrink-0" style={{ color: opt.color }} />
+                      <span className="text-sm font-medium text-white">{opt.label}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          {/* ── Bonus milestones strip ── */}
-          <div className="pro-card p-3.5 space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Topup bonus tiers</p>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {BONUS_TIERS.map((tier, i) => {
-                const isActiveTier = activeTier === tier;
-                return (
-                  <div key={i} className={`rounded-xl border px-1.5 py-2 text-center transition-all ${
-                    isActiveTier ? "border-primary bg-primary/15" : "border-white/8 bg-black/20"
-                  }`}>
-                    <p className={`text-[9px] font-mono leading-tight ${isActiveTier ? "text-white/70" : "text-white/35"}`}>${tier.min.toLocaleString()}+</p>
-                    <p className={`text-[11px] font-black font-mono leading-tight mt-0.5 ${isActiveTier ? "text-primary" : "text-white/50"}`}>{tier.bonus}</p>
-                  </div>
-                );
-              })}
-            </div>
-            {activeTier && parsedAmount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/25">
-                <Zap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                <p className="text-[11px] text-primary font-mono font-bold">{activeTier.bonus} bonus applied on this deposit</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── Choose a payment method ── */}
-          <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Choose a payment method</p>
-            <div className="grid grid-cols-2 gap-2">
-              {paymentOptions.map(opt => {
-                const isActive = selectedOption === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setSelectedOption(opt.id)}
-                    className="relative flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all"
-                    style={{
-                      borderColor: isActive ? opt.color : "rgba(255,255,255,0.08)",
-                      background: isActive ? `${opt.color}14` : "#111",
-                      boxShadow: isActive ? `0 0 0 1px ${opt.color}30, 0 6px 16px -6px ${opt.color}40` : undefined,
-                    }}
-                    data-testid={`btn-payment-${opt.id}`}
-                  >
-                    {isActive && (
-                      <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: opt.color }}>
-                        <Check className="h-2 w-2 text-black" />
-                      </div>
-                    )}
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: `${opt.color}20` }}>
-                      {opt.Icon
-                        ? <opt.Icon className="h-4 w-4" style={{ color: opt.color }} />
-                        : <span className="text-xs font-black" style={{ color: opt.color }}>{opt.label.charAt(0)}</span>
-                      }
-                    </div>
-                    <div className="text-center px-1">
-                      <p className="text-xs font-bold text-white">{opt.label}</p>
-                      <p className="text-[9px] text-white/35 font-mono leading-tight">{opt.sub}</p>
-                      <p className="text-[9px] text-white/25 font-mono">{opt.fee}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── CTA ── */}
-          <button
-            onClick={handleContinue}
-            disabled={!selectedOption || isPending || !amountInput || parsedAmount <= 0}
-            className="w-full h-10 rounded-xl font-bold text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            style={selected
-              ? { background: `linear-gradient(135deg, ${selected.color}, ${selected.color}cc)`, color: "#000", boxShadow: `0 8px 24px -8px ${selected.color}80` }
-              : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
-            data-testid="btn-continue-deposit"
-          >
-            {isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</>
-              : selected ? <>Continue with {selected.label} <span aria-hidden>→</span></> : "Select a method"
-            }
-          </button>
-
-          <div className="space-y-2 pt-1">
-            <p className="text-[11px] text-white/25 font-mono text-center">
-              Payment issues?{" "}
-              <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact support</a>
-            </p>
-            <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer">
-              <button className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-blue-500/25 bg-blue-500/8 text-blue-400 text-xs font-bold hover:bg-blue-500/12 transition-colors">
-                <Send className="h-3.5 w-3.5" /> Join our Telegram
-              </button>
-            </a>
-          </div>
-        </>
-      )}
-
-      {/* ── History ── */}
-      {recentDeposits.length > 0 && (
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center justify-between">
-            <p className="text-[9px] text-white/20 uppercase tracking-widest font-mono">Topup History</p>
-            <button onClick={() => refetchDeposits()} className="text-white/20 hover:text-white/50 transition-colors" data-testid="btn-refresh-deposits">
-              <RefreshCw className="h-3 w-3" />
+            {/* ── Charge button ── */}
+            <button
+              onClick={handleContinue}
+              disabled={!selectedOption || isPending || !amountInput || parsedAmount <= 0}
+              className="w-full py-3 rounded bg-primary hover:bg-primary/90 disabled:opacity-40 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              data-testid="btn-continue-deposit"
+            >
+              {isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</> : "Charge"}
             </button>
+          </>
+        )}
+
+        {/* ── History ── */}
+        {recentDeposits.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-white/40">Deposit History</p>
+              <button onClick={() => refetchDeposits()} className="text-white/20 hover:text-white/50 transition-colors" data-testid="btn-refresh-deposits">
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {recentDeposits.map(dep => <DepositRow key={dep.id} deposit={dep} />)}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            {recentDeposits.map(dep => <DepositRow key={dep.id} deposit={dep} />)}
-          </div>
+        )}
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="border-t border-white/8 py-6 px-4 text-center space-y-2">
+        <div className="flex items-center justify-center gap-5 text-xs font-semibold text-white/50 tracking-widest uppercase">
+          <span>Reviews</span>
+          <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center h-5 w-5 rounded-full bg-primary">
+            <Send className="h-2.5 w-2.5 text-white fill-white" />
+          </a>
+          <span>TOS</span>
+          <span>FAQs</span>
         </div>
-      )}
+        <p className="text-xs text-white/25">© 2026 foodplug. All rights reserved</p>
+      </div>
     </div>
   );
 }

@@ -123,12 +123,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </button>
               {accountOpen && (
                 <div className="mx-auto mt-1 w-48 border border-white/12 rounded bg-[#111] text-center overflow-hidden">
-                  <Link href="/my-code">
-                    <div onClick={() => { setNavOpen(false); setAccountOpen(false); }}
-                      className="block px-4 py-3 text-sm font-medium text-white/75 hover:text-white hover:bg-white/5 border-b border-white/8 cursor-pointer transition-colors">
-                      Setting
-                    </div>
-                  </Link>
                   <div className="px-4 py-3 text-sm font-medium text-white/75">
                     Balance | ${balanceDollars}
                   </div>
