@@ -160,7 +160,7 @@ export default function ShopPage() {
         <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">
           foodplug
         </h1>
-        <p className="text-sm text-white/50">Providing high quality logs since 2022.</p>
+        <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
       </div>
 
       {/* ── Search bar ── */}
