@@ -72,37 +72,34 @@ export function startTelegramBot() {
         `👋 Welcome to the *foodplug* rewards bot\\!\n\n` +
         `*How to get started:*\n` +
         `1️⃣ Go to *foodplug\\.lol* → My Account → Profile\n` +
-        `2️⃣ Click *Link Telegram Bot* and copy your code\n` +
-        `3️⃣ Send me: \`/link YOUR\\_CODE\`\n\n` +
+        `2️⃣ Send me: \`/link your@email.com\`\n\n` +
         `Once linked, add *${NAME_KEYWORD}* to your Telegram display name and use /claim to earn *$1\\.00 every day\\!* 🎁`,
         { parse_mode: "MarkdownV2" }
       );
     }
   });
 
-  /* ── /link TOKEN ── */
+  /* ── /link EMAIL ── */
   bot.command("link", async (ctx: Context) => {
     const chatId = String(ctx.chat!.id);
-    const token  = (typeof ctx.match === "string" ? ctx.match : ctx.match?.[0] ?? "").trim() || undefined;
+    const email  = (typeof ctx.match === "string" ? ctx.match : ctx.match?.[0] ?? "").trim().toLowerCase() || undefined;
 
-    if (!token) {
-      await ctx.reply("❌ Usage: /link YOUR\\_CODE\n\nGet your code from your profile on foodplug\\.lol", { parse_mode: "MarkdownV2" });
+    if (!email || !email.includes("@")) {
+      await ctx.reply("❌ Usage: `/link your@email.com`\n\nSend the email address you used to sign up on foodplug\\.lol", { parse_mode: "MarkdownV2" });
       return;
     }
 
-    // Validate token (valid for 1 hour)
-    const tokenRes = await pool.query(
-      `SELECT * FROM telegram_link_tokens
-       WHERE token = $1 AND created_at > NOW() - INTERVAL '1 hour' LIMIT 1`,
-      [token]
+    // Look up user by email
+    const userRes = await pool.query(
+      "SELECT * FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $1 LIMIT 1",
+      [email]
     );
-    const tokenRow = tokenRes.rows[0];
-    if (!tokenRow) {
-      await ctx.reply("❌ Invalid or expired code\\. Please generate a fresh one from your profile\\.", { parse_mode: "MarkdownV2" });
+    if (!userRes.rows[0]) {
+      await ctx.reply("❌ No account found with that email\\. Make sure it matches what you used to sign up\\.", { parse_mode: "MarkdownV2" });
       return;
     }
 
-    const userId = tokenRow.user_id;
+    const userId = userRes.rows[0].id;
 
     // Prevent linking this Telegram to a different account
     const already = await pool.query(
@@ -120,7 +117,6 @@ export function startTelegramBot() {
       "UPDATE users SET telegram_chat_id = $1, telegram_username = $2 WHERE id = $3",
       [chatId, tgHandle, userId]
     );
-    await pool.query("DELETE FROM telegram_link_tokens WHERE token = $1", [token]);
 
     // Handle pending referral bonus
     const refRes = await pool.query(
@@ -252,7 +248,7 @@ export function startTelegramBot() {
       `/claim — Claim your daily *$1\\.00* \\(need *${NAME_KEYWORD}* in your name\\)\n` +
       `/balance — Check your store balance\n` +
       `/ref — Get your referral link \\(\\+${fmt(REFERRAL_BONUS_CENTS)} per friend\\)\n` +
-      `/link CODE — Link your store account\n` +
+      `/link email — Link your store account with your email\n` +
       `/help — Show this message`,
       { parse_mode: "MarkdownV2" }
     );
