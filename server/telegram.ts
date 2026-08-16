@@ -94,7 +94,7 @@ export function startTelegramBot() {
       await ctx.reply(
         `👋 Welcome back, *${user.username}*!\n\n` +
         `💰 Balance: *${fmt(user.balance)}*\n\n` +
-        `Use /claim to collect your daily *$1.00* (requires *${NAME_KEYWORD}* in your Telegram name).\n` +
+        `Use /claim to collect your daily *${fmt(DAILY_REWARD_CENTS)}* (requires *${NAME_KEYWORD}* in your Telegram name).\n` +
         `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend.`,
         MD
       );
@@ -103,7 +103,7 @@ export function startTelegramBot() {
         `👋 Welcome to the *foodplug* rewards bot!\n\n` +
         `*How to link your account:*\n` +
         `Send: \`/link your@email.com\`\n\n` +
-        `Once linked, add *${NAME_KEYWORD}* to your Telegram name and use /claim to earn *$1.00 every day!* 🎁`,
+        `Once linked, add *${NAME_KEYWORD}* to your Telegram name and use /claim to earn *${fmt(DAILY_REWARD_CENTS)} every day!* 🎁`,
         MD
       );
     }
@@ -203,7 +203,7 @@ export function startTelegramBot() {
     await ctx.reply(
       `✅ Account linked! Welcome, *${user.username}*!\n\n` +
       `💰 Balance: *${fmt(user.balance)}*\n\n` +
-      `Now add *${NAME_KEYWORD}* to your Telegram display name, then use /claim to earn *$1.00 every day!* 🎁\n\n` +
+      `Now add *${NAME_KEYWORD}* to your Telegram display name, then use /claim to earn *${fmt(DAILY_REWARD_CENTS)} every day!* 🎁\n\n` +
       `Use /ref to share your referral link and earn *${fmt(REFERRAL_BONUS_CENTS)}* per friend.`,
       MD
     );
@@ -243,7 +243,7 @@ export function startTelegramBot() {
       tomorrow.setHours(0, 0, 0, 0);
       const hoursLeft = Math.ceil((tomorrow.getTime() - Date.now()) / 3_600_000);
       await ctx.reply(
-        `⏳ Already claimed today! Come back in ~*${hoursLeft}h* for your next *$1.00*. 🔥`,
+        `⏳ Already claimed today! Come back in ~*${hoursLeft}h* for your next *${fmt(DAILY_REWARD_CENTS)}*. 🔥`,
         MD
       );
       return;
@@ -264,7 +264,7 @@ export function startTelegramBot() {
     await ctx.reply(
       `🎉 *+${fmt(DAILY_REWARD_CENTS)}* added to your balance!\n\n` +
       `💰 New balance: *${fmt(newBalance)}*\n\n` +
-      `Come back tomorrow for another *$1.00!* 🔥`,
+      `Come back tomorrow for another *${fmt(DAILY_REWARD_CENTS)}!* 🔥`,
       MD
     );
   });
@@ -299,7 +299,7 @@ export function startTelegramBot() {
     await ctx.reply(
       `*foodplug Rewards Bot*\n\n` +
       `/link email — Link your store account\n` +
-      `/claim — Claim your daily *$1.00* (need *${NAME_KEYWORD}* in your name)\n` +
+      `/claim — Claim your daily *${fmt(DAILY_REWARD_CENTS)}* (need *${NAME_KEYWORD}* in your name)\n` +
       `/balance — Check your store balance\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
       `/help — Show this message`,
