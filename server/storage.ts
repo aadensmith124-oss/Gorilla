@@ -120,7 +120,7 @@ export interface IStorage {
   // Crypto Addresses
   getCryptoAddresses(userId: number): Promise<CryptoAddress[]>;
   setCryptoAddress(userId: number, currency: string, address: string): Promise<CryptoAddress>;
-
+}
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
