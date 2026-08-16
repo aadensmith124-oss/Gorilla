@@ -465,6 +465,20 @@ export async function registerRoutes(
   });
 
 
+  // Telegram — generate a one-time link token (valid 1 hour)
+  app.post("/api/telegram/link-token", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    const userId = (req.user as any).id;
+    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    await db.execute(sql`
+      DELETE FROM telegram_link_tokens WHERE user_id = ${userId}
+    `);
+    await db.execute(sql`
+      INSERT INTO telegram_link_tokens (token, user_id) VALUES (${token}, ${userId})
+    `);
+    res.json({ token });
+  });
+
   // User Rank
   app.get("/api/user/rank", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
+import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, Send, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -126,6 +126,82 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
   );
 }
 
+function TelegramLinkCard({ user }: { user: any }) {
+  const { toast } = useToast();
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/telegram/link-token", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setToken(data.token);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copy = async () => {
+    if (!token) return;
+    await navigator.clipboard.writeText(`/link ${token}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isLinked = !!user.telegramChatId;
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <CardTitle className="text-foreground text-lg flex items-center gap-2">
+          <Send className="h-4 w-4 text-primary" /> Telegram Bot
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLinked ? (
+          <div className="flex items-center gap-2 text-sm text-green-400">
+            <Check className="h-4 w-4" />
+            <span>Linked as <span className="font-mono">@{user.telegramUsername || "unknown"}</span></span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Link your Telegram to earn <strong className="text-primary">$1.00 daily</strong> just by having <code className="text-xs bg-white/8 px-1 py-0.5 rounded">foodplug.lol</code> in your name.</p>
+        )}
+
+        {!token ? (
+          <Button
+            variant="outline"
+            className="border-primary/30 text-primary hover:bg-primary/10"
+            onClick={generate}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+            {isLinked ? "Re-link Telegram Bot" : "Link Telegram Bot"}
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Send this command to the bot on Telegram <span className="text-white/40">(expires in 1 hour)</span>:</p>
+            <div className="flex items-center gap-2 bg-[#0d0d0d] border border-white/10 rounded px-3 py-2">
+              <code className="text-xs text-primary flex-1 font-mono">/link {token}</code>
+              <button onClick={copy} className="text-white/40 hover:text-white transition-colors">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <p className="text-xs text-white/40">Open the foodplug bot on Telegram and send the command above.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function SettingsTab({ user }: { user: any }) {
   const { logout } = useAuth();
   const [newTelegram, setNewTelegram] = useState(user.telegramUsername || "");
@@ -227,6 +303,8 @@ function SettingsTab({ user }: { user: any }) {
           </div>
         </CardContent>
       </Card>
+
+      <TelegramLinkCard user={user} />
 
       <Card className="bg-card border-border">
         <CardHeader>

@@ -8,6 +8,7 @@ import { pool, db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
+import { startTelegramBot } from "./telegram";
 
 const app = express();
 const httpServer = createServer(app);
@@ -181,6 +182,9 @@ app.use((req, res, next) => {
   // This runs server-side so balance is credited even if user closes their browser
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
+
+  // Start Telegram bot (no-op if TELEGRAM_BOT_TOKEN is not set)
+  startTelegramBot();
 
 
   const port = parseInt(process.env.PORT || "5000", 10);
