@@ -63,8 +63,14 @@ export function startTelegramBot() {
         );
         return;
       }
-    } catch {
-      // If the check fails (e.g. bot not in group) just let them through
+    } catch (err: any) {
+      console.error("[telegram] membership check failed:", err?.message ?? err);
+      // Fail closed — block access if check can't be performed
+      await ctx.reply(
+        `🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`,
+        MD
+      );
+      return;
     }
 
     return next();
