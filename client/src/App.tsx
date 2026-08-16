@@ -25,6 +25,7 @@ import CardsPage from "@/pages/CardsPage";
 import CheckerPage from "@/pages/CheckerPage";
 import BecomeResellerPage from "@/pages/BecomeSellerPage";
 import ProfilePage from "@/pages/ProfilePage";
+import SupportPage from "@/pages/SupportPage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/checker" component={CheckerPage} />
         <Route path="/become-reseller" component={BecomeResellerPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/support" component={SupportPage} />
         <Route path="/admin">
           {() => <AdminPage />}
         </Route>

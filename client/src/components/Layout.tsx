@@ -36,6 +36,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     ...(features?.cards !== false ? [{ href: "/cards", label: "Cards" }] : []),
     ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks" }] : []),
     ...(features?.checker !== false ? [{ href: "/checker", label: "Checker" }] : []),
+    { href: "/support", label: "Support" },
     ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller" }] : []),
     ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
     ...((user as any)?.isWorker && user?.role !== "admin" ? [{ href: "/worker", label: "Worker" }] : []),
@@ -106,16 +107,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-
-          {/* Contact support */}
-          <a
-            href="https://t.me/+9_iBYCRURfgwNGUx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block py-2.5 text-sm font-medium text-white/75 hover:text-white transition-colors"
-          >
-            Contact Support
-          </a>
 
           {/* MY ACCOUNT dropdown */}
           {user && (

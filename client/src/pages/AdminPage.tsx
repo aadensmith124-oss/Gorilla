@@ -30,7 +30,7 @@ const adminSections = [
   { id: "cashapp",  label: "Payments",   Icon: DollarSign },
   { id: "deposits", label: "Deposits",   Icon: Wallet },
   { id: "users",    label: "Users",      Icon: Users },
-  
+  { id: "support",  label: "Support",    Icon: MessageSquare },
   { id: "codes",    label: "Codes",      Icon: Gift },
   { id: "integrations", label: "Settings", Icon: Settings },
 ];
@@ -138,6 +138,7 @@ export default function AdminPage() {
           {activeSection === "orders"       && <OrdersSection />}
           {activeSection === "cashapp"      && <CashAppSection />}
           {activeSection === "users"        && <UsersSection />}
+          {activeSection === "support"      && <SupportSection />}
           {activeSection === "codes"        && <CodesSection />}
           {activeSection === "deposits"     && <DepositsSection />}
           
@@ -3368,6 +3369,149 @@ function SellersSection() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   SUPPORT SECTION
+══════════════════════════════════════════════ */
+function SupportSection() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [actionTicketId, setActionTicketId] = useState<number | null>(null);
+  const [adminMessage, setAdminMessage] = useState("");
+
+  const { data: tickets, isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/support"],
+    staleTime: 10000,
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: async ({ id, action }: { id: number; action: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/support/${id}`, { action, message: adminMessage });
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/support"] });
+      setActionTicketId(null);
+      setAdminMessage("");
+      toast({ title: "Ticket updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const statusCls = (s: string) => {
+    if (s === "open")     return "bg-yellow-500/15 text-yellow-400 border-yellow-500/20";
+    if (s === "refunded") return "bg-green-500/15  text-green-400  border-green-500/20";
+    if (s === "replaced") return "bg-blue-500/15   text-blue-400   border-blue-500/20";
+    return "bg-white/8 text-white/40 border-white/10";
+  };
+
+  if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+
+  const open   = (tickets ?? []).filter((t: any) => t.status === "open");
+  const closed = (tickets ?? []).filter((t: any) => t.status !== "open");
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <p className="text-sm font-semibold text-white mb-0.5">Support Tickets</p>
+        <p className="text-xs text-white/40">{open.length} open · {closed.length} closed</p>
+      </div>
+
+      {(tickets ?? []).length === 0 && (
+        <div className="text-center py-16 text-white/30 text-sm">No tickets yet</div>
+      )}
+
+      {(tickets ?? []).map((ticket: any) => (
+        <Card key={ticket.id} className="bg-[#111] border-white/10">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${statusCls(ticket.status)}`}>
+                    {ticket.status.toUpperCase()}
+                  </span>
+                  <span className="text-xs text-white/50 font-mono">#{ticket.id}</span>
+                </div>
+                <p className="text-xs text-white/40 font-mono">Order: {ticket.orderId}</p>
+              </div>
+              <p className="text-[10px] text-white/30 shrink-0">{new Date(ticket.createdAt).toLocaleDateString()}</p>
+            </div>
+
+            <div className="bg-white/[0.03] rounded p-3 space-y-1.5 border border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-widest text-white/30">Issue</span>
+                <span className="text-xs font-semibold text-white">{ticket.subject}</span>
+              </div>
+              <p className="text-xs text-white/60 leading-relaxed">{ticket.description}</p>
+              {ticket.imageUrl && (
+                <a href={ticket.imageUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline block">View attached image →</a>
+              )}
+            </div>
+
+            {ticket.adminMessage && (
+              <div className="bg-primary/5 border border-primary/15 rounded px-3 py-2">
+                <p className="text-[10px] text-primary/60 uppercase tracking-widest mb-0.5">Your response</p>
+                <p className="text-xs text-white/70">{ticket.adminMessage}</p>
+              </div>
+            )}
+
+            {ticket.status === "open" && (
+              <div className="space-y-2 pt-1">
+                {actionTicketId === ticket.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Optional message to user..."
+                      value={adminMessage}
+                      onChange={e => setAdminMessage(e.target.value)}
+                      className="h-20 text-xs bg-[#0d0d0d] border-white/10 resize-none"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["refund", "replace", "resolved"] as const).map(action => (
+                        <Button
+                          key={action}
+                          size="sm"
+                          disabled={actionMutation.isPending}
+                          className={`text-xs h-8 ${
+                            action === "refund"
+                              ? "bg-green-700 hover:bg-green-600 text-white"
+                              : action === "replace"
+                              ? "bg-blue-700 hover:bg-blue-600 text-white"
+                              : "bg-white/10 hover:bg-white/15 text-white/70"
+                          }`}
+                          onClick={() => actionMutation.mutate({ id: ticket.id, action })}
+                        >
+                          {actionMutation.isPending
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : action.charAt(0).toUpperCase() + action.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => { setActionTicketId(null); setAdminMessage(""); }}
+                      className="text-[11px] text-white/30 hover:text-white/60 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-8 border-white/10 text-white/60 hover:text-white"
+                    onClick={() => setActionTicketId(ticket.id)}
+                  >
+                    Take Action
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

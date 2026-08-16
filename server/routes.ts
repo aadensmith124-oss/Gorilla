@@ -1391,8 +1391,9 @@ export async function registerRoutes(
       return res.status(400).json({ message: e.message });
     }
 
+    const newStatus = action === "refund" ? "refunded" : action === "replace" ? "replaced" : "resolved";
     const updated = await storage.updateSupportTicket(Number(req.params.id), { 
-      status: "closed",
+      status: newStatus,
       adminMessage: message || ticket.adminMessage
     });
     res.json(updated);

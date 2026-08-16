@@ -239,7 +239,7 @@ export const supportTickets = pgTable("support_tickets", {
   subject: text("subject").notNull(), // Refund, Replace, Question, etc.
   description: text("description").notNull(),
   imageUrl: text("image_url").notNull(),
-  status: text("status", { enum: ["open", "closed"] }).default("open").notNull(),
+  status: text("status", { enum: ["open", "refunded", "replaced", "resolved"] }).default("open").notNull(),
   adminMessage: text("admin_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

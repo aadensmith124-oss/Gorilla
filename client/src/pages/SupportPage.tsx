@@ -1,219 +1,247 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2, Upload, MessageSquare, History, CheckCircle2, Clock } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2, Send, Clock, CheckCircle2, RefreshCw, TicketCheck } from "lucide-react";
 
-const supportSchema = z.object({
-  orderId: z.string().min(1, "Product ID (Order ID) is required"),
-  subject: z.string().min(1, "Please select what you need"),
-  description: z.string().min(1, "Please describe what happened"),
-  imageUrl: z.string().optional(),
-});
+type Ticket = {
+  id: number;
+  orderId: string;
+  subject: string;
+  description: string;
+  imageUrl: string;
+  status: "open" | "refunded" | "replaced" | "resolved";
+  adminMessage: string | null;
+  createdAt: string;
+};
+
+function StatusBadge({ status }: { status: Ticket["status"] }) {
+  const map = {
+    open:     { label: "Open",     cls: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20" },
+    refunded: { label: "Refunded", cls: "bg-green-500/15 text-green-400 border-green-500/20" },
+    replaced: { label: "Replaced", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
+    resolved: { label: "Resolved", cls: "bg-white/8 text-white/50 border-white/10" },
+  };
+  const s = map[status] ?? map.open;
+  return (
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${s.cls}`}>{s.label}</span>
+  );
+}
 
 export default function SupportPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState("new");
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<"submit" | "history">("submit");
 
-  const form = useForm<z.infer<typeof supportSchema>>({
-    resolver: zodResolver(supportSchema),
-    defaultValues: { orderId: "", subject: "", description: "", imageUrl: "" },
-  });
+  // form state
+  const [agreed, setAgreed] = useState(false);
+  const [orderId, setOrderId] = useState("");
+  const [issue, setIssue] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
-  const { data: tickets, isLoading: ticketsLoading } = useQuery<any[]>({
+  const { data: tickets, isLoading: ticketsLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/support"],
+    staleTime: 30000,
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-        const res = await apiRequest("POST", "/api/upload", {
-          filename: file.name,
-          mimeType: file.type,
-          data: base64,
-        });
-        const data = await res.json();
-        form.setValue("imageUrl", data.url);
-        toast({ title: "Image uploaded" });
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      toast({ title: "Upload failed", variant: "destructive" });
-      setIsUploading(false);
-    }
-  };
-
-  const onSubmit = async (data: z.infer<typeof supportSchema>) => {
-    try {
-      await apiRequest("POST", "/api/support", data);
-      toast({ title: "Support ticket sent successfully" });
-      form.reset();
-      setActiveTab("history");
-      queryClient.invalidateQueries({ queryKey: ["/api/support"] });
-    } catch (err: any) {
-      toast({ title: "Failed to send ticket", description: err.message, variant: "destructive" });
-    }
-  };
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!orderId.trim()) throw new Error("Order ID is required");
+      if (!issue) throw new Error("Please select an issue type");
+      if (!description.trim()) throw new Error("Please provide a description");
+      const res = await apiRequest("POST", "/api/support", {
+        orderId: orderId.trim(),
+        subject: issue,
+        description: description.trim(),
+        imageUrl: imageUrl.trim(),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/support"] });
+      toast({ title: "Ticket submitted", description: "Our team will review it shortly." });
+      setOrderId("");
+      setIssue("");
+      setDescription("");
+      setImageUrl("");
+      setAgreed(false);
+      setTab("history");
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
-      <div>
-        <h1 className="text-3xl text-white">Support Center</h1>
-        <p className="text-muted-foreground mt-2">Need help with an order? We're here for you.</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-[#111] border border-white/10 p-1">
-          <TabsTrigger value="new" className="gap-2 data-[state=active]:bg-primary">
-            <MessageSquare className="h-4 w-4" /> New Ticket
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-primary">
-            <History className="h-4 w-4" /> Support History
-          </TabsTrigger>
-        </TabsList>
+        {/* Tabs */}
+        <div className="flex border-b border-white/10 mb-6">
+          {(["submit", "history"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 py-2.5 text-sm font-semibold tracking-wide transition-colors border-b-2 -mb-px ${
+                tab === t
+                  ? "border-primary text-primary"
+                  : "border-transparent text-white/40 hover:text-white/70"
+              }`}
+            >
+              {t === "submit" ? "Submit Ticket" : "History"}
+            </button>
+          ))}
+        </div>
 
-        <TabsContent value="new" className="mt-6">
-          <Card className="bg-[#111] border-white/10">
-            <CardHeader>
-              <CardTitle className="text-xl">Open a Ticket</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField control={form.control} name="orderId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="uppercase text-[10px] text-muted-foreground">Product ID / Order ID</FormLabel>
-                      <FormControl><Input {...field} placeholder="Enter your Order ID (e.g. CARD-abc123...)" className="bg-[#111]/5 border-white/10" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+        {/* ── Submit Ticket ── */}
+        {tab === "submit" && (
+          <div className="space-y-5">
+            {/* Instructions */}
+            <div className="bg-[#111] border border-white/10 rounded p-4 space-y-3">
+              <h2 className="text-sm font-bold text-white">How to submit a ticket?</h2>
+              <ul className="text-xs text-white/60 space-y-1.5 list-disc list-inside leading-relaxed">
+                <li>Copy your Order ID from the <span className="text-primary">Orders</span> page.</li>
+                <li>Select the issue type — Refund or Replace.</li>
+                <li>Describe the problem in full detail.</li>
+                <li>Optionally attach an image link (imgur, etc.).</li>
+                <li>Submit and wait for our team to respond.</li>
+              </ul>
 
-                  <FormField control={form.control} name="subject" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="uppercase text-[10px] text-muted-foreground">What you need</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-[#111]/5 border-white/10 text-white">
-                            <SelectValue placeholder="Select a reason" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-[#111] border-white/10 text-white">
-                          <SelectItem value="Refund">Refund</SelectItem>
-                          <SelectItem value="Replace">Replace</SelectItem>
-                          <SelectItem value="Nothing">Nothing</SelectItem>
-                          <SelectItem value="Just question">Just question</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+              {/* Checkbox */}
+              <label className="flex items-start gap-3 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                  className="mt-0.5 accent-primary w-4 h-4 shrink-0"
+                />
+                <span className="text-xs text-white/70">I've read the instructions and fully understand</span>
+              </label>
+            </div>
 
-                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="uppercase text-[10px] text-muted-foreground">What happened?</FormLabel>
-                      <FormControl><Textarea {...field} placeholder="Describe the issue in detail..." className="bg-[#111]/5 border-white/10 min-h-[120px]" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+            {/* Form — only enabled after checkbox */}
+            <fieldset disabled={!agreed} className="space-y-4 disabled:opacity-40 disabled:pointer-events-none transition-opacity">
+              {/* Order ID */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">Order ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ORD-12345"
+                  value={orderId}
+                  onChange={e => setOrderId(e.target.value)}
+                  className="w-full h-11 bg-[#1a1a1a] border border-white/10 rounded px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
 
-                  <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="uppercase text-[10px] text-muted-foreground">Proof Image</FormLabel>
-                      <div className="flex flex-col gap-4">
-                        <div className="flex gap-4 items-center">
-                          <div className="relative group flex-1">
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-[#111]/5 border-white/10 opacity-0 absolute inset-0 cursor-pointer z-10" />
-                            <div className="flex items-center gap-3 px-4 h-10 rounded-md bg-[#111]/5 border border-white/10 text-xs text-muted-foreground">
-                              <Upload className="h-4 w-4" />
-                              <span>{field.value ? field.value.split('/').pop() : "Choose File"}</span>
-                            </div>
-                          </div>
-                          {isUploading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-                        </div>
-                        {field.value && (
-                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10">
-                            <img src={field.value} className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+              {/* Issue */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">Issue Type</label>
+                <select
+                  value={issue}
+                  onChange={e => setIssue(e.target.value)}
+                  className="w-full h-11 bg-[#1a1a1a] border border-white/10 rounded px-3 text-sm text-white outline-none focus:border-primary/40 transition-colors appearance-none"
+                >
+                  <option value="" disabled>Select an issue...</option>
+                  <option value="Refund">Refund</option>
+                  <option value="Replace">Replace</option>
+                </select>
+              </div>
 
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white h-12">
-                    Send Support Request
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">Description</label>
+                <textarea
+                  placeholder="Describe your issue in detail..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={5}
+                  className="w-full bg-[#1a1a1a] border border-white/10 rounded px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-primary/40 transition-colors resize-none"
+                />
+              </div>
 
-        <TabsContent value="history" className="mt-6">
-          <div className="space-y-4">
+              {/* Image URL (optional) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">
+                  Image URL <span className="text-white/30 font-normal normal-case">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://imgur.com/..."
+                  value={imageUrl}
+                  onChange={e => setImageUrl(e.target.value)}
+                  className="w-full h-11 bg-[#1a1a1a] border border-white/10 rounded px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                onClick={() => submitMutation.mutate()}
+                disabled={submitMutation.isPending}
+                className="w-full py-3 rounded bg-primary hover:bg-primary/90 disabled:opacity-40 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {submitMutation.isPending
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</>
+                  : <><Send className="h-4 w-4" /> Submit Ticket</>}
+              </button>
+            </fieldset>
+          </div>
+        )}
+
+        {/* ── History ── */}
+        {tab === "history" && (
+          <div className="space-y-3">
             {ticketsLoading ? (
-              <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
-            ) : !tickets || tickets.length === 0 ? (
-              <div className="text-center py-20 bg-[#111] rounded-xl border border-white/10">
-                <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-muted-foreground font-bold">No support history found</p>
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : !tickets?.length ? (
+              <div className="text-center py-16 space-y-3">
+                <TicketCheck className="h-10 w-10 text-white/15 mx-auto" />
+                <p className="text-sm text-white/40">You don't have any tickets yet</p>
               </div>
             ) : (
-              tickets.map((ticket) => (
-                <Card key={ticket.id} className="bg-[#111] border-white/10 hover:border-white/10 transition-colors">
-                  <CardHeader className="flex flex-row items-center justify-between py-4">
-                    <div className="flex items-center gap-4">
-                      <div className={cn("p-2 rounded-lg", ticket.status === 'open' ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500")}>
-                        {ticket.status === 'open' ? <Clock className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
-                      </div>
-                      <div>
-                        <CardTitle className="text-sm font-bold">{ticket.subject}</CardTitle>
-                        <p className="text-[10px] text-muted-foreground">Order ID: {ticket.orderId}</p>
-                      </div>
+              tickets.map(ticket => (
+                <div key={ticket.id} className="bg-[#111] border border-white/10 rounded p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-mono text-white/50">{ticket.orderId}</p>
+                      <p className="text-sm font-semibold text-white mt-0.5">{ticket.subject}</p>
                     </div>
-                    <Badge variant={ticket.status === 'open' ? 'outline' : 'default'} className={cn(
-                      "uppercase text-[10px]",
-                      ticket.status === 'open' ? "border-primary/50 text-primary" : "bg-green-500 text-white"
-                    )}>
-                      {ticket.status}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pb-6">
-                    <p className="text-sm text-muted-foreground">{ticket.description}</p>
-                    {ticket.adminMessage && (
-                      <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
-                        <p className="text-[10px] text-primary">Admin Message</p>
-                        <p className="text-sm">"{ticket.adminMessage}"</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    <StatusBadge status={ticket.status} />
+                  </div>
+                  <p className="text-xs text-white/50 leading-relaxed">{ticket.description}</p>
+                  {ticket.imageUrl && (
+                    <a href={ticket.imageUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline">View image</a>
+                  )}
+                  {ticket.adminMessage && (
+                    <div className="mt-2 bg-white/5 rounded px-3 py-2 border border-white/8">
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest mb-0.5">Admin response</p>
+                      <p className="text-xs text-white/70">{ticket.adminMessage}</p>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-white/25">
+                    {new Date(ticket.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
               ))
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-white/8 py-6 px-4 text-center space-y-2">
+        <div className="flex items-center justify-center gap-5 text-xs font-semibold text-white/50 tracking-widest uppercase">
+          <span>Reviews</span>
+          <a href="https://t.me/+9_iBYCRURfgwNGUx" target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center h-5 w-5 rounded-full bg-primary">
+            <Send className="h-2.5 w-2.5 text-white fill-white" />
+          </a>
+          <span>TOS</span>
+          <span>FAQs</span>
+        </div>
+        <p className="text-xs text-white/25">© 2026 foodplug. All rights reserved</p>
+      </div>
     </div>
   );
 }
