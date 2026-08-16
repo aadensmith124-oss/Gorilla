@@ -213,6 +213,12 @@ export default function CardsPage() {
   return (
     <div className="max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-0 py-0">
 
+      {/* ── Hero ── */}
+      <div className="text-center pt-8 pb-4 space-y-1">
+        <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">foodplug</h1>
+        <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
+      </div>
+
       {/* Bases + Search + controls */}
       <div className="px-3 pt-3 pb-2 space-y-2.5 bg-background sticky top-[52px] z-30 border-b border-white/[0.05]">
 

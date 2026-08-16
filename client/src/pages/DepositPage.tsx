@@ -243,6 +243,12 @@ export default function DepositPage() {
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-5">
 
+        {/* ── Hero ── */}
+        <div className="text-center pt-2 pb-2 space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">foodplug</h1>
+          <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
+        </div>
+
         {manualResult ? (
           <ManualDepositPanel result={manualResult} onReset={() => { setManualResult(null); setSelectedOption(null); setAmountInput(""); }} />
         ) : (

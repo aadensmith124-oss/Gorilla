@@ -79,6 +79,12 @@ export default function BecomeSellerPage() {
     <div className="min-h-screen bg-[#0d0d0d] pb-20">
       <div className="max-w-lg w-full mx-auto px-4 pt-6 space-y-6">
 
+        {/* ── Hero ── */}
+        <div className="text-center pt-2 pb-2 space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">foodplug</h1>
+          <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
+        </div>
+
         {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
