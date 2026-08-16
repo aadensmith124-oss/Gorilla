@@ -289,9 +289,8 @@ export function startTelegramBot() {
     const botInfo = await bot.api.getMe();
     const refLink = `https://t.me/${botInfo.username}?start=ref_${user.id}`;
     await ctx.reply(
-      `🔗 *Your referral link:*\n${refLink}\n\n` +
-      `Share it with friends — you earn *${fmt(REFERRAL_BONUS_CENTS)}* store credit every time someone links their account through your link!`,
-      MD
+      `🔗 Your referral link:\n${refLink}\n\n` +
+      `Share it with friends — you earn ${fmt(REFERRAL_BONUS_CENTS)} store credit every time someone links their account through your link!`
     );
   });
 
