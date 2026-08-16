@@ -2264,18 +2264,20 @@ export async function registerRoutes(
     const reseller = await storage.getSetting("feature_reseller", "true");
     const ranks = await storage.getSetting("feature_ranks", "true");
     const logs = await storage.getSetting("feature_logs", "true");
-    res.json({ checker: checker !== "false", reseller: reseller !== "false", ranks: ranks !== "false", logs: logs !== "false" });
+    const cards = await storage.getSetting("feature_cards", "true");
+    res.json({ checker: checker !== "false", reseller: reseller !== "false", ranks: ranks !== "false", logs: logs !== "false", cards: cards !== "false" });
   });
 
   app.post("/api/admin/settings/features", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { checker, reseller, ranks, logs } = req.body;
+    const { checker, reseller, ranks, logs, cards } = req.body;
     if (checker !== undefined) await storage.setSetting("feature_checker", checker ? "true" : "false");
     if (reseller !== undefined) await storage.setSetting("feature_reseller", reseller ? "true" : "false");
     if (ranks !== undefined) await storage.setSetting("feature_ranks", ranks ? "true" : "false");
     if (logs !== undefined) await storage.setSetting("feature_logs", logs ? "true" : "false");
+    if (cards !== undefined) await storage.setSetting("feature_cards", cards ? "true" : "false");
     res.json({ ok: true });
   });
 

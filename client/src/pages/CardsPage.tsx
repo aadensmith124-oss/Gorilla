@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart, ChevronDown, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Redirect } from "wouter";
 
 function countryFlag(code: string): string {
   if (!code || code.length !== 2) return "";
@@ -109,10 +110,17 @@ export default function CardsPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  const { data: features } = useQuery<{ cards: boolean }>({
+    queryKey: ["/api/settings/features"],
+    staleTime: 30000,
+  });
+
   const { data: bases } = useQuery<any[]>({
     queryKey: ["/api/card-bases"],
     refetchInterval: 30000,
   });
+
+  if (features && features.cards === false) return <Redirect to="/" />;
 
   const { data: cards, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cards", selectedBase],
