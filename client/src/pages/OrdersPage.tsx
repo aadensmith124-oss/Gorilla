@@ -175,7 +175,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-0 border-b border-white/10">
+      <div className="flex items-center gap-0 border-b border-white/10 overflow-x-auto">
         {tabs.map(t => (
           <div key={t.key} className="flex items-center gap-1 mr-4">
             <button

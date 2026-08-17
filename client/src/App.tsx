@@ -46,7 +46,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/auth" component={AuthPage} />
-        <Route path="/" component={DepositPage} />
+        <Route path="/" component={ShopPage} />
         <Route path="/deposit" component={DepositPage} />
         <Route path="/shop" component={ShopPage} />
         <Route path="/product/:name" component={ProductDetailPage} />

@@ -211,7 +211,7 @@ export default function CardsPage() {
   const clearFilters = () => { setZipSearch(""); setPriceMin(""); setPriceMax(""); setSelectedBank(""); setSelectedCountry(""); };
 
   return (
-    <div className="max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto px-0 py-0">
+    <div className="max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto">
 
       {/* ── Hero ── */}
       <div className="text-center pt-8 pb-4 space-y-1">
