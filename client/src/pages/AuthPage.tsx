@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Loader2, Eye, EyeOff, RefreshCw, Send } from "lucide-react";
+import { Loader2, Eye, EyeOff, RefreshCw, Send, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 /* ── SVG Captcha ──────────────────────────────────────────── */
@@ -296,6 +296,14 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col" style={{ background: "#0d0d0d" }}>
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
         <div className="w-full max-w-[380px]">
+          <div className="flex flex-col items-center mb-8" aria-label="unitedcards">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 shadow-[0_0_28px_rgba(236,72,153,0.12)]">
+              <CreditCard className="h-6 w-6 text-primary" strokeWidth={1.8} />
+            </div>
+            <div className="mt-3 text-lg font-black uppercase tracking-[0.2em] text-primary">
+              unitedcards
+            </div>
+          </div>
           {tab === "login"
             ? <LoginForm onSwitchToRegister={() => setTab("register")} />
             : <RegisterForm onSwitchToLogin={() => setTab("login")} />
