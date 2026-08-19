@@ -6,6 +6,10 @@ const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
 const SITE_URL     = process.env.SITE_URL || "https://unitedcards.cc";
+// The bot shares a container with the Express server, so it reaches it over
+// localhost. Derive the port from PORT (the same value index.ts listens on),
+// with LOCAL_API_URL as an optional full-URL override.
+const LOCAL_API    = process.env.LOCAL_API_URL || `http://localhost:${process.env.PORT || "5000"}`;
 const DAILY_REWARD_CENTS  = 200; // $2.00
 const REFERRAL_BONUS_CENTS = 100; // $1.00
 const NAME_KEYWORD = "unitedcards.cc";
@@ -226,10 +230,10 @@ export function startTelegramBot() {
       return;
     }
 
-    // Redeem the token via the live site API (works for both dev & prod accounts)
-    let siteUser: { userId: number; username: string; balance: number; telegramChatId: string | null } | null = null;
+    // Redeem the token via the bot's own local server (see LOCAL_API above).
+    let siteUser: { userId: number; username: string; telegramChatId: string | null } | null = null;
     try {
-      const r = await fetch(`${SITE_URL}/api/telegram/link-token/${encodeURIComponent(token)}`);
+      const r = await fetch(`${LOCAL_API}/api/telegram/link-token/${encodeURIComponent(token)}`);
       if (r.status === 404) {
         await ctx.reply("❌ Invalid or expired token. Generate a new one from your profile page.", MD);
         return;

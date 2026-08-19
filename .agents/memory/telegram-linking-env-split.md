@@ -1,14 +1,19 @@
 ---
-name: Telegram account linking across dev/prod DB split
-description: Why the bot's /link "no account found" happens and the token-based fix that spans both databases
+name: Same-container workers must call localhost, not the public domain
+description: Why the Telegram bot's site calls must target localhost, plus the dev/prod DB split behind "no account found"
 ---
 
-# Telegram linking must not query the DB directly
+# Same-container workers call localhost, never the public URL
 
-The Telegram bot is a long-running process started inside the **development** environment, so its `pool` points at the **development** database. Users who sign up on the **published** site are written to the **production** database (Replit gives every app two separate DBs). A `/link email` handler that queries `pool` directly can therefore never find production users — it reports "no account found."
+**Rule:** when a long-running worker that shares the app's container (Telegram bot, cron, webhook handler) needs to hit an app HTTP endpoint, call `http://localhost:<PORT>`, deriving the port from the same env the server listens on — never the public deployed domain.
 
-**Fix (in place):** the site issues a one-time link token (`/api/telegram/link-token` POST, stored in `telegram_link_tokens`, 1h expiry). The bot redeems it by HTTP `GET ${SITE_URL}/api/telegram/link-token/:token` against the **live production** site (`SITE_URL`, default `https://unitedcards.cc`), which reads the correct DB and returns the user id. The bot then writes the `telegram_chat_id` to its own pool. The redeem endpoint deletes the token immediately (single use).
+**Why:** the development container cannot make outbound HTTPS to the deployed domain — such fetches fail with `fetch failed` / `Could not resolve host`, surfacing to users as "could not reach the site." The worker and the Express server run in the same process/container, so localhost always reaches the server bound to whichever database that environment uses.
 
-**Why:** cross-environment lookups only work through the live site's API, not a shared DB handle. Any future feature where the bot needs site-account data must call the live API, not `pool`, or it will silently only see dev accounts.
+**How to apply:** "could not reach the site" / `fetch failed` in a bot or worker log is this trap. Also keep the localhost port in lockstep with the server's listen port (a hard-coded port breaks any non-default `PORT` deployment).
 
-**How to apply:** if a Telegram (or other externally-hosted long-running worker) feature reports missing users/data that clearly exist on the live site, suspect the dev/prod DB split first. Route the lookup through the production HTTP API. The `409 Conflict: terminated by other getUpdates` bot log is the tell that a prod bot instance is also polling the same token — confirming two environments are live at once.
+## Related: dev/prod DB split behind Telegram "no account found"
+Replit gives the app two separate databases (development and production). The bot only runs in one environment at a time, so localhost resolves to that environment's DB: dev bot → dev DB, published bot → prod DB. Consequence: linking works within whichever environment is actively running the bot; it does NOT bridge accounts across environments. Users who signed up on the published site can only be linked by a bot instance running in production. True cross-environment linking needs a separate mechanism (run the bot in the deployment, or a dedicated internal prod endpoint).
+
+**Security note for one-time link tokens:** consume them atomically (single `DELETE ... RETURNING`), not SELECT-then-DELETE, or concurrent requests can both claim the same token and link multiple chats. Return only the minimum the worker needs (no email/balance/PII), and redact the token-bearing path + response from request logging.
+
+**Unrelated red herring:** `409 Conflict: terminated by other getUpdates` just means a second bot instance (e.g. the published one) is also polling the same Telegram token; only one instance receives updates at a time. Harmless, not a linking bug.

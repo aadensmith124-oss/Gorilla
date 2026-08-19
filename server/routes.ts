@@ -473,7 +473,8 @@ export async function registerRoutes(
   app.post("/api/telegram/link-token", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     const userId = (req.user as any).id;
-    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    // Cryptographically secure, unguessable one-time bearer token (32 bytes, base64url).
+    const token = randomBytes(32).toString("base64url");
     await db.execute(sql`
       DELETE FROM telegram_link_tokens WHERE user_id = ${userId}
     `);
@@ -487,24 +488,27 @@ export async function registerRoutes(
   app.get("/api/telegram/link-token/:token", async (req, res) => {
     const token = req.params.token;
     const { pool: pgPool } = await import("./db");
+    // Atomically consume the token: delete-and-return in a single statement so
+    // two concurrent requests can never both claim the same one-time token.
     const result = await pgPool.query(
-      `SELECT u.id, u.username, u.balance, u.email, u.telegram_chat_id
-       FROM telegram_link_tokens t
-       JOIN users u ON u.id = t.user_id
-       WHERE t.token = $1
-         AND t.created_at > NOW() - INTERVAL '1 hour'
+      `WITH claimed AS (
+         DELETE FROM telegram_link_tokens
+         WHERE token = $1
+           AND created_at > NOW() - INTERVAL '1 hour'
+         RETURNING user_id
+       )
+       SELECT u.id, u.username, u.telegram_chat_id
+       FROM claimed c
+       JOIN users u ON u.id = c.user_id
        LIMIT 1`,
       [token]
     );
     const row = result.rows[0];
     if (!row) return res.status(404).json({ message: "Token not found or expired" });
-    // Mark token used immediately so it can't be replayed
-    await pgPool.query("DELETE FROM telegram_link_tokens WHERE token = $1", [token]);
+    // Return only what the bot needs to complete linking; no email/balance/PII.
     res.json({
       userId: row.id,
       username: row.username,
-      balance: row.balance,
-      email: row.email,
       telegramChatId: row.telegram_chat_id,
     });
   });
