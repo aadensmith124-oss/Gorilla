@@ -92,9 +92,10 @@ export function setupAuth(app: Express) {
     }
   };
 
-  if (app.get("env") === "production") {
-    app.set("trust proxy", 1);
-  }
+  // Replit routes both previews and deployments through one trusted proxy.
+  // This lets rate limiting use the forwarded client IP without rejecting
+  // login requests because of the X-Forwarded-For header.
+  app.set("trust proxy", 1);
 
   app.use(session(sessionSettings));
   app.use(passport.initialize());
