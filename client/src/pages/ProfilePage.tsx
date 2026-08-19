@@ -128,15 +128,37 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
 
 function TelegramLinkCard({ user }: { user: any }) {
   const [copied, setCopied] = useState(false);
-  const command = `/link ${user.email || user.username}`;
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const { toast } = useToast();
+
+  const isLinked = !!user.telegramChatId;
+
+  const generateToken = async () => {
+    setTokenLoading(true);
+    try {
+      const res = await fetch("/api/telegram/link-token", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to generate token");
+      const data = await res.json();
+      setToken(data.token);
+    } catch {
+      toast({ title: "Error", description: "Could not generate link token", variant: "destructive" });
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const command = token ? `/link ${token}` : null;
 
   const copy = async () => {
+    if (!command) return;
     await navigator.clipboard.writeText(command);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const isLinked = !!user.telegramChatId;
 
   return (
     <Card className="bg-card border-border">
@@ -157,14 +179,29 @@ function TelegramLinkCard({ user }: { user: any }) {
 
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            {isLinked ? "To re-link, send this to the bot:" : "Send this command to the bot on Telegram:"}
+            {isLinked ? "To re-link, generate a token and send it to the bot:" : "Generate a token and send it to the bot on Telegram:"}
           </p>
-          <div className="flex items-center gap-2 bg-[#0d0d0d] border border-white/10 rounded px-3 py-2">
-            <code className="text-xs text-primary flex-1 font-mono">{command}</code>
-            <button onClick={copy} className="text-white/40 hover:text-white transition-colors">
-              {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+
+          {command ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-[#0d0d0d] border border-white/10 rounded px-3 py-2">
+                <code className="text-xs text-primary flex-1 font-mono break-all">{command}</code>
+                <button onClick={copy} className="text-white/40 hover:text-white transition-colors shrink-0">
+                  {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-white/30">Token expires in 1 hour. Generate a new one if needed.</p>
+            </div>
+          ) : (
+            <button
+              onClick={generateToken}
+              disabled={tokenLoading}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              {tokenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+              {tokenLoading ? "Generating…" : "Generate Link Token"}
             </button>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -483,6 +483,32 @@ export async function registerRoutes(
     res.json({ token });
   });
 
+  // Telegram — redeem a link token (called by the bot; returns user info and marks token used)
+  app.get("/api/telegram/link-token/:token", async (req, res) => {
+    const token = req.params.token;
+    const { pool: pgPool } = await import("./db");
+    const result = await pgPool.query(
+      `SELECT u.id, u.username, u.balance, u.email, u.telegram_chat_id
+       FROM telegram_link_tokens t
+       JOIN users u ON u.id = t.user_id
+       WHERE t.token = $1
+         AND t.created_at > NOW() - INTERVAL '1 hour'
+       LIMIT 1`,
+      [token]
+    );
+    const row = result.rows[0];
+    if (!row) return res.status(404).json({ message: "Token not found or expired" });
+    // Mark token used immediately so it can't be replayed
+    await pgPool.query("DELETE FROM telegram_link_tokens WHERE token = $1", [token]);
+    res.json({
+      userId: row.id,
+      username: row.username,
+      balance: row.balance,
+      email: row.email,
+      telegramChatId: row.telegram_chat_id,
+    });
+  });
+
   // User Rank
   app.get("/api/user/rank", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });

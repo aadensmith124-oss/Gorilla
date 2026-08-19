@@ -5,6 +5,7 @@ import { log } from "./index";
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
+const SITE_URL     = process.env.SITE_URL || "https://unitedcards.cc";
 const DAILY_REWARD_CENTS  = 200; // $2.00
 const REFERRAL_BONUS_CENTS = 100; // $1.00
 const NAME_KEYWORD = "unitedcards.cc";
@@ -203,40 +204,46 @@ export function startTelegramBot() {
       await ctx.reply(
         `👋 Welcome to the *unitedcards* rewards bot!\n\n` +
         `*How to get started:*\n` +
-        `1. Send: \`/link your@email.com\`\n` +
-        `2. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
-        `3. Earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed! 🎁`,
+        `1. Go to your profile on *unitedcards.cc* → Telegram section\n` +
+        `2. Copy your link token and send: \`/link YOUR_TOKEN\`\n` +
+        `3. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
+        `4. Earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed! 🎁`,
         MD
       );
     }
   });
 
-  /* ── /link EMAIL ──────────────────────────────────────────────────────── */
+  /* ── /link TOKEN ──────────────────────────────────────────────────────── */
   bot.command("link", async (ctx: Context) => {
     const chatId = String(ctx.chat!.id);
-    const email  = getMatch(ctx).toLowerCase();
+    const token  = getMatch(ctx).trim();
 
-    if (!email || !email.includes("@")) {
+    if (!token) {
       await ctx.reply(
-        "❌ Usage: `/link your@email.com`\n\nSend the email you used to sign up on unitedcards.cc",
+        "❌ Usage: `/link YOUR_TOKEN`\n\nGet your token from your profile page on unitedcards.cc → Telegram section.",
         MD
       );
       return;
     }
 
-    const userRes = await pool.query(
-      "SELECT * FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $1 LIMIT 1",
-      [email]
-    );
-    if (!userRes.rows[0]) {
-      await ctx.reply(
-        "❌ No account found with that email. Make sure it matches what you used to sign up.",
-        MD
-      );
+    // Redeem the token via the live site API (works for both dev & prod accounts)
+    let siteUser: { userId: number; username: string; balance: number; telegramChatId: string | null } | null = null;
+    try {
+      const r = await fetch(`${SITE_URL}/api/telegram/link-token/${encodeURIComponent(token)}`);
+      if (r.status === 404) {
+        await ctx.reply("❌ Invalid or expired token. Generate a new one from your profile page.", MD);
+        return;
+      }
+      if (!r.ok) throw new Error(`site API ${r.status}`);
+      siteUser = await r.json() as any;
+    } catch (err: any) {
+      console.error("[telegram] link-token lookup failed:", err?.message);
+      await ctx.reply("❌ Could not reach the site. Please try again in a moment.", MD);
       return;
     }
 
-    const userId = userRes.rows[0].id;
+    if (!siteUser) return;
+    const userId = siteUser.userId;
 
     const already = await pool.query(
       "SELECT id FROM users WHERE telegram_chat_id = $1 LIMIT 1",
@@ -250,7 +257,7 @@ export function startTelegramBot() {
       return;
     }
 
-    const tgHandle = ctx.from?.username ?? "";
+    const tgHandle  = ctx.from?.username ?? "";
     const nameActive = hasKeyword(ctx);
 
     await pool.query(
@@ -314,7 +321,7 @@ export function startTelegramBot() {
   bot.command("balance", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account. Send: `/link your@email.com`", MD);
+      await ctx.reply("❌ No linked account. Get your token from unitedcards.cc → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
       return;
     }
     const nameOk = hasKeyword(ctx);
@@ -331,7 +338,7 @@ export function startTelegramBot() {
   bot.command("ref", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account. Send: `/link your@email.com`", MD);
+      await ctx.reply("❌ No linked account. Get your token from unitedcards.cc → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
       return;
     }
     const botInfo = await bot.api.getMe();
@@ -345,7 +352,7 @@ export function startTelegramBot() {
   bot.command("help", async (ctx: Context) => {
     await ctx.reply(
       `*unitedcards Rewards Bot*\n\n` +
-      `/link email — Link your store account\n` +
+      `/link token — Link your store account (get token from unitedcards.cc profile)\n` +
       `/balance — Check your store balance\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
       `/help — Show this message\n\n` +
