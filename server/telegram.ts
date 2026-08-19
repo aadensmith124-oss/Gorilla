@@ -7,7 +7,7 @@ const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+9_iBYCRURfgwNGUx";
 const DAILY_REWARD_CENTS  = 25;  // $0.25
 const REFERRAL_BONUS_CENTS = 10; // $0.10
-const NAME_KEYWORD = "foodplug.lol";
+const NAME_KEYWORD = "unitedcards.cc";
 
 const MD = { parse_mode: "Markdown" as const };
 
@@ -119,7 +119,7 @@ async function awardDaily(user: any) {
   );
   await pool.query(
     `INSERT INTO transactions (user_id, amount, type, description, created_at)
-     VALUES ($1, $2, 'telegram_name_reward', 'Daily foodplug.lol name reward', NOW())`,
+     VALUES ($1, $2, 'telegram_name_reward', 'Daily unitedcards.cc name reward', NOW())`,
     [user.id, DAILY_REWARD_CENTS]
   );
 }
@@ -148,12 +148,12 @@ export function startTelegramBot() {
       const member = await ctx.api.getChatMember(GROUP_ID, userId);
       const allowed = ["creator", "administrator", "member", "restricted"].includes(member.status);
       if (!allowed) {
-        await ctx.reply(`🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+        await ctx.reply(`🔒 You must join the unitedcards group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
         return;
       }
     } catch (err: any) {
       console.error("[telegram] membership check failed:", err?.message ?? err);
-      await ctx.reply(`🔒 You must join the foodplug group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+      await ctx.reply(`🔒 You must join the unitedcards group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
       return;
     }
 
@@ -201,7 +201,7 @@ export function startTelegramBot() {
       );
     } else {
       await ctx.reply(
-        `👋 Welcome to the *foodplug* rewards bot!\n\n` +
+        `👋 Welcome to the *unitedcards* rewards bot!\n\n` +
         `*How to get started:*\n` +
         `1. Send: \`/link your@email.com\`\n` +
         `2. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
@@ -218,7 +218,7 @@ export function startTelegramBot() {
 
     if (!email || !email.includes("@")) {
       await ctx.reply(
-        "❌ Usage: `/link your@email.com`\n\nSend the email you used to sign up on foodplug.lol",
+        "❌ Usage: `/link your@email.com`\n\nSend the email you used to sign up on unitedcards.cc",
         MD
       );
       return;
@@ -344,7 +344,7 @@ export function startTelegramBot() {
   /* ── /help ────────────────────────────────────────────────────────────── */
   bot.command("help", async (ctx: Context) => {
     await ctx.reply(
-      `*foodplug Rewards Bot*\n\n` +
+      `*unitedcards Rewards Bot*\n\n` +
       `/link email — Link your store account\n` +
       `/balance — Check your store balance\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
@@ -354,13 +354,15 @@ export function startTelegramBot() {
     );
   });
 
-  // Start long polling
-  bot.start({
-    onStart: () => log("Telegram bot started (long polling)", "telegram"),
-  });
-
   bot.catch((err) => {
     console.error("[telegram] error:", err.message);
+  });
+
+  // Start long polling — wrapped so a bad token doesn't crash the server
+  bot.start({
+    onStart: () => log("Telegram bot started (long polling)", "telegram"),
+  }).catch((err: any) => {
+    console.error("[telegram] bot failed to start:", err?.message ?? err);
   });
 
   return bot;
