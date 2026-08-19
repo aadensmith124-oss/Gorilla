@@ -4,7 +4,7 @@ import { log } from "./index";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
-const GROUP_INVITE = "https://t.me/+9_iBYCRURfgwNGUx";
+const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
 const DAILY_REWARD_CENTS  = 25;  // $0.25
 const REFERRAL_BONUS_CENTS = 10; // $0.10
 const NAME_KEYWORD = "unitedcards.cc";
