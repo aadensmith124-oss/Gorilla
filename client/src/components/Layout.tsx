@@ -36,10 +36,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const activeAnnouncement = announcements?.find(a => a.active);
 
   const navLinks = [
-    { href: "/shop", label: "Shop" },
+    { href: "/", label: "Cards" },
     { href: "/deposit", label: "Deposit" },
     { href: "/orders", label: "Orders" },
-    ...(features?.cards !== false ? [{ href: "/cards", label: "Cards" }] : []),
+    ...(features?.cards !== false ? [] : []),
     ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks" }] : []),
     ...(features?.checker !== false ? [{ href: "/checker", label: "Checker" }] : []),
     { href: "/support", label: "Support" },
@@ -117,7 +117,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto py-2">
           {navLinks.map(({ href, label }) => {
-            const isActive = location === href || (href === "/shop" && location === "/");
+            const isActive = location === href || (href === "/" && location === "/");
             return (
               <Link key={href} href={href}>
                 <div

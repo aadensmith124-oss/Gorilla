@@ -10,7 +10,6 @@ import { useEffect } from "react";
 
 // Pages
 import AuthPage from "@/pages/AuthPage";
-import ShopPage from "@/pages/ShopPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import OrderDetailPageNew from "@/pages/OrderDetailPageNew";
 import AdminPage from "@/pages/AdminPage";
@@ -46,9 +45,8 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/auth" component={AuthPage} />
-        <Route path="/" component={ShopPage} />
+        <Route path="/" component={CardsPage} />
         <Route path="/deposit" component={DepositPage} />
-        <Route path="/shop" component={ShopPage} />
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />
