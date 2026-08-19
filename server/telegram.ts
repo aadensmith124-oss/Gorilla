@@ -6,7 +6,7 @@ const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
 const DAILY_REWARD_CENTS  = 200; // $2.00
-const REFERRAL_BONUS_CENTS = 10; // $0.10
+const REFERRAL_BONUS_CENTS = 100; // $1.00
 const NAME_KEYWORD = "unitedcards.cc";
 
 const MD = { parse_mode: "Markdown" as const };
