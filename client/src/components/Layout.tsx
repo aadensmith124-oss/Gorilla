@@ -1,6 +1,19 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { ChevronDown, ShoppingCart, X, User } from "lucide-react";
+import {
+  BookOpen,
+  CreditCard,
+  FileText,
+  Layers,
+  LogOut,
+  MessageSquare,
+  Package,
+  Send,
+  Settings,
+  Trophy,
+  User,
+  X,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -35,17 +48,49 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
   const activeAnnouncement = announcements?.find(a => a.active);
 
-  const navLinks = [
-    { href: "/", label: "Cards" },
-    { href: "/deposit", label: "Deposit" },
-    { href: "/orders", label: "Orders" },
-    ...(features?.cards !== false ? [] : []),
-    ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks" }] : []),
-    ...(features?.checker !== false ? [{ href: "/checker", label: "Checker" }] : []),
-    { href: "/support", label: "Support" },
-    ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller" }] : []),
-    ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
-    ...((user as any)?.isWorker && user?.role !== "admin" ? [{ href: "/worker", label: "Worker" }] : []),
+  type NavItem = {
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    external?: boolean;
+  };
+
+  const navSections: { label: string; links: NavItem[] }[] = [
+    {
+      label: "Main",
+      links: [
+        { href: "/deposit", label: "Deposit Cash", icon: CreditCard },
+        { href: "/orders", label: "Orders", icon: Package },
+        ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks", icon: Trophy }] : []),
+      ],
+    },
+    {
+      label: "Channel",
+      links: [
+        { href: "https://t.me/+L4RV2JFJNz45ZGYx", label: "Telegram Channel", icon: Send, external: true },
+      ],
+    },
+    {
+      label: "Support",
+      links: [
+        { href: "/support", label: "Tickets", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "Featured",
+      links: [
+        { href: "/", label: "Cards", icon: CreditCard },
+        ...(features?.checker !== false ? [{ href: "/checker", label: "Checker", icon: Layers }] : []),
+        ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller", icon: BookOpen }] : []),
+      ],
+    },
+    ...((user?.role === "admin" || (user as any)?.isWorker) ? [{
+      label: "Management",
+      links: [
+        ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin", icon: Settings }] : []),
+        ...((user as any)?.isWorker && user?.role !== "admin" ? [{ href: "/worker", label: "Worker", icon: Settings }] : []),
+      ],
+    }] : []),
   ];
 
   const isAuthPage = location === "/auth";
@@ -104,7 +149,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Side drawer ── */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-52 bg-[#0a0a0a] border-r border-white/8 flex flex-col shadow-2xl transition-transform duration-200 ease-out ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-[#0a0a0a] border-r border-white/8 flex flex-col shadow-2xl transition-transform duration-200 ease-out ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-4 h-[52px] border-b border-white/8 shrink-0">
@@ -114,24 +159,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          {navLinks.map(({ href, label }) => {
-            const isActive = location === href || (href === "/" && location === "/");
-            return (
-              <Link key={href} href={href}>
-                <div
-                  className={`flex items-center px-4 py-2.5 text-sm font-medium cursor-pointer transition-colors border-l-2 ${
+        {/* Grouped nav links */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {navSections.map(section => (
+            <div key={section.label} className="mb-5 last:mb-0">
+              <p className="px-3 mb-2 text-[10px] font-medium uppercase tracking-[0.22em] text-white/25">
+                {section.label}
+              </p>
+              <div className="space-y-0.5">
+                {section.links.map(({ href, label, icon: Icon, external }) => {
+                  const isActive = !external && (location === href || (href === "/" && location === "/"));
+                  const itemClass = `flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium cursor-pointer transition-colors rounded-sm ${
                     isActive
-                      ? "text-primary border-primary bg-primary/5"
-                      : "text-white/60 border-transparent hover:text-white hover:bg-white/4"
-                  }`}
-                >
-                  {label}
-                </div>
-              </Link>
-            );
-          })}
+                      ? "text-white bg-white/10"
+                      : "text-white/55 hover:text-white/90 hover:bg-white/5"
+                  }`;
+
+                  if (external) {
+                    return (
+                      <a
+                        key={href}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={itemClass}
+                        onClick={() => setNavOpen(false)}
+                      >
+                        <Icon className="h-4 w-4 shrink-0 text-white/45" strokeWidth={1.7} />
+                        <span>{label}</span>
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <Link key={href} href={href}>
+                      <div className={itemClass} onClick={() => setNavOpen(false)}>
+                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-white/45"}`} strokeWidth={1.7} />
+                        <span>{label}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Account section at bottom */}
@@ -146,8 +217,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             <button
               onClick={() => { logout(); setNavOpen(false); }}
-              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-medium text-red-400/80 hover:text-red-300 hover:bg-red-950/20 transition-colors border-t border-white/5"
+              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-medium text-white/45 hover:text-white/80 hover:bg-white/5 transition-colors border-t border-white/5"
             >
+              <LogOut className="h-3.5 w-3.5" />
               Sign out
             </button>
           </div>
