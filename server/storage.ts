@@ -54,7 +54,7 @@ export interface IStorage {
   createTransactionWithMethod(userId: number, amount: number, type: string, description: string, paymentMethod: string): Promise<Transaction>;
   getTransactions(userId: number): Promise<Transaction[]>;
   getRedeemCode(code: string): Promise<RedeemCode | undefined>;
-  markRedeemCodeUsed(id: number, userId: number): Promise<void>;
+  markRedeemCodeUsed(id: number, userId: number): Promise<boolean>;
   createRedeemCode(code: string, amount: number): Promise<RedeemCode>;
   getAllRedeemCodes(): Promise<RedeemCode[]>;
   
@@ -987,8 +987,13 @@ export class DatabaseStorage implements IStorage {
     return rc;
   }
 
-  async markRedeemCodeUsed(id: number, userId: number): Promise<void> {
-    await db.update(redeemCodes).set({ isUsed: true, usedBy: userId }).where(eq(redeemCodes.id, id));
+  async markRedeemCodeUsed(id: number, userId: number): Promise<boolean> {
+    const claimed = await db
+      .update(redeemCodes)
+      .set({ isUsed: true, usedBy: userId })
+      .where(and(eq(redeemCodes.id, id), eq(redeemCodes.isUsed, false)))
+      .returning({ id: redeemCodes.id });
+    return claimed.length === 1;
   }
 
   async createRedeemCode(code: string, amount: number): Promise<RedeemCode> {

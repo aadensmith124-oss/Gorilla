@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   BookOpen,
   CreditCard,
-  FileText,
+  Gift,
   Layers,
   LogOut,
   MessageSquare,
@@ -60,6 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       label: "Main",
       links: [
         { href: "/deposit", label: "Deposit Cash", icon: CreditCard },
+        { href: "/redeem", label: "Redeem Code", icon: Gift },
         { href: "/orders", label: "Orders", icon: Package },
         ...(features?.ranks !== false ? [{ href: "/ranks", label: "Ranks", icon: Trophy }] : []),
       ],

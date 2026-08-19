@@ -25,6 +25,7 @@ import CheckerPage from "@/pages/CheckerPage";
 import BecomeResellerPage from "@/pages/BecomeSellerPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SupportPage from "@/pages/SupportPage";
+import RedeemCodePage from "@/pages/RedeemCodePage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -47,6 +48,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/" component={CardsPage} />
         <Route path="/deposit" component={DepositPage} />
+        <Route path="/redeem" component={RedeemCodePage} />
         <Route path="/product/:name" component={ProductDetailPage} />
         <Route path="/order/:id" component={OrderDetailPageNew} />
         <Route path="/orders" component={OrdersPage} />

@@ -217,13 +217,17 @@ export async function registerRoutes(
   // Wallet & Redeem
   app.post(api.wallet.redeem.path, walletLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const code = await storage.getRedeemCode(req.body.code);
+    const codeValue = String(req.body?.code ?? "").trim().toUpperCase();
+    const code = await storage.getRedeemCode(codeValue);
     
     if (!code || code.isUsed) {
       return res.status(400).json({ message: "Invalid or used code" });
     }
 
-    await storage.markRedeemCodeUsed(code.id, (req.user as any).id);
+    const claimed = await storage.markRedeemCodeUsed(code.id, (req.user as any).id);
+    if (!claimed) {
+      return res.status(400).json({ message: "Invalid or used code" });
+    }
     const updatedUser = await storage.updateUserBalance((req.user as any).id, code.amount);
     await storage.createTransaction((req.user as any).id, code.amount, "deposit", `Redeemed code: ${code.code}`);
 
