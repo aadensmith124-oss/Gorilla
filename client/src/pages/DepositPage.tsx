@@ -246,7 +246,7 @@ export default function DepositPage() {
         {/* ── Hero ── */}
         <div className="text-center pt-2 pb-2 space-y-1">
           <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">unitedcards</h1>
-          <p className="text-sm text-white/50">Providing high quality logs since 2026.</p>
+          <p className="text-sm text-white/50">Providing high quality cards since 2026.</p>
         </div>
 
         {manualResult ? (
