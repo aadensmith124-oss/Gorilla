@@ -81,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       label: "Featured",
       links: [
         { href: "/", label: "Cards", icon: CreditCard },
+        { href: "/bible", label: "Bible", icon: BookOpen },
         ...(features?.checker !== false ? [{ href: "/checker", label: "Checker", icon: Layers }] : []),
         ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller", icon: BookOpen }] : []),
       ],
