@@ -94,8 +94,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }] : []),
   ];
 
-  const isAuthPage = location === "/auth";
-  if (isAuthPage) return <>{children}</>;
+  const isEntryPage = location === "/auth" || location === "/bible";
+  if (isEntryPage) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-background">

@@ -26,6 +26,7 @@ import BecomeResellerPage from "@/pages/BecomeSellerPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SupportPage from "@/pages/SupportPage";
 import RedeemCodePage from "@/pages/RedeemCodePage";
+import BiblePage from "@/pages/BiblePage";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -33,7 +34,7 @@ function Router() {
   useForebitPolling();
 
   useEffect(() => {
-    if (!isLoading && !user && location !== "/auth") {
+    if (!isLoading && !user && location !== "/auth" && location !== "/bible") {
       setLocation("/auth");
     }
   }, [user, isLoading, location, setLocation]);
@@ -46,6 +47,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/bible" component={BiblePage} />
         <Route path="/" component={CardsPage} />
         <Route path="/deposit" component={DepositPage} />
         <Route path="/redeem" component={RedeemCodePage} />
