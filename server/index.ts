@@ -187,8 +187,14 @@ app.use((req, res, next) => {
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
 
-  // Start Telegram bot (no-op if TELEGRAM_BOT_TOKEN is not set)
-  startTelegramBot();
+  // The bot must run only in the published environment so it reads the same
+  // production database as accounts and one-time link tokens. Running it in
+  // the dev workflow causes Telegram polling conflicts and invalid live tokens.
+  if (process.env.NODE_ENV !== "development") {
+    startTelegramBot();
+  } else {
+    log("Telegram bot disabled in development; it runs from the published site", "telegram");
+  }
 
 
   const port = parseInt(process.env.PORT || "5000", 10);

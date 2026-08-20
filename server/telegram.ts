@@ -5,7 +5,7 @@ import { log } from "./index";
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
-const SITE_URL     = process.env.SITE_URL || "https://unitedcards.cc";
+const SITE_URL     = process.env.SITE_URL || "https://beastcc.xyz";
 // The bot shares a container with the Express server, so it reaches it over
 // localhost. Derive the port from PORT (the same value index.ts listens on),
 // with LOCAL_API_URL as an optional full-URL override.
