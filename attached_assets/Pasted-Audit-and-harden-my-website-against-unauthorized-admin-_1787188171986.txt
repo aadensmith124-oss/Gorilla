@@ -1,0 +1,114 @@
+Audit and harden my website against unauthorized admin access, defacement, common web attacks, and accidental exposure.
+IMPORTANT: Do NOT remove or break existing website functionality. First inspect the existing codebase and identify the framework, authentication system, database, routes, and deployment setup.
+Implement the following security improvements:
+ADMIN AUTHENTICATION
+Require authentication for every admin route and admin API endpoint.
+Never rely on the admin URL being secret.
+Require a strong authenticated session before allowing any administrative action.
+Prevent authentication bypass through alternate routes, API endpoints, HTTP methods, or directly accessing admin files.
+Add secure session handling with expiration and secure cookie settings.
+Never store plaintext passwords.
+Hash passwords using a modern password-hashing algorithm such as Argon2id or bcrypt.
+Add rate limiting to login attempts.
+Do not reveal whether an entered username/email exists.
+If the project already has authentication, improve it rather than replacing it unnecessarily.
+ADMIN ACCESS CONTROL
+Implement proper authorization checks server-side.
+Verify the user's role/permissions on EVERY sensitive request.
+Do not trust frontend JavaScript, hidden buttons, cookies, localStorage values, or URL parameters for authorization.
+Prevent ordinary users from calling admin API endpoints directly.
+Ensure admin-only database operations are protected server-side.
+OPTIONAL ADMIN NETWORK PROTECTION
+If practical for the deployment environment, support restricting the admin panel/API to trusted IP addresses or a private access mechanism.
+Do not make IP restriction the only security mechanism.
+SECURITY HEADERS Add appropriate security headers, including:
+Content-Security-Policy
+Strict-Transport-Security
+X-Content-Type-Options: nosniff
+Referrer-Policy
+Permissions-Policy
+frame-ancestors through CSP to prevent clickjacking
+Create a CSP that is compatible with the existing application instead of blindly using an overly restrictive policy that breaks the site.
+INPUT AND DATABASE SECURITY
+Validate and sanitize untrusted input.
+Use parameterized queries/prepared statements.
+Prevent SQL injection.
+Prevent command injection.
+Prevent path traversal.
+Prevent XSS.
+Prevent CSRF on state-changing authenticated requests where applicable.
+Never construct shell commands or SQL queries directly from user input.
+FILE UPLOAD SECURITY If the application supports uploads:
+Validate file type and size server-side.
+Do not trust the filename or MIME type supplied by the browser.
+Store uploads safely.
+Prevent uploaded files from being executed as server-side code.
+Generate safe filenames.
+Restrict upload directories appropriately.
+SECRETS Search the entire project for accidentally exposed:
+API keys
+database credentials
+session secrets
+JWT secrets
+passwords
+private keys
+Move secrets into Replit Secrets/environment variables where appropriate. Never expose secrets in frontend JavaScript or API responses. Do not print secrets in logs.
+ADMIN/API EXPOSURE Audit all routes and API endpoints. Identify:
+undocumented admin endpoints
+debug endpoints
+test endpoints
+development routes
+exposed database endpoints
+endpoints missing authentication
+endpoints missing authorization
+Disable or protect anything that should not be publicly accessible.
+RATE LIMITING Add sensible rate limits to:
+login
+password reset
+account creation
+sensitive admin APIs
+other abuse-prone endpoints
+LOGGING AND MONITORING Add security logging for important events such as:
+successful admin login
+failed admin login
+password changes
+creation/deletion of admin accounts
+important administrative actions
+suspicious authentication activity
+Do NOT log passwords, session tokens, API keys, or other secrets.
+BACKUPS / RECOVERY If the project has a database or important persistent data:
+Make sure the application can be restored from backups.
+Do not allow web users to access backup files.
+Document what needs to be backed up.
+Do not automatically delete existing data while implementing security changes.
+DEPENDENCIES Inspect dependencies for known vulnerabilities. Upgrade vulnerable dependencies when doing so is reasonably safe and compatible with the project. Do not blindly upgrade everything if it could break the application.
+PRODUCTION CONFIGURATION Make sure production does not expose:
+stack traces
+debug information
+source maps containing sensitive information
+environment variables
+.env files
+Git metadata
+database dumps
+backup archives
+SECURITY TESTING After making changes, perform a defensive audit of the application.
+Test that:
+unauthenticated users cannot access admin pages
+ordinary users cannot access admin APIs
+direct requests to admin endpoints are rejected without authorization
+expired/invalid sessions are rejected
+login rate limiting works
+CSRF protections work where applicable
+malicious input is rejected safely
+uploaded files cannot execute as server-side code
+security headers are present
+secrets are not exposed to the browser
+Do NOT create offensive/exploit functionality or attempt to attack external systems.
+Finally, provide a concise SECURITY_AUDIT.md explaining:
+vulnerabilities found
+changes made
+remaining risks
+required environment variables/secrets
+how to create/recover the first admin account
+how to test the security protections
+Before modifying major architecture, inspect the existing project and preserve its current functionality.
