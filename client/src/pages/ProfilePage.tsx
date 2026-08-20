@@ -174,7 +174,7 @@ function TelegramLinkCard({ user }: { user: any }) {
             <span>Linked{user.telegramUsername ? <> as <span className="font-mono">@{user.telegramUsername}</span></> : ""}</span>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Link your Telegram to earn <strong className="text-primary">$2.00 daily</strong> just by having <code className="text-xs bg-white/8 px-1 py-0.5 rounded">unitedcards.cc</code> in your name.</p>
+          <p className="text-sm text-muted-foreground">Link your Telegram to earn <strong className="text-primary">$2.00 daily</strong> just by having <code className="text-xs bg-white/8 px-1 py-0.5 rounded">unitedcards.lol</code> in your name.</p>
         )}
 
         <div className="space-y-2">

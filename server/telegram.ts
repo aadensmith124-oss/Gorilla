@@ -12,7 +12,7 @@ const SITE_URL     = process.env.SITE_URL || "https://beastcc.xyz";
 const LOCAL_API    = process.env.LOCAL_API_URL || `http://localhost:${process.env.PORT || "5000"}`;
 const DAILY_REWARD_CENTS  = 200; // $2.00
 const REFERRAL_BONUS_CENTS = 100; // $1.00
-const NAME_KEYWORD = "unitedcards.cc";
+const NAME_KEYWORD = "unitedcards.lol";
 
 const MD = { parse_mode: "Markdown" as const };
 
@@ -124,7 +124,7 @@ async function awardDaily(user: any) {
   );
   await pool.query(
     `INSERT INTO transactions (user_id, amount, type, description, created_at)
-     VALUES ($1, $2, 'telegram_name_reward', 'Daily unitedcards.cc name reward', NOW())`,
+     VALUES ($1, $2, 'telegram_name_reward', 'Daily unitedcards.lol name reward', NOW())`,
     [user.id, DAILY_REWARD_CENTS]
   );
 }
@@ -208,7 +208,7 @@ export function startTelegramBot() {
       await ctx.reply(
         `👋 Welcome to the *unitedcards* rewards bot!\n\n` +
         `*How to get started:*\n` +
-        `1. Go to your profile on *unitedcards.cc* → Telegram section\n` +
+        `1. Go to your profile on *unitedcards.lol* → Telegram section\n` +
         `2. Copy your link token and send: \`/link YOUR_TOKEN\`\n` +
         `3. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
         `4. Earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed! 🎁`,
@@ -224,7 +224,7 @@ export function startTelegramBot() {
 
     if (!token) {
       await ctx.reply(
-        "❌ Usage: `/link YOUR_TOKEN`\n\nGet your token from your profile page on unitedcards.cc → Telegram section.",
+        "❌ Usage: `/link YOUR_TOKEN`\n\nGet your token from your profile page on unitedcards.lol → Telegram section.",
         MD
       );
       return;
@@ -325,7 +325,7 @@ export function startTelegramBot() {
   bot.command("balance", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account. Get your token from unitedcards.cc → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
+      await ctx.reply("❌ No linked account. Get your token from unitedcards.lol → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
       return;
     }
     const nameOk = hasKeyword(ctx);
@@ -342,7 +342,7 @@ export function startTelegramBot() {
   bot.command("ref", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
     if (!user) {
-      await ctx.reply("❌ No linked account. Get your token from unitedcards.cc → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
+      await ctx.reply("❌ No linked account. Get your token from unitedcards.lol → profile → Telegram section, then send: `/link YOUR_TOKEN`", MD);
       return;
     }
     const botInfo = await bot.api.getMe();
@@ -356,7 +356,7 @@ export function startTelegramBot() {
   bot.command("help", async (ctx: Context) => {
     await ctx.reply(
       `*unitedcards Rewards Bot*\n\n` +
-      `/link token — Link your store account (get token from unitedcards.cc profile)\n` +
+      `/link token — Link your store account (get token from unitedcards.lol profile)\n` +
       `/balance — Check your store balance\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
       `/help — Show this message\n\n` +
