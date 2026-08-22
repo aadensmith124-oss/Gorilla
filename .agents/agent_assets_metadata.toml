@@ -7,3 +7,10 @@ uri = "file://project-source.zip"
 type = "unspecified"
 title = "Project source ZIP"
 description = "Source project archive including application code, assets, configuration, and package lockfile. Dependencies, build output, Git history, caches, internal metadata, and environment-secret files are excluded."
+
+[[outputs]]
+id = "Irpooq5aQN5ijVjDSSWrQ"
+uri = "file://bot-files.zip"
+type = "unspecified"
+title = "Telegram bot source ZIP"
+description = "Telegram bot implementation and related drop/claim logic, routes, schema, tests, and package configuration. No secrets or dependency folders are included."
