@@ -3,3 +3,4 @@
 - [Auth-gated screenshot testing](auth-gated-screenshot-testing.md) — login requires a captcha, so the screenshot tool can't get past sign-in to visually verify pages behind auth.
 - [Replit preview proxy](replit-preview-proxy.md) — trust one proxy in all environments so preview login rate limiting accepts forwarded client IPs.
 - [Telegram linking env split](telegram-linking-env-split.md) — bot runs in dev DB; link users via one-time token redeemed against the live prod site API, never a direct pool query.
+- [Telegram production-only runtime](telegram-production-only.md) — bot polling is disabled in preview; publish/restart production for command and secret changes to take effect.

@@ -1,17 +1,15 @@
-export const CLAIM_LIMIT_PER_HOUR = 1;
+export const CLAIM_LIMIT_PER_WINDOW = 1;
 
 export type ClaimAccess =
   | { allowed: true }
   | { allowed: false; reason: "unlinked" | "inactive_name" | "suspended" };
 
 export function getClaimAccess(input: {
-  isLinked: boolean;
   hasRequiredName: boolean;
   suspendedUntil: Date | null;
   now?: Date;
 }): ClaimAccess {
   const now = input.now ?? new Date();
-  if (!input.isLinked) return { allowed: false, reason: "unlinked" };
   if (input.suspendedUntil && input.suspendedUntil > now) {
     return { allowed: false, reason: "suspended" };
   }
@@ -20,5 +18,5 @@ export function getClaimAccess(input: {
 }
 
 export function remainingClaimSlots(used: number): number {
-  return Math.max(0, CLAIM_LIMIT_PER_HOUR - used);
+  return Math.max(0, CLAIM_LIMIT_PER_WINDOW - used);
 }

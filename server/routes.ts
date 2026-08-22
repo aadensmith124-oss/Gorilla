@@ -11,40 +11,10 @@ import { hashPassword, comparePassword } from "./auth";
 import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
+import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file";
 function isAdminOrWorker(req: any): boolean {
   const u = req.user as any;
   return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);
-}
-
-const MAX_LICENSE_FILE_BYTES = 2 * 1024 * 1024;
-const MAX_LICENSE_KEYS_PER_UPLOAD = 10_000;
-
-function parseLicenseKeyFile(raw: unknown): string[] {
-  const content = typeof raw === "string" ? raw : "";
-  if (!content.trim()) throw new Error("The license-key file is empty");
-  if (Buffer.byteLength(content, "utf8") > MAX_LICENSE_FILE_BYTES) {
-    throw new Error("License-key files must be 2 MB or smaller");
-  }
-
-  const keys = content
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean);
-  if (keys.length === 0) throw new Error("The license-key file contains no keys");
-  if (keys.length > MAX_LICENSE_KEYS_PER_UPLOAD) {
-    throw new Error(`A single upload may contain at most ${MAX_LICENSE_KEYS_PER_UPLOAD} keys`);
-  }
-
-  for (const key of keys) {
-    if (key.length < 4 || key.length > 256 || /[\u0000-\u001f\u007f]/.test(key)) {
-      throw new Error("Each license key must be 4–256 printable characters on one line");
-    }
-    if (/(?:\bpan\b|\bcvv\b|\bcvc\b|card\s*number|security\s*code)/i.test(key) ||
-        /^\d{12,19}(?:[|,:/\s]+\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?(?:[|,:/\s]+\d{3,4})?$/.test(key)) {
-      throw new Error("This upload resembles payment-card data and was rejected");
-    }
-  }
-  return keys;
 }
 
 function requireAdmin(req: any, res: any, next: any) {
@@ -293,15 +263,7 @@ export async function registerRoutes(
 
     const userId = (req.user as any).id;
     if (code.code.startsWith("GIFT-")) {
-      const claim = await db.execute(sql`
-        SELECT user_id
-        FROM telegram_claims
-        WHERE code = ${code.code}
-        LIMIT 1
-      `);
-      if (claim.rows.length !== 1 || Number(claim.rows[0].user_id) !== userId) {
-        return res.status(400).json({ message: "This reward code belongs to a different account" });
-      }
+      return res.status(400).json({ message: "Telegram store-credit rewards are no longer available" });
     }
 
     const claimed = await storage.markRedeemCodeUsed(code.id, userId);
