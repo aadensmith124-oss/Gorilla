@@ -910,7 +910,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       <div className="rounded border border-dashed border-primary/30 bg-primary/5 p-2.5 space-y-1.5">
         <p className="text-[10px] font-semibold text-primary/80">Upload drops</p>
         <p className="text-[9px] text-muted-foreground">
-          One key per line. TXT or CSV only, up to 10,000 keys / 2 MB. Payment-card data is rejected.
+          One key per line. TXT or CSV only, up to 10,000 keys / 5 MB. Payment-card data is rejected.
         </p>
         <div className="flex items-center gap-2">
           <Input

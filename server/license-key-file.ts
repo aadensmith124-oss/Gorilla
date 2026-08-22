@@ -1,10 +1,10 @@
-export const MAX_LICENSE_FILE_BYTES = 2 * 1024 * 1024;
+export const MAX_LICENSE_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_LICENSE_KEYS_PER_UPLOAD = 10_000;
 
 export function parseLicenseKeyFile(raw: string): string[] {
   if (!raw.trim()) throw new Error("The license-key file is empty");
   if (Buffer.byteLength(raw, "utf8") > MAX_LICENSE_FILE_BYTES) {
-    throw new Error("License-key files must be 2 MB or smaller");
+    throw new Error("License-key files must be 5 MB or smaller");
   }
 
   const keys = raw

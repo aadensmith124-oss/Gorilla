@@ -246,8 +246,8 @@ function botKeyboard() {
 async function storeLicenseKeys(keys: string[], adminId: number | null, adminChatId: string) {
   const result = await pool.query(
     `INSERT INTO telegram_license_drops (license_key, created_by, created_by_chat_id)
-     SELECT DISTINCT value, $2, $3
-     FROM unnest($1::text[]) AS value
+     SELECT DISTINCT drop_value, $2::integer, $3::text
+     FROM unnest($1::text[]) AS input(drop_value)
      ON CONFLICT (license_key) DO NOTHING
      RETURNING id`,
     [keys, adminId, adminChatId],
@@ -270,7 +270,7 @@ async function uploadLicenseFile(ctx: Context, bot: Bot) {
     return;
   }
   if (Number(document.file_size ?? 0) > MAX_LICENSE_FILE_BYTES) {
-    await ctx.reply("❌ Drop files must be 2 MB or smaller.", MD);
+    await ctx.reply("❌ Drop files must be 5 MB or smaller.", MD);
     return;
   }
 
@@ -287,7 +287,7 @@ async function uploadLicenseFile(ctx: Context, bot: Bot) {
     );
   } catch (error: any) {
     console.error("[telegram] drop upload failed:", error?.message ?? error);
-    await ctx.reply(`❌ Upload failed: ${error?.message ?? "Invalid drop file"}`, MD);
+    await ctx.reply(`❌ Upload failed: ${error?.message ?? "Invalid drop file"}`);
   }
 }
 
