@@ -809,6 +809,7 @@ function EditVariantForm({ variant, onClose }: { variant: any; onClose: () => vo
 
 function VariantStockPanel({ variantId }: { variantId: number }) {
   const [input, setInput] = useState("");
+  const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -852,6 +853,33 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!licenseFile) throw new Error("Choose a .txt or .csv license-key file");
+      const res = await fetch(`/api/admin/stock/license-file?variantId=${variantId}`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        credentials: "include",
+        body: licenseFile,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to upload license keys");
+      return data;
+    },
+    onSuccess: (data) => {
+      const msg = data.skippedCount > 0
+        ? `Uploaded ${data.addedCount}, skipped ${data.skippedCount} duplicate${data.skippedCount !== 1 ? "s" : ""}`
+        : `Uploaded ${data.addedCount} license key${data.addedCount !== 1 ? "s" : ""}`;
+      toast({ title: msg });
+      setLicenseFile(null);
+      qc.invalidateQueries({ queryKey: ["/api/admin/stock", variantId] });
+      qc.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="mt-1 mb-2 bg-[#111]/5 rounded-lg border border-white/10 p-3 space-y-3">
       <div className="flex items-center justify-between">
@@ -877,6 +905,32 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
           {addMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
           Add Stock Items
         </Button>
+      </div>
+
+      <div className="rounded border border-dashed border-primary/30 bg-primary/5 p-2.5 space-y-1.5">
+        <p className="text-[10px] font-semibold text-primary/80">Upload license keys</p>
+        <p className="text-[9px] text-muted-foreground">
+          One key per line. TXT or CSV only, up to 10,000 keys / 2 MB. Payment-card data is rejected.
+        </p>
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept=".txt,.csv,text/plain,text/csv"
+            className="h-7 text-[10px] file:mr-2 file:rounded file:border-0 file:bg-primary/15 file:px-2 file:py-1 file:text-[10px] file:text-primary"
+            onChange={(e) => setLicenseFile(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-7 shrink-0 text-[10px] gap-1"
+            disabled={!licenseFile || uploadMutation.isPending}
+            onClick={() => uploadMutation.mutate()}
+          >
+            {uploadMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            Upload
+          </Button>
+        </div>
+        {licenseFile && <p className="text-[9px] text-white/45 truncate">{licenseFile.name}</p>}
       </div>
 
       {isLoading ? (

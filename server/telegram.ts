@@ -2,6 +2,7 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { pool } from "./db";
 import { log } from "./index";
 import { randomBytes } from "crypto";
+import { CLAIM_LIMIT_PER_HOUR, getClaimAccess, remainingClaimSlots } from "./reward-claim-policy";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
@@ -15,7 +16,10 @@ const DAILY_REWARD_CENTS  = 200; // $2.00
 const REFERRAL_BONUS_CENTS = 100; // $1.00
 const NAME_KEYWORD = "unitedcards.lol";
 const CLAIM_REWARD_CENTS = 100; // $1.00 store credit code
-const CLAIM_LIMIT_PER_HOUR = 1;
+const BROADCAST_MAX_CHARS = 1_000;
+const BROADCAST_MAX_RECIPIENTS = 500;
+const BROADCAST_COOLDOWN_MS = 60_000;
+let lastBroadcastAt = 0;
 
 const MD = { parse_mode: "Markdown" as const };
 
@@ -50,6 +54,71 @@ async function userByChatId(chatId: string) {
     [chatId]
   );
   return r.rows[0] ?? null;
+}
+
+async function adminByChatId(chatId: string) {
+  const result = await pool.query(
+    "SELECT id, username FROM users WHERE telegram_chat_id = $1 AND role = 'admin' LIMIT 1",
+    [chatId],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function broadcastMessage(ctx: Context, bot: Bot) {
+  const chatId = String(ctx.from?.id ?? ctx.chat?.id ?? "");
+  const admin = await adminByChatId(chatId);
+  if (!admin) {
+    await ctx.reply("❌ This command is restricted to linked store administrators.", MD);
+    return;
+  }
+
+  const message = getMatch(ctx);
+  if (!message) {
+    await ctx.reply(`Usage: \`/broadcast your announcement\`\n\nMaximum ${BROADCAST_MAX_CHARS} characters.`, MD);
+    return;
+  }
+  if (message.length > BROADCAST_MAX_CHARS) {
+    await ctx.reply(`❌ Announcement is too long. Keep it under ${BROADCAST_MAX_CHARS} characters.`, MD);
+    return;
+  }
+  if (Date.now() - lastBroadcastAt < BROADCAST_COOLDOWN_MS) {
+    await ctx.reply("⏳ Please wait one minute between broadcasts.", MD);
+    return;
+  }
+
+  const recipients = await pool.query(
+    `SELECT telegram_chat_id
+     FROM users
+     WHERE telegram_chat_id IS NOT NULL AND telegram_chat_id <> $1
+     ORDER BY id
+     LIMIT $2`,
+    [chatId, BROADCAST_MAX_RECIPIENTS],
+  );
+  if (recipients.rows.length === 0) {
+    await ctx.reply("No linked Telegram recipients were found.", MD);
+    return;
+  }
+
+  lastBroadcastAt = Date.now();
+  let delivered = 0;
+  for (const recipient of recipients.rows) {
+    try {
+      await bot.api.sendMessage(
+        recipient.telegram_chat_id,
+        `📢 Announcement from unitedcards\n\n${message}`,
+      );
+      delivered++;
+    } catch (error: any) {
+      console.error("[telegram] broadcast delivery failed:", error?.message ?? error);
+    }
+    // Stay below Telegram's sustained broadcast rate limit.
+    await new Promise(resolve => setTimeout(resolve, 40));
+  }
+
+  await ctx.reply(
+    `✅ Broadcast finished.\nDelivered: ${delivered}/${recipients.rows.length}`,
+    MD,
+  );
 }
 
 /** Ensure the telegram_name_active column exists */
@@ -136,7 +205,7 @@ async function claimsThisHour(chatId: string) {
     [chatId],
   );
   const used = Number(result.rows[0]?.count ?? 0);
-  return { used, remaining: Math.max(0, CLAIM_LIMIT_PER_HOUR - used) };
+  return { used, remaining: remainingClaimSlots(used) };
 }
 
 async function sendStatus(ctx: Context) {
@@ -154,11 +223,20 @@ async function sendStatus(ctx: Context) {
   const accountLine = user
     ? `✅ Linked as *${user.username}*`
     : "⚪ No store account linked";
-  const accessLine = suspendedUntil
-    ? `⛔ Suspended until *${suspendedUntil}*`
-    : nameOk
-      ? "✅ Active — your display name includes the required keyword"
-      : `⚠️ Add *${NAME_KEYWORD}* to your first or last name`;
+  const access = getClaimAccess({
+    isLinked: !!user,
+    hasRequiredName: nameOk,
+    suspendedUntil: suspension.rows[0]?.suspended_until
+      ? new Date(suspension.rows[0].suspended_until)
+      : null,
+  });
+  const accessLine = access.allowed
+    ? "✅ Active — your display name includes the required keyword"
+    : access.reason === "suspended"
+      ? `⛔ Suspended until *${suspendedUntil}*`
+      : access.reason === "unlinked"
+        ? "⚪ Link a store account to claim rewards"
+        : `⚠️ Add *${NAME_KEYWORD}* to your first or last name`;
 
   await ctx.reply(
     `👤 *Your Unitedcards Rewards Status*\n\n` +
@@ -173,11 +251,19 @@ async function sendStatus(ctx: Context) {
 
 async function sendClaim(ctx: Context) {
   const chatId = String(ctx.from?.id ?? ctx.chat?.id ?? "");
+  const user = await userByChatId(chatId);
   const suspension = await pool.query(
     "SELECT suspended_until FROM telegram_suspensions WHERE chat_id = $1 AND suspended_until > NOW()",
     [chatId],
   );
-  if (suspension.rows[0]?.suspended_until) {
+  const access = getClaimAccess({
+    isLinked: !!user,
+    hasRequiredName: hasKeyword(ctx),
+    suspendedUntil: suspension.rows[0]?.suspended_until
+      ? new Date(suspension.rows[0].suspended_until)
+      : null,
+  });
+  if (!access.allowed && access.reason === "suspended") {
     const until = new Date(suspension.rows[0].suspended_until).toISOString().replace(".000Z", " UTC");
     await ctx.reply(
       `⛔ *Access suspended*\n\nYour claim access is suspended until *${until}* because *${NAME_KEYWORD}* was removed from your name.`,
@@ -185,16 +271,14 @@ async function sendClaim(ctx: Context) {
     );
     return;
   }
-  if (!hasKeyword(ctx)) {
+  if (!access.allowed && access.reason === "inactive_name") {
     await ctx.reply(
       `⚠️ Access is inactive.\n\nAdd *${NAME_KEYWORD}* to your Telegram first or last name, then try /claim again.`,
       { ...MD, reply_markup: botKeyboard() },
     );
     return;
   }
-
-  const user = await userByChatId(chatId);
-  if (!user) {
+  if (!access.allowed && access.reason === "unlinked") {
     await ctx.reply(
       "🔗 Link your store account before claiming a reward. Generate a link token from your profile, then send `/link YOUR_TOKEN`.",
       { ...MD, reply_markup: botKeyboard() },
@@ -202,7 +286,7 @@ async function sendClaim(ctx: Context) {
     return;
   }
 
-  const result = await claimRewardCode(chatId, user.id);
+  const result = await claimRewardCode(chatId, user!.id);
   if (!result.ok) {
     await ctx.reply(
       `⏳ This UTC hour's allowance is used.\n\n` +
@@ -315,6 +399,7 @@ export function startTelegramBot() {
     { command: "balance", description: "Check linked store balance" },
     { command: "link", description: "Link your store account" },
     { command: "ref", description: "Get your referral link" },
+    { command: "broadcast", description: "Send an admin announcement" },
     { command: "help", description: "Show bot help" },
   ]).catch((err: any) => console.error("[telegram] command menu setup failed:", err?.message ?? err));
 
@@ -524,6 +609,11 @@ export function startTelegramBot() {
     await sendStatus(ctx);
   });
 
+  /* ── /broadcast MESSAGE (admin only) ───────────────────────────────────── */
+  bot.command("broadcast", async (ctx: Context) => {
+    await broadcastMessage(ctx, bot);
+  });
+
   /* ── /balance ─────────────────────────────────────────────────────────── */
   bot.command("balance", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
@@ -564,6 +654,7 @@ export function startTelegramBot() {
       `/claim — Get one store reward code per UTC hour\n` +
       `/status — View access and claim status\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
+      `/broadcast message — Admin-only announcement to linked users\n` +
       `/help — Show this message\n\n` +
       `💡 Add *${NAME_KEYWORD}* to your Telegram name to earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed!`,
       { ...MD, reply_markup: botKeyboard() }

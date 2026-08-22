@@ -16,6 +16,37 @@ function isAdminOrWorker(req: any): boolean {
   return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);
 }
 
+const MAX_LICENSE_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_LICENSE_KEYS_PER_UPLOAD = 10_000;
+
+function parseLicenseKeyFile(raw: unknown): string[] {
+  const content = typeof raw === "string" ? raw : "";
+  if (!content.trim()) throw new Error("The license-key file is empty");
+  if (Buffer.byteLength(content, "utf8") > MAX_LICENSE_FILE_BYTES) {
+    throw new Error("License-key files must be 2 MB or smaller");
+  }
+
+  const keys = content
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+  if (keys.length === 0) throw new Error("The license-key file contains no keys");
+  if (keys.length > MAX_LICENSE_KEYS_PER_UPLOAD) {
+    throw new Error(`A single upload may contain at most ${MAX_LICENSE_KEYS_PER_UPLOAD} keys`);
+  }
+
+  for (const key of keys) {
+    if (key.length < 4 || key.length > 256 || /[\u0000-\u001f\u007f]/.test(key)) {
+      throw new Error("Each license key must be 4–256 printable characters on one line");
+    }
+    if (/(?:\bpan\b|\bcvv\b|\bcvc\b|card\s*number|security\s*code)/i.test(key) ||
+        /^\d{12,19}(?:[|,:/\s]+\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?(?:[|,:/\s]+\d{3,4})?$/.test(key)) {
+      throw new Error("This upload resembles payment-card data and was rejected");
+    }
+  }
+  return keys;
+}
+
 function requireAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated?.() || req.user?.role !== "admin") {
     return res.status(403).json({ message: "Forbidden" });
@@ -950,6 +981,32 @@ export async function registerRoutes(
     const result = await storage.addStockItems(req.body.variantId, req.body.rawContent, sellerId);
     res.json({ addedCount: result.added, skippedCount: result.skipped });
   });
+
+  app.post(
+    "/api/admin/stock/license-file",
+    express.text({
+      type: ["text/plain", "text/csv", "application/octet-stream"],
+      limit: `${MAX_LICENSE_FILE_BYTES}b`,
+    }),
+    async (req, res) => {
+      if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
+      try {
+        const variantId = Number(req.query.variantId);
+        if (!Number.isInteger(variantId) || variantId <= 0) {
+          return res.status(400).json({ message: "A valid variantId is required" });
+        }
+        const keys = parseLicenseKeyFile(req.body);
+        const result = await storage.addStockItems(variantId, keys.join("\n\n"));
+        res.json({
+          addedCount: result.added,
+          skippedCount: result.skipped,
+          keyCount: keys.length,
+        });
+      } catch (error: any) {
+        res.status(400).json({ message: error?.message ?? "Invalid license-key file" });
+      }
+    },
+  );
 
   app.get("/api/admin/stock/:variantId", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
