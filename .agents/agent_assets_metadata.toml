@@ -14,3 +14,10 @@ uri = "file://bot-files.zip"
 type = "unspecified"
 title = "Telegram bot source ZIP"
 description = "Telegram bot implementation and related drop/claim logic, routes, schema, tests, and package configuration. No secrets or dependency folders are included."
+
+[[outputs]]
+id = "FeLCzn5b6Rbl3zqrJ9EvE"
+uri = "file://self-hosted-telegram-bot.zip"
+type = "unspecified"
+title = "Self-hosted Telegram bot ZIP"
+description = "Updated standalone bot bundle with entrypoint, build script, bot logic, database helpers, tests, package files, and the self-hosting/systemd guide. Secrets are excluded."
