@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
+    "build:bot": "tsx script/build-bot.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
+    "start:bot": "NODE_ENV=production node dist/bot.mjs",
     "check": "tsc",
     "test:telegram-drops": "tsx --test server/license-key-file.test.ts server/license-claim-policy.test.ts",
     "db:push": "drizzle-kit push"

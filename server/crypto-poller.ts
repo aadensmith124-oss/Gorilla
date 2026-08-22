@@ -3,7 +3,7 @@ import { cryptoPayments, orders, users } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { getNowPaymentsInvoice, mapNowPaymentsStatus } from "./nowpayments";
 import { storage } from "./storage";
-import { log } from "./index";
+import { log } from "./logger";
 
 async function processCompletion(payment: typeof cryptoPayments.$inferSelect) {
   if (payment.purpose === "order" && payment.orderId) {

@@ -1,6 +1,6 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { pool } from "./db";
-import { log } from "./index";
+import { log } from "./logger";
 import { CLAIM_LIMIT_PER_WINDOW, getClaimAccess, remainingClaimSlots } from "./reward-claim-policy";
 import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file";
 

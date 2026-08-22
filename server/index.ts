@@ -8,6 +8,7 @@ import { pool, db } from "./db";
 import { sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
 import { startTelegramBot } from "./telegram";
+import { log } from "./logger";
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,17 +55,6 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false, limit: "6mb" }));
-
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
 
 function removeSensitiveFields(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(removeSensitiveFields);
