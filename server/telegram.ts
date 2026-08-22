@@ -1,11 +1,12 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { pool } from "./db";
 import { log } from "./index";
+import { randomBytes } from "crypto";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
 const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
-const SITE_URL     = process.env.SITE_URL || "https://beastcc.xyz";
+const SITE_URL     = process.env.SITE_URL || "https://unitedcards.lol";
 // The bot shares a container with the Express server, so it reaches it over
 // localhost. Derive the port from PORT (the same value index.ts listens on),
 // with LOCAL_API_URL as an optional full-URL override.
@@ -13,6 +14,8 @@ const LOCAL_API    = process.env.LOCAL_API_URL || `http://localhost:${process.en
 const DAILY_REWARD_CENTS  = 200; // $2.00
 const REFERRAL_BONUS_CENTS = 100; // $1.00
 const NAME_KEYWORD = "unitedcards.lol";
+const CLAIM_REWARD_CENTS = 100; // $1.00 store credit code
+const CLAIM_LIMIT_PER_HOUR = 1;
 
 const MD = { parse_mode: "Markdown" as const };
 
@@ -55,6 +58,169 @@ async function ensureSchema() {
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS telegram_name_active BOOLEAN NOT NULL DEFAULT FALSE
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS telegram_claims (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      code TEXT NOT NULL UNIQUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    ALTER TABLE telegram_claims
+    ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS telegram_claims_chat_hour_idx
+    ON telegram_claims (chat_id, created_at)
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS telegram_suspensions (
+      chat_id TEXT PRIMARY KEY,
+      suspended_until TIMESTAMPTZ NOT NULL
+    )
+  `);
+}
+
+function botKeyboard() {
+  return new InlineKeyboard()
+    .text("🎁 Claim a reward code", "claim_reward")
+    .text("👤 Account status", "account_status")
+    .row()
+    .url("📣 Join our channel", GROUP_INVITE);
+}
+
+async function claimRewardCode(chatId: string, userId: number) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    // Serialize claims for this chat so two rapid taps cannot bypass the limit.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [chatId]);
+    const countResult = await client.query(
+      `SELECT COUNT(*)::int AS count
+       FROM telegram_claims
+       WHERE chat_id = $1 AND created_at >= date_trunc('hour', NOW())`,
+      [chatId],
+    );
+    const used = Number(countResult.rows[0]?.count ?? 0);
+    if (used >= CLAIM_LIMIT_PER_HOUR) {
+      await client.query("COMMIT");
+      return { ok: false as const, used, remaining: 0 };
+    }
+
+    const code = `GIFT-${randomBytes(9).toString("hex").toUpperCase()}`;
+    await client.query(
+      "INSERT INTO redeem_codes (code, amount) VALUES ($1, $2)",
+      [code, CLAIM_REWARD_CENTS],
+    );
+    await client.query(
+      "INSERT INTO telegram_claims (chat_id, user_id, code) VALUES ($1, $2, $3)",
+      [chatId, userId, code],
+    );
+    await client.query("COMMIT");
+    return { ok: true as const, code, used: used + 1, remaining: CLAIM_LIMIT_PER_HOUR - used - 1 };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function claimsThisHour(chatId: string) {
+  const result = await pool.query(
+    `SELECT COUNT(*)::int AS count
+     FROM telegram_claims
+     WHERE chat_id = $1 AND created_at >= date_trunc('hour', NOW())`,
+    [chatId],
+  );
+  const used = Number(result.rows[0]?.count ?? 0);
+  return { used, remaining: Math.max(0, CLAIM_LIMIT_PER_HOUR - used) };
+}
+
+async function sendStatus(ctx: Context) {
+  const chatId = String(ctx.from?.id ?? ctx.chat?.id ?? "");
+  const user = await userByChatId(chatId);
+  const nameOk = hasKeyword(ctx);
+  const claims = await claimsThisHour(chatId);
+  const suspension = await pool.query(
+    "SELECT suspended_until FROM telegram_suspensions WHERE chat_id = $1 AND suspended_until > NOW()",
+    [chatId],
+  );
+  const suspendedUntil = suspension.rows[0]?.suspended_until
+    ? new Date(suspension.rows[0].suspended_until).toISOString().replace(".000Z", " UTC")
+    : null;
+  const accountLine = user
+    ? `✅ Linked as *${user.username}*`
+    : "⚪ No store account linked";
+  const accessLine = suspendedUntil
+    ? `⛔ Suspended until *${suspendedUntil}*`
+    : nameOk
+      ? "✅ Active — your display name includes the required keyword"
+      : `⚠️ Add *${NAME_KEYWORD}* to your first or last name`;
+
+  await ctx.reply(
+    `👤 *Your Unitedcards Rewards Status*\n\n` +
+    `Access: ${accessLine}\n` +
+    `${accountLine}\n\n` +
+    `🎁 Claims this UTC hour: *${claims.used}/${CLAIM_LIMIT_PER_HOUR} used*\n` +
+    `Claims remaining: *${claims.remaining}*\n` +
+    `Reward value: *${fmt(CLAIM_REWARD_CENTS)} store credit*`,
+    { ...MD, reply_markup: botKeyboard() },
+  );
+}
+
+async function sendClaim(ctx: Context) {
+  const chatId = String(ctx.from?.id ?? ctx.chat?.id ?? "");
+  const suspension = await pool.query(
+    "SELECT suspended_until FROM telegram_suspensions WHERE chat_id = $1 AND suspended_until > NOW()",
+    [chatId],
+  );
+  if (suspension.rows[0]?.suspended_until) {
+    const until = new Date(suspension.rows[0].suspended_until).toISOString().replace(".000Z", " UTC");
+    await ctx.reply(
+      `⛔ *Access suspended*\n\nYour claim access is suspended until *${until}* because *${NAME_KEYWORD}* was removed from your name.`,
+      { ...MD, reply_markup: botKeyboard() },
+    );
+    return;
+  }
+  if (!hasKeyword(ctx)) {
+    await ctx.reply(
+      `⚠️ Access is inactive.\n\nAdd *${NAME_KEYWORD}* to your Telegram first or last name, then try /claim again.`,
+      { ...MD, reply_markup: botKeyboard() },
+    );
+    return;
+  }
+
+  const user = await userByChatId(chatId);
+  if (!user) {
+    await ctx.reply(
+      "🔗 Link your store account before claiming a reward. Generate a link token from your profile, then send `/link YOUR_TOKEN`.",
+      { ...MD, reply_markup: botKeyboard() },
+    );
+    return;
+  }
+
+  const result = await claimRewardCode(chatId, user.id);
+  if (!result.ok) {
+    await ctx.reply(
+      `⏳ This UTC hour's allowance is used.\n\n` +
+      `Claims remaining: *0/${CLAIM_LIMIT_PER_HOUR}*\n` +
+      `Try again at the start of the next UTC hour.`,
+      { ...MD, reply_markup: botKeyboard() },
+    );
+    return;
+  }
+
+  await ctx.reply(
+    `🎁 *Reward code issued!*\n\n` +
+    `Your code:\n\`${result.code}\`\n\n` +
+    `Value: *${fmt(CLAIM_REWARD_CENTS)} store credit*\n` +
+    `Redeem it on ${SITE_URL}/redeem.\n\n` +
+    `Claims remaining this UTC hour: *${result.remaining}*`,
+    { ...MD, reply_markup: botKeyboard() },
+  );
 }
 
 /**
@@ -98,9 +264,15 @@ async function handleNameCheck(ctx: Context, bot: Bot): Promise<void> {
       "UPDATE users SET telegram_name_active = FALSE WHERE id = $1",
       [user.id]
     );
+    await pool.query(
+      `INSERT INTO telegram_suspensions (chat_id, suspended_until)
+       VALUES ($1, NOW() + INTERVAL '3 days')
+       ON CONFLICT (chat_id) DO UPDATE SET suspended_until = EXCLUDED.suspended_until`,
+      [chatId],
+    );
     await ctx.reply(
       `⚠️ Name change detected — you removed *${NAME_KEYWORD}* from your name.\n\n` +
-      `Add it back to start receiving *${fmt(DAILY_REWARD_CENTS)}/day* again.`,
+      `Access is suspended for 3 days. Add it back after the suspension ends to use claims again.`,
       MD
     );
     return;
@@ -136,6 +308,15 @@ export function startTelegramBot() {
   }
 
   const bot = new Bot(BOT_TOKEN);
+  bot.api.setMyCommands([
+    { command: "start", description: "Open the rewards menu" },
+    { command: "claim", description: "Claim one store reward code per UTC hour" },
+    { command: "status", description: "View access and claim status" },
+    { command: "balance", description: "Check linked store balance" },
+    { command: "link", description: "Link your store account" },
+    { command: "ref", description: "Get your referral link" },
+    { command: "help", description: "Show bot help" },
+  ]).catch((err: any) => console.error("[telegram] command menu setup failed:", err?.message ?? err));
 
   // Ensure schema on startup
   ensureSchema().catch(err =>
@@ -202,7 +383,7 @@ export function startTelegramBot() {
         (nameOk
           ? `✅ *${NAME_KEYWORD}* is in your name — you're earning *${fmt(DAILY_REWARD_CENTS)}/day* automatically!`
           : `➡️ Add *${NAME_KEYWORD}* to your Telegram name to earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically.`),
-        MD
+        { ...MD, reply_markup: botKeyboard() }
       );
     } else {
       await ctx.reply(
@@ -211,8 +392,9 @@ export function startTelegramBot() {
         `1. Go to your profile on *unitedcards.lol* → Telegram section\n` +
         `2. Copy your link token and send: \`/link YOUR_TOKEN\`\n` +
         `3. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
-        `4. Earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed! 🎁`,
-        MD
+        `4. Earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed! 🎁\n\n` +
+        `Use /claim for a store reward code.`,
+        { ...MD, reply_markup: botKeyboard() }
       );
     }
   });
@@ -321,6 +503,27 @@ export function startTelegramBot() {
     );
   });
 
+  /* ── /claim ────────────────────────────────────────────────────────────── */
+  bot.command("claim", async (ctx: Context) => {
+    await sendClaim(ctx);
+  });
+
+  /* ── /status ───────────────────────────────────────────────────────────── */
+  bot.command("status", async (ctx: Context) => {
+    await sendStatus(ctx);
+  });
+
+  /* ── Inline button callbacks ────────────────────────────────────────────── */
+  bot.callbackQuery("claim_reward", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await sendClaim(ctx);
+  });
+
+  bot.callbackQuery("account_status", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await sendStatus(ctx);
+  });
+
   /* ── /balance ─────────────────────────────────────────────────────────── */
   bot.command("balance", async (ctx: Context) => {
     const user = await userByChatId(String(ctx.chat!.id));
@@ -334,7 +537,7 @@ export function startTelegramBot() {
       (nameOk
         ? `✅ Earning *${fmt(DAILY_REWARD_CENTS)}/day* automatically`
         : `⚠️ Add *${NAME_KEYWORD}* to your name to earn *${fmt(DAILY_REWARD_CENTS)}/day*`),
-      MD
+      { ...MD, reply_markup: botKeyboard() }
     );
   });
 
@@ -358,10 +561,12 @@ export function startTelegramBot() {
       `*unitedcards Rewards Bot*\n\n` +
       `/link token — Link your store account (get token from unitedcards.lol profile)\n` +
       `/balance — Check your store balance\n` +
+      `/claim — Get one store reward code per UTC hour\n` +
+      `/status — View access and claim status\n` +
       `/ref — Get your referral link (+${fmt(REFERRAL_BONUS_CENTS)} per friend)\n` +
       `/help — Show this message\n\n` +
       `💡 Add *${NAME_KEYWORD}* to your Telegram name to earn *${fmt(DAILY_REWARD_CENTS)}/day* automatically — no commands needed!`,
-      MD
+      { ...MD, reply_markup: botKeyboard() }
     );
   });
 

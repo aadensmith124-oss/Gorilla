@@ -260,12 +260,25 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid or used code" });
     }
 
-    const claimed = await storage.markRedeemCodeUsed(code.id, (req.user as any).id);
+    const userId = (req.user as any).id;
+    if (code.code.startsWith("GIFT-")) {
+      const claim = await db.execute(sql`
+        SELECT user_id
+        FROM telegram_claims
+        WHERE code = ${code.code}
+        LIMIT 1
+      `);
+      if (claim.rows.length !== 1 || Number(claim.rows[0].user_id) !== userId) {
+        return res.status(400).json({ message: "This reward code belongs to a different account" });
+      }
+    }
+
+    const claimed = await storage.markRedeemCodeUsed(code.id, userId);
     if (!claimed) {
       return res.status(400).json({ message: "Invalid or used code" });
     }
-    const updatedUser = await storage.updateUserBalance((req.user as any).id, code.amount);
-    await storage.createTransaction((req.user as any).id, code.amount, "deposit", `Redeemed code: ${code.code}`);
+    const updatedUser = await storage.updateUserBalance(userId, code.amount);
+    await storage.createTransaction(userId, code.amount, "deposit", `Redeemed code: ${code.code}`);
 
     res.json({ newBalance: updatedUser.balance, amountAdded: code.amount });
   });
