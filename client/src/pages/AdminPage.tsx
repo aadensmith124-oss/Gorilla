@@ -855,7 +855,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!licenseFile) throw new Error("Choose a .txt or .csv license-key file");
+      if (!licenseFile) throw new Error("Choose a .txt or .csv drop file");
       const res = await fetch(`/api/admin/stock/license-file?variantId=${variantId}`, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
@@ -863,13 +863,13 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
         body: licenseFile,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to upload license keys");
+      if (!res.ok) throw new Error(data.message || "Failed to upload drops");
       return data;
     },
     onSuccess: (data) => {
       const msg = data.skippedCount > 0
         ? `Uploaded ${data.addedCount}, skipped ${data.skippedCount} duplicate${data.skippedCount !== 1 ? "s" : ""}`
-        : `Uploaded ${data.addedCount} license key${data.addedCount !== 1 ? "s" : ""}`;
+        : `Uploaded ${data.addedCount} drop${data.addedCount !== 1 ? "s" : ""}`;
       toast({ title: msg });
       setLicenseFile(null);
       qc.invalidateQueries({ queryKey: ["/api/admin/stock", variantId] });
@@ -908,7 +908,7 @@ function VariantStockPanel({ variantId }: { variantId: number }) {
       </div>
 
       <div className="rounded border border-dashed border-primary/30 bg-primary/5 p-2.5 space-y-1.5">
-        <p className="text-[10px] font-semibold text-primary/80">Upload license keys</p>
+        <p className="text-[10px] font-semibold text-primary/80">Upload drops</p>
         <p className="text-[9px] text-muted-foreground">
           One key per line. TXT or CSV only, up to 10,000 keys / 2 MB. Payment-card data is rejected.
         </p>

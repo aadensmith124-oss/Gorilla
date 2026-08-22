@@ -17,10 +17,6 @@ export const users = pgTable("users", {
   balance: integer("balance").default(0).notNull(),
   protectedBalance: integer("protected_balance").default(0).notNull(),
   lastDailySpin: timestamp("last_daily_spin"),
-  telegramChatId: text("telegram_chat_id"),
-  lastTelegramNameReward: timestamp("last_telegram_name_reward"),
-  telegramReferredBy: integer("telegram_referred_by"),
-  telegramReferralBonusPaid: boolean("telegram_referral_bonus_paid").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -35,28 +31,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
   lastDailySpin: true,
   password: true,
   loginCode: true,
-  telegramChatId: true,
-  lastTelegramNameReward: true,
-  telegramReferredBy: true,
-  telegramReferralBonusPaid: true,
 }).extend({
   email: z.string().email("Valid email required"),
-});
-
-// === TELEGRAM LINK TOKENS ===
-export const telegramLinkTokens = pgTable("telegram_link_tokens", {
-  id: serial("id").primaryKey(),
-  token: text("token").notNull().unique(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// === TELEGRAM REFERRAL PENDING ===
-// Tracks a referral before the referred user has linked their site account
-export const telegramReferralPending = pgTable("telegram_referral_pending", {
-  chatId: text("chat_id").primaryKey(),
-  referrerUserId: integer("referrer_user_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // === UPLOADED IMAGES ===

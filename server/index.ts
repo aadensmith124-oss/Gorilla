@@ -89,13 +89,11 @@ app.use((_req, res, next) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  const isSensitive = path.startsWith("/api/telegram/link-token");
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      const loggedPath = isSensitive ? "/api/telegram/link-token/[redacted]" : path;
-      log(`${req.method} ${loggedPath} ${res.statusCode} in ${duration}ms`);
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
   });
 

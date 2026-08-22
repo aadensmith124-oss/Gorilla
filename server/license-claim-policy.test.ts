@@ -4,7 +4,7 @@ import { CLAIM_LIMIT_PER_WINDOW, getClaimAccess, remainingClaimSlots } from "./r
 
 const now = new Date("2026-08-21T12:00:00.000Z");
 
-test("license-key claims do not require a linked store account", () => {
+test("drop claims do not require a store account", () => {
   assert.deepEqual(
     getClaimAccess({ hasRequiredName: true, suspendedUntil: null, now }),
     { allowed: true },

@@ -42,3 +42,4 @@ waitForPort = 5000
 
 [userenv.shared]
 Telegram_group_id = "-1004306120620"
+TELEGRAM_ADMIN_IDS = "8929265717"

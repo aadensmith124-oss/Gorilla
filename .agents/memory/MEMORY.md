@@ -2,5 +2,5 @@
 - [Storage interface removal pitfall](storage-interface-removal.md) — bulk removal from IStorage can silently drop closing `}`, causing esbuild failure in prod while tsx dev stays happy.
 - [Auth-gated screenshot testing](auth-gated-screenshot-testing.md) — login requires a captcha, so the screenshot tool can't get past sign-in to visually verify pages behind auth.
 - [Replit preview proxy](replit-preview-proxy.md) — trust one proxy in all environments so preview login rate limiting accepts forwarded client IPs.
-- [Telegram linking env split](telegram-linking-env-split.md) — bot runs in dev DB; link users via one-time token redeemed against the live prod site API, never a direct pool query.
+- [Standalone Telegram drops](standalone-telegram-drops.md) — drop claims, referrals, and bot admin access use Telegram chat IDs only; do not reintroduce store-account linking.
 - [Telegram production-only runtime](telegram-production-only.md) — bot polling is disabled in preview; publish/restart production for command and secret changes to take effect.

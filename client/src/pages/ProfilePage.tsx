@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, Send, Copy, Check } from "lucide-react";
+import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -126,88 +126,6 @@ function DashboardTab({ user, logout }: { user: any; logout: () => void }) {
   );
 }
 
-function TelegramLinkCard({ user }: { user: any }) {
-  const [copied, setCopied] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [tokenLoading, setTokenLoading] = useState(false);
-  const { toast } = useToast();
-
-  const isLinked = !!user.telegramChatId;
-
-  const generateToken = async () => {
-    setTokenLoading(true);
-    try {
-      const res = await fetch("/api/telegram/link-token", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to generate token");
-      const data = await res.json();
-      setToken(data.token);
-    } catch {
-      toast({ title: "Error", description: "Could not generate link token", variant: "destructive" });
-    } finally {
-      setTokenLoading(false);
-    }
-  };
-
-  const command = token ? `/link ${token}` : null;
-
-  const copy = async () => {
-    if (!command) return;
-    await navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="text-foreground text-lg flex items-center gap-2">
-          <Send className="h-4 w-4 text-primary" /> Telegram Bot
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {isLinked ? (
-          <div className="flex items-center gap-2 text-sm text-green-400">
-            <Check className="h-4 w-4" />
-            <span>Linked{user.telegramUsername ? <> as <span className="font-mono">@{user.telegramUsername}</span></> : ""}</span>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Link your Telegram to earn <strong className="text-primary">$2.00 daily</strong> just by having <code className="text-xs bg-white/8 px-1 py-0.5 rounded">unitedcards.lol</code> in your name.</p>
-        )}
-
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
-            {isLinked ? "To re-link, generate a token and send it to the bot:" : "Generate a token and send it to the bot on Telegram:"}
-          </p>
-
-          {command ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 bg-[#0d0d0d] border border-white/10 rounded px-3 py-2">
-                <code className="text-xs text-primary flex-1 font-mono break-all">{command}</code>
-                <button onClick={copy} className="text-white/40 hover:text-white transition-colors shrink-0">
-                  {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-              <p className="text-[10px] text-white/30">Token expires in 1 hour. Generate a new one if needed.</p>
-            </div>
-          ) : (
-            <button
-              onClick={generateToken}
-              disabled={tokenLoading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50"
-            >
-              {tokenLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
-              {tokenLoading ? "Generating…" : "Generate Link Token"}
-            </button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function SettingsTab({ user }: { user: any }) {
   const { logout } = useAuth();
   const [newTelegram, setNewTelegram] = useState(user.telegramUsername || "");
@@ -309,8 +227,6 @@ function SettingsTab({ user }: { user: any }) {
           </div>
         </CardContent>
       </Card>
-
-      <TelegramLinkCard user={user} />
 
       <Card className="bg-card border-border">
         <CardHeader>

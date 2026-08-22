@@ -511,50 +511,6 @@ export async function registerRoutes(
   });
 
 
-  // Telegram — generate a one-time link token (valid 1 hour)
-  app.post("/api/telegram/link-token", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
-    const userId = (req.user as any).id;
-    // Cryptographically secure, unguessable one-time bearer token (32 bytes, base64url).
-    const token = randomBytes(32).toString("base64url");
-    await db.execute(sql`
-      DELETE FROM telegram_link_tokens WHERE user_id = ${userId}
-    `);
-    await db.execute(sql`
-      INSERT INTO telegram_link_tokens (token, user_id) VALUES (${token}, ${userId})
-    `);
-    res.json({ token });
-  });
-
-  // Telegram — redeem a link token (called by the bot; returns user info and marks token used)
-  app.get("/api/telegram/link-token/:token", async (req, res) => {
-    const token = req.params.token;
-    const { pool: pgPool } = await import("./db");
-    // Atomically consume the token: delete-and-return in a single statement so
-    // two concurrent requests can never both claim the same one-time token.
-    const result = await pgPool.query(
-      `WITH claimed AS (
-         DELETE FROM telegram_link_tokens
-         WHERE token = $1
-           AND created_at > NOW() - INTERVAL '1 hour'
-         RETURNING user_id
-       )
-       SELECT u.id, u.username, u.telegram_chat_id
-       FROM claimed c
-       JOIN users u ON u.id = c.user_id
-       LIMIT 1`,
-      [token]
-    );
-    const row = result.rows[0];
-    if (!row) return res.status(404).json({ message: "Token not found or expired" });
-    // Return only what the bot needs to complete linking; no email/balance/PII.
-    res.json({
-      userId: row.id,
-      username: row.username,
-      telegramChatId: row.telegram_chat_id,
-    });
-  });
-
   // User Rank
   app.get("/api/user/rank", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
