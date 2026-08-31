@@ -8,7 +8,7 @@ import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { createNowPaymentsInvoice, getNowPaymentsInvoice, mapNowPaymentsStatus, verifyNowPaymentsWebhook } from "./nowpayments";
 import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products } from "@shared/schema";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products, insertAnnouncementSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file";
@@ -295,11 +295,11 @@ export async function registerRoutes(
         .orderBy(desc(cryptoPayments.createdAt))
         .limit(30);
 
-      // Manual deposit orders (CashApp, Chime, Zelle)
+       // Manual deposit orders (CashApp, Venmo, Chime, Zelle)
       const cashappRows = await db
         .select()
         .from(orders)
-        .where(and(eq(orders.userId, userId), sql`${orders.paymentMethod} IN ('CashApp','Chime','Zelle')`))
+        .where(and(eq(orders.userId, userId), sql`${orders.paymentMethod} IN ('CashApp','Venmo','Chime','Zelle')`))
         .orderBy(desc(orders.createdAt))
         .limit(30);
 
@@ -327,7 +327,7 @@ export async function registerRoutes(
 
       const cashappDeposits = depositOnlyCashapp.map(o => ({
         id: `cashapp_${o.id}`,
-        type: (o.paymentMethod?.toLowerCase() ?? "cashapp") as "cashapp" | "chime" | "zelle",
+         type: (o.paymentMethod?.toLowerCase() ?? "cashapp") as "cashapp" | "venmo" | "chime" | "zelle",
         amount: o.total,
         status: o.status,
         paymentNote: o.paymentNote,
@@ -370,7 +370,7 @@ export async function registerRoutes(
         })
         .from(orders)
         .leftJoin(users, eq(orders.userId, users.id))
-        .where(sql`${orders.paymentMethod} IN ('CashApp','Chime','Zelle')`)
+         .where(sql`${orders.paymentMethod} IN ('CashApp','Venmo','Chime','Zelle')`)
         .orderBy(desc(orders.createdAt))
         .limit(200);
 
@@ -942,9 +942,9 @@ export async function registerRoutes(
   app.get("/api/admin/orders", async (req, res) => {
     if (!isAdminOrWorker(req)) return res.status(401).json({ message: "Unauthorized" });
     const allOrders = await storage.getAllOrders();
-    // Show all orders — include CashApp/Chime/Zelle deposit orders so admin can confirm them
+    // Show all orders — include manual deposit orders so admin can confirm them
     const productOrders = allOrders.filter((o: any) =>
-      o.items.length > 0 || o.total > 0 || ["CashApp", "Chime", "Zelle"].includes(o.paymentMethod)
+      o.items.length > 0 || o.total > 0 || ["CashApp", "Venmo", "Chime", "Zelle"].includes(o.paymentMethod)
     );
     res.json(productOrders);
   });
@@ -1173,8 +1173,53 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const announcement = await storage.createAnnouncement(req.body);
+    const content = typeof req.body.content === "string" ? req.body.content.trim() : "";
+    if (!content) return res.status(400).json({ message: "Announcement message is required" });
+    if (content.length > 300) return res.status(400).json({ message: "Announcement message must be 300 characters or fewer" });
+
+    const link = typeof req.body.link === "string" ? req.body.link.trim() : "";
+    if (link) {
+      try {
+        const parsedLink = new URL(link);
+        if (!["http:", "https:"].includes(parsedLink.protocol)) {
+          return res.status(400).json({ message: "Announcement links must use http or https" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Announcement link must be a valid URL" });
+      }
+    }
+
+    const payload = {
+      content,
+      ...(link ? { link } : {}),
+      ...(typeof req.body.active === "boolean" ? { active: req.body.active } : {}),
+    };
+    const parsed = insertAnnouncementSchema.safeParse(payload);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message || "Invalid announcement" });
+    }
+    const announcement = await storage.createAnnouncement(parsed.data);
     res.status(201).json(announcement);
+  });
+
+  app.patch("/api/admin/announcements/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (typeof req.body.active !== "boolean") {
+      return res.status(400).json({ message: "Active status must be a boolean" });
+    }
+    const announcement = await storage.updateAnnouncement(Number(req.params.id), { active: req.body.active });
+    if (!announcement) return res.status(404).json({ message: "Announcement not found" });
+    res.json(announcement);
+  });
+
+  app.delete("/api/admin/announcements/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    await storage.deleteAnnouncement(Number(req.params.id));
+    res.json({ success: true });
   });
 
   // Admin Logs
@@ -1330,8 +1375,8 @@ export async function registerRoutes(
       return "";
     }
 
-    // Multiple cards can be pasted at once, separated by a blank line
-    const entries = rawInput.split(/\n\s*\n/).map((e: string) => e.trim()).filter(Boolean);
+    // Multiple cards can be pasted one per line; blank lines are ignored.
+    const entries = rawInput.split(/\r?\n/).map((e: string) => e.trim()).filter(Boolean);
     if (entries.length === 0) {
       return res.status(400).json({ message: "Full item is required" });
     }
@@ -2008,6 +2053,31 @@ export async function registerRoutes(
       const [order] = await db.insert(orders).values({
         userId, orderId: publicOrderId, total: depositAmount, paidAmount: 0,
         status: "pending", paymentMethod: "Zelle", paymentNote, deliveryContent: "",
+      }).returning();
+      res.status(201).json({ order, paymentNote, handle });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ── Venmo deposit ──────────────────────────────────────────────────────────
+  app.post("/api/deposits/venmo", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const enabled = await storage.getSetting("payment_method_venmo", "true");
+      if (enabled !== "true") return res.status(400).json({ message: "Venmo deposits are not available" });
+      const userId = (req.user as any).id;
+      const { amount } = req.body;
+      if (!amount || isNaN(parseFloat(String(amount))) || parseFloat(String(amount)) <= 0) {
+        return res.status(400).json({ message: "Valid amount required" });
+      }
+      const depositAmount = Math.round(parseFloat(String(amount)) * 100);
+      const paymentNote = generateNote();
+      const handle = await storage.getSetting("venmo_handle", "");
+      const publicOrderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const [order] = await db.insert(orders).values({
+        userId, orderId: publicOrderId, total: depositAmount, paidAmount: 0,
+        status: "pending", paymentMethod: "Venmo", paymentNote, deliveryContent: "",
       }).returning();
       res.status(201).json({ order, paymentNote, handle });
     } catch (e: any) {

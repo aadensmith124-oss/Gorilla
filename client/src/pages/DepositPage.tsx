@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 
-type Method = "crypto" | "cashapp";
+type ManualMethod = "cashapp" | "venmo" | "zelle" | "chime";
+type Method = "crypto" | ManualMethod;
 
 type Deposit = {
   id: string;
@@ -23,6 +24,11 @@ type Deposit = {
 };
 
 type ManualResult = { note: string; handle: string; amount: number; method: Method };
+type ManualMethodConfig = { enabled: boolean; handle?: string; tag?: string; fee: number };
+
+function LetterIcon({ letter, className = "", style }: { letter: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={`flex items-center justify-center font-black ${className}`} style={style}>{letter}</span>;
+}
 
 const BONUS_TIERS = [
   { min: 100,  max: 249,  bonus: "+10%", example: "$100 → $110"     },
@@ -35,10 +41,16 @@ const BONUS_TIERS = [
 
 function methodColor(type: string) {
   if (type === "cashapp") return "#00D632";
+  if (type === "venmo") return "#3D95CE";
+  if (type === "zelle") return "#9B59E8";
+  if (type === "chime") return "#7BC67E";
   return "#F7931A";
 }
 function methodLabel(type: string) {
   if (type === "cashapp") return "CashApp";
+  if (type === "venmo") return "Venmo";
+  if (type === "zelle") return "Zelle";
+  if (type === "chime") return "Chime";
   return "Crypto";
 }
 
@@ -154,8 +166,15 @@ export default function DepositPage() {
   const [amountInput, setAmountInput] = useState("");
   const [manualResult, setManualResult] = useState<ManualResult | null>(null);
 
+  const { data: paymentMethods } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/payment-methods"],
+  });
+
   const { data: manualMethods } = useQuery<{
-    cashapp: { enabled: boolean; tag: string; fee: number };
+    cashapp: ManualMethodConfig;
+    venmo: ManualMethodConfig;
+    zelle: ManualMethodConfig;
+    chime: ManualMethodConfig;
   }>({ queryKey: ["/api/site-settings/manual-payments"] });
 
   const { data: minDeposits } = useQuery<Record<string, number>>({
@@ -168,7 +187,10 @@ export default function DepositPage() {
     refetchInterval: 20000,
   });
 
-  const cashappEnabled = manualMethods?.cashapp.enabled !== false;
+  const cashappEnabled = paymentMethods?.cashapp !== false && manualMethods?.cashapp.enabled !== false;
+  const venmoEnabled = paymentMethods?.venmo === true && manualMethods?.venmo.enabled === true;
+  const zelleEnabled = paymentMethods?.zelle === true && manualMethods?.zelle.enabled === true;
+  const chimeEnabled = paymentMethods?.chime === true && manualMethods?.chime.enabled === true;
 
   const parsedAmount = parseFloat(amountInput) || 0;
   const activeTier = BONUS_TIERS.find(t => parsedAmount >= t.min && (t.max === null || parsedAmount <= t.max));
@@ -199,26 +221,36 @@ export default function DepositPage() {
   });
 
   /* ── Manual mutations ── */
-  async function createManual(endpoint: string, method: Method) {
+  async function createManual(method: ManualMethod) {
     const amount = parsedAmount;
     if (!amount || amount < 0.01) throw new Error("Enter the amount you want to deposit");
     const min = minDeposits?.[method] ?? 0;
     if (min > 0 && amount < min) throw new Error(`Minimum deposit for ${methodLabel(method)} is $${min.toFixed(2)}`);
+    const endpoint = method === "cashapp" ? "/api/orders/cashapp" : `/api/deposits/${method}`;
     const res = await apiRequest("POST", endpoint, { amount });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.message || `Unable to create ${methodLabel(method)} deposit`);
+    }
     return res.json();
   }
 
-  const cashappMutation = useMutation({
-    mutationFn: () => createManual("/api/orders/cashapp", "cashapp"),
-    onSuccess: (data) => {
-      setManualResult({ note: data.paymentNote, handle: data.cashappTag || manualMethods?.cashapp.tag || "", amount: Math.round(parsedAmount * 100), method: "cashapp" });
+  const manualMutation = useMutation({
+    mutationFn: (method: ManualMethod) => createManual(method),
+    onSuccess: (data, method) => {
+      const config = manualMethods?.[method];
+      setManualResult({
+        note: data.paymentNote,
+        handle: data.cashappTag || data.handle || config?.tag || config?.handle || "",
+        amount: Math.round(parsedAmount * 100),
+        method,
+      });
       qc.invalidateQueries({ queryKey: ["/api/deposits"] });
       qc.invalidateQueries({ queryKey: ["/api/orders"] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
-  const isManualPending = cashappMutation.isPending;
-  const isPending = cryptoMutation.isPending || isManualPending;
+  const isPending = cryptoMutation.isPending || manualMutation.isPending;
 
   function feeLabel(fee: number | undefined) {
     if (!fee || fee === 0) return "0% fee";
@@ -228,15 +260,19 @@ export default function DepositPage() {
   const paymentOptions = [
     { id: "crypto", label: "Crypto", sub: "BTC · ETH · LTC · SOL · USDT", Icon: SiBitcoin, color: "#F7931A", fee: "0% fee" },
     ...(cashappEnabled ? [{ id: "cashapp", label: "CashApp", sub: "instant", Icon: SiCashapp, color: "#00D632", fee: feeLabel(manualMethods?.cashapp?.fee) }] : []),
+    ...(venmoEnabled ? [{ id: "venmo", label: "Venmo", sub: "instant", Icon: (props: any) => <LetterIcon {...props} letter="V" />, color: "#3D95CE", fee: feeLabel(manualMethods?.venmo?.fee) }] : []),
+    ...(zelleEnabled ? [{ id: "zelle", label: "Zelle", sub: "instant", Icon: (props: any) => <LetterIcon {...props} letter="Z" />, color: "#9B59E8", fee: feeLabel(manualMethods?.zelle?.fee) }] : []),
+    ...(chimeEnabled ? [{ id: "chime", label: "Chime", sub: "instant", Icon: (props: any) => <LetterIcon {...props} letter="C" />, color: "#7BC67E", fee: feeLabel(manualMethods?.chime?.fee) }] : []),
   ];
 
-  const selected = paymentOptions.find(o => o.id === selectedOption) || null;
   const isSelectedCrypto = selectedOption === "crypto";
 
   function handleContinue() {
     if (!selectedOption) return;
     if (isSelectedCrypto) cryptoMutation.mutate();
-    else if (selectedOption === "cashapp") cashappMutation.mutate();
+    else if (["cashapp", "venmo", "zelle", "chime"].includes(selectedOption)) {
+      manualMutation.mutate(selectedOption as ManualMethod);
+    }
   }
 
   return (
@@ -245,7 +281,7 @@ export default function DepositPage() {
 
         {/* ── Hero ── */}
         <div className="text-center pt-2 pb-2 space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">unitedcards</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">GorillaCC</h1>
           <p className="text-sm text-white/50">Providing high quality cards since 2026.</p>
         </div>
 
@@ -325,14 +361,14 @@ export default function DepositPage() {
       <div className="border-t border-white/8 py-6 px-4 text-center space-y-2">
         <div className="flex items-center justify-center gap-5 text-xs font-semibold text-white/50 tracking-widest uppercase">
           <span>Reviews</span>
-          <a href="https://t.me/+L4RV2JFJNz45ZGYx" target="_blank" rel="noopener noreferrer"
+          <a href="https://t.me/+4mXj61Q-goYwNWU9" target="_blank" rel="noopener noreferrer"
             className="flex items-center justify-center h-5 w-5 rounded-full bg-primary">
             <Send className="h-2.5 w-2.5 text-white fill-white" />
           </a>
           <span>TOS</span>
           <span>FAQs</span>
         </div>
-        <p className="text-xs text-white/25">© 2026 unitedcards. All rights reserved</p>
+        <p className="text-xs text-white/25">© 2026 GorillaCC. All rights reserved</p>
       </div>
     </div>
   );

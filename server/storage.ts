@@ -69,6 +69,8 @@ export interface IStorage {
   getAnnouncements(): Promise<Announcement[]>;
   getAllAnnouncements(): Promise<Announcement[]>;
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  updateAnnouncement(id: number, data: Partial<Pick<Announcement, "content" | "link" | "active">>): Promise<Announcement | undefined>;
+  deleteAnnouncement(id: number): Promise<void>;
   
   // Images
   uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage>;
@@ -713,11 +715,12 @@ export class DatabaseStorage implements IStorage {
     // Deposit-only order (no items) — credit user's wallet balance with paidAmount
     if (items.length === 0) {
       const grossAmount = paidAmount !== undefined ? paidAmount : order.total;
-      // Apply configured fee for manual payment methods (CashApp, Chime, Zelle)
+      // Apply configured fee for manual payment methods (CashApp, Venmo, Chime, Zelle)
       let feeRate = 0;
-      const manualMethods = ["CashApp", "Chime", "Zelle"];
+      const manualMethods = ["CashApp", "Venmo", "Chime", "Zelle"];
       if (manualMethods.includes(order.paymentMethod || "")) {
         const feeKey = order.paymentMethod === "CashApp" ? "cashapp_fee"
+          : order.paymentMethod === "Venmo" ? "venmo_fee"
           : order.paymentMethod === "Chime" ? "chime_fee" : "zelle_fee";
         const feePct = parseFloat(await this.getSetting(feeKey, "0")) || 0;
         feeRate = feePct / 100;
@@ -1048,6 +1051,15 @@ export class DatabaseStorage implements IStorage {
     return ann;
   }
 
+  async updateAnnouncement(id: number, data: Partial<Pick<Announcement, "content" | "link" | "active">>): Promise<Announcement | undefined> {
+    const [ann] = await db.update(announcements).set(data).where(eq(announcements.id, id)).returning();
+    return ann;
+  }
+
+  async deleteAnnouncement(id: number): Promise<void> {
+    await db.delete(announcements).where(eq(announcements.id, id));
+  }
+
   async uploadImage(filename: string, mimeType: string, data: string): Promise<UploadedImage> {
     const [img] = await db.insert(uploadedImages).values({ filename, mimeType, data }).returning();
     return img;
@@ -1263,7 +1275,15 @@ export class DatabaseStorage implements IStorage {
   async getPaymentMethodsConfig(): Promise<Record<string, boolean>> {
     const rows = await db.select().from(siteSettings)
       .where(sql`key LIKE 'payment_method_%'`);
-    const defaults: Record<string, boolean> = { wallet: true, cashapp: true, crypto: true, stars: true };
+    const defaults: Record<string, boolean> = {
+      wallet: true,
+      cashapp: true,
+      crypto: true,
+      stars: true,
+      venmo: true,
+      zelle: true,
+      chime: true,
+    };
     for (const row of rows) {
       const method = row.key.replace("payment_method_", "");
       defaults[method] = row.value === "true";

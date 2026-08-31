@@ -106,7 +106,7 @@ function BlueButton({ children, disabled, type = "submit", onClick, className = 
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`w-full bg-[#ec4899] hover:bg-[#db2777] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm py-3 rounded transition-colors flex items-center justify-center gap-2 ${className}`}
+      className={`w-full bg-accent hover:bg-[hsl(42_85%_48%)] disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-semibold text-sm py-3 rounded transition-colors flex items-center justify-center gap-2 ${className}`}
     >
       {children}
     </button>
@@ -273,14 +273,14 @@ function AuthFooter() {
     <div className="mt-auto border-t border-white/8 py-6 px-4 text-center space-y-2">
       <div className="flex items-center justify-center gap-5 text-xs font-semibold text-white/50 tracking-widest uppercase">
         <span>Reviews</span>
-        <a href="https://t.me/+L4RV2JFJNz45ZGYx" target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center h-5 w-5 rounded-full bg-[#ec4899]">
+        <a href="https://t.me/+4mXj61Q-goYwNWU9" target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center h-5 w-5 rounded-full bg-primary">
           <Send className="h-2.5 w-2.5 text-white fill-white" />
         </a>
         <span>TOS</span>
         <span>FAQs</span>
       </div>
-      <p className="text-xs text-white/25">© 2026 unitedcards. All rights reserved</p>
+      <p className="text-xs text-white/25">© 2026 GorillaCC. All rights reserved</p>
     </div>
   );
 }
@@ -296,12 +296,12 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col" style={{ background: "#0d0d0d" }}>
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
         <div className="w-full max-w-[380px]">
-          <div className="flex flex-col items-center mb-8" aria-label="unitedcards">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 shadow-[0_0_28px_rgba(236,72,153,0.12)]">
+          <div className="flex flex-col items-center mb-8" aria-label="GorillaCC">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 shadow-[0_0_28px_rgba(154,203,63,0.12)]">
               <CreditCard className="h-6 w-6 text-primary" strokeWidth={1.8} />
             </div>
             <div className="mt-3 text-lg font-black uppercase tracking-[0.2em] text-primary">
-              unitedcards
+              GorillaCC
             </div>
           </div>
           {tab === "login"

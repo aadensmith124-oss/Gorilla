@@ -6,7 +6,7 @@ const RANKS = [
   { key: "newbie",  label: "Newbie",  emoji: "🌱", color: "text-white/45",   bar: "#ffffff40", border: "border-white/10",     glow: "",                     discount: 0,  threshold: 0,      next: 10000  },
   { key: "regular", label: "Regular", emoji: "⭐", color: "text-blue-400",   bar: "#60a5fa",   border: "border-blue-500/30",  glow: "shadow-blue-500/10",   discount: 2,  threshold: 10000,  next: 50000  },
   { key: "vip",     label: "VIP",     emoji: "💎", color: "text-purple-400", bar: "#c084fc",   border: "border-purple-500/30",glow: "shadow-purple-500/10", discount: 5,  threshold: 50000,  next: 100000 },
-  { key: "nyc",     label: "NYC",     emoji: "🫆", color: "text-amber-400",  bar: "#fbbf24",   border: "border-amber-500/30", glow: "shadow-amber-500/10",  discount: 10, threshold: 100000, next: null   },
+  { key: "nyc",     label: "Silverback", emoji: "🫆", color: "text-amber-400", bar: "#fbbf24", border: "border-amber-500/30", glow: "shadow-amber-500/10", discount: 10, threshold: 100000, next: null   },
 ];
 
 function getRankIdx(totalDeposited: number) {
@@ -34,7 +34,7 @@ export default function RanksPage() {
 
         {/* ── Hero ── */}
         <div className="text-center pt-2 pb-2 space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">unitedcards</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-wide uppercase">GorillaCC</h1>
           <p className="text-sm text-white/50">Providing high quality cards since 2026.</p>
         </div>
 

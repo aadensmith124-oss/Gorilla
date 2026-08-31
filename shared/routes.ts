@@ -269,12 +269,27 @@ export const api = {
       },
     },
     announcements: {
-      update: {
+      create: {
         method: 'POST' as const,
         path: '/api/admin/announcements',
         input: insertAnnouncementSchema,
         responses: {
           201: z.custom<typeof announcements.$inferSelect>(),
+        },
+      },
+      toggle: {
+        method: 'PATCH' as const,
+        path: '/api/admin/announcements/:id',
+        input: z.object({ active: z.boolean() }),
+        responses: {
+          200: z.custom<typeof announcements.$inferSelect>(),
+        },
+      },
+      delete: {
+        method: 'DELETE' as const,
+        path: '/api/admin/announcements/:id',
+        responses: {
+          200: z.object({ success: z.boolean() }),
         },
       },
     }

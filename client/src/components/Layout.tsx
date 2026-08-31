@@ -8,6 +8,7 @@ import {
   LogOut,
   MessageSquare,
   Package,
+  FileText,
   Send,
   Settings,
   Trophy,
@@ -42,11 +43,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     staleTime: 30000,
   });
 
-  const { data: announcements } = useQuery<{ id: number; text: string; active: boolean }[]>({
+  const { data: announcements } = useQuery<{ id: number; content: string; link: string | null; active: boolean }[]>({
     queryKey: ["/api/announcements"],
     staleTime: 60000,
   });
-  const activeAnnouncement = announcements?.find(a => a.active);
+  const activeAnnouncements = announcements?.filter(a => a.active) ?? [];
 
   type NavItem = {
     href: string;
@@ -68,7 +69,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "Channel",
       links: [
-        { href: "https://t.me/+L4RV2JFJNz45ZGYx", label: "Telegram Channel", icon: Send, external: true },
+        { href: "https://t.me/+4mXj61Q-goYwNWU9", label: "Telegram Channel", icon: Send, external: true },
       ],
     },
     {
@@ -80,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       label: "Featured",
       links: [
+        ...(features?.logs !== false ? [{ href: "/shop", label: "Logs", icon: FileText }] : []),
         { href: "/", label: "Cards", icon: CreditCard },
         ...(features?.checker !== false ? [{ href: "/checker", label: "Checker", icon: Layers }] : []),
         ...(features?.reseller !== false ? [{ href: "/become-reseller", label: "Become Seller", icon: BookOpen }] : []),
@@ -101,14 +103,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
 
       {/* ── Announcement banner ── */}
-      {activeAnnouncement && (
-        <div className="w-full overflow-hidden z-50" style={{ height: 32, background: "linear-gradient(90deg,#be185d,#ec4899,#be185d)" }}>
+      {activeAnnouncements.length > 0 && (
+        <div className="w-full overflow-hidden z-50" style={{ height: 32, background: "linear-gradient(90deg,#38551b,#9acb3f,#38551b)" }}>
           <div className="flex items-center h-full whitespace-nowrap animate-[marquee_18s_linear_infinite]">
-            {[...Array(4)].map((_, i) => (
-              <span key={i} className="text-[11px] font-bold tracking-widest text-white uppercase px-12">
-                {activeAnnouncement.text}
-              </span>
-            ))}
+            {[...Array(4)].flatMap((_, repeat) => activeAnnouncements.map((announcement) => (
+              announcement.link ? (
+                <a
+                  key={`${repeat}-${announcement.id}`}
+                  href={announcement.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-bold tracking-widest text-white uppercase px-12 hover:text-white/80"
+                >
+                  {announcement.content}
+                </a>
+              ) : (
+                <span key={`${repeat}-${announcement.id}`} className="text-[11px] font-bold tracking-widest text-white uppercase px-12">
+                  {announcement.content}
+                </span>
+              )
+            )))}
           </div>
         </div>
       )}
@@ -129,7 +143,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Wordmark */}
         <span className="text-primary font-black tracking-[0.18em] uppercase text-sm select-none">
-          Unitedcards
+          GorillaCC
         </span>
 
         {/* Balance pill */}
@@ -154,7 +168,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-4 h-[52px] border-b border-white/8 shrink-0">
-          <span className="text-primary font-black tracking-[0.18em] uppercase text-xs">Unitedcards</span>
+          <span className="text-primary font-black tracking-[0.18em] uppercase text-xs">GorillaCC</span>
           <button onClick={() => setNavOpen(false)} className="text-white/40 hover:text-white/80 transition-colors p-1">
             <X className="h-4 w-4" />
           </button>

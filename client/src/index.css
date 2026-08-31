@@ -1,44 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 5%;
+  --background: 120 10% 4%;
   --foreground: 0 0% 95%;
-  --card: 0 0% 8%;
+  --card: 120 8% 8%;
   --card-foreground: 0 0% 95%;
-  --popover: 0 0% 8%;
+  --popover: 120 8% 8%;
   --popover-foreground: 0 0% 95%;
-  --primary: 330 80% 60%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 12%;
+  --primary: 82 65% 48%;
+  --primary-foreground: 100 20% 5%;
+  --secondary: 120 8% 12%;
   --secondary-foreground: 0 0% 80%;
-  --muted: 0 0% 12%;
-  --muted-foreground: 0 0% 48%;
-  --accent: 330 80% 60%;
-  --accent-foreground: 0 0% 100%;
+  --muted: 120 8% 12%;
+  --muted-foreground: 100 8% 52%;
+  --accent: 42 85% 55%;
+  --accent-foreground: 35 40% 8%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 14%;
-  --input: 0 0% 9%;
-  --ring: 330 80% 60%;
+  --border: 100 10% 16%;
+  --input: 120 8% 9%;
+  --ring: 82 65% 48%;
   --radius: 0.625rem;
-  --font-display: 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; font-family: var(--font-body); }
-  h1, h2, h3, h4, h5, h6 { font-family: var(--font-body); }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+    background-image:
+      radial-gradient(circle at 85% -10%, hsl(82 65% 48% / 0.1), transparent 32rem),
+      radial-gradient(circle at -10% 40%, hsl(42 85% 55% / 0.06), transparent 28rem);
+  }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 }
 
 @layer components {
   .btn-pro { @apply h-9 px-4 text-xs font-semibold transition-all hover:scale-[0.98] active:scale-[0.95]; }
-  .btn-buy { @apply bg-[hsl(258_85%_65%)] hover:bg-[hsl(258_85%_58%)] text-white font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
+  .btn-buy { @apply bg-accent hover:bg-[hsl(42_85%_48%)] text-accent-foreground font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
   .mono { font-family: var(--font-mono); }
 }
 
@@ -52,6 +58,6 @@
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-.glass { @apply bg-white/5 backdrop-blur-xl border border-white/[0.06] shadow-md; }
-.pro-card { @apply bg-[#111] border border-white/10 rounded-2xl shadow-sm; }
-.item-row { @apply border border-white/10 bg-[#111] rounded-xl p-3 hover:bg-white/5 transition-colors; }
+.glass { @apply bg-white/[0.04] backdrop-blur-xl border border-primary/[0.12] shadow-md; }
+.pro-card { @apply bg-[#111711] border border-white/10 rounded-2xl shadow-sm; }
+.item-row { @apply border border-white/10 bg-[#111711] rounded-xl p-3 hover:bg-primary/[0.06] transition-colors; }

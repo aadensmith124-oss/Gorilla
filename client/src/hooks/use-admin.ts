@@ -34,13 +34,13 @@ export function useAdmin() {
 
   const updateAnnouncement = useMutation({
     mutationFn: async (data: InsertAnnouncement) => {
-      const res = await fetch(api.admin.announcements.update.path, {
-        method: api.admin.announcements.update.method,
+      const res = await fetch(api.admin.announcements.create.path, {
+        method: api.admin.announcements.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to update announcement");
-      return api.admin.announcements.update.responses[201].parse(await res.json());
+      return api.admin.announcements.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
       toast({ title: "Announcement updated" });

@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag, Copy, Check, Upload, ImageIcon, LayoutDashboard, CreditCard, MessageSquare, Settings, BadgeCheck, Code2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, X, Users, DollarSign, ShoppingBag, Receipt, ShieldX, Menu, ChevronRight, ChevronDown, Link2, Star, Package, Wallet, Pin, Gift, Tag, Copy, Check, Upload, ImageIcon, LayoutDashboard, CreditCard, MessageSquare, Settings, BadgeCheck, Code2, Megaphone } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SiBitcoin, SiCashapp } from "react-icons/si";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,6 +32,7 @@ const adminSections = [
   { id: "users",    label: "Users",      Icon: Users },
   { id: "support",  label: "Support",    Icon: MessageSquare },
   { id: "codes",    label: "Codes",      Icon: Gift },
+  { id: "announcements", label: "Announcements", Icon: Megaphone },
   { id: "integrations", label: "Settings", Icon: Settings },
 ];
 
@@ -69,7 +70,7 @@ export default function AdminPage() {
       <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-white/10 bg-[#111]">
         <div className="px-5 py-5 border-b border-white/8">
           <p className="text-base font-black text-white">
-            FOOD<span className="text-primary">PLUG</span>
+             Gorilla<span className="text-primary">CC</span>
           </p>
           <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono mt-0.5">Admin</p>
         </div>
@@ -117,7 +118,7 @@ export default function AdminPage() {
         <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/10">
           <div>
             <p className="text-sm font-black text-white">
-              FOOD<span className="text-primary">PLUG</span>
+               Gorilla<span className="text-primary">CC</span>
               <span className="ml-1.5 text-xs font-normal text-white/40">Admin</span>
             </p>
             <p className="text-[10px] text-white/40 font-mono">{activeLabel}</p>
@@ -141,6 +142,7 @@ export default function AdminPage() {
           {activeSection === "support"      && <SupportSection />}
           {activeSection === "codes"        && <CodesSection />}
           {activeSection === "deposits"     && <DepositsSection />}
+          {activeSection === "announcements" && <AnnouncementsSection />}
           
           {activeSection === "integrations" && <IntegrationsSection />}
         </main>
@@ -246,6 +248,201 @@ function DashboardSection() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AnnouncementsSection() {
+  const [content, setContent] = useState("");
+  const [link, setLink] = useState("");
+  const [active, setActive] = useState(true);
+  const { toast } = useToast();
+
+  const { data: announcements = [], isLoading } = useQuery<Array<{
+    id: number;
+    content: string;
+    link: string | null;
+    active: boolean;
+    createdAt: string;
+  }>>({
+    queryKey: ["/api/admin/announcements"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/announcements", {
+        content: content.trim(),
+        ...(link.trim() ? { link: link.trim() } : {}),
+        active,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      setContent("");
+      setLink("");
+      setActive(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement added", description: "It is now available in the announcement bar." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not add announcement", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/announcements/${id}`, { active });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not update announcement", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/announcements/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not delete announcement", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const submit = () => {
+    if (!content.trim()) {
+      toast({ title: "Message required", description: "Enter the announcement text first.", variant: "destructive" });
+      return;
+    }
+    createMutation.mutate();
+  };
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h1 className="text-2xl font-semibold flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-primary" /> Announcements
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Publish messages in the scrolling bar shown across the customer site.
+        </p>
+      </div>
+
+      <Card className="bg-[#111] border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Add announcement</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="announcement-content" className="text-xs font-medium text-white/60">Message</label>
+            <Textarea
+              id="announcement-content"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="e.g. New stock just landed — check the store!"
+              maxLength={300}
+              rows={3}
+              className="bg-[#0d0d0d] border-white/10 resize-none"
+              data-testid="input-announcement-content"
+            />
+            <p className="text-[11px] text-white/35 text-right">{content.length}/300</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="announcement-link" className="text-xs font-medium text-white/60">Link (optional)</label>
+            <Input
+              id="announcement-link"
+              type="url"
+              value={link}
+              onChange={(event) => setLink(event.target.value)}
+              placeholder="https://example.com"
+              className="bg-[#0d0d0d] border-white/10"
+              data-testid="input-announcement-link"
+            />
+            <p className="text-[11px] text-white/35">Customers can click the message to open this link in a new tab.</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#0d0d0d] px-3 py-3">
+            <div>
+              <p className="text-sm font-medium text-white">Show immediately</p>
+              <p className="text-xs text-white/40">Inactive announcements stay saved but hidden.</p>
+            </div>
+            <Switch checked={active} onCheckedChange={setActive} aria-label="Show announcement immediately" />
+          </div>
+
+          <Button onClick={submit} disabled={createMutation.isPending} className="w-full gap-2" data-testid="button-add-announcement">
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add announcement
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-[#111] border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Saved announcements ({announcements.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : announcements.length === 0 ? (
+            <p className="text-sm text-white/40 text-center py-8">No announcements yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {announcements.map((announcement) => (
+                <div key={announcement.id} className="flex items-start gap-3 rounded-lg border border-white/10 bg-[#0d0d0d] px-3 py-3">
+                  <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${announcement.active ? "bg-primary" : "bg-white/25"}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white break-words">{announcement.content}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-white/40">
+                      <span>{announcement.active ? "Visible" : "Hidden"}</span>
+                      <span>·</span>
+                      <span>{new Date(announcement.createdAt).toLocaleString()}</span>
+                      {announcement.link && (
+                        <>
+                          <span>·</span>
+                          <span className="truncate max-w-[220px]">{announcement.link}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleMutation.mutate({ id: announcement.id, active: !announcement.active })}
+                      disabled={toggleMutation.isPending}
+                      className="h-8 text-xs border-white/10"
+                    >
+                      {announcement.active ? "Hide" : "Show"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (window.confirm("Delete this announcement?")) deleteMutation.mutate(announcement.id);
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      aria-label="Delete announcement"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -2332,6 +2529,7 @@ function FeatureTogglesCard() {
 }
 
 function methodMeta(method: string) {
+  if (method === "Venmo") return { color: "#3D95CE", label: "Venmo", icon: "V" };
   if (method === "Chime") return { color: "#7BC67E", label: "Chime", icon: "C" };
   if (method === "Zelle") return { color: "#9B59E8", label: "Zelle", icon: "Z" };
   return { color: "#00D632", label: "CashApp", icon: "$" };
@@ -2342,7 +2540,7 @@ function CashAppSection() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState<"all" | "CashApp" | "Chime" | "Zelle">("all");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<"all" | "CashApp" | "Venmo" | "Chime" | "Zelle">("all");
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["/api/admin/orders"],
@@ -2354,7 +2552,7 @@ function CashAppSection() {
     refetchInterval: 6000,
   });
 
-  const manualOrders = (allOrders || []).filter((o: any) => ["CashApp", "Chime", "Zelle"].includes(o.paymentMethod));
+  const manualOrders = (allOrders || []).filter((o: any) => ["CashApp", "Venmo", "Chime", "Zelle"].includes(o.paymentMethod));
   const pendingOrders = manualOrders.filter((o: any) => o.status === "pending");
   const cq = searchQuery.trim().toLowerCase();
   const typeFiltered = (showHistory ? manualOrders : pendingOrders).filter((o: any) =>
@@ -2368,6 +2566,7 @@ function CashAppSection() {
   );
 
   const cashappCount = pendingOrders.filter((o: any) => o.paymentMethod === "CashApp").length;
+  const venmoCount = pendingOrders.filter((o: any) => o.paymentMethod === "Venmo").length;
   const chimeCount = pendingOrders.filter((o: any) => o.paymentMethod === "Chime").length;
   const zelleCount = pendingOrders.filter((o: any) => o.paymentMethod === "Zelle").length;
 
@@ -2507,6 +2706,7 @@ function CashAppSection() {
         {[
           { key: "all", label: "All", count: pendingOrders.length, color: "text-white/70" },
           { key: "CashApp", label: "CashApp", count: cashappCount, color: "text-[#00D632]" },
+          { key: "Venmo", label: "Venmo", count: venmoCount, color: "text-[#3D95CE]" },
           { key: "Chime", label: "Chime", count: chimeCount, color: "text-[#7BC67E]" },
           { key: "Zelle", label: "Zelle", count: zelleCount, color: "text-[#9B59E8]" },
         ].map(({ key, label, count, color }) => (
@@ -2834,7 +3034,7 @@ function AdminCardsSection() {
   const { data: bases } = useQuery<any[]>({ queryKey: ["/api/card-bases"] });
 
   // Auto-extract BIN + ZIP preview from first card entry
-  const cardEntries = fullItem.split(/\n\s*\n/).map(e => e.trim()).filter(Boolean);
+  const cardEntries = fullItem.split(/\r?\n/).map(e => e.trim()).filter(Boolean);
   const previewBin = findCardNumberPreview(cardEntries[0] || "").substring(0, 6);
   const previewZip = extractZipPreview(cardEntries[0] || "");
 
@@ -2877,12 +3077,12 @@ function AdminCardsSection() {
           <textarea
             value={fullItem}
             onChange={e => setFullItem(e.target.value)}
-            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|12345\n\n4222222222222222|12/26|456|Jane Doe|456 Oak Ave|City|54321"}
+            placeholder={"4111111111111111|12/25|123|John Doe|123 Main St|City|12345\n4222222222222222|12/26|456|Jane Doe|456 Oak Ave|City|54321"}
             rows={5}
             className="w-full bg-[#111]/5 border border-white/10 rounded text-xs text-white font-mono p-2 outline-none focus:border-gray-300 resize-none placeholder:text-white/30"
             data-testid="input-full-item"
           />
-          <p className="text-[10px] text-white/30">Leave one blank line between cards to add multiple at once.</p>
+          <p className="text-[10px] text-white/30">Paste one card per line. Blank lines are ignored.</p>
           <div className="flex gap-3">
             {cardEntries.length > 1 && (
               <p className="text-[10px] text-white/50 font-mono">{cardEntries.length} cards detected</p>

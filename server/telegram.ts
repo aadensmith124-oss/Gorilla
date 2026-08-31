@@ -6,14 +6,14 @@ import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file"
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;
-const GROUP_INVITE = "https://t.me/+L4RV2JFJNz45ZGYx";
+const GROUP_INVITE = "https://t.me/+4mXj61Q-goYwNWU9";
 const TELEGRAM_ADMIN_IDS = new Set(
   (process.env.TELEGRAM_ADMIN_IDS ?? "")
     .split(",")
     .map(id => id.trim())
     .filter(Boolean),
 );
-const NAME_KEYWORD = "unitedcards.lol";
+const NAME_KEYWORD = "gorillacc.xyz";
 const BROADCAST_MAX_CHARS = 1_000;
 const BROADCAST_MAX_RECIPIENTS = 500;
 const BROADCAST_COOLDOWN_MS = 60_000;
@@ -124,7 +124,7 @@ async function broadcastMessage(ctx: Context, bot: Bot) {
     try {
       await bot.api.sendMessage(
         recipient.telegram_chat_id,
-        `📢 Announcement from unitedcards\n\n${message}`,
+        `📢 Announcement from GorillaCC\n\n${message}`,
       );
       delivered++;
     } catch (error: any) {
@@ -422,7 +422,7 @@ async function sendStatus(ctx: Context) {
       : `⚠️ Add *${NAME_KEYWORD}* to your first or last name`;
 
   await ctx.reply(
-    `👤 *Your Unitedcards Drops Status*\n\n` +
+    `👤 *Your GorillaCC Drops Status*\n\n` +
     `Access: ${accessLine}\n` +
     `🎁 Claims in the last 24 hours: *${claims.used}/${claims.allowance} used*\n` +
     `Claims remaining: *${claims.remaining}*\n` +
@@ -571,12 +571,12 @@ export function startTelegramBot() {
       const member = await ctx.api.getChatMember(GROUP_ID, userId);
       const allowed = ["creator", "administrator", "member", "restricted"].includes(member.status);
       if (!allowed) {
-        await ctx.reply(`🔒 You must join the unitedcards group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+        await ctx.reply(`🔒 You must join the GorillaCC group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
         return;
       }
     } catch (err: any) {
       console.error("[telegram] membership check failed:", err?.message ?? err);
-      await ctx.reply(`🔒 You must join the unitedcards group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+      await ctx.reply(`🔒 You must join the GorillaCC group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
       return;
     }
 
@@ -608,7 +608,7 @@ export function startTelegramBot() {
     }
 
     await ctx.reply(
-      `👋 Welcome to the *unitedcards* drops bot!\n\n` +
+      `👋 Welcome to the *GorillaCC* drops bot!\n\n` +
       `*How to get started:*\n` +
       `1. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
       `2. Use /claim when drops are available\n` +
@@ -663,7 +663,7 @@ export function startTelegramBot() {
   /* ── /help ────────────────────────────────────────────────────────────── */
   bot.command("help", async (ctx: Context) => {
     await ctx.reply(
-      `*unitedcards Drops Bot*\n\n` +
+      `*GorillaCC Drops Bot*\n\n` +
       `/claim — Get one queued drop per 24 hours\n` +
       `/status — View access and claim status\n` +
       `/ref — Get a referral link for one extra drop\n` +

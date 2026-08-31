@@ -30,9 +30,7 @@ const MENU = [
 export default function EatzPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
-  const telegramUrl = selected
-    ? `https://t.me/dextabehittin?text=${encodeURIComponent(`hello dexter, i want eats for ${selected}`)}`
-    : "#";
+  const telegramUrl = selected ? "https://t.me/+4mXj61Q-goYwNWU9" : "#";
 
   return (
     <div className="min-h-screen bg-background pb-24">
