@@ -10,7 +10,7 @@ following settings automatically:
 
 - Build command: `npm run build:vercel`
 - Output directory: `dist/public`
-- Node.js version: 20.x via the package engine requirement
+- Node.js version: 24.x via the package engine requirement
 - API entrypoints: `api/index.ts` and `api/[...path].ts`
 
 Do not set the output directory to `dist` or `client/dist`.

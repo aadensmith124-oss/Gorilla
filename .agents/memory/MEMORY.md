@@ -6,3 +6,4 @@
 - [Telegram production-only runtime](telegram-production-only.md) — bot polling is disabled in preview; publish/restart production for command and secret changes to take effect.
 - [Standalone Telegram hosting](standalone-telegram-hosting.md) — standalone polling must import shared logging without booting Express; use one active polling process per bot token.
 - [Data protection boundary](data-protection-boundary.md) — managed DB encryption plus app-controlled encrypted backups/exports; live app data must remain decryptable to function.
+- [Vercel runtime configuration](vercel-runtime-configuration.md) — use the managed Node runtime and package engines; nodejs20.x is invalid as a function runtime identifier.
