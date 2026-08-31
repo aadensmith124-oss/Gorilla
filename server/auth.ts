@@ -5,10 +5,10 @@ import session from "express-session";
 import rateLimit from "express-rate-limit";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User, userIps, users } from "../shared/schema";
+import { storage } from "./storage.js";
+import { User, userIps, users } from "../shared/schema.js";
 import pgSession from "connect-pg-simple";
-import { pool, db } from "./db";
+import { pool, db } from "./db.js";
 import { eq } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);

@@ -6,7 +6,7 @@ import {
   insertAnnouncementSchema,
   insertRedeemCodeSchema,
   users, products, variants, orders, transactions, announcements
-} from './schema';
+} from './schema.js';
 
 export const errorSchemas = {
   validation: z.object({

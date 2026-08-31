@@ -1,4 +1,4 @@
-import { createApp, initializeApp } from "./app";
+import { createApp, initializeApp } from "./app.js";
 
 const { app, httpServer } = createApp();
 let initialization: Promise<void> | undefined;

@@ -1,9 +1,9 @@
-import { db } from "./db";
-import { cryptoPayments, orders, users } from "../shared/schema";
+import { db } from "./db.js";
+import { cryptoPayments, orders, users } from "../shared/schema.js";
 import { eq, and, inArray } from "drizzle-orm";
-import { getNowPaymentsInvoice, mapNowPaymentsStatus } from "./nowpayments";
-import { storage } from "./storage";
-import { log } from "./logger";
+import { getNowPaymentsInvoice, mapNowPaymentsStatus } from "./nowpayments.js";
+import { storage } from "./storage.js";
+import { log } from "./logger.js";
 
 async function processCompletion(payment: typeof cryptoPayments.$inferSelect) {
   if (payment.purpose === "order" && payment.orderId) {

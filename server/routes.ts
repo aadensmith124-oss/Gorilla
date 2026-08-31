@@ -1,17 +1,17 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
-import { storage } from "./storage";
-import { setupAuth, MIN_PASSWORD_LENGTH, passwordChangeLimiter } from "./auth";
-import { api } from "../shared/routes";
+import { storage } from "./storage.js";
+import { setupAuth, MIN_PASSWORD_LENGTH, passwordChangeLimiter } from "./auth.js";
+import { api } from "../shared/routes.js";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { createNowPaymentsInvoice, getNowPaymentsInvoice, mapNowPaymentsStatus, verifyNowPaymentsWebhook } from "./nowpayments";
-import { hashPassword, comparePassword } from "./auth";
-import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products, insertAnnouncementSchema } from "../shared/schema";
-import { db } from "./db";
+import { createNowPaymentsInvoice, getNowPaymentsInvoice, mapNowPaymentsStatus, verifyNowPaymentsWebhook } from "./nowpayments.js";
+import { hashPassword, comparePassword } from "./auth.js";
+import { cryptoPayments, orders, orderItems, verifications, variants, userIps, users, mails, mailReads, discountCodes, transactions, stockItems, cards, achs, products, insertAnnouncementSchema } from "../shared/schema.js";
+import { db } from "./db.js";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
-import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file";
+import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file.js";
 function isAdminOrWorker(req: any): boolean {
   const u = req.user as any;
   return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);

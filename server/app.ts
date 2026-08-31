@@ -1,13 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { assertDatabaseConfigured, pool, db } from "./db";
+import { storage } from "./storage.js";
+import { assertDatabaseConfigured, pool, db } from "./db.js";
 import { sql } from "drizzle-orm";
-import { pollPendingCryptoPayments } from "./crypto-poller";
-import { startTelegramBot } from "./telegram";
-import { log } from "./logger";
+import { pollPendingCryptoPayments } from "./crypto-poller.js";
+import { startTelegramBot } from "./telegram.js";
+import { log } from "./logger.js";
 
 declare module "http" {
   interface IncomingMessage {
