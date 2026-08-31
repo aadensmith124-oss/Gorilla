@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useForebitPolling } from "@/hooks/use-forebit-polling";
 import { useEffect } from "react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 // Pages
 import AuthPage from "@/pages/AuthPage";
@@ -28,19 +29,53 @@ import ProfilePage from "@/pages/ProfilePage";
 import SupportPage from "@/pages/SupportPage";
 import RedeemCodePage from "@/pages/RedeemCodePage";
 
+function LoadingScreen() {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+      <p className="text-sm text-muted-foreground">Connecting to GorillaCC…</p>
+    </main>
+  );
+}
+
+function ConnectionErrorScreen({ retry }: { retry: () => void }) {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
+      <div className="space-y-2">
+        <h1 className="text-xl font-bold">Unable to connect</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          The app server did not respond. Check the deployment configuration and try again.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => void retry()}
+        className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+      >
+        <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        Try again
+      </button>
+    </main>
+  );
+}
+
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isError, retryAuth } = useAuth();
   const [location, setLocation] = useLocation();
   useForebitPolling();
 
   useEffect(() => {
-    if (!isLoading && !user && location !== "/auth") {
+    if (!isLoading && !isError && !user && location !== "/auth") {
       setLocation("/auth");
     }
-  }, [user, isLoading, location, setLocation]);
+  }, [user, isLoading, isError, location, setLocation]);
 
   if (isLoading) {
-    return null;
+    return <LoadingScreen />;
+  }
+
+  if (isError) {
+    return <ConnectionErrorScreen retry={retryAuth} />;
   }
 
   return (

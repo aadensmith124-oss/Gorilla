@@ -7,13 +7,30 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: user, isLoading } = useQuery({
+  const {
+    data: user,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [api.auth.me.path],
-    queryFn: async () => {
-      const res = await fetch(api.auth.me.path);
-      if (res.status === 401) return null;
-      if (!res.ok) throw new Error("Failed to fetch user");
-      return api.auth.me.responses[200].parse(await res.json());
+    queryFn: async ({ signal }) => {
+      const controller = new AbortController();
+      const abortFromQuery = () => controller.abort();
+      signal?.addEventListener("abort", abortFromQuery, { once: true });
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch(api.auth.me.path, {
+          signal: controller.signal,
+          credentials: "include",
+        });
+        if (res.status === 401) return null;
+        if (!res.ok) throw new Error("Failed to fetch user");
+        return api.auth.me.responses[200].parse(await res.json());
+      } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener("abort", abortFromQuery);
+      }
     },
     retry: false,
     // Always re-fetch the current user on mount so role/ban changes
@@ -79,6 +96,8 @@ export function useAuth() {
   return {
     user,
     isLoading,
+    isError,
+    retryAuth: refetch,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
