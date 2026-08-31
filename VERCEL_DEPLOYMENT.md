@@ -22,7 +22,7 @@ serve the application:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Vercel Supabase integrations may expose this as `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL`, or `POSTGRES_PRISMA_URL`; the app accepts those names as fallbacks. |
 | `SESSION_SECRET` | Yes | Persistent session-cookie signing secret |
 | `APP_ENCRYPTION_KEY` | Yes | Encryption for protected application data |
 | `NOWPAYMENTS_API_KEY` | For crypto payments | NOWPayments API access |

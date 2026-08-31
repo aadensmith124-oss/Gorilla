@@ -106,11 +106,11 @@ export async function initializeApp(
   // Ensure the session table exists (connect-pg-simple needs this).
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
-      "sid" varchar NOT NULL COLLATE "default",
+      "sid" varchar NOT NULL,
       "sess" json NOT NULL,
       "expire" timestamp(6) NOT NULL,
       CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
-    ) WITH (OIDS=FALSE)
+    )
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
 
