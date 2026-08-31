@@ -10,7 +10,7 @@
   },
   "rewrites": [
     {
-      "source": "/:path((?!api(?:/|$)|assets(?:/|$)).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

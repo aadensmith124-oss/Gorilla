@@ -3,6 +3,18 @@ import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 
+async function getResponseMessage(res: Response, fallback: string) {
+  const body = await res.text();
+  if (!body) return `${fallback} (${res.status})`;
+  try {
+    const parsed = JSON.parse(body);
+    if (typeof parsed?.message === "string" && parsed.message.trim()) return parsed.message;
+  } catch {
+    // Vercel may return an HTML error page before the request reaches Express.
+  }
+  return `${fallback} (${res.status})`;
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -44,10 +56,10 @@ export function useAuth() {
         method: api.auth.login.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Invalid email or password");
+        throw new Error(await getResponseMessage(res, "Login failed"));
       }
       return res.json() as Promise<User>;
     },
@@ -66,10 +78,10 @@ export function useAuth() {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Registration failed");
+        throw new Error(await getResponseMessage(res, "Registration failed"));
       }
       return res.json() as Promise<User>;
     },
@@ -83,8 +95,11 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(api.auth.logout.path, { method: api.auth.logout.method });
-      if (!res.ok) throw new Error("Logout failed");
+      const res = await fetch(api.auth.logout.path, {
+        method: api.auth.logout.method,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(await getResponseMessage(res, "Logout failed"));
     },
     onSuccess: () => {
       queryClient.setQueryData([api.auth.me.path], null);
