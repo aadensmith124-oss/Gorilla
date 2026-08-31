@@ -5,3 +5,4 @@
 - [Standalone Telegram drops](standalone-telegram-drops.md) — drop claims, referrals, and bot admin access use Telegram chat IDs only; do not reintroduce store-account linking.
 - [Telegram production-only runtime](telegram-production-only.md) — bot polling is disabled in preview; publish/restart production for command and secret changes to take effect.
 - [Standalone Telegram hosting](standalone-telegram-hosting.md) — standalone polling must import shared logging without booting Express; use one active polling process per bot token.
+- [Data protection boundary](data-protection-boundary.md) — managed DB encryption plus app-controlled encrypted backups/exports; live app data must remain decryptable to function.
