@@ -10,11 +10,13 @@ const databaseUrl =
   process.env.POSTGRES_URL ??
   process.env.POSTGRES_PRISMA_URL;
 
-if (!databaseUrl) {
-  throw new Error(
-    "A PostgreSQL connection string is required. Set DATABASE_URL (or POSTGRES_URL_NON_POOLING/POSTGRES_URL in Vercel).",
-  );
+export function assertDatabaseConfigured() {
+  if (!databaseUrl) {
+    throw new Error(
+      "A PostgreSQL connection string is required. Set DATABASE_URL (or POSTGRES_URL_NON_POOLING/POSTGRES_URL in Vercel).",
+    );
+  }
 }
 
-export const pool = new Pool({ connectionString: databaseUrl });
+export const pool = new Pool(databaseUrl ? { connectionString: databaseUrl } : {});
 export const db = drizzle(pool, { schema });

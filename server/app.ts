@@ -3,7 +3,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { pool, db } from "./db";
+import { assertDatabaseConfigured, pool, db } from "./db";
 import { sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller";
 import { startTelegramBot } from "./telegram";
@@ -102,6 +102,8 @@ export async function initializeApp(
   options: AppInitializationOptions = {},
 ) {
   const { startBackgroundJobs = true } = options;
+
+  assertDatabaseConfigured();
 
   // Ensure the session table exists (connect-pg-simple needs this).
   await pool.query(`
