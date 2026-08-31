@@ -31,7 +31,7 @@ export const api = {
       path: '/api/register',
       input: z.object({
         email: z.string().email(),
-        password: z.string().min(6),
+        password: z.string().min(12),
       }),
       responses: {
         201: z.custom<typeof users.$inferSelect & { loginCode: string }>(),

@@ -201,7 +201,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) { toast({ title: "Passwords don't match", variant: "destructive" }); return; }
-    if (password.length < 6) { toast({ title: "Password too short", description: "At least 6 characters", variant: "destructive" }); return; }
+    if (password.length < 12) { toast({ title: "Password too short", description: "At least 12 characters", variant: "destructive" }); return; }
     setSubmitting(true);
     try {
       const res = await fetch("/api/register", {

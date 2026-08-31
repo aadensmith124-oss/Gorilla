@@ -466,7 +466,7 @@ export async function registerRoutes(
     if (!Number.isFinite(bet) || !Number.isInteger(bet) || bet < 1) {
       return res.status(400).json({ message: "Invalid bet amount." });
     }
-    if (!(difficulty in settings)) {
+    if (typeof difficulty !== "string" || !Object.hasOwn(settings, difficulty)) {
       return res.status(400).json({ message: "Invalid difficulty." });
     }
     if (bet > 100000) {

@@ -407,7 +407,7 @@ function SettingsTab({ user, onUpdate }: { user: any; onUpdate: () => void }) {
   const passwordMutation = useMutation({
     mutationFn: async () => {
       if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
-      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
+      if (newPassword.length < 12) throw new Error("Password must be at least 12 characters");
       const res = await apiRequest("PATCH", "/api/user/password", { currentPassword, newPassword });
       if (!res.ok) {
         const err = await res.json();
