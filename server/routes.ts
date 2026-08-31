@@ -450,6 +450,62 @@ export async function registerRoutes(
     });
   });
 
+  // Mines — one-shot minefield game. The selected cell is represented by the
+  // server-side outcome; the full grid is returned for the result animation.
+  app.post(api.games.mines.path, gameLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    const bet = Number(req.body?.betAmount);
+    const difficulty = req.body?.difficulty;
+    const settings = {
+      simple: { mineCount: 3, multiplier: 1.5 },
+      extreme: { mineCount: 7, multiplier: 2.25 },
+      impossible: { mineCount: 11, multiplier: 4 },
+    } as const;
+
+    if (!Number.isFinite(bet) || !Number.isInteger(bet) || bet < 1) {
+      return res.status(400).json({ message: "Invalid bet amount." });
+    }
+    if (!(difficulty in settings)) {
+      return res.status(400).json({ message: "Invalid difficulty." });
+    }
+    if (bet > 100000) {
+      return res.status(400).json({ message: "Bet amount exceeds maximum allowed." });
+    }
+
+    const userId = (req.user as any).id;
+    const currentUser = await storage.getUser(userId);
+    if (!currentUser || currentUser.balance < bet) {
+      return res.status(400).json({ message: "Insufficient balance" });
+    }
+
+    const { mineCount, multiplier } = settings[difficulty as keyof typeof settings];
+    const minePositions = new Set<number>();
+    while (minePositions.size < mineCount) {
+      minePositions.add(Math.floor(Math.random() * 25));
+    }
+    const grid = Array.from({ length: 25 }, (_, index) => minePositions.has(index) ? 1 : 0);
+    const selectedCell = Math.floor(Math.random() * 25);
+    const won = grid[selectedCell] === 0;
+    const payout = won ? Math.round(bet * multiplier) : 0;
+
+    await storage.updateUserBalance(userId, -bet);
+    await storage.createTransaction(userId, -bet, "loss", `Mines game bet (${difficulty})`);
+    if (won) {
+      await storage.updateUserBalance(userId, payout);
+      await storage.createTransaction(userId, payout, "win", `Mines game win (${difficulty})`);
+    }
+
+    const updatedUser = await storage.getUser(userId);
+    res.json({
+      gameId: randomBytes(16).toString("hex"),
+      won,
+      payout,
+      newBalance: updatedUser?.balance || 0,
+      grid,
+    });
+  });
+
   app.post(api.games.spin.path, gameLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as any;
@@ -504,6 +560,27 @@ export async function registerRoutes(
       const { email } = req.body;
       if (!email || !email.includes("@")) return res.status(400).json({ message: "Valid email required" });
       const user = await storage.updateUser((req.user as any).id, { email });
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // User - Update Telegram username
+  app.patch("/api/user/telegram", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const rawTelegramUsername = req.body?.telegramUsername;
+      if (typeof rawTelegramUsername !== "string") {
+        return res.status(400).json({ message: "Telegram username must be text" });
+      }
+
+      const telegramUsername = rawTelegramUsername.trim().replace(/^@+/, "");
+      if (telegramUsername.length > 64 || !/^[a-zA-Z0-9_]*$/.test(telegramUsername)) {
+        return res.status(400).json({ message: "Invalid Telegram username" });
+      }
+
+      const user = await storage.updateUser((req.user as any).id, { telegramUsername });
       res.json(user);
     } catch (e: any) {
       res.status(400).json({ message: e.message });

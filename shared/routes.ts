@@ -29,7 +29,10 @@ export const api = {
     register: {
       method: 'POST' as const,
       path: '/api/register',
-      input: z.object({}),
+      input: z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+      }),
       responses: {
         201: z.custom<typeof users.$inferSelect & { loginCode: string }>(),
         400: errorSchemas.validation,
@@ -39,7 +42,8 @@ export const api = {
       method: 'POST' as const,
       path: '/api/login',
       input: z.object({
-        loginCode: z.string(),
+        email: z.string().email(),
+        password: z.string().min(1),
       }),
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
