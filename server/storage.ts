@@ -56,6 +56,7 @@ export interface IStorage {
   getRedeemCode(code: string): Promise<RedeemCode | undefined>;
   markRedeemCodeUsed(id: number, userId: number): Promise<boolean>;
   createRedeemCode(code: string, amount: number): Promise<RedeemCode>;
+  createRedeemCodes(codes: Array<{ code: string; amount: number }>): Promise<RedeemCode[]>;
   getAllRedeemCodes(): Promise<RedeemCode[]>;
   
   // Admin
@@ -1002,6 +1003,14 @@ export class DatabaseStorage implements IStorage {
   async createRedeemCode(code: string, amount: number): Promise<RedeemCode> {
     const [rc] = await db.insert(redeemCodes).values({ code, amount }).returning();
     return rc;
+  }
+
+  async createRedeemCodes(codes: Array<{ code: string; amount: number }>): Promise<RedeemCode[]> {
+    if (codes.length === 0) return [];
+    return db.insert(redeemCodes)
+      .values(codes)
+      .onConflictDoNothing({ target: redeemCodes.code })
+      .returning();
   }
 
   async getAllRedeemCodes(): Promise<RedeemCode[]> {

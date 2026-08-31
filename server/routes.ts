@@ -901,16 +901,37 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { amount, count } = req.body;
-    const codes = [];
-    
-    for (let i = 0; i < count; i++) {
-      const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const codeStr = `VOUCH-${randomStr}`;
-      await storage.createRedeemCode(codeStr, amount);
-      codes.push(codeStr);
+
+    const amount = Number(req.body?.amount);
+    const count = Number(req.body?.count);
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100_000_000) {
+      return res.status(400).json({ message: "Amount must be a whole number of cents between 1 and 100,000,000." });
     }
-    res.json({ codes });
+    if (!Number.isSafeInteger(count) || count < 1 || count > 100) {
+      return res.status(400).json({ message: "Count must be a whole number between 1 and 100." });
+    }
+
+    try {
+      const codes: string[] = [];
+      let attempts = 0;
+      while (codes.length < count && attempts < 3) {
+        attempts++;
+        const batch = Array.from({ length: count - codes.length }, () => ({
+          code: `VOUCH-${randomBytes(8).toString("hex").toUpperCase()}`,
+          amount,
+        }));
+        const inserted = await storage.createRedeemCodes(batch);
+        codes.push(...inserted.map((code) => code.code));
+      }
+
+      if (codes.length !== count) {
+        throw new Error("Unable to generate a unique set of redeem codes");
+      }
+      res.json({ codes });
+    } catch (error) {
+      console.error("[admin] redeem code generation failed:", error);
+      res.status(500).json({ message: "Unable to generate redeem codes right now." });
+    }
   });
 
   // Admin Products (all products including hidden)
