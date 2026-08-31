@@ -14,3 +14,14 @@ deprecated after October 1, 2026, so Node 24 is the safe current target.
 **How to apply:** When deploying this project to Vercel, leave the
 function-level runtime unset and keep the package and project Node version
 aligned with the currently supported Vercel version.
+
+Vercel does not inherit Replit's runtime-managed `DATABASE_URL`. Production
+must define its own complete PostgreSQL connection string, and the database
+host must be reachable from Vercel.
+
+**Why:** A deployment can build successfully but fail on its first API request
+when the Vercel function starts without database configuration.
+
+**How to apply:** Configure `DATABASE_URL` (or the supported hosted-Postgres
+equivalent) in Vercel Project Settings for each deployed environment, then
+redeploy.
