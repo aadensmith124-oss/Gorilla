@@ -4,7 +4,7 @@ import {
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
-} from "@shared/schema";
+} from "../shared/schema";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
 import { pool } from "./db";
 

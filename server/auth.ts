@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User, userIps, users } from "@shared/schema";
+import { User, userIps, users } from "../shared/schema";
 import pgSession from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq } from "drizzle-orm";

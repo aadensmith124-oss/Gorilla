@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { cryptoPayments, orders, users } from "@shared/schema";
+import { cryptoPayments, orders, users } from "../shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { getNowPaymentsInvoice, mapNowPaymentsStatus } from "./nowpayments";
 import { storage } from "./storage";
