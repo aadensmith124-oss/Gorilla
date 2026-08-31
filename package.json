@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
+    "build:vercel": "vite build",
     "build:bot": "tsx script/build-bot.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "start:bot": "NODE_ENV=production node dist/bot.mjs",
