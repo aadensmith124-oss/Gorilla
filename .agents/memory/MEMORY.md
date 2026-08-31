@@ -7,6 +7,6 @@
 - [Standalone Telegram hosting](standalone-telegram-hosting.md) — standalone polling must import shared logging without booting Express; use one active polling process per bot token.
 - [Data protection boundary](data-protection-boundary.md) — managed DB encryption plus app-controlled encrypted backups/exports; live app data must remain decryptable to function.
 - [Vercel runtime configuration](vercel-runtime-configuration.md) — use the managed Node runtime and package engines; nodejs20.x is invalid as a function runtime identifier.
-- [Vercel TypeScript path mappings](vercel-typescript-path-mappings.md) — API functions must use relative server/shared imports because Vercel does not resolve tsconfig aliases.
+- [Vercel TypeScript and ESM imports](vercel-typescript-path-mappings.md) — API functions need relative imports with explicit `.js` extensions for Vercel's native ESM runtime.
 - [Vercel health probe behavior](vercel-health-probe.md) — `/api/health` is a deployment-only routing probe; local Vite may serve the SPA there instead.
 - [Supabase migration verification](supabase-migration-verification.md) — verify recorded migrations and tables after an MCP output warning before retrying DDL.
