@@ -4,20 +4,27 @@ import * as schema from "../shared/schema.js";
 
 const { Pool } = pg;
 
-// Replit exposes DATABASE_URL, while Vercel Postgres integrations commonly
-// expose POSTGRES_URL or POSTGRES_PRISMA_URL. Prefer the project-standard name
-// but allow the hosted-Postgres names so the same build can run in either
-// environment.
 const databaseUrl =
   process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_PRISMA_URL;
 
-if (!databaseUrl) {
-  throw new Error(
-    "A PostgreSQL connection string is required. Set DATABASE_URL in the Vercel project environment variables.",
-  );
+export function assertDatabaseConfigured() {
+  if (!databaseUrl) {
+    throw new Error(
+      "A PostgreSQL connection string is required. Set DATABASE_URL (or POSTGRES_URL_NON_POOLING/POSTGRES_URL in Vercel).",
+    );
+  }
 }
 
-export const pool = new Pool({ connectionString: databaseUrl });
+const usesSupabaseHost = Boolean(databaseUrl && /(?:supabase\.co|pooler\.supabase\.com)/i.test(databaseUrl));
+
+export const pool = new Pool(databaseUrl ? {
+  connectionString: databaseUrl,
+  ...(usesSupabaseHost ? { ssl: { rejectUnauthorized: false } } : {}),
+  max: 1,
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis: 10_000,
+} : {});
 export const db = drizzle(pool, { schema });
