@@ -1,8 +1,8 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { pool } from "./db";
-import { log } from "./logger";
-import { CLAIM_LIMIT_PER_WINDOW, getClaimAccess, remainingClaimSlots } from "./reward-claim-policy";
-import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file";
+import { pool } from "./db.js";
+import { log } from "./logger.js";
+import { CLAIM_LIMIT_PER_WINDOW, getClaimAccess, remainingClaimSlots } from "./reward-claim-policy.js";
+import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file.js";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
 const GROUP_ID     = process.env.Telegram_group_id;

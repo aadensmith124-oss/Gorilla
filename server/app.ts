@@ -1,13 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { pool, db } from "./db";
+import { storage } from "./storage.js";
+import { assertDatabaseConfigured, pool, db } from "./db.js";
 import { sql } from "drizzle-orm";
-import { pollPendingCryptoPayments } from "./crypto-poller";
-import { startTelegramBot } from "./telegram";
-import { log } from "./logger";
+import { pollPendingCryptoPayments } from "./crypto-poller.js";
+import { startTelegramBot } from "./telegram.js";
+import { log } from "./logger.js";
 
 declare module "http" {
   interface IncomingMessage {
@@ -103,14 +103,16 @@ export async function initializeApp(
 ) {
   const { startBackgroundJobs = true } = options;
 
+  assertDatabaseConfigured();
+
   // Ensure the session table exists (connect-pg-simple needs this).
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
-      "sid" varchar NOT NULL COLLATE "default",
+      "sid" varchar NOT NULL,
       "sess" json NOT NULL,
       "expire" timestamp(6) NOT NULL,
       CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
-    ) WITH (OIDS=FALSE)
+    )
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
 

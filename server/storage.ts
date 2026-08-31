@@ -1,12 +1,12 @@
-import { db } from "./db";
+import { db } from "./db.js";
 import { 
   users, products, variants, stockItems, orders, orderItems, transactions, redeemCodes, announcements, uploadedImages, cards, cardBases, supportTickets, verifications, cryptoPayments, mails, mailReads, siteSettings, discountCodes, sellerApplications, achs, cryptoAddresses,
   type User, type InsertUser, type Product, type InsertProduct, type Variant, type InsertVariant,
   type StockItem, type Order, type OrderItem, type Transaction, type RedeemCode, type Announcement, type InsertAnnouncement, type UploadedImage,
   type Card, type InsertCard, type CardBase, type SellerApplication, type Ach, type InsertAch, type CryptoAddress
-} from "@shared/schema";
+} from "../shared/schema.js";
 import { eq, and, sql, desc, lt } from "drizzle-orm";
-import { pool } from "./db";
+import { pool } from "./db.js";
 
 export interface IStorage {
   // Users

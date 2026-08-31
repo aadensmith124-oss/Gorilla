@@ -24,7 +24,7 @@ application, then redeploy:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string. `POSTGRES_URL` or `POSTGRES_PRISMA_URL` are also accepted when supplied by a Vercel Postgres integration. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Vercel Postgres/Supabase integrations may expose this as `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL`, or `POSTGRES_PRISMA_URL`; the app accepts those names as fallbacks. |
 | `SESSION_SECRET` | Yes | Persistent session-cookie signing secret |
 | `APP_ENCRYPTION_KEY` | Yes | Encryption for protected application data |
 | `NOWPAYMENTS_API_KEY` | For crypto payments | NOWPayments API access |
@@ -63,6 +63,9 @@ https://<your-vercel-domain>/api/webhooks/nowpayments
 ```
 
 The callback must use the same `NOWPAYMENTS_IPN_SECRET` configured in Vercel.
+
+Use `/api/health` after publishing to verify that Vercel is routing requests to
+the API function before debugging database configuration.
 
 ## Important runtime difference
 
