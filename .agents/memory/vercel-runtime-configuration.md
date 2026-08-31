@@ -25,3 +25,13 @@ when the Vercel function starts without database configuration.
 **How to apply:** Configure `DATABASE_URL` (or the supported hosted-Postgres
 equivalent) in Vercel Project Settings for each deployed environment, then
 redeploy.
+
+For Supabase on Vercel, prefer the Session Pooler connection over the direct
+`db.<project-ref>.supabase.co` endpoint.
+
+**Why:** The direct Supabase hostname may fail DNS resolution from a Vercel
+function even when the connection string and credentials are otherwise valid.
+
+**How to apply:** Copy the Session mode URL from Supabase's Connect dialog,
+URL-encode the password, and save the complete URL as the Vercel production
+database variable.

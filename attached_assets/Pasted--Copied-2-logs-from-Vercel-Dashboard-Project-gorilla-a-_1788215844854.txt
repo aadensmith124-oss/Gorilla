@@ -1,0 +1,13 @@
+-------------------------------------------
+Copied 2 logs from Vercel Dashboard
+- Project: gorilla-ajsd (prj_ux4pZxcHsiaQk6mAKsUeXx8awuVk)
+- Team: aadensmith124-oss (team_0KXHbwMNryU4kimAsNpIgo4g)
+- Search query: (no search query applied)
+- Search timestamps: 2026-08-31T22:07:00.000Z to 2026-08-31T22:37:00.000Z
+- Dashboard URL: https://vercel.com/aadensmith124-oss/gorilla-ajsd/Dh95HAbRw4S7QDwfMPeZHhiLhnSf/logs?live=true
+- Format: JSONL
+- Documentation: https://vercel.com/docs/logs/runtime
+-------------------------------------------
+
+{"requestId":"qrqks-1788215811675-c72f2b40a4c1","timestamp":1788215811675,"deploymentId":"dpl_Dh95HAbRw4S7QDwfMPeZHhiLhnSf","projectId":"prj_ux4pZxcHsiaQk6mAKsUeXx8awuVk","level":"error","message":"[vercel] application initialization failed: Error: getaddrinfo ENOTFOUND db.pxsloqipizuxtbphpwyh.supabase.co\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async initializeApp (/vercel/path0/server/app.ts:109:3)\n    at async vercelHandler (/vercel/path0/server/vercel-handler.ts:9:5)\n    at async r (/opt/rust/nodejs.js:2:16523)\n    at async Server.<anonymous> (/opt/rust/nodejs.js:2:12474)\n    at async Server.<anonymous> (/opt/rust/nodejs.js:17:14562)","source":"function","domain":"gorilla-ajsd-oedgy9x1k-aadensmith124-oss.vercel.app","requestMethod":"GET","requestPath":"/api/user","responseStatusCode":503,"environment":"production","branch":"main","cache":"MISS"}
+{"requestId":"rtzjm-1788215811666-c4d2d6dd2910","timestamp":1788215811666,"deploymentId":"dpl_Dh95HAbRw4S7QDwfMPeZHhiLhnSf","projectId":"prj_ux4pZxcHsiaQk6mAKsUeXx8awuVk","level":"error","message":"[vercel] application initialization failed: Error: getaddrinfo ENOTFOUND db.pxsloqipizuxtbphpwyh.supabase.co\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async initializeApp (/vercel/path0/server/app.ts:109:3)\n    at async vercelHandler (/vercel/path0/server/vercel-handler.ts:9:5)\n    at async r (/opt/rust/nodejs.js:2:16523)\n    at async Server.<anonymous> (/opt/rust/nodejs.js:2:12474)\n    at async Server.<anonymous> (/opt/rust/nodejs.js:17:14562)","source":"function","domain":"gorilla-ajsd-oedgy9x1k-aadensmith124-oss.vercel.app","requestMethod":"GET","requestPath":"/api/user","responseStatusCode":503,"environment":"production","branch":"main","cache":"MISS"}

@@ -42,6 +42,11 @@ previously encrypted data unreadable.
 Replit-only hostname from a local development environment unless that database
 is reachable from Vercel.
 
+For Supabase deployments, use **Connect → Connection Pooling → Session mode**
+instead of the direct `db.<project-ref>.supabase.co` endpoint. The direct
+endpoint may not resolve from Vercel, while the session pooler is intended for
+serverless applications and uses a `pooler.supabase.com` hostname.
+
 ## Database setup
 
 Before the first production request, point `DATABASE_URL` at the production
