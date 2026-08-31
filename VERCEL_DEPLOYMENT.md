@@ -17,12 +17,14 @@ Do not set the output directory to `dist` or `client/dist`.
 
 ## Environment variables
 
-Add these variables to the Vercel project for every environment that should
-serve the application:
+Vercel does not automatically inherit Replit Secrets or Replit's runtime
+database variables. Add these variables in **Vercel → Project Settings →
+Environment Variables** for every environment that should serve the
+application, then redeploy:
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. `POSTGRES_URL` or `POSTGRES_PRISMA_URL` are also accepted when supplied by a Vercel Postgres integration. |
 | `SESSION_SECRET` | Yes | Persistent session-cookie signing secret |
 | `APP_ENCRYPTION_KEY` | Yes | Encryption for protected application data |
 | `NOWPAYMENTS_API_KEY` | For crypto payments | NOWPayments API access |
@@ -34,6 +36,11 @@ Optional integrations use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 Keep the same `DATABASE_URL`, `SESSION_SECRET`, and `APP_ENCRYPTION_KEY`
 across production deploys. Changing them can invalidate sessions or make
 previously encrypted data unreadable.
+
+`DATABASE_URL` must be the complete PostgreSQL connection string, for example
+`postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require`. Do not use the
+Replit-only hostname from a local development environment unless that database
+is reachable from Vercel.
 
 ## Database setup
 
