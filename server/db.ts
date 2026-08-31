@@ -18,5 +18,13 @@ export function assertDatabaseConfigured() {
   }
 }
 
-export const pool = new Pool(databaseUrl ? { connectionString: databaseUrl } : {});
+const usesSupabaseHost = Boolean(databaseUrl && /(?:supabase\.co|pooler\.supabase\.com)/i.test(databaseUrl));
+
+export const pool = new Pool(databaseUrl ? {
+  connectionString: databaseUrl,
+  ...(usesSupabaseHost ? { ssl: { rejectUnauthorized: false } } : {}),
+  max: 1,
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis: 10_000,
+} : {});
 export const db = drizzle(pool, { schema });

@@ -57,6 +57,9 @@ https://<your-vercel-domain>/api/webhooks/nowpayments
 
 The callback must use the same `NOWPAYMENTS_IPN_SECRET` configured in Vercel.
 
+Use `/api/health` after publishing to verify that Vercel is routing requests to
+the API function before debugging database configuration.
+
 ## Important runtime difference
 
 Vercel functions are short-lived and can run on multiple instances. The
