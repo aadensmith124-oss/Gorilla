@@ -12,6 +12,13 @@ import { cryptoPayments, orders, orderItems, verifications, variants, userIps, u
 import { db } from "./db.js";
 import { eq, and, ne, desc, sql } from "drizzle-orm";
 import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file.js";
+import {
+  createTelegramLinkToken,
+  getTelegramLinkStatus,
+} from "./telegram-referrals.js";
+import { createTelegramBot } from "./telegram.js";
+
+let telegramWebhookBot: ReturnType<typeof createTelegramBot> | undefined;
 function isAdminOrWorker(req: any): boolean {
   const u = req.user as any;
   return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);
@@ -127,8 +134,52 @@ export async function registerRoutes(
     next();
   });
 
+  app.post("/api/telegram/webhook", async (req, res) => {
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (expectedSecret && req.get("x-telegram-bot-api-secret-token") !== expectedSecret) {
+      return res.status(401).json({ message: "Invalid Telegram webhook secret" });
+    }
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      return res.status(503).json({ message: "Telegram bot is not configured" });
+    }
+
+    try {
+      telegramWebhookBot ??= createTelegramBot();
+      if (!telegramWebhookBot) {
+        return res.status(503).json({ message: "Telegram bot is not configured" });
+      }
+      await telegramWebhookBot.handleUpdate(req.body);
+      return res.sendStatus(200);
+    } catch (error) {
+      console.error("[telegram] webhook update failed:", error);
+      return res.status(500).json({ message: "Telegram update failed" });
+    }
+  });
+
   // Auth setup (handles /api/login, /api/register, /api/logout, /api/user)
   setupAuth(app);
+
+  app.get("/api/telegram/link-status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      res.json(await getTelegramLinkStatus((req.user as any).id));
+    } catch (error) {
+      console.error("[telegram] link status failed:", error);
+      res.status(500).json({ message: "Unable to load Telegram link status" });
+    }
+  });
+
+  app.post("/api/telegram/link-token", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const token = await createTelegramLinkToken((req.user as any).id);
+      res.json(token);
+    } catch (error) {
+      console.error("[telegram] link token creation failed:", error);
+      res.status(500).json({ message: "Unable to create Telegram link token" });
+    }
+  });
+
   // Every /api/admin route must pass this server-side gate. Individual routes
   // may apply narrower checks, but a missing per-route check cannot grant access.
   app.use("/api/admin", adminLimiter, requireAdmin);

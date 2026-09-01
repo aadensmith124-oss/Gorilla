@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut } from "lucide-react";
+import { Loader2, Package, Clock, Gift, Mail, Key, User, Calendar, Link2, LogOut, Copy, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -134,7 +134,43 @@ function SettingsTab({ user }: { user: any }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
+  const [telegramStatus, setTelegramStatus] = useState<any>(null);
+  const [telegramToken, setTelegramToken] = useState("");
+  const [isGeneratingTelegramToken, setIsGeneratingTelegramToken] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetch("/api/telegram/link-status", { credentials: "include" })
+      .then(async (res) => res.ok ? res.json() : null)
+      .then(setTelegramStatus)
+      .catch(() => setTelegramStatus(null));
+  }, []);
+
+  const generateTelegramToken = async () => {
+    setIsGeneratingTelegramToken(true);
+    try {
+      const res = await fetch("/api/telegram/link-token", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Unable to create token");
+      setTelegramToken(data.token);
+      toast({ title: "Link token created", description: "Use it with /link in the Telegram bot within 10 minutes." });
+    } catch (error: any) {
+      toast({ title: "Unable to create token", description: error.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingTelegramToken(false);
+    }
+  };
+
+  const copyTelegramToken = async () => {
+    if (!telegramToken) return;
+    await navigator.clipboard.writeText(telegramToken);
+    toast({ title: "Token copied" });
+  };
 
   const handleUpdateTelegram = async () => {
     try {
@@ -225,6 +261,53 @@ function SettingsTab({ user }: { user: any }) {
               <LogOut className="h-4 w-4 mr-2" /> Logout
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground text-lg flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" /> Telegram Rewards
+          </CardTitle>
+          <CardDescription>
+            Link the Telegram bot to your store account so referral credit is added automatically.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border border-border bg-background/40 p-4 text-sm">
+            {telegramStatus?.linked ? (
+              <div className="space-y-1">
+                <p className="font-semibold text-green-500">Telegram account linked</p>
+                <p className="text-muted-foreground">
+                  {telegramStatus.creditedCount} referral{telegramStatus.creditedCount === 1 ? "" : "s"} credited
+                  {telegramStatus.pendingCount > 0 ? ` · ${telegramStatus.pendingCount} pending` : ""}
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">
+                Each successful referral earns ${(Number(telegramStatus?.rewardAmount ?? 500) / 100).toFixed(2)} in store credit.
+              </p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            className="border-primary/30 text-primary hover:bg-primary/10"
+            onClick={generateTelegramToken}
+            disabled={isGeneratingTelegramToken}
+          >
+            {isGeneratingTelegramToken ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
+            Generate one-time link token
+          </Button>
+          {telegramToken && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Open the bot and send <span className="font-mono text-foreground">/link {telegramToken}</span>. This token expires in 10 minutes and can only be used once.
+              </p>
+              <Button size="sm" variant="secondary" onClick={copyTelegramToken}>
+                <Copy className="h-3.5 w-3.5 mr-2" /> Copy token
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

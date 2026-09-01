@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller.js";
 import { startTelegramBot } from "./telegram.js";
 import { log } from "./logger.js";
+import { ensureTelegramReferralSchema } from "./telegram-referrals.js";
 
 declare module "http" {
   interface IncomingMessage {
@@ -116,6 +117,7 @@ export async function initializeApp(
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
 
+  await ensureTelegramReferralSchema();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

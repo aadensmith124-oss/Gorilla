@@ -29,9 +29,14 @@ application, then redeploy:
 | `APP_ENCRYPTION_KEY` | Yes | Encryption for protected application data |
 | `NOWPAYMENTS_API_KEY` | For crypto payments | NOWPayments API access |
 | `NOWPAYMENTS_IPN_SECRET` | For crypto payments | NOWPayments webhook verification |
+| `TELEGRAM_BOT_TOKEN` | For Telegram | Bot token from BotFather |
+| `TELEGRAM_GROUP_ID` | For Telegram join gate | Numeric group/channel ID, including the `-100` prefix |
+| `TELEGRAM_JOIN_URL` | For Telegram join gate | Invite URL shown by the join button |
+| `TELEGRAM_WEBHOOK_SECRET` | Recommended for Telegram | Secret header used to authenticate Telegram webhook calls |
+| `TELEGRAM_REFERRAL_CREDIT_CENTS` | Optional | Store credit per successful referral in cents; defaults to `500` ($5) |
 
 Optional integrations use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-`TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_IDS`, and `Telegram_group_id`.
+`TELEGRAM_ADMIN_IDS`, and the legacy-compatible `Telegram_group_id` name.
 
 Keep the same `DATABASE_URL`, `SESSION_SECRET`, and `APP_ENCRYPTION_KEY`
 across production deploys. Changing them can invalidate sessions or make
@@ -72,9 +77,38 @@ The callback must use the same `NOWPAYMENTS_IPN_SECRET` configured in Vercel.
 Use `/api/health` after publishing to verify that Vercel is routing requests to
 the API function before debugging database configuration.
 
+## Telegram webhook and join gate
+
+The Telegram bot supports both the existing persistent long-polling process and
+a Vercel webhook. For Vercel, configure Telegram to send updates to:
+
+```text
+https://<your-vercel-domain>/api/telegram/webhook
+```
+
+Set `TELEGRAM_WEBHOOK_SECRET` in Vercel, then configure the webhook with the
+same secret header. For example:
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
+  -d "url=https://<your-vercel-domain>/api/telegram/webhook" \
+  -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+The bot must be an administrator of the configured group/channel so Telegram
+can answer membership checks. Users must join that group before `/start`,
+`/ref`, `/link`, or other bot commands are processed.
+
+To receive automatic wallet credit, a store user opens Profile → Settings →
+Telegram Rewards, generates a one-time token, and sends `/link TOKEN` to the
+bot. The token expires after 10 minutes and can be used once. Referral credit
+is recorded in the regular wallet balance and transaction ledger.
+
 ## Important runtime difference
 
 Vercel functions are short-lived and can run on multiple instances. The
 serverless adapter disables the background cleanup, payment polling, and
-Telegram polling loops. Configure payment providers to send webhooks; run the
-Telegram bot and any periodic jobs from a separate persistent process.
+Telegram polling loops. Telegram webhooks are supported by
+`/api/telegram/webhook`; if using long polling instead, run the bot from the
+separate persistent process and do not run polling and webhooks at the same
+time for the same bot token.
