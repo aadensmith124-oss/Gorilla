@@ -32,7 +32,7 @@ application, then redeploy:
 | `TELEGRAM_BOT_TOKEN` | For Telegram | Bot token from BotFather |
 | `TELEGRAM_GROUP_ID` | For Telegram join gate | Numeric group/channel ID, including the `-100` prefix |
 | `TELEGRAM_JOIN_URL` | For Telegram join gate | Invite URL shown by the join button |
-| `TELEGRAM_REFERRAL_CREDIT_CENTS` | Optional | Store credit per successful referral in cents; defaults to `500` ($5) |
+| `TELEGRAM_REFERRAL_CREDIT_CENTS` | Optional | Store credit per successful referral in cents; defaults to `100` ($1) |
 
 Optional integrations use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `TELEGRAM_ADMIN_IDS`, and the legacy-compatible `Telegram_group_id` name.
@@ -76,13 +76,12 @@ The callback must use the same `NOWPAYMENTS_IPN_SECRET` configured in Vercel.
 Use `/api/health` after publishing to verify that Vercel is routing requests to
 the API function before debugging database configuration.
 
-## Telegram long polling and join gate
+## Telegram polling and join gate
 
-The Telegram bot runs with long polling from a separate persistent bot
-process. Vercel hosts the web app/API and Supabase stores the shared data, but
-Vercel does not run the long-lived Telegram process.
-
-Build and run the bot worker with:
+The regular Replit development and published server processes run the Telegram
+bot with long polling. Vercel functions are short-lived, so the Vercel adapter
+does not start Telegram polling. If deploying the API to Vercel, run the bot
+from one separate persistent process:
 
 ```bash
 npm run build:bot
@@ -102,5 +101,6 @@ is recorded in the regular wallet balance and transaction ledger.
 
 Vercel functions are short-lived and can run on multiple instances. The
 serverless adapter disables the background cleanup, payment polling, and
-Telegram polling loops. Run the Telegram bot from the separate persistent
-process and ensure only one process is polling with a given bot token.
+Telegram polling loops. Ensure only one process is polling with a given bot
+token; do not run `npm run start:bot` while the regular server is already
+running with the same token.

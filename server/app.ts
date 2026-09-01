@@ -152,7 +152,7 @@ export async function initializeApp(
   }
 
   // Vercel functions are short-lived and may scale horizontally, so long-running
-  // cleanup, payment polling, and Telegram polling stay in the persistent runtime.
+  // cleanup, payment polling, and Telegram polling stay disabled there.
   if (!startBackgroundJobs) return;
 
   const cancelStaleOrders = async () => {
@@ -184,9 +184,5 @@ export async function initializeApp(
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
 
-  if (process.env.NODE_ENV !== "development") {
-    startTelegramBot();
-  } else {
-    log("Telegram bot disabled in development; it runs from the published site", "telegram");
-  }
+  startTelegramBot();
 }

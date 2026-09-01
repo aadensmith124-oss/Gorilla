@@ -833,6 +833,7 @@ export function startTelegramBot() {
   }
 
   // Start long polling — wrapped so a bad token doesn't crash the server.
+  log("Starting Telegram bot (long polling)", "telegram");
   bot.start({
     onStart: () => log("Telegram bot started (long polling)", "telegram"),
   }).catch((err: any) => {
