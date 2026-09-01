@@ -22,7 +22,7 @@ const TELEGRAM_ADMIN_IDS = new Set(
     .map(id => id.trim())
     .filter(Boolean),
 );
-const NAME_KEYWORD = "gorillacc.xyz";
+const NAME_KEYWORD = "gorillacc.lol";
 const BROADCAST_MAX_CHARS = 1_000;
 const BROADCAST_MAX_RECIPIENTS = 500;
 const BROADCAST_COOLDOWN_MS = 60_000;
