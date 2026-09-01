@@ -611,7 +611,7 @@ async function handleNameCheck(ctx: Context): Promise<void> {
 
 }
 
-export function createTelegramBot() {
+function createTelegramBot() {
   if (!BOT_TOKEN) {
     return null;
   }

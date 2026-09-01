@@ -16,9 +16,6 @@ import {
   createTelegramLinkToken,
   getTelegramLinkStatus,
 } from "./telegram-referrals.js";
-import { createTelegramBot } from "./telegram.js";
-
-let telegramWebhookBot: ReturnType<typeof createTelegramBot> | undefined;
 function isAdminOrWorker(req: any): boolean {
   const u = req.user as any;
   return req.isAuthenticated() && (u?.role === "admin" || u?.isWorker === true);
@@ -132,28 +129,6 @@ export async function registerRoutes(
   app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     next();
-  });
-
-  app.post("/api/telegram/webhook", async (req, res) => {
-    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-    if (expectedSecret && req.get("x-telegram-bot-api-secret-token") !== expectedSecret) {
-      return res.status(401).json({ message: "Invalid Telegram webhook secret" });
-    }
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      return res.status(503).json({ message: "Telegram bot is not configured" });
-    }
-
-    try {
-      telegramWebhookBot ??= createTelegramBot();
-      if (!telegramWebhookBot) {
-        return res.status(503).json({ message: "Telegram bot is not configured" });
-      }
-      await telegramWebhookBot.handleUpdate(req.body);
-      return res.sendStatus(200);
-    } catch (error) {
-      console.error("[telegram] webhook update failed:", error);
-      return res.status(500).json({ message: "Telegram update failed" });
-    }
   });
 
   // Auth setup (handles /api/login, /api/register, /api/logout, /api/user)

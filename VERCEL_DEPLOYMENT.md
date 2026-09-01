@@ -32,7 +32,6 @@ application, then redeploy:
 | `TELEGRAM_BOT_TOKEN` | For Telegram | Bot token from BotFather |
 | `TELEGRAM_GROUP_ID` | For Telegram join gate | Numeric group/channel ID, including the `-100` prefix |
 | `TELEGRAM_JOIN_URL` | For Telegram join gate | Invite URL shown by the join button |
-| `TELEGRAM_WEBHOOK_SECRET` | Recommended for Telegram | Secret header used to authenticate Telegram webhook calls |
 | `TELEGRAM_REFERRAL_CREDIT_CENTS` | Optional | Store credit per successful referral in cents; defaults to `500` ($5) |
 
 Optional integrations use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
@@ -77,22 +76,17 @@ The callback must use the same `NOWPAYMENTS_IPN_SECRET` configured in Vercel.
 Use `/api/health` after publishing to verify that Vercel is routing requests to
 the API function before debugging database configuration.
 
-## Telegram webhook and join gate
+## Telegram long polling and join gate
 
-The Telegram bot supports both the existing persistent long-polling process and
-a Vercel webhook. For Vercel, configure Telegram to send updates to:
+The Telegram bot runs with long polling from a separate persistent bot
+process. Vercel hosts the web app/API and Supabase stores the shared data, but
+Vercel does not run the long-lived Telegram process.
 
-```text
-https://<your-vercel-domain>/api/telegram/webhook
-```
-
-Set `TELEGRAM_WEBHOOK_SECRET` in Vercel, then configure the webhook with the
-same secret header. For example:
+Build and run the bot worker with:
 
 ```bash
-curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
-  -d "url=https://<your-vercel-domain>/api/telegram/webhook" \
-  -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+npm run build:bot
+npm run start:bot
 ```
 
 The bot must be an administrator of the configured group/channel so Telegram
@@ -108,7 +102,5 @@ is recorded in the regular wallet balance and transaction ledger.
 
 Vercel functions are short-lived and can run on multiple instances. The
 serverless adapter disables the background cleanup, payment polling, and
-Telegram polling loops. Telegram webhooks are supported by
-`/api/telegram/webhook`; if using long polling instead, run the bot from the
-separate persistent process and do not run polling and webhooks at the same
-time for the same bot token.
+Telegram polling loops. Run the Telegram bot from the separate persistent
+process and ensure only one process is polling with a given bot token.
