@@ -32,7 +32,6 @@ application, then redeploy:
 | `TELEGRAM_BOT_TOKEN` | For Telegram | Bot token from BotFather |
 | `TELEGRAM_GROUP_ID` | For Telegram join gate | Numeric group/channel ID, including the `-100` prefix |
 | `TELEGRAM_JOIN_URL` | For Telegram join gate | Invite URL shown by the join button |
-| `TELEGRAM_REFERRAL_CREDIT_CENTS` | Optional | Store credit per successful referral in cents; defaults to `100` ($1) |
 
 Optional integrations use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `TELEGRAM_ADMIN_IDS`, and the legacy-compatible `Telegram_group_id` name.
@@ -90,12 +89,11 @@ npm run start:bot
 
 The bot must be an administrator of the configured group/channel so Telegram
 can answer membership checks. Users must join that group before `/start`,
-`/ref`, `/link`, or other bot commands are processed.
+`/ref`, or other bot commands are processed.
 
-To receive automatic wallet credit, a store user opens Profile → Settings →
-Telegram Rewards, generates a one-time token, and sends `/link TOKEN` to the
-bot. The token expires after 10 minutes and can be used once. Referral credit
-is recorded in the regular wallet balance and transaction ledger.
+Each successful referral gives the referrer one additional drop claim. The
+bonus is consumed automatically when the referrer uses the extra `/claim` and
+cannot be reused after it is consumed.
 
 ## Important runtime difference
 

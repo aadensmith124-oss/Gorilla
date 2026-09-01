@@ -6,11 +6,7 @@ import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file.
 import {
   TELEGRAM_GROUP_ID,
   TELEGRAM_JOIN_URL,
-  TELEGRAM_REFERRAL_CREDIT_CENTS,
-  creditReferral,
   ensureTelegramReferralSchema,
-  formatCredit,
-  linkTelegramChat,
 } from "./telegram-referrals.js";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
@@ -126,12 +122,9 @@ async function confirmReferral(referrerChatId: string, referredChatId: string, b
      ON CONFLICT (referral_id) DO NOTHING`,
     [referrerChatId, referral.rows[0].id],
   );
-  const reward = await creditReferral(Number(referral.rows[0].id), referrerChatId);
   bot.api.sendMessage(
     referrerChatId,
-    reward.linked
-      ? `🎉 Referral confirmed! ${formatCredit(reward.amountCents || TELEGRAM_REFERRAL_CREDIT_CENTS)} store credit was added to your account.`
-      : `🎉 Referral confirmed! You earned ${formatCredit(TELEGRAM_REFERRAL_CREDIT_CENTS)} store credit. Link your store account with /link to receive it automatically.`,
+    "🎉 Referral confirmed! You earned one extra drop. Use /claim to redeem it.",
     MD,
   ).catch(() => {});
   return true;
@@ -686,7 +679,7 @@ function createTelegramBot() {
       `*How to get started:*\n` +
       `1. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
       `2. Use /claim when drops are available\n` +
-      `3. Use /ref to invite a friend for ${formatCredit(TELEGRAM_REFERRAL_CREDIT_CENTS)} store credit`,
+      "3. Use /ref to invite a friend for one extra drop",
       { ...MD, reply_markup: botKeyboard() }
     );
   });
@@ -749,56 +742,8 @@ function createTelegramBot() {
     const refLink = `https://t.me/${botInfo.username}?start=ref_${chatId}`;
     await ctx.reply(
       `🔗 Your referral link:\n${refLink}\n\n` +
-      `When a new user joins the group and starts the bot through this link, you receive ${formatCredit(TELEGRAM_REFERRAL_CREDIT_CENTS)} store credit.\n\n` +
-      `Link your store account with /link TOKEN so rewards are added automatically.`,
+      "When a new user joins the group and starts the bot through this link, you receive one extra drop.",
     );
-  });
-
-  bot.command("link", async (ctx: Context) => {
-    const chatId = String(ctx.chat!.id);
-    await registerTelegramMember(chatId, ctx.from?.username ?? null);
-    const token = getMatch(ctx);
-    if (!token) {
-      await ctx.reply(
-        "Usage: /link TOKEN\n\nGenerate a one-time token from your store account's Telegram Rewards panel.",
-        MD,
-      );
-      return;
-    }
-    const result = await linkTelegramChat(chatId, token, ctx.from?.username ?? null);
-    if (!result.ok) {
-      const message = result.reason === "account_already_linked"
-        ? "That store account is already linked to a different Telegram account."
-        : result.reason === "chat_already_linked"
-          ? "This Telegram account is already linked to a different store account."
-          : "That link token is invalid or expired. Generate a new one from the store.";
-      await ctx.reply(`❌ ${message}`, MD);
-      return;
-    }
-    await ctx.reply(
-      result.amountCents > 0
-        ? `✅ Store account linked. ${formatCredit(result.amountCents)} in pending referral credit was added to your balance.`
-        : "✅ Store account linked. Future referral rewards will be added automatically.",
-      { ...MD, reply_markup: botKeyboard() },
-    );
-  });
-
-  bot.command("balance", async (ctx: Context) => {
-    const link = await pool.query(
-      `SELECT u.balance
-         FROM telegram_store_links l
-         JOIN users u ON u.id = l.user_id
-        WHERE l.chat_id = $1`,
-      [String(ctx.chat!.id)],
-    );
-    if (!link.rows[0]) {
-      await ctx.reply(
-        "Your Telegram account is not linked yet. Generate a token in the store's Telegram Rewards panel, then use /link TOKEN.",
-        MD,
-      );
-      return;
-    }
-    await ctx.reply(`💳 Store balance: ${formatCredit(Number(link.rows[0].balance))}`, MD);
   });
 
   /* ── /help ────────────────────────────────────────────────────────────── */
@@ -807,9 +752,7 @@ function createTelegramBot() {
       `*GorillaCC Drops Bot*\n\n` +
       `/claim — Get one queued drop per 24 hours\n` +
       `/status — View access and claim status\n` +
-      `/ref — Get a referral link for store credit\n` +
-      `/link TOKEN — Link your store account for automatic credit\n` +
-      `/balance — View your store balance\n` +
+      `/ref — Get a referral link for an extra drop\n` +
       `/broadcast message — Admin-only announcement to bot users\n` +
       `/help — Show this message\n\n` +
       `💡 Add *${NAME_KEYWORD}* to your Telegram name to activate drop claims.\n\n` +
