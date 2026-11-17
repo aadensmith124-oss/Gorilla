@@ -70,7 +70,7 @@ export default function AdminPage() {
       <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-white/10 bg-[#111]">
         <div className="px-5 py-5 border-b border-white/8">
           <p className="text-base font-black text-white">
-             Gorilla<span className="text-primary">CC</span>
+             GorillaCC.at
           </p>
           <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono mt-0.5">Admin</p>
         </div>
@@ -85,12 +85,12 @@ export default function AdminPage() {
                 data-testid={`admin-nav-${id}`}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
                 style={{
-                  background: active ? "hsl(38 95% 55% / 0.15)" : undefined,
-                  color: active ? "hsl(38 95% 55%)" : "#6b7280",
-                  border: active ? "1px solid hsl(38 95% 55% / 0.25)" : "1px solid transparent",
+                  background: active ? "hsl(var(--primary) / 0.15)" : undefined,
+                  color: active ? "hsl(var(--primary))" : "#6b7280",
+                  border: active ? "1px solid hsl(var(--primary) / 0.25)" : "1px solid transparent",
                 }}
                 onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "#d1d5db"; } }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "hsl(38 95% 55% / 0.15)" : ""; (e.currentTarget as HTMLElement).style.color = active ? "hsl(38 95% 55%)" : "#6b7280"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "hsl(var(--primary) / 0.15)" : ""; (e.currentTarget as HTMLElement).style.color = active ? "hsl(var(--primary))" : "#6b7280"; }}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span>{label}</span>
@@ -118,7 +118,7 @@ export default function AdminPage() {
         <header className="md:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/10">
           <div>
             <p className="text-sm font-black text-white">
-               Gorilla<span className="text-primary">CC</span>
+               GorillaCC.at
               <span className="ml-1.5 text-xs font-normal text-white/40">Admin</span>
             </p>
             <p className="text-[10px] text-white/40 font-mono">{activeLabel}</p>
@@ -210,7 +210,7 @@ function DashboardSection() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} />
         <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={ShoppingBag} />
-        <StatCard title="Total Sales" value={`$${((stats?.totalSales || 0) / 100).toFixed(2)}`} icon={DollarSign} color="red" />
+        <StatCard title="Total Sales" value={`$${((stats?.totalSales || 0) / 100).toFixed(2)}`} icon={DollarSign} color="green" />
         <StatCard title="Pending Orders" value={stats?.pendingOrders || 0} icon={Receipt} color="orange" />
         <StatCard title="Stock Worth" value={`$${((stats?.stockWorth || 0) / 100).toFixed(2)}`} icon={Package} color="gold" />
       </div>
@@ -459,7 +459,7 @@ function DepositsSection() {
   });
 
   const statusBadge = (status: string, type: string) => {
-    if (status === "fulfilled" || status === "delivering") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">credited</span>;
+    if (status === "fulfilled" || status === "delivering") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-mono">credited</span>;
     if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">{type === "cashapp" ? "awaiting admin" : "pending"}</span>;
     if (status === "waiting_payment") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">unpaid</span>;
     return <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#111]/5 text-white/45 font-mono">{status}</span>;
@@ -846,7 +846,7 @@ function ProductsSection() {
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-medium truncate">{v.name}</span>
                             <span className="text-xs text-muted-foreground">${(v.price / 100).toFixed(2)}</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${v.stockCount > 0 ? "bg-red-500/20 text-red-400" : "bg-red-500/20 text-red-400"}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${v.stockCount > 0 ? "bg-primary/20 text-primary" : "bg-red-500/20 text-red-400"}`}>
                               {v.stockCount || 0} in stock
                             </span>
                           </div>
@@ -1172,7 +1172,7 @@ function statusLabel(s: string) {
 function statusBadgeClass(s: string) {
   if (s === "pending") return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
   if (s === "waiting_payment") return "bg-red-500/20 text-red-400 border-red-500/30";
-  if (s === "delivering" || s === "fulfilled") return "bg-red-500/20 text-red-400 border-red-500/30";
+  if (s === "delivering" || s === "fulfilled") return "bg-primary/20 text-primary border-primary/30";
   if (s === "refunded") return "bg-orange-500/20 text-orange-400 border-orange-500/30";
   if (s === "replaced") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
   return "bg-[#111]/5 text-white/60";
@@ -1277,7 +1277,7 @@ function OrdersSection() {
             <div><p className="text-[10px] text-white/45 mb-0.5">Customer</p><p className="text-xs text-white font-bold">{current.user?.username || current.userId} · @{current.user?.telegramUsername || "—"}</p></div>
             <div><p className="text-[10px] text-white/45 mb-0.5">Payment</p><p className="text-xs text-white/70">{current.paymentMethod || "—"}</p></div>
             {current.paymentNote && (
-              <div><p className="text-[10px] text-white/45 mb-0.5">Payment Note</p><p className="text-xs font-mono text-[#ff2d2d]">{current.paymentNote}</p></div>
+              <div><p className="text-[10px] text-white/45 mb-0.5">Payment Note</p><p className="text-xs font-mono text-primary">{current.paymentNote}</p></div>
             )}
             <div><p className="text-[10px] text-white/45 mb-0.5">Amount</p><p className="text-xs text-white/70">${(current.total / 100).toFixed(2)}</p></div>
             <div><p className="text-[10px] text-white/45 mb-0.5">Status</p><p className={`text-xs font-bold ${statusTextColor(current.status)}`}>{statusLabel(current.status)}</p></div>
@@ -1288,7 +1288,7 @@ function OrdersSection() {
               <button
                 onClick={() => { cashappFulfillMutation.mutate(current.id); }}
                 disabled={cashappFulfillMutation.isPending}
-                className="flex-1 h-11 rounded-xl bg-[#ff2d2d]/20 border border-[#ff2d2d]/40 text-[#ff2d2d] text-sm font-black hover:bg-[#ff2d2d]/30 transition-colors disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl bg-primary/20 border border-primary/40 text-primary text-sm font-black hover:bg-primary/30 transition-colors disabled:opacity-50"
                 data-testid={`button-cashapp-paid-detail-${current.id}`}
               >
                 {cashappFulfillMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "✓ Paid — Deliver Stock"}
@@ -1440,7 +1440,7 @@ function OrdersSection() {
 function statusTextColor(s: string) {
   if (s === "pending") return "text-yellow-400";
   if (s === "waiting_payment") return "text-red-400";
-  if (s === "delivering" || s === "fulfilled") return "text-red-400";
+  if (s === "delivering" || s === "fulfilled") return "text-primary";
   if (s === "refunded") return "text-orange-400";
   if (s === "replaced") return "text-blue-400";
   return "text-white/45";
@@ -1549,9 +1549,9 @@ function TestModeSection({ onGoToOrders }: { onGoToOrders: () => void }) {
       </Card>
 
       {lastOrder && (
-        <Card className="bg-red-500/5 border-red-500/20">
+        <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4 space-y-3">
-            <p className="text-sm font-bold text-red-400">✓ Test order created!</p>
+            <p className="text-sm font-bold text-primary">✓ Test order created!</p>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>Order ID: <span className="font-mono text-white">{lastOrder.orderId}</span></p>
               <p>Status: <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">delivering</Badge></p>
@@ -1730,7 +1730,7 @@ function UsersSection() {
               <button
                 onClick={() => setBalanceMutation.mutate({ userId: selectedUser.id, balance: balanceInput })}
                 disabled={setBalanceMutation.isPending || !balanceInput}
-                className="h-8 px-3 bg-primary/80 hover:bg-primary text-white text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
+                className="h-8 px-3 bg-primary/80 hover:bg-primary text-primary-foreground text-xs font-bold rounded transition-colors disabled:opacity-40 flex items-center gap-1"
                 data-testid={`btn-set-balance-${selectedUser.id}`}
               >
                 {setBalanceMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Set"}
@@ -1923,7 +1923,7 @@ function CodesSection() {
           onClick={() => setTab("balance")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "balance"
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-foreground"
               : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-balance-codes"
@@ -1935,7 +1935,7 @@ function CodesSection() {
           onClick={() => setTab("discount")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
             tab === "discount"
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-foreground"
               : "bg-[#0d0d0d] text-white/60 hover:bg-[#111]/5 hover:text-white/70"
           }`}
           data-testid="tab-discount-codes"
@@ -1985,7 +1985,7 @@ function CodesSection() {
                   <div className="bg-[#111]/5 border border-white/10 rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
                     {generated.map((c) => (
                       <div key={c} className="flex items-center justify-between group">
-                        <span className="text-xs font-mono text-red-400">{c}</span>
+                        <span className="text-xs font-mono text-primary">{c}</span>
                         <button
                           onClick={() => { navigator.clipboard.writeText(c); toast({ title: "Copied" }); }}
                           className="text-[10px] text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
@@ -2014,8 +2014,8 @@ function CodesSection() {
                       <div>
                         <p className="text-sm font-bold text-white font-mono">{c.code}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs font-bold text-red-400">${(c.amount / 100).toFixed(2)}</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-[#0d0d0d] text-white/40" : "bg-red-500/20 text-red-400"}`}>
+                          <span className="text-xs font-bold text-primary">${(c.amount / 100).toFixed(2)}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.isUsed ? "bg-[#0d0d0d] text-white/40" : "bg-primary/20 text-primary"}`}>
                             {c.isUsed ? "Used" : "Available"}
                           </span>
                         </div>
@@ -2323,10 +2323,10 @@ function IntegrationsSection() {
 
   const METHODS = [
     { id: "wallet", label: "Wallet / Balance", icon: <Wallet className="h-4 w-4 text-white" />, bg: "bg-primary" },
-    { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-white" />, bg: "bg-[#ff2d2d]" },
+    { id: "cashapp", label: "CashApp", icon: <SiCashapp className="h-4 w-4 text-black" />, bg: "bg-[#39ff14]" },
     { id: "venmo", label: "Venmo", icon: <span className="text-white font-black text-sm">V</span>, bg: "bg-[#3D95CE]" },
     { id: "zelle", label: "Zelle", icon: <span className="text-white font-black text-sm">Z</span>, bg: "bg-[#6D1ED4]" },
-    { id: "chime", label: "Chime", icon: <span className="text-white font-black text-sm">C</span>, bg: "bg-[#ff2d2d]" },
+    { id: "chime", label: "Chime", icon: <span className="text-black font-black text-sm">C</span>, bg: "bg-[#39ff14]" },
     { id: "crypto", label: "Crypto", icon: <SiBitcoin className="h-4 w-4 text-white" />, bg: "bg-primary" },
     { id: "stars", label: "Telegram Stars", icon: <Star className="h-4 w-4 text-white fill-white" />, bg: "bg-blue-500" },
   ];
@@ -2384,10 +2384,10 @@ function IntegrationsSection() {
             description="Customers send CashApp to this tag with a generated note."
             settingKey="cashapp-tag"
             placeholder="$YourCashTag"
-            color="#ff2d2d"
+            color="#39ff14"
           />
-          <MinDepositCard method="cashapp" label="CashApp" color="#ff2d2d" />
-          <FeeSettingCard method="cashapp" label="CashApp" color="#ff2d2d" />
+          <MinDepositCard method="cashapp" label="CashApp" color="#39ff14" />
+          <FeeSettingCard method="cashapp" label="CashApp" color="#39ff14" />
         </div>
       </div>
 
@@ -2417,10 +2417,10 @@ function IntegrationsSection() {
             description="Phone number or email customers send Chime payments to."
             settingKey="chime-handle"
             placeholder="+1 (555) 000-0000"
-            color="#ff2d2d"
+            color="#39ff14"
           />
-          <MinDepositCard method="chime" label="Chime" color="#ff2d2d" />
-          <FeeSettingCard method="chime" label="Chime" color="#ff2d2d" />
+          <MinDepositCard method="chime" label="Chime" color="#39ff14" />
+          <FeeSettingCard method="chime" label="Chime" color="#39ff14" />
         </div>
       </div>
 
@@ -2444,7 +2444,7 @@ function IntegrationsSection() {
               </div>
               <div className="shrink-0 mt-0.5">
                 {integrationStatus?.TELEGRAM_BOT_TOKEN ? (
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">✓ Set</Badge>
+                  <Badge className="bg-primary/20 text-primary border-primary/30">✓ Set</Badge>
                 ) : (
                   <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">⚠ Not set</Badge>
                 )}
@@ -2530,9 +2530,9 @@ function FeatureTogglesCard() {
 
 function methodMeta(method: string) {
   if (method === "Venmo") return { color: "#3D95CE", label: "Venmo", icon: "V" };
-  if (method === "Chime") return { color: "#ff2d2d", label: "Chime", icon: "C" };
+  if (method === "Chime") return { color: "#39ff14", label: "Chime", icon: "C" };
   if (method === "Zelle") return { color: "#9B59E8", label: "Zelle", icon: "Z" };
-  return { color: "#ff2d2d", label: "CashApp", icon: "$" };
+  return { color: "#39ff14", label: "CashApp", icon: "$" };
 }
 
 function CashAppSection() {
@@ -2695,7 +2695,7 @@ function CashAppSection() {
         </div>
         <button
           onClick={() => setShowHistory(h => !h)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-white" : "bg-[#0d0d0d] text-white/45 hover:bg-white/5"}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showHistory ? "bg-primary text-primary-foreground" : "bg-[#0d0d0d] text-white/45 hover:bg-white/5"}`}
         >
           {showHistory ? "← Pending" : "History"}
         </button>
@@ -2705,9 +2705,9 @@ function CashAppSection() {
       <div className="flex gap-1.5 flex-wrap">
         {[
           { key: "all", label: "All", count: pendingOrders.length, color: "text-white/70" },
-          { key: "CashApp", label: "CashApp", count: cashappCount, color: "text-[#ff2d2d]" },
+          { key: "CashApp", label: "CashApp", count: cashappCount, color: "text-[#39ff14]" },
           { key: "Venmo", label: "Venmo", count: venmoCount, color: "text-[#3D95CE]" },
-          { key: "Chime", label: "Chime", count: chimeCount, color: "text-[#ff2d2d]" },
+          { key: "Chime", label: "Chime", count: chimeCount, color: "text-[#39ff14]" },
           { key: "Zelle", label: "Zelle", count: zelleCount, color: "text-[#9B59E8]" },
         ].map(({ key, label, count, color }) => (
           <button
@@ -3091,7 +3091,7 @@ function AdminCardsSection() {
               <p className="text-[10px] text-primary/60 font-mono">BIN: {previewBin}</p>
             )}
             {previewZip && (
-              <p className="text-[10px] text-red-400/60 font-mono">ZIP: {previewZip}</p>
+              <p className="text-[10px] text-primary/60 font-mono">ZIP: {previewZip}</p>
             )}
           </div>
         </div>
@@ -3404,7 +3404,7 @@ function SmtpSection() {
 
           <div className="space-y-1">
             <label className="text-[10px] text-white/45 uppercase tracking-widest">
-              App Password {smtpData?.has_password && <span className="text-red-400 normal-case">(saved)</span>}
+              App Password {smtpData?.has_password && <span className="text-primary normal-case">(saved)</span>}
             </label>
             <Input
               value={password}
@@ -3477,7 +3477,7 @@ function SellersSection() {
   const pendingCount = (sellers || []).filter((s: any) => s.status === "pending").length;
 
   function statusBadge(status: string) {
-    if (status === "approved") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">approved</span>;
+    if (status === "approved") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-mono">approved</span>;
     if (status === "pending") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 font-mono">pending</span>;
     if (status === "rejected") return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">rejected</span>;
     return <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0d0d0d] text-white/45 font-mono">{status}</span>;
@@ -3584,7 +3584,7 @@ function SellersSection() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      className="flex-1 h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
+                       className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => approveMutation.mutate(selected.id)}
                       disabled={approveMutation.isPending}
                       data-testid="btn-seller-approve"
@@ -3657,7 +3657,7 @@ function SupportSection() {
 
   const statusCls = (s: string) => {
     if (s === "open")     return "bg-yellow-500/15 text-yellow-400 border-yellow-500/20";
-    if (s === "refunded") return "bg-red-500/15  text-red-400  border-red-500/20";
+    if (s === "refunded") return "bg-primary/15  text-primary  border-primary/20";
     if (s === "replaced") return "bg-blue-500/15   text-blue-400   border-blue-500/20";
     return "bg-white/8 text-white/40 border-white/10";
   };

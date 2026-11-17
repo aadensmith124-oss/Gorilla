@@ -5,25 +5,25 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 4%;
+  --background: 0 0% 3%;
   --foreground: 0 0% 95%;
-  --card: 0 0% 8%;
+  --card: 0 0% 7%;
   --card-foreground: 0 0% 95%;
-  --popover: 0 0% 8%;
+  --popover: 0 0% 7%;
   --popover-foreground: 0 0% 95%;
-  --primary: 0 100% 59%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 112 100% 54%;
+  --primary-foreground: 120 20% 4%;
   --secondary: 0 0% 12%;
   --secondary-foreground: 0 0% 80%;
   --muted: 0 0% 12%;
   --muted-foreground: 0 0% 52%;
-  --accent: 42 85% 55%;
-  --accent-foreground: 35 40% 8%;
+  --accent: 112 100% 54%;
+  --accent-foreground: 120 20% 4%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
   --border: 0 0% 16%;
   --input: 0 0% 9%;
-  --ring: 0 100% 59%;
+  --ring: 112 100% 54%;
   --radius: 0.625rem;
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -36,15 +36,15 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
     background-image:
-      radial-gradient(circle at 85% -10%, hsl(0 100% 59% / 0.1), transparent 32rem),
-      radial-gradient(circle at -10% 40%, hsl(42 85% 55% / 0.06), transparent 28rem);
+      radial-gradient(circle at 85% -10%, hsl(112 100% 54% / 0.09), transparent 32rem),
+      radial-gradient(circle at -10% 40%, hsl(112 100% 54% / 0.045), transparent 28rem);
   }
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 }
 
 @layer components {
   .btn-pro { @apply h-9 px-4 text-xs font-semibold transition-all hover:scale-[0.98] active:scale-[0.95]; }
-  .btn-buy { @apply bg-accent hover:bg-[hsl(42_85%_48%)] text-accent-foreground font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
+  .btn-buy { @apply bg-accent hover:bg-[hsl(112_100%_48%)] text-accent-foreground font-bold text-xs transition-all hover:scale-[0.98] active:scale-[0.95]; }
   .mono { font-family: var(--font-mono); }
 }
 
