@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import { pollPendingCryptoPayments } from "./crypto-poller.js";
 import { startTelegramBot } from "./telegram.js";
 import { log } from "./logger.js";
+import { ensureTelegramReferralSchema } from "./telegram-referrals.js";
 
 declare module "http" {
   interface IncomingMessage {
@@ -116,6 +117,7 @@ export async function initializeApp(
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`);
 
+  await ensureTelegramReferralSchema();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -150,7 +152,7 @@ export async function initializeApp(
   }
 
   // Vercel functions are short-lived and may scale horizontally, so long-running
-  // cleanup, payment polling, and Telegram polling stay in the persistent runtime.
+  // cleanup, payment polling, and Telegram polling stay disabled there.
   if (!startBackgroundJobs) return;
 
   const cancelStaleOrders = async () => {
@@ -182,9 +184,5 @@ export async function initializeApp(
   pollPendingCryptoPayments();
   setInterval(pollPendingCryptoPayments, 30 * 1000);
 
-  if (process.env.NODE_ENV !== "development") {
-    startTelegramBot();
-  } else {
-    log("Telegram bot disabled in development; it runs from the published site", "telegram");
-  }
+  startTelegramBot();
 }

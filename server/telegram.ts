@@ -3,10 +3,15 @@ import { pool } from "./db.js";
 import { log } from "./logger.js";
 import { CLAIM_LIMIT_PER_WINDOW, getClaimAccess, remainingClaimSlots } from "./reward-claim-policy.js";
 import { MAX_LICENSE_FILE_BYTES, parseLicenseKeyFile } from "./license-key-file.js";
+import {
+  TELEGRAM_GROUP_ID,
+  TELEGRAM_JOIN_URL,
+  ensureTelegramReferralSchema,
+} from "./telegram-referrals.js";
 
 const BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN;
-const GROUP_ID     = process.env.Telegram_group_id;
-const GROUP_INVITE = "https://t.me/+crUosGXWyoEzNWIx";
+const GROUP_ID     = TELEGRAM_GROUP_ID;
+const GROUP_INVITE = TELEGRAM_JOIN_URL;
 const TELEGRAM_ADMIN_IDS = new Set(
   (process.env.TELEGRAM_ADMIN_IDS ?? "")
     .split(",")
@@ -52,6 +57,48 @@ async function registerTelegramMember(chatId: string, username: string | null) {
   return result.rows.length === 1;
 }
 
+function getStartReferrer(ctx: Context) {
+  const text = String((ctx.message as any)?.text ?? "");
+  const match = text.match(/^\/start(?:@\w+)?\s+(ref_\d+)$/i);
+  const referrer = match?.[1]?.slice(4) ?? "";
+  return /^\d+$/.test(referrer) ? referrer : null;
+}
+
+async function rememberIncomingMember(ctx: Context) {
+  const chatId = String(ctx.from?.id ?? ctx.chat?.id ?? "");
+  if (!chatId) return;
+  const pendingReferrer = getStartReferrer(ctx);
+  await pool.query(
+    `INSERT INTO telegram_chat_members
+      (chat_id, telegram_username, pending_referrer_chat_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (chat_id) DO UPDATE
+       SET telegram_username = EXCLUDED.telegram_username,
+           pending_referrer_chat_id =
+             COALESCE(telegram_chat_members.pending_referrer_chat_id,
+                      EXCLUDED.pending_referrer_chat_id)`,
+    [chatId, ctx.from?.username ?? null, pendingReferrer],
+  );
+}
+
+async function takePendingReferrer(chatId: string) {
+  const result = await pool.query(
+    `WITH pending AS (
+       SELECT pending_referrer_chat_id
+         FROM telegram_chat_members
+        WHERE chat_id = $1 AND pending_referrer_chat_id IS NOT NULL
+        FOR UPDATE
+     )
+     UPDATE telegram_chat_members
+        SET pending_referrer_chat_id = NULL
+       FROM pending
+      WHERE telegram_chat_members.chat_id = $1
+      RETURNING pending.pending_referrer_chat_id AS referrer_chat_id`,
+    [chatId],
+  );
+  return result.rows[0]?.referrer_chat_id ?? null;
+}
+
 async function confirmReferral(referrerChatId: string, referredChatId: string, bot: Bot) {
   if (!referrerChatId || referrerChatId === referredChatId) return false;
   const referrer = await pool.query(
@@ -77,7 +124,7 @@ async function confirmReferral(referrerChatId: string, referredChatId: string, b
   );
   bot.api.sendMessage(
     referrerChatId,
-    "🎉 Referral confirmed! Your friend started the bot, so you received one extra drop.",
+    "🎉 Referral confirmed! You earned one extra drop. Use /claim to redeem it.",
     MD,
   ).catch(() => {});
   return true;
@@ -233,6 +280,7 @@ async function ensureSchema() {
       suspended_until TIMESTAMPTZ NOT NULL
     )
   `);
+  await ensureTelegramReferralSchema();
 }
 
 function botKeyboard() {
@@ -240,7 +288,29 @@ function botKeyboard() {
     .text("🎁 Claim a drop", "claim_reward")
     .text("👤 Drop status", "account_status")
     .row()
-    .url("📣 Join our channel", GROUP_INVITE);
+    .url("📣 Join our group", GROUP_INVITE)
+    .row()
+    .text("✅ Check membership", "check_join");
+}
+
+function joinGateKeyboard() {
+  return new InlineKeyboard()
+    .url("📣 Join GorillaCC", GROUP_INVITE)
+    .row()
+    .text("✅ I joined — check", "check_join");
+}
+
+async function isGroupMember(ctx: Context) {
+  if (!GROUP_ID || !ctx.from?.id) return true;
+  const member = await ctx.api.getChatMember(GROUP_ID, ctx.from.id);
+  return ["creator", "administrator", "member", "restricted"].includes(member.status);
+}
+
+async function sendJoinGate(ctx: Context) {
+  await ctx.reply(
+    "🔒 Join the GorillaCC group first, then tap the check button to unlock the bot.",
+    { reply_markup: joinGateKeyboard() },
+  );
 }
 
 async function storeLicenseKeys(keys: string[], adminId: number | null, adminChatId: string) {
@@ -534,9 +604,8 @@ async function handleNameCheck(ctx: Context): Promise<void> {
 
 }
 
-export function startTelegramBot() {
+function createTelegramBot() {
   if (!BOT_TOKEN) {
-    log("TELEGRAM_BOT_TOKEN not set — bot disabled", "telegram");
     return null;
   }
 
@@ -560,23 +629,27 @@ export function startTelegramBot() {
     return next();
   });
 
+  bot.use(async (ctx, next) => {
+    await rememberIncomingMember(ctx);
+    return next();
+  });
+
   /* ── Group-membership gate ─────────────────────────────────────────────── */
   bot.use(async (ctx, next) => {
     if (!GROUP_ID) return next();
 
     const userId = ctx.from?.id;
     if (!userId) return next();
+    if (ctx.callbackQuery?.data === "check_join") return next();
 
     try {
-      const member = await ctx.api.getChatMember(GROUP_ID, userId);
-      const allowed = ["creator", "administrator", "member", "restricted"].includes(member.status);
-      if (!allowed) {
-        await ctx.reply(`🔒 You must join the GorillaCC.at group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+      if (!(await isGroupMember(ctx))) {
+        await sendJoinGate(ctx);
         return;
       }
     } catch (err: any) {
       console.error("[telegram] membership check failed:", err?.message ?? err);
-        await ctx.reply(`🔒 You must join the GorillaCC.at group before using bot commands.\n\n👉 ${GROUP_INVITE}`);
+      await sendJoinGate(ctx);
       return;
     }
 
@@ -595,16 +668,10 @@ export function startTelegramBot() {
   /* ── /start ───────────────────────────────────────────────────────────── */
   bot.command("start", async (ctx: Context) => {
     const chatId = String(ctx.chat!.id);
-    const isNewTelegramMember = await registerTelegramMember(
-      chatId,
-      ctx.from?.username ?? null,
-    );
-    const param = getMatch(ctx);
-    if (isNewTelegramMember && param.startsWith("ref_")) {
-      const referrerChatId = param.slice(4).trim();
-      if (/^\d+$/.test(referrerChatId)) {
-        await confirmReferral(referrerChatId, chatId, bot);
-      }
+    await registerTelegramMember(chatId, ctx.from?.username ?? null);
+    const referrerChatId = await takePendingReferrer(chatId);
+    if (referrerChatId) {
+      await confirmReferral(referrerChatId, chatId, bot);
     }
 
     await ctx.reply(
@@ -612,7 +679,7 @@ export function startTelegramBot() {
       `*How to get started:*\n` +
       `1. Add *${NAME_KEYWORD}* to your Telegram display name\n` +
       `2. Use /claim when drops are available\n` +
-      `3. Use /ref to invite a friend for one extra drop`,
+      "3. Use /ref to invite a friend for one extra drop",
       { ...MD, reply_markup: botKeyboard() }
     );
   });
@@ -638,6 +705,25 @@ export function startTelegramBot() {
     await sendStatus(ctx);
   });
 
+  bot.callbackQuery("check_join", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    if (GROUP_ID) {
+      try {
+        if (!(await isGroupMember(ctx))) {
+          await sendJoinGate(ctx);
+          return;
+        }
+      } catch {
+        await sendJoinGate(ctx);
+        return;
+      }
+    }
+    await ctx.reply("✅ Membership confirmed. Send /start to open the bot menu.", {
+      ...MD,
+      reply_markup: botKeyboard(),
+    });
+  });
+
   /* ── Admin drop file upload ─────────────────────────────────────────────── */
   bot.on("message:document", async (ctx) => {
     await uploadLicenseFile(ctx, bot);
@@ -656,7 +742,7 @@ export function startTelegramBot() {
     const refLink = `https://t.me/${botInfo.username}?start=ref_${chatId}`;
     await ctx.reply(
       `🔗 Your referral link:\n${refLink}\n\n` +
-      `When a new user starts the bot through this link, you receive one extra drop.`,
+      "When a new user joins the group and starts the bot through this link, you receive one extra drop.",
     );
   });
 
@@ -666,7 +752,7 @@ export function startTelegramBot() {
       `*GorillaCC.at Drops Bot*\n\n` +
       `/claim — Get one queued drop per 24 hours\n` +
       `/status — View access and claim status\n` +
-      `/ref — Get a referral link for one extra drop\n` +
+      `/ref — Get a referral link for an extra drop\n` +
       `/broadcast message — Admin-only announcement to bot users\n` +
       `/help — Show this message\n\n` +
       `💡 Add *${NAME_KEYWORD}* to your Telegram name to activate drop claims.\n\n` +
@@ -679,7 +765,18 @@ export function startTelegramBot() {
     console.error("[telegram] error:", err.message);
   });
 
-  // Start long polling — wrapped so a bad token doesn't crash the server
+  return bot;
+}
+
+export function startTelegramBot() {
+  const bot = createTelegramBot();
+  if (!bot) {
+    log("TELEGRAM_BOT_TOKEN not set — bot disabled", "telegram");
+    return null;
+  }
+
+  // Start long polling — wrapped so a bad token doesn't crash the server.
+  log("Starting Telegram bot (long polling)", "telegram");
   bot.start({
     onStart: () => log("Telegram bot started (long polling)", "telegram"),
   }).catch((err: any) => {
